@@ -17,7 +17,9 @@ export default async function Page({
 }) {
   const { userId } = await clerkAuth();
   const { inviteCode, redirectTo } = await searchParams;
-  const safeRedirectTo = getSafeRedirectPath(redirectTo);
+  const safeRedirectTo = inviteCode
+    ? `/invite/${inviteCode}`
+    : (getSafeRedirectPath(redirectTo) ?? '/');
 
   if (userId && inviteCode) {
     redirect('/setup');
