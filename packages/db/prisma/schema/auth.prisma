@@ -3,6 +3,7 @@ model User {
   name                           String
   email                          String
   emailVerified                  Boolean
+  clerkUserId                    String?
   image                          String?
   createdAt                      DateTime  @default(now())
   updatedAt                      DateTime  @updatedAt
@@ -33,6 +34,7 @@ model User {
   offboardingAccessRevocations    OffboardingAccessRevocation[]    @relation("AccessRevocationRevokedBy")
 
   @@unique([email])
+  @@unique([clerkUserId])
 }
 
 model EmployeeTrainingVideoCompletion {
