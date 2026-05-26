@@ -1,6 +1,6 @@
-import { auth } from '@/app/lib/auth';
 import { validateMemberAndOrg } from '@/app/api/download-agent/utils';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '@/utils/s3';
+import { getPortalAuthContext } from '@/app/lib/portal-auth';
+import { APP_AWS_ORG_ASSETS_BUCKET, getSignedUrl, s3Client } from '@/utils/s3';
 import { DeleteObjectsCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db/server';
 import { NextRequest, NextResponse } from 'next/server';
@@ -15,19 +15,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'No organization ID' }, { status: 400 });
   }
 
-  const session = await auth.api.getSession({ headers: req.headers });
+  const authContext = await getPortalAuthContext({ headers: req.headers });
 
-  if (!session?.user) {
+  if (!authContext) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const member = await validateMemberAndOrg(session.user.id, organizationId);
+  const member = await validateMemberAndOrg(authContext.user.id, organizationId);
   if (!member) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const results = await db.fleetPolicyResult.findMany({
-    where: { organizationId, userId: session.user.id },
+    where: { organizationId, userId: authContext.user.id },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -74,13 +74,13 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid or missing policy ID' }, { status: 400 });
   }
 
-  const session = await auth.api.getSession({ headers: req.headers });
+  const authContext = await getPortalAuthContext({ headers: req.headers });
 
-  if (!session?.user) {
+  if (!authContext) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const member = await validateMemberAndOrg(session.user.id, organizationId);
+  const member = await validateMemberAndOrg(authContext.user.id, organizationId);
   if (!member) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -88,7 +88,7 @@ export async function DELETE(req: NextRequest) {
   const where = {
     organizationId,
     fleetPolicyId: policyId,
-    userId: session.user.id,
+    userId: authContext.user.id,
   };
 
   const recordsToDelete = await db.fleetPolicyResult.findMany({

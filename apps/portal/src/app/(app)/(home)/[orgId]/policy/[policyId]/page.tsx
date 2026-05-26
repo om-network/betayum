@@ -1,4 +1,4 @@
-import { auth } from '@/app/lib/auth';
+import { getPortalAuthContext, getPortalOrganization } from '@/app/lib/portal-auth';
 import { db } from '@db/server';
 import {
   Badge,
@@ -30,12 +30,14 @@ export default async function PolicyPage({
 }) {
   const { policyId, orgId } = await params;
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getPortalAuthContext({ headers: await headers() });
 
-  if (!session?.user) {
+  if (!authContext) {
     redirect('/auth');
+  }
+
+  if (!getPortalOrganization(authContext, orgId)) {
+    redirect('/');
   }
 
   const policy = await db.policy.findUnique({
@@ -59,7 +61,7 @@ export default async function PolicyPage({
   // Get the member info for the current org
   const member = await db.member.findFirst({
     where: {
-      userId: session.user.id,
+      userId: authContext.user.id,
       organizationId: orgId,
       deactivated: false,
     },
