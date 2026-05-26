@@ -1,4 +1,4 @@
-import { auth } from '@/app/lib/auth';
+import { getPortalAuthContext } from '@/app/lib/portal-auth';
 import { logger } from '@/utils/logger';
 import { client as kv } from '@trycompai/kv';
 import { randomBytes } from 'crypto';
@@ -13,11 +13,9 @@ const isSupportedOS = (value: unknown): value is SupportedOS =>
 
 export async function POST(req: NextRequest) {
   // Authentication
-  const session = await auth.api.getSession({
-    headers: req.headers,
-  });
+  const authContext = await getPortalAuthContext({ headers: req.headers });
 
-  if (!session?.user) {
+  if (!authContext) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
@@ -29,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Validate member and organization
-  const member = await validateMemberAndOrg(session.user.id, orgId);
+  const member = await validateMemberAndOrg(authContext.user.id, orgId);
   if (!member) {
     return new NextResponse('Member not found or organization invalid', { status: 404 });
   }
@@ -63,7 +61,7 @@ export async function POST(req: NextRequest) {
     {
       orgId,
       employeeId,
-      userId: session.user.id,
+      userId: authContext.user.id,
       os: detectedOS,
       createdAt: Date.now(),
     },
@@ -74,7 +72,7 @@ export async function POST(req: NextRequest) {
     employeeId,
     os: detectedOS,
     orgId,
-    userId: session.user.id,
+    userId: authContext.user.id,
   });
 
   return NextResponse.json({ token });

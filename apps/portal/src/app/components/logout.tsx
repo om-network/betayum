@@ -1,24 +1,20 @@
 'use client';
 
-import { authClient } from '@/app/lib/auth-client';
-import { DropdownMenuItem } from '@trycompai/ui/dropdown-menu';
-import { useRouter } from 'next/navigation';
+import { useClerk } from '@clerk/nextjs';
+import { DropdownMenuItem } from '@trycompai/design-system';
 import { useState } from 'react';
 
 export function Logout() {
   const [isLoading, setLoading] = useState(false);
-  const router = useRouter();
+  const { signOut } = useClerk();
 
   const handleLogout = async () => {
     setLoading(true);
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push('/auth'); // Redirect to /auth instead of /login
-        },
-      },
-    });
-    setLoading(false);
+    try {
+      await signOut({ redirectUrl: '/auth' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
