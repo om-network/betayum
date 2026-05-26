@@ -1,8 +1,7 @@
 import { serverApi } from '@/lib/api-server';
 import { getDefaultRoute, mergePermissions, resolveBuiltInPermissions } from '@/lib/permissions';
-import { auth } from '@/utils/auth';
+import { auth as clerkAuth } from '@clerk/nextjs/server';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 interface OrgInfo {
@@ -22,9 +21,7 @@ export default async function RootPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { userId } = await clerkAuth();
 
   const buildUrlWithParams = async (path: string): Promise<string> => {
     const params = new URLSearchParams();
@@ -41,7 +38,7 @@ export default async function RootPage({
     return queryString ? `${path}?${queryString}` : path;
   };
 
-  if (!session) {
+  if (!userId) {
     return redirect(await buildUrlWithParams('/auth'));
   }
 
@@ -62,15 +59,8 @@ export default async function RootPage({
     return redirect(await buildUrlWithParams('/setup'));
   }
 
-  // Always use the org the user last switched to (stored in session)
-  const activeOrgId = session.session.activeOrganizationId;
-  const activeOrg = activeOrgId
-    ? memberships.find((m) => m.id === activeOrgId)
-    : undefined;
-  const readyOrg = memberships.find(
-    (m) => m.onboardingCompleted && m.hasAccess,
-  );
-  const targetOrg = activeOrg || readyOrg || memberships[0];
+  const readyOrg = memberships.find((m) => m.onboardingCompleted && m.hasAccess);
+  const targetOrg = readyOrg || memberships[0];
 
   if (!targetOrg.onboardingCompleted) {
     return redirect(await buildUrlWithParams(`/onboarding/${targetOrg.id}`));
@@ -81,9 +71,7 @@ export default async function RootPage({
   }
 
   // Resolve permissions for default route
-  const { permissions, customRoleNames } = resolveBuiltInPermissions(
-    targetOrg.memberRole,
-  );
+  const { permissions, customRoleNames } = resolveBuiltInPermissions(targetOrg.memberRole);
 
   if (customRoleNames.length > 0) {
     // Custom role resolution still needs DB (infrastructure auth concern)
@@ -97,9 +85,7 @@ export default async function RootPage({
     for (const role of customRoles) {
       if (!role.permissions) continue;
       const parsed =
-        typeof role.permissions === 'string'
-          ? JSON.parse(role.permissions)
-          : role.permissions;
+        typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions;
       if (parsed && typeof parsed === 'object') {
         mergePermissions(permissions, parsed as Record<string, string[]>);
       }

@@ -10,29 +10,33 @@ export interface ApiResponse<T = unknown> {
 interface CallOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  organizationId?: string;
 }
 
 /**
  * Server-side API client for calling our internal NestJS API from server components.
- * Forwards cookies for authentication — API resolves the session (including
- * activeOrganizationId) via better-auth, so no X-Organization-Id header is needed.
+ * Forwards Clerk cookies for authentication; the API resolves the Comp AI user
+ * and validates organization access.
  */
 async function call<T = unknown>(
   endpoint: string,
   options: CallOptions = {},
 ): Promise<ApiResponse<T>> {
-  const { method = 'GET', body } = options;
+  const { method = 'GET', body, organizationId } = options;
   const baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
-  // Forward cookies for auth - better-auth handles session validation
+  // Forward cookies for auth - API validates the Clerk session.
   const headerStore = await headers();
   const cookieHeader = headerStore.get('cookie');
   if (cookieHeader) {
     requestHeaders['Cookie'] = cookieHeader;
+  }
+  if (organizationId) {
+    requestHeaders['X-Organization-Id'] = organizationId;
   }
 
   try {
@@ -69,18 +73,18 @@ async function call<T = unknown>(
 }
 
 export const serverApi = {
-  get: <T = unknown>(endpoint: string) =>
-    call<T>(endpoint, { method: 'GET' }),
+  get: <T = unknown>(endpoint: string, organizationId?: string) =>
+    call<T>(endpoint, { method: 'GET', organizationId }),
 
-  post: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'POST', body }),
+  post: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
+    call<T>(endpoint, { method: 'POST', body, organizationId }),
 
-  put: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'PUT', body }),
+  put: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
+    call<T>(endpoint, { method: 'PUT', body, organizationId }),
 
-  patch: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'PATCH', body }),
+  patch: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
+    call<T>(endpoint, { method: 'PATCH', body, organizationId }),
 
-  delete: <T = unknown>(endpoint: string, body?: unknown) =>
-    call<T>(endpoint, { method: 'DELETE', body }),
+  delete: <T = unknown>(endpoint: string, body?: unknown, organizationId?: string) =>
+    call<T>(endpoint, { method: 'DELETE', body, organizationId }),
 };
