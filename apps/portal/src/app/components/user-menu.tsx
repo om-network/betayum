@@ -1,4 +1,4 @@
-import { auth } from '@/app/lib/auth';
+import { getPortalAuthContext } from '@/app/lib/portal-auth';
 import { headers } from 'next/headers';
 import { UserMenuClient } from './user-menu-client';
 
@@ -21,15 +21,13 @@ function getInitials(name?: string | null, email?: string | null): string {
 }
 
 export async function UserMenu() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getPortalAuthContext({ headers: await headers() });
 
-  if (!session?.user) {
+  if (!authContext) {
     return null;
   }
 
-  const user = session.user;
+  const user = authContext.user;
   const userInitials = getInitials(user.name, user.email);
 
   return (

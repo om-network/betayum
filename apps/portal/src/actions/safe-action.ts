@@ -1,4 +1,4 @@
-import { auth } from '@/app/lib/auth';
+import { getPortalAuthContext } from '@/app/lib/portal-auth';
 import { env } from '@/env.mjs';
 import { logger } from '@/utils/logger';
 import { client } from '@trycompai/kv';
@@ -41,20 +41,14 @@ export const actionClientWithMeta = createSafeActionClient({
 
 export const authActionClient = actionClientWithMeta
   .use(async ({ next, clientInput }) => {
-    const response = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const { session, user } = response ?? {};
-
-    if (!session) {
+    const authContext = await getPortalAuthContext({ headers: await headers() });
+    if (!authContext) {
       throw new Error('Unauthorized');
     }
 
     const result = await next({
       ctx: {
-        user: user,
-        session: session,
+        user: authContext.user,
       },
     });
 
@@ -93,11 +87,8 @@ export const authActionClient = actionClientWithMeta
     });
   })
   .use(async ({ next, metadata, ctx }) => {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session) {
+    const authContext = await getPortalAuthContext({ headers: await headers() });
+    if (!authContext) {
       throw new Error('Unauthorized');
     }
 
@@ -134,7 +125,7 @@ export const authActionClient = actionClientWithMeta
 
     return next({
       ctx: {
-        user: session.user,
+        user: authContext.user,
       },
     });
   });
