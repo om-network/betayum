@@ -15,6 +15,7 @@ import {
 } from './openapi/public-docs-metadata';
 import { isTrustedOrigin } from './auth/auth.server';
 import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
+import { validateClerkAuthConfig } from './auth/clerk-auth.config';
 import { originCheckMiddleware } from './auth/origin-check.middleware';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
@@ -34,6 +35,8 @@ function describeServer(baseUrl: string): string {
 }
 
 async function bootstrap(): Promise<void> {
+  validateClerkAuthConfig();
+
   // Disable body parser - required for better-auth NestJS integration
   // The library will re-add body parsers after handling auth routes
   app = await NestFactory.create(AppModule, {

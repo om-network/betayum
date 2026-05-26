@@ -1,7 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from 'jose';
-
-const DEFAULT_CLERK_JWKS_URL = 'https://api.clerk.com/v1/jwks';
+import { getClerkAuthConfig } from './clerk-auth.config';
 
 export type VerifiedClerkSession = {
   clerkUserId: string;
@@ -26,8 +25,7 @@ export class ClerkSessionService {
       );
     }
 
-    const issuer = this.getRequiredEnv('CLERK_JWT_ISSUER');
-    const authorizedParties = this.getAuthorizedParties();
+    const { issuer, authorizedParties } = getClerkAuthConfig();
 
     try {
       const { payload } = await jwtVerify(token, this.getJwks(), {
@@ -78,8 +76,7 @@ export class ClerkSessionService {
         continue;
       }
 
-      const rawValue = rawValueParts.join('=');
-      return rawValue ? decodeURIComponent(rawValue) : null;
+      return this.decodeCookieValue(rawValueParts.join('='));
     }
 
     return null;
@@ -87,36 +84,23 @@ export class ClerkSessionService {
 
   private getJwks(): ReturnType<typeof createRemoteJWKSet> {
     if (!this.jwks) {
-      const jwksUrl = process.env.CLERK_JWKS_URL ?? DEFAULT_CLERK_JWKS_URL;
+      const { jwksUrl } = getClerkAuthConfig();
       this.jwks = createRemoteJWKSet(new URL(jwksUrl));
     }
 
     return this.jwks;
   }
 
-  private getRequiredEnv(name: string): string {
-    const value = process.env[name];
+  private decodeCookieValue(value: string): string | null {
     if (!value) {
-      throw new UnauthorizedException(`${name} is required for Clerk auth.`);
+      return null;
     }
 
-    return value;
-  }
-
-  private getAuthorizedParties(): string[] {
-    const rawValue = this.getRequiredEnv('CLERK_AUTHORIZED_PARTIES');
-    const parties = rawValue
-      .split(',')
-      .map((party) => party.trim())
-      .filter(Boolean);
-
-    if (!parties.length) {
-      throw new UnauthorizedException(
-        'CLERK_AUTHORIZED_PARTIES must include at least one origin.',
-      );
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      throw new UnauthorizedException('Invalid Clerk session cookie.');
     }
-
-    return parties;
   }
 
   private assertAuthorizedParty({
