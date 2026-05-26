@@ -1,14 +1,13 @@
 import '@trycompai/design-system/globals.css';
 
 import { env } from '@/env.mjs';
-import { auth } from '@/utils/auth';
+import { ClerkProvider } from '@clerk/nextjs';
 import { Analytics as DubAnalytics } from '@dub/analytics/react';
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@trycompai/design-system';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
-import { headers } from 'next/headers';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Toaster } from 'sonner';
 import { Providers } from './providers';
@@ -76,31 +75,29 @@ const font = localFont({
 });
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
   const dubIsEnabled = env.DUB_API_KEY !== undefined;
   const dubReferUrl = env.DUB_REFER_URL;
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        {dubIsEnabled && dubReferUrl && (
-          <DubAnalytics
-            domainsConfig={{
-              refer: dubReferUrl,
-            }}
-          />
-        )}
-      </head>
-      <body className={cn(`${GeistMono.variable} ${font.variable}`, 'antialiased')}>
-        <NuqsAdapter>
-          <Providers session={session}>{children}</Providers>
-        </NuqsAdapter>
-        <Toaster richColors />
-        <VercelAnalytics />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          {dubIsEnabled && dubReferUrl && (
+            <DubAnalytics
+              domainsConfig={{
+                refer: dubReferUrl,
+              }}
+            />
+          )}
+        </head>
+        <body className={cn(`${GeistMono.variable} ${font.variable}`, 'antialiased')}>
+          <NuqsAdapter>
+            <Providers>{children}</Providers>
+          </NuqsAdapter>
+          <Toaster richColors />
+          <VercelAnalytics />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
