@@ -5,6 +5,9 @@ import { ActingUserResolver } from './acting-user.service';
 import { ApiKeyGuard } from './api-key.guard';
 import { ApiKeyService } from './api-key.service';
 import { AuthController } from './auth.controller';
+import { ClerkIdentityService } from './clerk-identity.service';
+import { ClerkRequestAuthService } from './clerk-request-auth.service';
+import { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import { PermissionGuard } from './permission.guard';
 
@@ -28,6 +31,9 @@ import { PermissionGuard } from './permission.guard';
   providers: [
     ApiKeyService,
     ApiKeyGuard,
+    ClerkIdentityService,
+    ClerkRequestAuthService,
+    ClerkSessionService,
     HybridAuthGuard,
     PermissionGuard,
     ActingUserResolver,
@@ -35,6 +41,9 @@ import { PermissionGuard } from './permission.guard';
   exports: [
     ApiKeyService,
     ApiKeyGuard,
+    ClerkIdentityService,
+    ClerkRequestAuthService,
+    ClerkSessionService,
     HybridAuthGuard,
     PermissionGuard,
     ActingUserResolver,
