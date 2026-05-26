@@ -1,10 +1,7 @@
 'use client';
 
 import { completeInvitation } from '@/actions/organization/accept-invitation';
-import { authClient } from '@/utils/auth-client';
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
-import { Loader2 } from 'lucide-react';
+import { Button, Logo } from '@trycompai/design-system';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -20,15 +17,6 @@ export function AcceptInvite({
     onSuccess: async (result) => {
       if (result.data?.data?.organizationId) {
         const orgId = result.data.data.organizationId;
-        try {
-          // Set the active organization before redirecting
-          await authClient.organization.setActive({
-            organizationId: orgId,
-          });
-        } catch (error) {
-          console.error('Failed to set active organization:', error);
-          // Continue with redirect even if setActive fails
-        }
         // Use hard redirect to prevent React re-rendering the page
         // Server actions cause the parent Server Component to re-fetch data,
         // which would show "already accepted" before router.replace() executes
@@ -52,7 +40,7 @@ export function AcceptInvite({
     <div className="bg-card relative w-full max-w-[440px] rounded-sm border p-8 shadow-lg">
       <div className="mb-8 flex justify-center">
         <Link href="/">
-          <Icons.Logo />
+          <Logo />
         </Link>
       </div>
 
@@ -68,16 +56,11 @@ export function AcceptInvite({
         </p>
       </div>
 
-      <Button onClick={handleAccept} className="w-full" size="sm" disabled={isPending}>
-        {isPending ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Accepting...
-          </>
-        ) : (
-          'Accept Invitation'
-        )}
-      </Button>
+      <div className="flex w-full justify-center">
+        <Button onClick={handleAccept} disabled={isPending}>
+          {isPending ? 'Accepting...' : 'Accept Invitation'}
+        </Button>
+      </div>
     </div>
   );
 }
