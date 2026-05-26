@@ -1,12 +1,11 @@
 'use server';
 
+import { serverApi } from '@/lib/api-server';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
-import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { headers } from 'next/headers';
 import { z } from 'zod';
-import { authActionClientWithoutOrg } from '../safe-action';
+import { actionClientWithMeta } from '../safe-action';
 import type { ActionResponse } from '../types';
 
 async function validateInviteCode(inviteCode: string, invitedEmail: string) {
@@ -33,7 +32,7 @@ const completeInvitationSchema = z.object({
   inviteCode: z.string(),
 });
 
-export const completeInvitation = authActionClientWithoutOrg
+export const completeInvitation = actionClientWithMeta
   .metadata({
     name: 'complete-invitation',
     track: {
@@ -45,7 +44,6 @@ export const completeInvitation = authActionClientWithoutOrg
   .action(
     async ({
       parsedInput,
-      ctx,
     }): Promise<
       ActionResponse<{
         accepted: boolean;
@@ -53,7 +51,10 @@ export const completeInvitation = authActionClientWithoutOrg
       }>
     > => {
       const { inviteCode } = parsedInput;
-      const user = ctx.user;
+      const meRes = await serverApi.get<{
+        user: { id: string; email: string; name: string | null } | null;
+      }>('/v1/auth/me');
+      const user = meRes.data?.user;
 
       if (!user || !user.email) {
         throw new Error('Unauthorized');
@@ -74,8 +75,6 @@ export const completeInvitation = authActionClientWithoutOrg
         });
 
         if (existingMembership) {
-          // Reactivate member before setting active org, since better-auth
-          // validates membership status when setting the active organization.
           if (existingMembership.deactivated) {
             await db.member.update({
               where: { id: existingMembership.id },
@@ -83,13 +82,6 @@ export const completeInvitation = authActionClientWithoutOrg
                 deactivated: false,
                 role: invitation.role,
               },
-            });
-          }
-
-          if (ctx.session.activeOrganizationId !== invitation.organizationId) {
-            await auth.api.setActiveOrganization({
-              headers: await headers(),
-              body: { organizationId: invitation.organizationId },
             });
           }
 
@@ -135,11 +127,6 @@ export const completeInvitation = authActionClientWithoutOrg
           data: {
             status: 'accepted',
           },
-        });
-
-        await auth.api.setActiveOrganization({
-          headers: await headers(),
-          body: { organizationId: invitation.organizationId },
         });
 
         revalidatePath(`/${invitation.organization.id}`);
