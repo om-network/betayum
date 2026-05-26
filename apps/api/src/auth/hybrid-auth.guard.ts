@@ -8,7 +8,6 @@ import {
 import { Reflector } from '@nestjs/core';
 import { db } from '@db';
 import { ApiKeyService } from './api-key.service';
-import { auth } from './auth.server';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { SKIP_ORG_CHECK_KEY } from './skip-org-check.decorator';
@@ -147,110 +146,17 @@ export class HybridAuthGuard implements CanActivate {
     request: AuthenticatedRequest,
     skipOrgCheck = false,
   ): Promise<boolean> {
-    if (process.env.AUTH_PROVIDER === 'clerk') {
-      return this.clerkRequestAuthService.authenticate(request, skipOrgCheck);
-    }
-
     try {
-      // Build headers for better-auth SDK
-      // Forwards both Authorization (bearer session token) and Cookie headers
-      const headers = new Headers();
-      const authHeader = request.headers['authorization'] as string;
-      if (authHeader) {
-        headers.set('authorization', authHeader);
-      }
-      const cookieHeader = request.headers['cookie'] as string;
-      if (cookieHeader) {
-        headers.set('cookie', cookieHeader);
-      }
-
-      if (!authHeader && !cookieHeader) {
-        throw new UnauthorizedException(
-          'Authentication required: Provide either X-API-Key, Bearer token, or session cookie',
-        );
-      }
-
-      // Use better-auth SDK to resolve session
-      // Works with both bearer session tokens and httpOnly cookies
-      const session = await auth.api.getSession({ headers });
-
-      if (!session) {
-        throw new UnauthorizedException('Invalid or expired session');
-      }
-
-      const { user, session: sessionData } = session;
-
-      if (!user?.id) {
-        throw new UnauthorizedException(
-          'Invalid session: missing user information',
-        );
-      }
-
-      const organizationId = sessionData.activeOrganizationId;
-      if (!organizationId && !skipOrgCheck) {
-        throw new UnauthorizedException(
-          'No active organization. Please select an organization.',
-        );
-      }
-
-      // Fetch member data for role and department info
-      // Skip if no active org or if org check is skipped (e.g., during onboarding)
-      let userRoles: string[] | null = null;
-      if (organizationId && !skipOrgCheck) {
-        const member = await db.member.findFirst({
-          where: {
-            userId: user.id,
-            organizationId,
-            deactivated: false,
-          },
-          select: {
-            id: true,
-            role: true,
-            department: true,
-          },
-        });
-
-        if (!member) {
-          throw new UnauthorizedException(
-            `User is not a member of the active organization`,
-          );
-        }
-
-        userRoles = member.role ? member.role.split(',') : null;
-        request.memberId = member.id;
-        request.memberDepartment = member.department;
-      }
-
-      // Set request context for session auth
-      request.userId = user.id;
-      request.userEmail = user.email;
-      request.userRoles = userRoles;
-      request.organizationId = organizationId || '';
-      request.authType = 'session';
-      request.isApiKey = false;
-      request.isServiceToken = false;
-      request.sessionId = sessionData.id;
-      request.sessionDeviceAgent =
-        (sessionData as Record<string, unknown>).deviceAgent === true;
-      // Resolve isPlatformAdmin from the User.role column (via better-auth session),
-      // not from the member relation. This ensures the flag is set regardless of
-      // org membership or skipOrgCheck.
-      request.isPlatformAdmin =
-        (user as { role?: string | null }).role === 'admin';
-
-      const rawImpersonatedBy = (sessionData as Record<string, unknown>)
-        .impersonatedBy;
-      if (typeof rawImpersonatedBy === 'string' && rawImpersonatedBy) {
-        request.impersonatedBy = rawImpersonatedBy;
-      }
-
-      return true;
+      return this.clerkRequestAuthService.authenticate(request, skipOrgCheck);
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
 
-      console.error('[HybridAuthGuard] Session verification failed:', error);
+      this.logger.error(
+        '[HybridAuthGuard] Clerk session verification failed:',
+        error,
+      );
       throw new UnauthorizedException('Invalid or expired session');
     }
   }
