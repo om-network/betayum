@@ -1,9 +1,7 @@
 'use client';
 
-import { authClient } from '@/utils/auth-client';
-import { Button } from '@trycompai/ui/button';
-import { DropdownMenuItem } from '@trycompai/ui/dropdown-menu';
-import { useRouter } from 'next/navigation';
+import { useClerk } from '@clerk/nextjs';
+import { Button, DropdownMenuItem } from '@trycompai/design-system';
 import { useState } from 'react';
 
 export function SignOut({
@@ -15,25 +13,21 @@ export function SignOut({
   className?: string;
   size?: 'default' | 'sm' | 'lg' | 'icon';
 }) {
-  const router = useRouter();
+  const { signOut } = useClerk();
   const [isLoading, setLoading] = useState(false);
 
   const handleSignOut = async () => {
     setLoading(true);
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push('/auth');
-        },
-      },
-    });
+    await signOut({ redirectUrl: '/auth' });
   };
 
   if (asButton) {
     return (
-      <Button onClick={handleSignOut} className={className} size={size}>
-        {isLoading ? 'Loading...' : 'Sign out'}
-      </Button>
+      <div className={className}>
+        <Button onClick={handleSignOut} size={size} loading={isLoading}>
+          Sign out
+        </Button>
+      </div>
     );
   }
 

@@ -6,7 +6,7 @@ interface MockRequestOptions {
   headers?: Record<string, string>;
   searchParams?: Promise<Record<string, string>>;
   method?: string;
-  /** When true, the request will include a session cookie to pass cookie-based auth checks. Defaults to false. */
+  /** When true, the request includes a Clerk session cookie for auth checks. Defaults to false. */
   authenticated?: boolean;
 }
 
@@ -31,7 +31,7 @@ export async function createMockRequest(
   });
 
   if (authenticated) {
-    headersInit.set('cookie', 'better-auth.session_token=mock_session_token');
+    headersInit.set('cookie', '__session=mock_session_token');
   }
 
   // Create the request
