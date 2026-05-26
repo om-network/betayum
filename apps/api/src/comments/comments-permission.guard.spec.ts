@@ -5,6 +5,11 @@ import { Reflector } from '@nestjs/core';
 // Mock @db before importing the guard so the Prisma client doesn't try to
 // initialize against a real DATABASE_URL in this unit-test env.
 jest.mock('@db', () => ({
+  db: {
+    organizationRole: {
+      findMany: jest.fn(),
+    },
+  },
   CommentEntityType: {
     task: 'task',
     vendor: 'vendor',
@@ -12,6 +17,11 @@ jest.mock('@db', () => ({
     policy: 'policy',
     finding: 'finding',
   },
+}));
+
+jest.mock('@trycompai/auth', () => ({
+  BUILT_IN_ROLE_PERMISSIONS: {},
+  parseRolePermissions: jest.fn(),
 }));
 
 // Mock the permission.guard module so we don't pull better-auth's init chain
@@ -27,18 +37,16 @@ jest.mock('../auth/service-token.config', () => ({
     resolveServiceByNameMock(...args),
 }));
 
-jest.mock('../auth/auth.server', () => ({
-  auth: { api: { hasPermission: jest.fn() } },
-}));
-
+import { PermissionEvaluatorService } from '../auth/permission-evaluator.service';
 import { CommentsPermissionGuard } from './comments-permission.guard';
-import { auth } from '../auth/auth.server';
 
 type MockRequest = {
   method: string;
   query?: Record<string, unknown>;
   body?: Record<string, unknown>;
   headers: Record<string, string>;
+  organizationId?: string;
+  userRoles?: string[] | null;
   isApiKey?: boolean;
   isServiceToken?: boolean;
   isPlatformAdmin?: boolean;
@@ -56,7 +64,10 @@ function makeContext(request: MockRequest): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
-const hasPermissionMock = auth.api.hasPermission as unknown as jest.Mock;
+const hasPermissionsMock = jest.fn();
+const permissionEvaluator = {
+  hasPermissions: (...args: unknown[]) => hasPermissionsMock(...args),
+} as unknown as PermissionEvaluatorService;
 
 function reflectorWith(resource: string, action: string): Reflector {
   const reflector = new Reflector();
@@ -66,98 +77,102 @@ function reflectorWith(resource: string, action: string): Reflector {
   return reflector;
 }
 
+function createGuard(
+  resource: string,
+  action: string,
+): CommentsPermissionGuard {
+  return new CommentsPermissionGuard(
+    reflectorWith(resource, action),
+    permissionEvaluator,
+  );
+}
+
 describe('CommentsPermissionGuard', () => {
   beforeEach(() => {
-    hasPermissionMock.mockReset();
+    hasPermissionsMock.mockReset();
   });
 
   it('resolves entityType from POST body and checks finding:update when finding', async () => {
-    hasPermissionMock.mockResolvedValueOnce({ success: true });
-    const guard = new CommentsPermissionGuard(
-      reflectorWith('task', 'update'),
-    );
+    hasPermissionsMock.mockResolvedValueOnce(true);
+    const guard = createGuard('task', 'update');
     const context = makeContext({
       method: 'POST',
       body: { entityType: 'finding' },
       headers: { cookie: 'session=abc' },
+      organizationId: 'org_123',
+      userRoles: ['auditor'],
     });
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(hasPermissionMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          permissions: { finding: ['update'] },
-        }),
-      }),
-    );
+    expect(hasPermissionsMock).toHaveBeenCalledWith({
+      organizationId: 'org_123',
+      roles: ['auditor'],
+      permissions: { finding: ['update'] },
+    });
   });
 
   it('resolves entityType from GET query and checks finding:read when finding', async () => {
-    hasPermissionMock.mockResolvedValueOnce({ success: true });
-    const guard = new CommentsPermissionGuard(reflectorWith('task', 'read'));
+    hasPermissionsMock.mockResolvedValueOnce(true);
+    const guard = createGuard('task', 'read');
     const context = makeContext({
       method: 'GET',
       query: { entityType: 'finding' },
       headers: { cookie: 'session=abc' },
+      organizationId: 'org_123',
+      userRoles: ['auditor'],
     });
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(hasPermissionMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          permissions: { finding: ['read'] },
-        }),
-      }),
-    );
+    expect(hasPermissionsMock).toHaveBeenCalledWith({
+      organizationId: 'org_123',
+      roles: ['auditor'],
+      permissions: { finding: ['read'] },
+    });
   });
 
   it('falls back to the metadata resource when entityType is missing (PUT)', async () => {
-    hasPermissionMock.mockResolvedValueOnce({ success: true });
-    const guard = new CommentsPermissionGuard(
-      reflectorWith('task', 'update'),
-    );
+    hasPermissionsMock.mockResolvedValueOnce(true);
+    const guard = createGuard('task', 'update');
     const context = makeContext({
       method: 'PUT',
       body: { content: 'edit' },
       headers: { cookie: 'session=abc' },
+      organizationId: 'org_123',
+      userRoles: ['admin'],
     });
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(hasPermissionMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          permissions: { task: ['update'] },
-        }),
-      }),
-    );
+    expect(hasPermissionsMock).toHaveBeenCalledWith({
+      organizationId: 'org_123',
+      roles: ['admin'],
+      permissions: { task: ['update'] },
+    });
   });
 
   it('falls back to the metadata resource for unknown entityType values', async () => {
-    hasPermissionMock.mockResolvedValueOnce({ success: true });
-    const guard = new CommentsPermissionGuard(
-      reflectorWith('task', 'update'),
-    );
+    hasPermissionsMock.mockResolvedValueOnce(true);
+    const guard = createGuard('task', 'update');
     const context = makeContext({
       method: 'POST',
       body: { entityType: 'not-an-entity' },
       headers: { cookie: 'session=abc' },
+      organizationId: 'org_123',
+      userRoles: ['admin'],
     });
     await guard.canActivate(context);
-    expect(hasPermissionMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: expect.objectContaining({
-          permissions: { task: ['update'] },
-        }),
-      }),
-    );
+    expect(hasPermissionsMock).toHaveBeenCalledWith({
+      organizationId: 'org_123',
+      roles: ['admin'],
+      permissions: { task: ['update'] },
+    });
   });
 
-  it('throws ForbiddenException when better-auth rejects', async () => {
-    hasPermissionMock.mockResolvedValueOnce({ success: false });
-    const guard = new CommentsPermissionGuard(
-      reflectorWith('task', 'update'),
-    );
+  it('throws ForbiddenException when permission evaluation rejects', async () => {
+    hasPermissionsMock.mockResolvedValueOnce(false);
+    const guard = createGuard('task', 'update');
     const context = makeContext({
       method: 'POST',
       body: { entityType: 'finding' },
       headers: { cookie: 'session=abc' },
+      organizationId: 'org_123',
+      userRoles: ['employee'],
     });
     await expect(guard.canActivate(context)).rejects.toThrow(
       ForbiddenException,
@@ -165,9 +180,7 @@ describe('CommentsPermissionGuard', () => {
   });
 
   it('allows API keys whose scopes include the resolved permission', async () => {
-    const guard = new CommentsPermissionGuard(
-      reflectorWith('task', 'update'),
-    );
+    const guard = createGuard('task', 'update');
     const context = makeContext({
       method: 'POST',
       body: { entityType: 'finding' },
@@ -176,24 +189,24 @@ describe('CommentsPermissionGuard', () => {
     });
     // Inject explicit scope set on the request — entityType=finding requires
     // `finding:update`, NOT `task:update`.
-    (context.switchToHttp().getRequest() as { apiKeyScopes: string[] }).apiKeyScopes =
-      ['finding:update'];
+    (
+      context.switchToHttp().getRequest() as { apiKeyScopes: string[] }
+    ).apiKeyScopes = ['finding:update'];
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(hasPermissionMock).not.toHaveBeenCalled();
+    expect(hasPermissionsMock).not.toHaveBeenCalled();
   });
 
   it('rejects API keys whose scopes do not include the resolved permission (no bypass)', async () => {
-    const guard = new CommentsPermissionGuard(
-      reflectorWith('task', 'update'),
-    );
+    const guard = createGuard('task', 'update');
     const context = makeContext({
       method: 'POST',
       body: { entityType: 'finding' },
       headers: {},
       isApiKey: true,
     });
-    (context.switchToHttp().getRequest() as { apiKeyScopes: string[] }).apiKeyScopes =
-      ['task:update']; // wrong scope
+    (
+      context.switchToHttp().getRequest() as { apiKeyScopes: string[] }
+    ).apiKeyScopes = ['task:update']; // wrong scope
     await expect(guard.canActivate(context)).rejects.toThrow(
       ForbiddenException,
     );
@@ -203,17 +216,16 @@ describe('CommentsPermissionGuard', () => {
     resolveServiceByNameMock.mockReturnValueOnce({
       permissions: ['task:update'],
     });
-    const guard = new CommentsPermissionGuard(
-      reflectorWith('task', 'update'),
-    );
+    const guard = createGuard('task', 'update');
     const context = makeContext({
       method: 'POST',
       body: { entityType: 'finding' },
       headers: {},
       isServiceToken: true,
     });
-    (context.switchToHttp().getRequest() as { serviceName: string }).serviceName =
-      'svc-test';
+    (
+      context.switchToHttp().getRequest() as { serviceName: string }
+    ).serviceName = 'svc-test';
     await expect(guard.canActivate(context)).rejects.toThrow(
       ForbiddenException,
     );
@@ -223,24 +235,21 @@ describe('CommentsPermissionGuard', () => {
     resolveServiceByNameMock.mockReturnValueOnce({
       permissions: ['finding:update'],
     });
-    const guard = new CommentsPermissionGuard(
-      reflectorWith('task', 'update'),
-    );
+    const guard = createGuard('task', 'update');
     const context = makeContext({
       method: 'POST',
       body: { entityType: 'finding' },
       headers: {},
       isServiceToken: true,
     });
-    (context.switchToHttp().getRequest() as { serviceName: string }).serviceName =
-      'svc-test';
+    (
+      context.switchToHttp().getRequest() as { serviceName: string }
+    ).serviceName = 'svc-test';
     await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
-  it('returns true without invoking better-auth for platform admins', async () => {
-    const guard = new CommentsPermissionGuard(
-      reflectorWith('task', 'update'),
-    );
+  it('returns true without invoking evaluator for platform admins', async () => {
+    const guard = createGuard('task', 'update');
     const context = makeContext({
       method: 'POST',
       body: { entityType: 'finding' },
@@ -248,13 +257,13 @@ describe('CommentsPermissionGuard', () => {
       isPlatformAdmin: true,
     });
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(hasPermissionMock).not.toHaveBeenCalled();
+    expect(hasPermissionsMock).not.toHaveBeenCalled();
   });
 
   it('returns true when no @RequirePermission metadata is set (endpoint opted out)', async () => {
     const reflector = new Reflector();
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
-    const guard = new CommentsPermissionGuard(reflector);
+    const guard = new CommentsPermissionGuard(reflector, permissionEvaluator);
     const context = makeContext({
       method: 'POST',
       body: { entityType: 'finding' },
