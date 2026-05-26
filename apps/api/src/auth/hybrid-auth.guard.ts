@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { db } from '@db';
 import { ApiKeyService } from './api-key.service';
 import { auth } from './auth.server';
+import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { SKIP_ORG_CHECK_KEY } from './skip-org-check.decorator';
 import { resolveServiceByToken } from './service-token.config';
@@ -21,6 +22,7 @@ export class HybridAuthGuard implements CanActivate {
   constructor(
     private readonly apiKeyService: ApiKeyService,
     private readonly reflector: Reflector,
+    private readonly clerkRequestAuthService: ClerkRequestAuthService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -145,6 +147,10 @@ export class HybridAuthGuard implements CanActivate {
     request: AuthenticatedRequest,
     skipOrgCheck = false,
   ): Promise<boolean> {
+    if (process.env.AUTH_PROVIDER === 'clerk') {
+      return this.clerkRequestAuthService.authenticate(request, skipOrgCheck);
+    }
+
     try {
       // Build headers for better-auth SDK
       // Forwards both Authorization (bearer session token) and Cookie headers
