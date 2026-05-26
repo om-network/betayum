@@ -5,6 +5,9 @@ const mockDb = {
   member: {
     findFirst: jest.fn(),
   },
+  session: {
+    findFirst: jest.fn(),
+  },
 };
 
 jest.mock('@db', () => ({ db: mockDb }));
@@ -82,6 +85,7 @@ describe('HybridAuthGuard with Clerk session auth', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockDb.session.findFirst.mockResolvedValue(null);
     guard = new HybridAuthGuard(
       apiKeyService,
       reflector,
@@ -246,6 +250,7 @@ describe('HybridAuthGuard with Clerk session auth', () => {
       key: 'trigger',
       definition: {
         name: 'internal-worker',
+        envVar: 'SERVICE_TOKEN_TRIGGER',
         permissions: ['control:read'],
       },
     });

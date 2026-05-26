@@ -146,6 +146,14 @@ export class HybridAuthGuard implements CanActivate {
     request: AuthenticatedRequest,
     skipOrgCheck = false,
   ): Promise<boolean> {
+    const deviceAgentSession = await this.tryDeviceAgentSessionAuth(
+      request,
+      skipOrgCheck,
+    );
+    if (deviceAgentSession) {
+      return true;
+    }
+
     try {
       return this.clerkRequestAuthService.authenticate(request, skipOrgCheck);
     } catch (error) {
@@ -159,5 +167,88 @@ export class HybridAuthGuard implements CanActivate {
       );
       throw new UnauthorizedException('Invalid or expired session');
     }
+  }
+
+  private async tryDeviceAgentSessionAuth(
+    request: AuthenticatedRequest,
+    skipOrgCheck: boolean,
+  ): Promise<boolean> {
+    const authorization = request.headers['authorization'] as
+      | string
+      | undefined;
+    const token = authorization?.startsWith('Bearer ')
+      ? authorization.slice('Bearer '.length)
+      : undefined;
+    if (!token) {
+      return false;
+    }
+
+    const session = await db.session.findFirst({
+      where: {
+        token,
+        deviceAgent: true,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        userId: true,
+        user: {
+          select: {
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      return false;
+    }
+
+    const organizationId = request.headers['x-organization-id'] as
+      | string
+      | undefined;
+    let userRoles: string[] | null = null;
+    if (organizationId && !skipOrgCheck) {
+      const member = await db.member.findFirst({
+        where: {
+          userId: session.userId,
+          organizationId,
+          deactivated: false,
+        },
+        select: {
+          id: true,
+          role: true,
+          department: true,
+        },
+      });
+
+      if (!member) {
+        throw new UnauthorizedException(
+          'User is not a member of the active organization',
+        );
+      }
+
+      request.memberId = member.id;
+      request.memberDepartment = member.department;
+      userRoles = member.role ? member.role.split(',') : null;
+    } else if (!organizationId && !skipOrgCheck) {
+      throw new UnauthorizedException(
+        'No active organization. Please select an organization.',
+      );
+    }
+
+    request.userId = session.userId;
+    request.userEmail = session.user.email;
+    request.userRoles = userRoles;
+    request.organizationId = organizationId || '';
+    request.authType = 'session';
+    request.isApiKey = false;
+    request.isServiceToken = false;
+    request.isPlatformAdmin = session.user.role === 'admin';
+    request.sessionId = session.id;
+    request.sessionDeviceAgent = true;
+
+    return true;
   }
 }
