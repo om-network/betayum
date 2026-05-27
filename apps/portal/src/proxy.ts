@@ -8,5 +8,5 @@ async function handleProxy(request: NextRequest) {
 export const proxy = clerkMiddleware(async (_auth, request) => handleProxy(request));
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|monitoring|ingest).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|monitoring|ingest).*)'],
 };
