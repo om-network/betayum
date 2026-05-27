@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockGet = vi.fn();
 const mockPost = vi.fn();
 const mockDelete = vi.fn();
+const mockFetch = vi.fn();
 
 vi.mock('@/lib/api-client', () => ({
   api: {
@@ -13,15 +14,8 @@ vi.mock('@/lib/api-client', () => ({
   },
 }));
 
-vi.mock('@/utils/auth-client', () => ({
-  authClient: {
-    admin: { impersonateUser: vi.fn() },
-    organization: { setActive: vi.fn() },
-  },
-}));
-
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
 import { MembersTab } from './MembersTab';
@@ -66,6 +60,7 @@ const mockInvitations = [
 describe('MembersTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal('fetch', mockFetch);
   });
 
   it('renders members table', async () => {
@@ -165,8 +160,7 @@ describe('MembersTab', () => {
   });
 
   describe('impersonation confirmation dialog', () => {
-    it('does NOT call impersonateUser immediately on Login As click', async () => {
-      const { authClient } = await import('@/utils/auth-client');
+    it('does NOT start support context immediately on Login As click', async () => {
       mockGet.mockResolvedValue({ data: [] });
       render(
         <MembersTab
@@ -179,7 +173,7 @@ describe('MembersTab', () => {
       const loginButtons = screen.getAllByRole('button', { name: /login as/i });
       fireEvent.click(loginButtons[0]);
 
-      expect(authClient.admin.impersonateUser).not.toHaveBeenCalled();
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('shows confirmation dialog when Login As is clicked', async () => {
@@ -200,7 +194,7 @@ describe('MembersTab', () => {
       });
 
       expect(
-        screen.getByText(/you are about to log in as/i),
+        screen.getByText(/you are about to start support context as/i),
       ).toBeInTheDocument();
     });
 
@@ -219,7 +213,7 @@ describe('MembersTab', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/performed under their identity/i),
+          screen.getByText(/keep your Clerk admin session active/i),
         ).toBeInTheDocument();
       });
     });
@@ -248,10 +242,11 @@ describe('MembersTab', () => {
       });
     });
 
-    it('calls impersonateUser only after confirming the dialog', async () => {
-      const { authClient } = await import('@/utils/auth-client');
-      (authClient.admin.impersonateUser as ReturnType<typeof vi.fn>).mockResolvedValue({});
-      (authClient.organization.setActive as ReturnType<typeof vi.fn>).mockResolvedValue({});
+    it('starts support context only after confirming the dialog', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: vi.fn(),
+      });
       mockGet.mockResolvedValue({ data: [] });
 
       render(
@@ -269,11 +264,20 @@ describe('MembersTab', () => {
         expect(screen.getByText(/impersonate user/i)).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /impersonate$/i }));
+      fireEvent.click(
+        screen.getByRole('button', { name: /start support context/i }),
+      );
 
       await waitFor(() => {
-        expect(authClient.admin.impersonateUser).toHaveBeenCalledWith({
-          userId: 'usr_1',
+        expect(mockFetch).toHaveBeenCalledWith('/api/admin/support-context', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            organizationId: 'org_1',
+            targetUserId: 'usr_1',
+          }),
         });
       });
     });

@@ -11,6 +11,7 @@ import { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import { PermissionEvaluatorService } from './permission-evaluator.service';
 import { PermissionGuard } from './permission.guard';
+import { SupportContextService } from './support-context.service';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PermissionGuard } from './permission.guard';
     HybridAuthGuard,
     PermissionEvaluatorService,
     PermissionGuard,
+    SupportContextService,
     ActingUserResolver,
   ],
   exports: [
@@ -49,6 +51,7 @@ import { PermissionGuard } from './permission.guard';
     HybridAuthGuard,
     PermissionEvaluatorService,
     PermissionGuard,
+    SupportContextService,
     ActingUserResolver,
     BetterAuthModule,
   ],
