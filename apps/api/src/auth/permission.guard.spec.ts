@@ -1,20 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { PermissionEvaluatorService } from './permission-evaluator.service';
 import { PermissionGuard, PERMISSIONS_KEY } from './permission.guard';
 
-// Mock auth.server to provide auth.api.hasPermission
-const mockHasPermission = jest.fn();
-jest.mock('./auth.server', () => ({
-  auth: {
-    api: {
-      hasPermission: (...args: unknown[]) => mockHasPermission(...args),
+jest.mock('@db', () => ({
+  db: {
+    organizationRole: {
+      findMany: jest.fn(),
     },
   },
 }));
 
 // Mock @trycompai/auth to avoid ESM issues with better-auth
 jest.mock('@trycompai/auth', () => ({
+  BUILT_IN_ROLE_PERMISSIONS: {},
+  parseRolePermissions: jest.fn(),
   RESTRICTED_ROLES: ['employee', 'contractor'],
   PRIVILEGED_ROLES: ['owner', 'admin', 'auditor'],
 }));
@@ -22,13 +23,13 @@ jest.mock('@trycompai/auth', () => ({
 describe('PermissionGuard', () => {
   let guard: PermissionGuard;
   let reflector: Reflector;
+  const mockHasPermissions = jest.fn();
 
   const createMockExecutionContext = (
     request: Partial<{
       isApiKey: boolean;
       apiKeyScopes: string[] | undefined;
       userRoles: string[] | null;
-      headers: Record<string, string>;
       organizationId: string;
       method: string;
       url: string;
@@ -40,7 +41,6 @@ describe('PermissionGuard', () => {
           isApiKey: false,
           apiKeyScopes: undefined,
           userRoles: null,
-          headers: {},
           organizationId: 'org_123',
           method: 'GET',
           url: '/v1/test',
@@ -54,12 +54,19 @@ describe('PermissionGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PermissionGuard, Reflector],
+      providers: [
+        PermissionGuard,
+        Reflector,
+        {
+          provide: PermissionEvaluatorService,
+          useValue: { hasPermissions: mockHasPermissions },
+        },
+      ],
     }).compile();
 
     guard = module.get<PermissionGuard>(PermissionGuard);
     reflector = module.get<Reflector>(Reflector);
-    mockHasPermission.mockReset();
+    mockHasPermissions.mockReset();
   });
 
   describe('canActivate', () => {
@@ -170,77 +177,66 @@ describe('PermissionGuard', () => {
       );
     });
 
-    it('should deny access when no authorization or cookie header present', async () => {
+    it('should deny access when evaluator returns false', async () => {
       jest
         .spyOn(reflector, 'getAllAndOverride')
         .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
-      const context = createMockExecutionContext({
-        headers: {},
-      });
+      mockHasPermissions.mockResolvedValue(false);
+
+      const context = createMockExecutionContext({ userRoles: ['auditor'] });
 
       await expect(guard.canActivate(context)).rejects.toThrow(
         ForbiddenException,
       );
+      expect(mockHasPermissions).toHaveBeenCalledWith({
+        organizationId: 'org_123',
+        roles: ['auditor'],
+        permissions: { control: ['delete'] },
+      });
     });
 
-    it('should allow access when SDK returns success', async () => {
+    it('should allow access when evaluator returns true', async () => {
       jest
         .spyOn(reflector, 'getAllAndOverride')
         .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
-      mockHasPermission.mockResolvedValue({ success: true, error: null });
-
-      const context = createMockExecutionContext({
-        headers: { authorization: 'Bearer token' },
-      });
+      mockHasPermissions.mockResolvedValue(true);
+      const context = createMockExecutionContext({ userRoles: ['admin'] });
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
-      // The body MUST include `permission: undefined` explicitly — zod 4 in
-      // better-auth's hasPermission schema requires both discriminated-union
-      // keys to be present, and treats omitted-vs-undefined as different.
-      // Without the explicit undefined, every cookie-authenticated request
-      // 403s with "Unable to verify permissions". Pin this in the test so
-      // a future refactor that drops the field gets caught.
-      expect(mockHasPermission).toHaveBeenCalledWith({
-        headers: expect.any(Headers),
-        body: {
-          permissions: { control: ['delete'] },
-          permission: undefined,
-        },
+      expect(mockHasPermissions).toHaveBeenCalledWith({
+        organizationId: 'org_123',
+        roles: ['admin'],
+        permissions: { control: ['delete'] },
       });
     });
 
-    it('should deny access when SDK returns failure', async () => {
+    it('should merge duplicate resources before checking permissions', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([
+        { resource: 'control', actions: ['read'] },
+        { resource: 'control', actions: ['update', 'read'] },
+      ]);
+
+      mockHasPermissions.mockResolvedValue(true);
+      const context = createMockExecutionContext({ userRoles: ['admin'] });
+
+      await expect(guard.canActivate(context)).resolves.toBe(true);
+      expect(mockHasPermissions).toHaveBeenCalledWith({
+        organizationId: 'org_123',
+        roles: ['admin'],
+        permissions: { control: ['read', 'update'] },
+      });
+    });
+
+    it('should deny access when evaluator throws', async () => {
       jest
         .spyOn(reflector, 'getAllAndOverride')
         .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
-      mockHasPermission.mockResolvedValue({
-        success: false,
-        error: 'Permission denied',
-      });
-
-      const context = createMockExecutionContext({
-        headers: { authorization: 'Bearer token' },
-      });
-
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it('should deny access when SDK throws', async () => {
-      jest
-        .spyOn(reflector, 'getAllAndOverride')
-        .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
-
-      mockHasPermission.mockRejectedValue(new Error('SDK error'));
-
-      const context = createMockExecutionContext({
-        headers: { authorization: 'Bearer token' },
-      });
+      mockHasPermissions.mockRejectedValue(new Error('evaluator error'));
+      const context = createMockExecutionContext({ userRoles: ['admin'] });
 
       await expect(guard.canActivate(context)).rejects.toThrow(
         ForbiddenException,

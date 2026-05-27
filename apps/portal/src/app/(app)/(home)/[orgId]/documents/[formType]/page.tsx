@@ -1,4 +1,4 @@
-import { auth } from '@/app/lib/auth';
+import { getPortalAuthContext, getPortalOrganization } from '@/app/lib/portal-auth';
 import { env } from '@/env.mjs';
 import { db } from '@db/server';
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
@@ -10,6 +10,22 @@ import { evidenceFormDefinitions, evidenceFormTypeSchema } from '../forms';
 import { PortalFormClient } from './PortalFormClient';
 
 const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
+
+type PortalFieldOption = {
+  label: string;
+  value: string;
+};
+
+type PortalFieldDefinition = {
+  key: string;
+  label: string;
+  type: string;
+  required?: boolean;
+  placeholder?: string;
+  description?: string;
+  options?: PortalFieldOption[];
+  accept?: string;
+};
 
 export default async function PortalCompanyFormPage({
   params,
@@ -54,9 +70,9 @@ export default async function PortalCompanyFormPage({
     'use server';
 
     const reqHeaders = await getHeaders();
-    const session = await auth.api.getSession({ headers: reqHeaders });
+    const authContext = await getPortalAuthContext({ headers: reqHeaders });
 
-    if (!session?.user?.id) {
+    if (!authContext || !getPortalOrganization(authContext, orgId)) {
       redirect('/auth');
     }
 
@@ -69,6 +85,7 @@ export default async function PortalCompanyFormPage({
     const apiHeaders = {
       'Content-Type': 'application/json',
       Cookie: cookie,
+      'X-Organization-Id': orgId,
     };
 
     try {
@@ -147,7 +164,7 @@ export default async function PortalCompanyFormPage({
   }
 
   // Serialize fields to plain objects for client component
-  const serializedFields = visibleFields.map((field) => ({
+  const serializedFields = visibleFields.map((field: PortalFieldDefinition) => ({
     key: field.key,
     label: field.label,
     type: field.type,
