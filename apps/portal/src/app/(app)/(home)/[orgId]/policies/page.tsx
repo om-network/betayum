@@ -1,4 +1,4 @@
-import { auth } from '@/app/lib/auth';
+import { getPortalAuthContext, getPortalOrganization } from '@/app/lib/portal-auth';
 import { db } from '@db/server';
 import {
   Breadcrumb,
@@ -22,17 +22,19 @@ export default async function SignedPoliciesPage({
 }) {
   const { orgId } = await params;
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const authContext = await getPortalAuthContext({ headers: await headers() });
 
-  if (!session?.user) {
+  if (!authContext) {
     redirect('/auth');
+  }
+
+  if (!getPortalOrganization(authContext, orgId)) {
+    redirect('/');
   }
 
   const member = await db.member.findFirst({
     where: {
-      userId: session.user.id,
+      userId: authContext.user.id,
       organizationId: orgId,
       deactivated: false,
     },
@@ -81,11 +83,7 @@ export default async function SignedPoliciesPage({
         ) : (
           <div className="space-y-2">
             {policies.map((policy) => (
-              <Link
-                key={policy.id}
-                href={`/${orgId}/policy/${policy.id}`}
-                className="block"
-              >
+              <Link key={policy.id} href={`/${orgId}/policy/${policy.id}`} className="block">
                 <Card>
                   <CardContent>
                     <div className="flex items-center gap-3">

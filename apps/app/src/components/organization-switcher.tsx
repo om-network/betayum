@@ -1,7 +1,6 @@
 'use client';
 
 import type { OrganizationFromMe } from '@/types';
-import { authClient } from '@/utils/auth-client';
 import { OrganizationSelector } from '@trycompai/design-system';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -53,7 +52,6 @@ export function OrganizationSwitcher({
     if (orgId !== organization?.id) {
       setIsSwitching(true);
       try {
-        await authClient.organization.setActive({ organizationId: orgId });
         router.push(`/${orgId}/`);
       } catch {
         setIsSwitching(false);

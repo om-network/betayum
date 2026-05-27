@@ -8,7 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { CommentEntityType } from '@db';
 import type { Request } from 'express';
-import { auth } from '../auth/auth.server';
+import { PermissionEvaluatorService } from '../auth/permission-evaluator.service';
 import {
   PERMISSIONS_KEY,
   type RequiredPermission,
@@ -45,13 +45,16 @@ type GuardedRequest = AuthenticatedRequest & Request;
  *        is opaque; resolving entityType would need a DB lookup which
  *        Phase 4 v1 explicitly defers — author-only editing keeps the
  *        existing task-permission gate in practice).
- *   3. Call better-auth's `hasPermission` with the resolved permission.
+ *   3. Evaluate the resolved permission against local role definitions.
  */
 @Injectable()
 export class CommentsPermissionGuard implements CanActivate {
   private readonly logger = new Logger(CommentsPermissionGuard.name);
 
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly permissionEvaluator: PermissionEvaluatorService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<RequiredPermission[]>(
@@ -112,10 +115,14 @@ export class CommentsPermissionGuard implements CanActivate {
     }
 
     const permissions: Record<string, string[]> = { [resource]: [action] };
-    // Mirror standard PermissionGuard's try/catch — without it, network or
-    // auth-service errors surface as 500s, potentially leaking internals.
+    // Mirror standard PermissionGuard's try/catch so evaluator errors do not
+    // surface as 500s or leak internals.
     try {
-      const allowed = await this.checkPermission(request, permissions);
+      const allowed = await this.permissionEvaluator.hasPermissions({
+        organizationId: request.organizationId,
+        roles: request.userRoles,
+        permissions,
+      });
       if (!allowed) {
         this.logger.warn(
           `[CommentsPermissionGuard] Denied ${request.method} ${request.url}. Required: ${requiredScope}`,
@@ -152,31 +159,5 @@ export class CommentsPermissionGuard implements CanActivate {
     return (Object.values(CommentEntityType) as string[]).includes(candidate)
       ? candidate
       : fallback;
-  }
-
-  /**
-   * Mirrors the cookie/header forwarding pattern of the standard
-   * PermissionGuard so role-based and custom-role permissions both work.
-   * Kept private and inline rather than extracted to a shared utility —
-   * Phase 4 introduces only this one extra caller.
-   */
-  private async checkPermission(
-    request: GuardedRequest,
-    permissions: Record<string, string[]>,
-  ): Promise<boolean> {
-    const headers = new Headers();
-    const authHeader = request.headers['authorization'] as string;
-    if (authHeader) headers.set('authorization', authHeader);
-    const cookieHeader = request.headers['cookie'] as string;
-    if (cookieHeader) headers.set('cookie', cookieHeader);
-
-    if (!authHeader && !cookieHeader) return false;
-
-    // Spell the union-typed body out so zod 4 inside better-auth doesn't
-    // reject the missing `permission` discriminator. Same gotcha as the
-    // standard PermissionGuard.
-    const body = { permissions, permission: undefined };
-    const result = await auth.api.hasPermission({ headers, body });
-    return result.success === true;
   }
 }

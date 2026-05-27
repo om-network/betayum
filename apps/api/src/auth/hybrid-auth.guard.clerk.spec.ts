@@ -5,17 +5,12 @@ const mockDb = {
   member: {
     findFirst: jest.fn(),
   },
+  session: {
+    findFirst: jest.fn(),
+  },
 };
 
 jest.mock('@db', () => ({ db: mockDb }));
-
-jest.mock('./auth.server', () => ({
-  auth: {
-    api: {
-      getSession: jest.fn(),
-    },
-  },
-}));
 
 jest.mock('./service-token.config', () => ({
   resolveServiceByToken: jest.fn(),
@@ -36,6 +31,7 @@ import { ClerkIdentityService } from './clerk-identity.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
+import { resolveServiceByToken } from './service-token.config';
 import type { ApiKeyService } from './api-key.service';
 import type { AuthenticatedRequest } from './types';
 
@@ -46,9 +42,7 @@ type TestAuthenticatedRequest = Omit<
   headers: Record<string, string | undefined>;
 };
 
-function buildContext(
-  request: TestAuthenticatedRequest,
-): ExecutionContext {
+function buildContext(request: TestAuthenticatedRequest): ExecutionContext {
   return {
     switchToHttp: () => ({
       getRequest: () => request as unknown as AuthenticatedRequest,
@@ -58,8 +52,17 @@ function buildContext(
   } as ExecutionContext;
 }
 
-describe('HybridAuthGuard with Clerk auth provider', () => {
-  const originalAuthProvider = process.env.AUTH_PROVIDER;
+const baseUser = {
+  id: 'usr_1',
+  email: 'owner@trycomp.ai',
+  emailVerified: true,
+  name: 'Owner',
+  image: null,
+  role: 'user',
+  clerkUserId: 'clerk_1',
+};
+
+describe('HybridAuthGuard with Clerk session auth', () => {
   const apiKeyService = {
     extractApiKey: jest.fn(),
     validateApiKey: jest.fn(),
@@ -81,17 +84,13 @@ describe('HybridAuthGuard with Clerk auth provider', () => {
   let guard: HybridAuthGuard;
 
   beforeEach(() => {
-    process.env.AUTH_PROVIDER = 'clerk';
     jest.clearAllMocks();
+    mockDb.session.findFirst.mockResolvedValue(null);
     guard = new HybridAuthGuard(
       apiKeyService,
       reflector,
       clerkRequestAuthService,
     );
-  });
-
-  afterAll(() => {
-    process.env.AUTH_PROVIDER = originalAuthProvider;
   });
 
   it('authenticates a mapped Clerk user and sets request context', async () => {
@@ -105,15 +104,9 @@ describe('HybridAuthGuard with Clerk auth provider', () => {
       clerkUserId: 'clerk_1',
       sessionId: 'sess_1',
     });
-    jest.mocked(clerkIdentityService.resolveMappedUser).mockResolvedValueOnce({
-      id: 'usr_1',
-      email: 'owner@trycomp.ai',
-      emailVerified: true,
-      name: 'Owner',
-      image: null,
-      role: 'user',
-      clerkUserId: 'clerk_1',
-    });
+    jest
+      .mocked(clerkIdentityService.resolveMappedUser)
+      .mockResolvedValueOnce(baseUser);
     mockDb.member.findFirst.mockResolvedValueOnce({
       id: 'mem_1',
       role: 'owner',
@@ -140,15 +133,9 @@ describe('HybridAuthGuard with Clerk auth provider', () => {
       clerkUserId: 'clerk_1',
       sessionId: 'sess_1',
     });
-    jest.mocked(clerkIdentityService.resolveMappedUser).mockResolvedValueOnce({
-      id: 'usr_1',
-      email: 'owner@trycomp.ai',
-      emailVerified: true,
-      name: 'Owner',
-      image: null,
-      role: 'user',
-      clerkUserId: 'clerk_1',
-    });
+    jest
+      .mocked(clerkIdentityService.resolveMappedUser)
+      .mockResolvedValueOnce(baseUser);
 
     await expect(
       guard.canActivate(
@@ -165,15 +152,9 @@ describe('HybridAuthGuard with Clerk auth provider', () => {
       sessionId: 'sess_1',
       organizationId: 'org_1',
     });
-    jest.mocked(clerkIdentityService.resolveMappedUser).mockResolvedValueOnce({
-      id: 'usr_1',
-      email: 'owner@trycomp.ai',
-      emailVerified: true,
-      name: 'Owner',
-      image: null,
-      role: 'user',
-      clerkUserId: 'clerk_1',
-    });
+    jest
+      .mocked(clerkIdentityService.resolveMappedUser)
+      .mockResolvedValueOnce(baseUser);
     mockDb.member.findFirst.mockResolvedValueOnce(null);
 
     await expect(
@@ -183,6 +164,59 @@ describe('HybridAuthGuard with Clerk auth provider', () => {
         }),
       ),
     ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rejects missing auth before identity lookup', async () => {
+    jest
+      .mocked(clerkSessionService.verifyRequest)
+      .mockRejectedValueOnce(new UnauthorizedException('missing auth'));
+
+    await expect(
+      guard.canActivate(buildContext({ headers: {} })),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(clerkIdentityService.resolveMappedUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid Clerk sessions', async () => {
+    jest
+      .mocked(clerkSessionService.verifyRequest)
+      .mockRejectedValueOnce(new UnauthorizedException('invalid session'));
+
+    await expect(
+      guard.canActivate(
+        buildContext({ headers: { authorization: 'Bearer bad_session' } }),
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(clerkIdentityService.resolveMappedUser).not.toHaveBeenCalled();
+  });
+
+  it('rejects deactivated members through the active-member lookup', async () => {
+    jest.mocked(clerkSessionService.verifyRequest).mockResolvedValueOnce({
+      clerkUserId: 'clerk_1',
+      sessionId: 'sess_1',
+      organizationId: 'org_1',
+    });
+    jest
+      .mocked(clerkIdentityService.resolveMappedUser)
+      .mockResolvedValueOnce(baseUser);
+    mockDb.member.findFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      guard.canActivate(
+        buildContext({
+          headers: { authorization: 'Bearer session_token' },
+        }),
+      ),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(mockDb.member.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: 'usr_1',
+          organizationId: 'org_1',
+          deactivated: false,
+        },
+      }),
+    );
   });
 
   it('keeps API key auth ahead of Clerk session auth', async () => {
@@ -208,6 +242,36 @@ describe('HybridAuthGuard with Clerk auth provider', () => {
       authType: 'api-key',
       isApiKey: true,
       apiKeyId: 'apk_1',
+    });
+  });
+
+  it('keeps service token auth ahead of Clerk session auth', async () => {
+    jest.mocked(resolveServiceByToken).mockReturnValueOnce({
+      key: 'trigger',
+      definition: {
+        name: 'internal-worker',
+        envVar: 'SERVICE_TOKEN_TRIGGER',
+        permissions: ['control:read'],
+      },
+    });
+    mockDb.organization.findUnique.mockResolvedValueOnce({ id: 'org_1' });
+    const request = {
+      headers: {
+        'x-service-token': 'svc_token',
+        'x-organization-id': 'org_1',
+        authorization: 'Bearer session_token',
+      },
+    };
+
+    await expect(guard.canActivate(buildContext(request))).resolves.toBe(true);
+
+    expect(clerkSessionService.verifyRequest).not.toHaveBeenCalled();
+    expect(request).toMatchObject({
+      organizationId: 'org_1',
+      authType: 'service',
+      isApiKey: false,
+      isServiceToken: true,
+      serviceName: 'internal-worker',
     });
   });
 });
