@@ -1,7 +1,6 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import { authClient } from '@/utils/auth-client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -137,9 +136,23 @@ export function MembersTab({
     setImpersonateTarget(null);
     setImpersonatingUserId(userId);
     try {
-      await authClient.admin.impersonateUser({ userId });
-      await authClient.organization.setActive({ organizationId: orgId });
+      const response = await fetch('/api/admin/support-context', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          organizationId: orgId,
+          targetUserId: userId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start support context');
+      }
+
       router.push(`/${orgId}/overview`);
+      router.refresh();
     } catch (err) {
       console.error('Impersonation failed:', err);
       setImpersonatingUserId(null);
@@ -251,11 +264,12 @@ export function MembersTab({
           <AlertDialogHeader>
             <AlertDialogTitle>Impersonate user</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to log in as{' '}
+              You are about to start support context as{' '}
               <strong>{impersonateTarget?.user.name}</strong> (
-              {impersonateTarget?.user.email}). All actions you take will be
-              performed under their identity and recorded in the audit log with
-              your admin session tracked via <em>impersonatedBy</em>.
+              {impersonateTarget?.user.email}). Comp AI will keep your Clerk
+              admin session active, but customer-facing API authorization will
+              run as the selected member and record your admin identity in the
+              audit log.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -264,7 +278,7 @@ export function MembersTab({
               variant="destructive"
               onClick={handleConfirmImpersonate}
             >
-              Impersonate
+              Start Support Context
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

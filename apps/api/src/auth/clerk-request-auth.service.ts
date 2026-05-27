@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { db } from '@db';
 import { ClerkIdentityService } from './clerk-identity.service';
 import { ClerkSessionService } from './clerk-session.service';
+import { SupportContextService } from './support-context.service';
 import { AuthenticatedRequest } from './types';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class ClerkRequestAuthService {
   constructor(
     private readonly clerkIdentityService: ClerkIdentityService,
     private readonly clerkSessionService: ClerkSessionService,
+    private readonly supportContextService: SupportContextService,
   ) {}
 
   async authenticate(
@@ -22,24 +24,48 @@ export class ClerkRequestAuthService {
       authorization,
       cookie,
     });
-    const user = await this.clerkIdentityService.resolveMappedUser(
+    const actorUser = await this.clerkIdentityService.resolveMappedUser(
       session.clerkUserId,
     );
 
-    const organizationId =
+    const requestedOrganizationId =
       (request.headers['x-organization-id'] as string | undefined) ??
       session.organizationId;
+    const supportContext = await this.supportContextService.resolve({
+      actor: {
+        id: actorUser.id,
+        role: actorUser.role,
+      },
+      cookieHeader: cookie,
+      requestedOrganizationId,
+    });
+
+    const organizationId =
+      supportContext?.organizationId ?? requestedOrganizationId;
     if (!organizationId && !skipOrgCheck) {
       throw new UnauthorizedException(
         'No active organization. Please select an organization.',
       );
     }
 
+    let resolvedUserId = actorUser.id;
+    let resolvedUserEmail = actorUser.email;
     let userRoles: string[] | null = null;
-    if (organizationId && !skipOrgCheck) {
+    let impersonatedBy = session.impersonatedBy;
+    let isPlatformAdmin = actorUser.role === 'admin';
+
+    if (supportContext) {
+      resolvedUserId = supportContext.targetUserId;
+      resolvedUserEmail = supportContext.targetUserEmail;
+      userRoles = supportContext.targetUserRoles;
+      request.memberId = supportContext.memberId;
+      request.memberDepartment = supportContext.memberDepartment;
+      impersonatedBy = supportContext.impersonatedBy;
+      isPlatformAdmin = false;
+    } else if (organizationId && !skipOrgCheck) {
       const member = await db.member.findFirst({
         where: {
-          userId: user.id,
+          userId: actorUser.id,
           organizationId,
           deactivated: false,
         },
@@ -61,17 +87,17 @@ export class ClerkRequestAuthService {
       request.memberDepartment = member.department;
     }
 
-    request.userId = user.id;
-    request.userEmail = user.email;
+    request.userId = resolvedUserId;
+    request.userEmail = resolvedUserEmail;
     request.userRoles = userRoles;
     request.organizationId = organizationId || '';
     request.authType = 'session';
     request.isApiKey = false;
     request.isServiceToken = false;
-    request.isPlatformAdmin = user.role === 'admin';
+    request.isPlatformAdmin = isPlatformAdmin;
     request.sessionId = session.sessionId;
     request.sessionDeviceAgent = false;
-    request.impersonatedBy = session.impersonatedBy;
+    request.impersonatedBy = impersonatedBy;
 
     return true;
   }
