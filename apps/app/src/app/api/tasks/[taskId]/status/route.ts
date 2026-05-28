@@ -1,4 +1,5 @@
-import { auth } from '@/utils/auth';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { runs } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -7,12 +8,15 @@ export async function GET(
   { params }: { params: Promise<{ taskId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
+    const organizationId = req.headers.get('x-organization-id')?.trim();
 
-    if (!session?.session?.activeOrganizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization context required' }, { status: 400 });
+    }
+
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'task', 'read')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { taskId } = await params;
@@ -57,4 +61,3 @@ export async function GET(
     );
   }
 }
-

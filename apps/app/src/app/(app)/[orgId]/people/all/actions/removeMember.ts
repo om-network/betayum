@@ -3,6 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
 import { removeMemberViaApi } from '@/lib/people-api';
+import { getRequestOrganizationId } from '@/lib/request-organization';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
@@ -20,7 +21,8 @@ export const removeMember = authActionClient
   })
   .inputSchema(removeMemberSchema)
   .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ removed: boolean }>> => {
-    if (!ctx.session.activeOrganizationId) {
+    const organizationId = await getRequestOrganizationId();
+    if (!organizationId) {
       return {
         success: false,
         error: 'User does not have an organization',
@@ -44,7 +46,7 @@ export const removeMember = authActionClient
         };
       }
 
-      revalidatePath(`/${ctx.session.activeOrganizationId}/settings/users`);
+      revalidatePath(`/${organizationId}/settings/users`);
       revalidateTag(`user_${user.id}`, 'max');
 
       return {

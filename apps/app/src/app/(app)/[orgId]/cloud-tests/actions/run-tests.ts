@@ -1,7 +1,8 @@
 'use server';
 
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { runIntegrationTests } from '@/trigger/tasks/integration/run-integration-tests';
-import { auth } from '@/utils/auth';
 import { runs, tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
@@ -14,30 +15,25 @@ const POLL_INTERVAL_MS = 2000;
  * @param integrationId - Optional. If provided, only run tests for this specific connection.
  *                        If not provided, run tests for all connections in the organization.
  */
-export const runTests = async (integrationId?: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
+export const runTests = async ({
+  organizationId,
+  integrationId,
+}: {
+  organizationId: string;
+  integrationId?: string;
+}) => {
+  const context = await resolveCurrentUserOrganizationContext(organizationId);
+  if (!context || !hasPermission(context.permissions, 'integration', 'update')) {
     return {
       success: false,
       errors: ['Unauthorized'],
     };
   }
 
-  const orgId = session.session?.activeOrganizationId;
-  if (!orgId) {
-    return {
-      success: false,
-      errors: ['No active organization'],
-    };
-  }
-
   try {
     // Trigger the task
     const handle = await tasks.trigger<typeof runIntegrationTests>('run-integration-tests', {
-      organizationId: orgId,
+      organizationId,
       ...(integrationId ? { integrationId } : {}),
     });
 

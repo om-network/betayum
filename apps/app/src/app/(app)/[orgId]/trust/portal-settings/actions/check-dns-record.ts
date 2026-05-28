@@ -2,6 +2,9 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
+import { getRequestOrganizationId } from '@/lib/request-organization';
 import { db } from '@db/server';
 import { Vercel } from '@vercel/sdk';
 import * as dns from 'node:dns';
@@ -50,15 +53,20 @@ export const checkDnsRecordAction = authActionClient
       channel: 'server',
     },
   })
-  .action(async ({ parsedInput, ctx }) => {
+  .action(async ({ parsedInput }) => {
     const { domain } = parsedInput;
 
-    if (!ctx.session.activeOrganizationId) {
-      throw new Error('No active organization');
+    const activeOrgId = await getRequestOrganizationId();
+    if (!activeOrgId) {
+      throw new Error('No organization context');
+    }
+
+    const context = await resolveCurrentUserOrganizationContext(activeOrgId);
+    if (!context || !hasPermission(context.permissions, 'trust', 'update')) {
+      throw new Error('Unauthorized');
     }
 
     const rootDomain = domain.split('.').slice(-2).join('.');
-    const activeOrgId = ctx.session.activeOrganizationId;
 
     // Use Node's built-in DNS (no HTTPS) to avoid SSL/certificate issues with external APIs
     const getCnameRecords = (host: string): Promise<string[]> =>

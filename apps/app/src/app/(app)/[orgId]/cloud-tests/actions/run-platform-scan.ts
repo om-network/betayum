@@ -1,6 +1,7 @@
 'use server';
 
-import { auth } from '@/utils/auth';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { serverApi } from '@/lib/server-api-client';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
@@ -34,28 +35,23 @@ async function getAuthHeaders(organizationId: string): Promise<Record<string, st
  *
  * @param connectionId - The IntegrationConnection ID (icn_...) to scan
  */
-export const runPlatformScan = async (connectionId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
+export const runPlatformScan = async ({
+  organizationId,
+  connectionId,
+}: {
+  organizationId: string;
+  connectionId: string;
+}) => {
+  const context = await resolveCurrentUserOrganizationContext(organizationId);
+  if (!context || !hasPermission(context.permissions, 'integration', 'update')) {
     return {
       success: false,
       error: 'Unauthorized',
     };
   }
 
-  const orgId = session.session?.activeOrganizationId;
-  if (!orgId) {
-    return {
-      success: false,
-      error: 'No active organization',
-    };
-  }
-
   try {
-    const authHeaders = await getAuthHeaders(orgId);
+    const authHeaders = await getAuthHeaders(organizationId);
 
     // Trigger the scan via API (task is defined in the API's trigger.dev project)
     const triggerResponse = await serverApi.post<{ runId: string }>(
@@ -104,7 +100,7 @@ export const runPlatformScan = async (connectionId: string) => {
         if (path) {
           revalidatePath(path);
         }
-        revalidatePath(`/${orgId}/cloud-tests`);
+        revalidatePath(`/${organizationId}/cloud-tests`);
 
         if (statusResponse.data.success) {
           const output = statusResponse.data.output;
@@ -136,7 +132,7 @@ export const runPlatformScan = async (connectionId: string) => {
 
     // Polling timeout - the scan is still running in the background
     // Revalidate anyway so fresh data shows on next page load
-    revalidatePath(`/${orgId}/cloud-tests`);
+    revalidatePath(`/${organizationId}/cloud-tests`);
 
     return {
       success: false,

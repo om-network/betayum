@@ -1,18 +1,23 @@
-import { auth } from '@/utils/auth';
 import { getFleetInstance } from '@/lib/fleet';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import type { Host } from '@/app/(app)/[orgId]/people/devices/types';
 
 const MDM_POLICY_ID = -9999;
 
-export async function GET() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const organizationId = session?.session.activeOrganizationId;
+export async function GET(req: NextRequest) {
+  const organizationId = req.headers.get('x-organization-id')?.trim();
 
   if (!organizationId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Organization context required' }, { status: 400 });
+  }
+
+  const context = await resolveCurrentUserOrganizationContext(organizationId);
+  if (!context || !hasPermission(context.permissions, 'member', 'read')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const fleet = await getFleetInstance();

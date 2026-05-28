@@ -24,8 +24,12 @@ vi.mock('next/server', () => ({
   },
 }));
 
-const { resolveCurrentUserPermissions, resolveAuditorViewAccess, requireApiPermission } =
-  await import('./permissions.server');
+const {
+  resolveCurrentUserPermissions,
+  resolveCurrentUserOrganizationContext,
+  resolveAuditorViewAccess,
+  requireApiPermission,
+} = await import('./permissions.server');
 const { hasPermission } = await import('./permissions');
 
 describe('permissions.server Clerk authority', () => {
@@ -74,6 +78,21 @@ describe('permissions.server Clerk authority', () => {
     });
 
     await expect(resolveCurrentUserPermissions('org_1')).resolves.toBeNull();
+  });
+
+  it('resolves local user and organization ids only after active Clerk org validation', async () => {
+    mockClerkAuth.mockResolvedValueOnce({
+      userId: 'clerk_user_1',
+      orgId: 'clerk_org_1',
+      orgRole: 'org:member',
+      orgPermissions: ['org:training:read'],
+    });
+
+    await expect(resolveCurrentUserOrganizationContext('org_1')).resolves.toEqual({
+      organizationId: 'org_1',
+      userId: 'usr_1',
+      permissions: { training: ['read'] },
+    });
   });
 
   it('uses Clerk role and permission claims for Auditor View access', async () => {

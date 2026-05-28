@@ -10,6 +10,7 @@ import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
 import { hasPermission } from '@/lib/permissions';
 import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
+import { getRequestOrganizationId } from '@/lib/request-organization';
 
 const revokeInvitationSchema = z.object({
   invitationId: z.string(),
@@ -25,7 +26,8 @@ export const revokeInvitation = authActionClient
   })
   .inputSchema(revokeInvitationSchema)
   .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ revoked: boolean }>> => {
-    if (!ctx.session.activeOrganizationId) {
+    const organizationId = await getRequestOrganizationId();
+    if (!organizationId) {
       return {
         success: false,
         error: 'User does not have an organization',
@@ -35,7 +37,7 @@ export const revokeInvitation = authActionClient
     const { invitationId } = parsedInput;
 
     try {
-      const permissions = await resolveCurrentUserPermissions(ctx.session.activeOrganizationId);
+      const permissions = await resolveCurrentUserPermissions(organizationId);
       if (!permissions || !hasPermission(permissions, 'member', 'delete')) {
         return {
           success: false,
@@ -47,7 +49,7 @@ export const revokeInvitation = authActionClient
       const invitation = await db.invitation.findFirst({
         where: {
           id: invitationId,
-          organizationId: ctx.session.activeOrganizationId,
+          organizationId,
           status: 'pending',
         },
       });
@@ -66,7 +68,7 @@ export const revokeInvitation = authActionClient
         },
       });
 
-      revalidatePath(`/${ctx.session.activeOrganizationId}/settings/users`);
+      revalidatePath(`/${organizationId}/settings/users`);
       revalidateTag(`user_${ctx.user!.id}`, 'max');
 
       return {

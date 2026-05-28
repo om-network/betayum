@@ -1,16 +1,20 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { NextRequest } from 'next/server';
 
-vi.mock('@/utils/auth', () => ({
-  auth: {
-    api: {
-      getSession: vi.fn(),
-    },
-  },
+const mockResolveCurrentUserOrganizationContext = vi.fn();
+
+vi.mock('@/lib/permissions.server', () => ({
+  resolveCurrentUserOrganizationContext: (...args: unknown[]) =>
+    mockResolveCurrentUserOrganizationContext(...args),
 }));
 
-vi.mock('next/headers', () => ({
-  headers: vi.fn(async () => new Headers()),
-}));
+vi.mock('@/lib/permissions', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/permissions')>();
+  return {
+    ...actual,
+    hasPermission: actual.hasPermission,
+  };
+});
 
 vi.mock('@db/server', () => ({
   db: {
@@ -20,11 +24,9 @@ vi.mock('@db/server', () => ({
   },
 }));
 
-import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { GET } from './route';
 
-const mockedGetSession = vi.mocked(auth.api.getSession);
 const mockedFindMany = vi.mocked(
   (db as unknown as { device: { findMany: ReturnType<typeof vi.fn> } }).device.findMany,
 );
@@ -43,10 +45,18 @@ afterAll(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockedGetSession.mockResolvedValue({
-    session: { activeOrganizationId: 'org_1' },
-  } as unknown as Awaited<ReturnType<typeof auth.api.getSession>>);
+  mockResolveCurrentUserOrganizationContext.mockResolvedValue({
+    organizationId: 'org_1',
+    userId: 'usr_1',
+    permissions: { member: ['read'] },
+  });
 });
+
+function request(organizationId = 'org_1') {
+  return new NextRequest('https://app.test/api/people/agent-devices', {
+    headers: { 'X-Organization-Id': organizationId },
+  });
+}
 
 function deviceRow(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -73,15 +83,25 @@ function deviceRow(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 describe('GET /api/people/agent-devices', () => {
-  it('returns 401 when no organization is active', async () => {
-    mockedGetSession.mockResolvedValue({ session: {} } as never);
-    const res = await GET();
-    expect(res.status).toBe(401);
+  it('returns 400 when no organization is provided', async () => {
+    const res = await GET(new NextRequest('https://app.test/api/people/agent-devices'));
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 403 when Clerk-backed permissions deny member read', async () => {
+    mockResolveCurrentUserOrganizationContext.mockResolvedValueOnce({
+      organizationId: 'org_1',
+      userId: 'usr_1',
+      permissions: {},
+    });
+
+    const res = await GET(request());
+    expect(res.status).toBe(403);
   });
 
   it('marks a fresh + isCompliant device as compliant', async () => {
     mockedFindMany.mockResolvedValue([deviceRow({ lastCheckIn: new Date(FIXED_NOW) })]);
-    const res = await GET();
+    const res = await GET(request());
     const body = await res.json();
     expect(body.data[0].complianceStatus).toBe('compliant');
     expect(body.data[0].daysSinceLastCheckIn).toBe(0);
@@ -95,7 +115,7 @@ describe('GET /api/people/agent-devices', () => {
         lastCheckIn: new Date(FIXED_NOW),
       }),
     ]);
-    const res = await GET();
+    const res = await GET(request());
     const body = await res.json();
     expect(body.data[0].complianceStatus).toBe('non_compliant');
   });
@@ -103,7 +123,7 @@ describe('GET /api/people/agent-devices', () => {
   it('marks a device with lastCheckIn >= 7 days ago as stale', async () => {
     const eightDaysAgo = new Date(FIXED_NOW.getTime() - 8 * 24 * 60 * 60 * 1000);
     mockedFindMany.mockResolvedValue([deviceRow({ lastCheckIn: eightDaysAgo })]);
-    const res = await GET();
+    const res = await GET(request());
     const body = await res.json();
     expect(body.data[0].complianceStatus).toBe('stale');
     expect(body.data[0].daysSinceLastCheckIn).toBe(8);
@@ -111,7 +131,7 @@ describe('GET /api/people/agent-devices', () => {
 
   it('marks a device with null lastCheckIn as stale', async () => {
     mockedFindMany.mockResolvedValue([deviceRow({ lastCheckIn: null })]);
-    const res = await GET();
+    const res = await GET(request());
     const body = await res.json();
     expect(body.data[0].complianceStatus).toBe('stale');
     expect(body.data[0].daysSinceLastCheckIn).toBeNull();
@@ -127,7 +147,7 @@ describe('GET /api/people/agent-devices', () => {
       deviceRow({ id: 'dev_expired', agentSession: { expiresAt: past } }),
     ]);
 
-    const res = await GET();
+    const res = await GET(request());
     const body = await res.json();
     const byId = Object.fromEntries(
       body.data.map((d: { id: string }) => [d.id, d]),

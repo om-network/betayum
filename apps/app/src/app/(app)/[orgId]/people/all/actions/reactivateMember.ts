@@ -7,6 +7,7 @@ import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
 import { hasPermission } from '@/lib/permissions';
 import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
+import { getRequestOrganizationId } from '@/lib/request-organization';
 
 const reactivateMemberSchema = z.object({
   memberId: z.string(),
@@ -21,8 +22,9 @@ export const reactivateMember = authActionClient
     },
   })
   .inputSchema(reactivateMemberSchema)
-  .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ reactivated: boolean }>> => {
-    if (!ctx.session.activeOrganizationId) {
+  .action(async ({ parsedInput }): Promise<ActionResponse<{ reactivated: boolean }>> => {
+    const organizationId = await getRequestOrganizationId();
+    if (!organizationId) {
       return {
         success: false,
         error: 'User does not have an organization',
@@ -32,7 +34,7 @@ export const reactivateMember = authActionClient
     const { memberId } = parsedInput;
 
     try {
-      const permissions = await resolveCurrentUserPermissions(ctx.session.activeOrganizationId);
+      const permissions = await resolveCurrentUserPermissions(organizationId);
       if (!permissions || !hasPermission(permissions, 'member', 'update')) {
         return {
           success: false,
@@ -44,7 +46,7 @@ export const reactivateMember = authActionClient
       const targetMember = await db.member.findFirst({
         where: {
           id: memberId,
-          organizationId: ctx.session.activeOrganizationId,
+          organizationId,
         },
         include: {
           user: true,
@@ -76,8 +78,8 @@ export const reactivateMember = authActionClient
         },
       });
 
-      revalidatePath(`/${ctx.session.activeOrganizationId}/people`);
-      revalidatePath(`/${ctx.session.activeOrganizationId}/people/${memberId}`);
+      revalidatePath(`/${organizationId}/people`);
+      revalidatePath(`/${organizationId}/people/${memberId}`);
 
       return {
         success: true,

@@ -2,12 +2,15 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { BUCKET_NAME, s3Client } from '@/app/s3';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { db, PolicyDisplayFormat } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const uploadPolicyPdfSchema = z.object({
+  organizationId: z.string(),
   policyId: z.string(),
   versionId: z.string().optional(), // If provided, upload to this version
   fileName: z.string(),
@@ -24,12 +27,10 @@ export const uploadPolicyPdfAction = authActionClient
       channel: 'server',
     },
   })
-  .action(async ({ parsedInput, ctx }) => {
-    const { policyId, versionId, fileName, fileType, fileData } = parsedInput;
-    const { session } = ctx;
-    const organizationId = session.activeOrganizationId;
-
-    if (!organizationId) {
+  .action(async ({ parsedInput }) => {
+    const { organizationId, policyId, versionId, fileName, fileType, fileData } = parsedInput;
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'policy', 'update')) {
       return { success: false, error: 'Not authorized' };
     }
 

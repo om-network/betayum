@@ -1,55 +1,37 @@
-import { auth } from '@/utils/auth';
 import { anthropic } from '@ai-sdk/anthropic';
 import { db } from '@db/server';
 import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from 'ai';
-import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getPolicyTools } from '../../../../(app)/[orgId]/policies/[policyId]/editor/tools/policy-tools';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 
 export const maxDuration = 60;
 
 export async function POST(req: Request, { params }: { params: Promise<{ policyId: string }> }) {
   try {
     const { policyId } = await params;
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { message: 'You must be signed in to use the AI assistant.' },
-        { status: 401 },
-      );
-    }
-
-    const organizationId = session.session.activeOrganizationId;
+    const organizationId =
+      req.headers.get('x-organization-id')?.trim() ??
+      getOrganizationIdFromPath(req.headers.get('referer'));
 
     if (!organizationId) {
       return NextResponse.json(
-        { message: 'You need an active organization to use the AI assistant.' },
+        { message: 'Organization context required.' },
         { status: 400 },
       );
     }
 
-    const headerStore = await headers();
-    const cookieStr = headerStore.get('cookie') ?? '';
-
-    const { messages, currentContent }: { messages: Array<UIMessage>; currentContent?: string } = await req.json();
-
-    const member = await db.member.findFirst({
-      where: {
-        userId: session.user.id,
-        organizationId,
-        deactivated: false,
-      },
-    });
-
-    if (!member) {
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'policy', 'update')) {
       return NextResponse.json(
         { message: "You don't have access to this policy's AI assistant." },
         { status: 403 },
       );
     }
+
+    const cookieStr = req.headers.get('cookie') ?? '';
+    const { messages, currentContent }: { messages: Array<UIMessage>; currentContent?: string } = await req.json();
 
     const policy = await db.policy.findFirst({
       where: {
@@ -204,6 +186,20 @@ You MUST produce the policy by starting from the <current_policy> text above and
       { status: 500 },
     );
   }
+}
+
+function getOrganizationIdFromPath(value: string | null): string | null {
+  if (!value) return null;
+
+  let pathname: string;
+  try {
+    pathname = new URL(value).pathname;
+  } catch {
+    pathname = value;
+  }
+
+  const [, organizationId] = pathname.match(/^\/([^/]+)/) ?? [];
+  return organizationId ?? null;
 }
 
 function convertPolicyContentToText(content: unknown): string {

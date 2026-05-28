@@ -1,9 +1,9 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
-import { auth } from '@/utils/auth';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
 import { appErrors, policyDetailsInputSchema } from '../types';
 
 export const getPolicyDetails = authActionClient
@@ -16,15 +16,10 @@ export const getPolicyDetails = authActionClient
     },
   })
   .action(async ({ parsedInput }) => {
-    const { policyId } = parsedInput;
+    const { organizationId, policyId } = parsedInput;
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const organizationId = session?.session.activeOrganizationId;
-
-    if (!organizationId) {
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'policy', 'read')) {
       return {
         success: false,
         error: appErrors.UNAUTHORIZED.message,

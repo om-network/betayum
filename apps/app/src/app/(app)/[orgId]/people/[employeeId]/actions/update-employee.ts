@@ -3,6 +3,7 @@
 import { authActionClient } from '@/actions/safe-action';
 import { hasPermission } from '@/lib/permissions';
 import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
+import { getRequestOrganizationId } from '@/lib/request-organization';
 import { removeMemberFromOrgChart } from '@/lib/org-chart';
 import type { Departments } from '@db';
 import { db, Prisma } from '@db/server';
@@ -29,10 +30,10 @@ export const updateEmployee = authActionClient
       channel: 'server',
     },
   })
-  .action(async ({ parsedInput, ctx }) => {
+  .action(async ({ parsedInput }) => {
     const { employeeId, name, email, department, isActive, createdAt, jobTitle } = parsedInput;
 
-    const organizationId = ctx.session.activeOrganizationId;
+    const organizationId = await getRequestOrganizationId();
     if (!organizationId) {
       return {
         success: false,
