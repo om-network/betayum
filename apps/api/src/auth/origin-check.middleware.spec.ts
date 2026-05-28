@@ -156,7 +156,7 @@ describe('originCheckMiddleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it('should allow POST to /api/auth routes (better-auth exempt)', () => {
+  it('should allow POST to /api/auth routes (auth callback exempt)', () => {
     const req = createMockReq('POST', '/api/auth/sign-in', 'http://evil.com');
     const res = createMockRes();
     const next = jest.fn();

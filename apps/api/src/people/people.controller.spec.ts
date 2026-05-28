@@ -44,7 +44,7 @@ jest.mock('@db', () => ({
   Departments: { it: 'it', none: 'none' },
 }));
 
-// Mock auth.server to avoid importing better-auth ESM in Jest
+// Mock auth.server to keep the auth runtime out of this Jest unit test.
 jest.mock('../auth/auth.server', () => ({
   auth: {
     api: {

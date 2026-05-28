@@ -15,10 +15,7 @@
     "^@trycompai/db$": "<rootDir>/test/__mocks__/db.ts",
     "^@trycompai/email$": "<rootDir>/../../packages/email/index.ts",
     "^@trycompai/integration-platform$": "<rootDir>/../../packages/integration-platform/src/index.ts",
-    "^@trycompai/utils/(.*)$": "<rootDir>/../../packages/utils/src/$1.ts",
-    "^@thallesp/nestjs-better-auth$": "<rootDir>/test/__mocks__/nestjs-better-auth.ts",
-    "^better-auth/node$": "<rootDir>/test/__mocks__/better-auth-node.ts",
-    "^better-auth/plugins$": "<rootDir>/test/__mocks__/better-auth-plugins.ts"
+    "^@trycompai/utils/(.*)$": "<rootDir>/../../packages/utils/src/$1.ts"
   },
   "globals": {
     "ts-jest": {

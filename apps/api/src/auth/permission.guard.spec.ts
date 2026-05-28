@@ -12,7 +12,7 @@ jest.mock('@db', () => ({
   },
 }));
 
-// Mock @trycompai/auth to avoid ESM issues with better-auth
+// Mock @trycompai/auth so the guard spec stays isolated.
 jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {},
   parseRolePermissions: jest.fn(),

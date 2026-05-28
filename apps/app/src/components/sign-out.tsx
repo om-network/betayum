@@ -1,5 +1,6 @@
 'use client';
 
+import { clearActiveOrganizationCookieClient } from '@/lib/active-organization-client';
 import { useClerk } from '@clerk/nextjs';
 import { Button, DropdownMenuItem } from '@trycompai/design-system';
 import { useState } from 'react';
@@ -18,6 +19,7 @@ export function SignOut({
 
   const handleSignOut = async () => {
     setLoading(true);
+    clearActiveOrganizationCookieClient();
     await signOut({ redirectUrl: '/auth' });
   };
 

@@ -72,7 +72,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
 /**
  * Make a raw request to the API (not under /v1/framework-editor prefix).
- * Used for auth endpoints like /api/auth/get-session.
+ * Used for JSON endpoints like /v1/auth/me.
  */
 export async function rawApiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, apiUrl: apiUrlOverride, requireAuth = true } = options;

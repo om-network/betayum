@@ -97,7 +97,7 @@ flowchart TD
 
     subgraph external [External]
         FleetDMAPI["FleetDM API - Legacy"]
-        BetterAuth["Better Auth"]
+        Clerk["Clerk"]
     end
 
     MainProcess --> Scheduler
@@ -109,7 +109,7 @@ flowchart TD
     MainProcess --> AuthFlow
     MainProcess --> Store
     MainProcess --> Remediations
-    AuthFlow --> BetterAuth
+    AuthFlow --> Clerk
     AuthFlow --> OrgsAPI
     AuthFlow --> RegisterAPI
     RegisterAPI --> DeviceTable
@@ -344,18 +344,18 @@ sequenceDiagram
 
     User->>Agent: Click Sign In
     Agent->>AuthWindow: Open portal/auth
-    User->>AuthWindow: Login via email OTP / Google / Microsoft
-    AuthWindow->>Portal: Better Auth authentication
+    User->>AuthWindow: Login via Clerk-hosted auth
+    AuthWindow->>Portal: Clerk authentication
     Portal-->>AuthWindow: Session cookie set
     AuthWindow-->>Agent: Post-login navigation detected
-    Agent->>Portal: GET /api/auth/get-session
-    Portal-->>Agent: userId
-    Agent->>Portal: GET /api/device-agent/my-organizations
-    Portal-->>Agent: organizations[]
+    Agent->>API: POST /v1/device-agent/exchange-code
+    API-->>Agent: session token + userId
+    Agent->>API: GET /v1/device-agent/my-organizations
+    API-->>Agent: organizations[]
     loop For each organization
-        Agent->>Portal: POST /api/device-agent/register
+        Agent->>API: POST /v1/device-agent/register
         Portal->>DB: Upsert Device by serialNumber + orgId
-        Portal-->>Agent: deviceId
+        API-->>Agent: deviceId
     end
     Agent->>Agent: Store session token + org registrations
     Agent->>Agent: Start scheduler
@@ -363,7 +363,7 @@ sequenceDiagram
 
 ### Session management
 
-- The session token (Better Auth cookie) is stored encrypted on disk
+- The session token is stored encrypted on disk
 - On each check-in, if the API returns 401, the agent triggers a re-authentication flow
 - On sign-out, cookies are cleared from the Electron session and stored auth is wiped
 
@@ -426,7 +426,7 @@ These remain in the database for backward compatibility with FleetDM:
 
 ## 8. Portal API Endpoints
 
-All endpoints are in `apps/portal/src/app/api/device-agent/` and require Better Auth session authentication.
+All endpoints are exposed by the NestJS API and require Clerk-backed session authentication.
 
 ### POST /api/device-agent/register
 

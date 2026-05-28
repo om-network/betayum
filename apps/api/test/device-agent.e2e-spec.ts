@@ -127,7 +127,7 @@ const SESSION_ID_UPGRADED = 'ses_upgraded_001';
 const SESSION_TOKEN_UPGRADED = 'tok_upgraded_001';
 const AGENT_SESSION_ID = 'ses_agent_001';
 
-/** Returns a minimal better-auth session with deviceAgent=true */
+/** Returns a minimal legacy session record with deviceAgent=true. */
 function makeAgentSession(overrides: Record<string, unknown> = {}) {
   return {
     user: { id: USER_ID, email: 'test@example.com', role: null },
@@ -140,7 +140,7 @@ function makeAgentSession(overrides: Record<string, unknown> = {}) {
   };
 }
 
-/** Returns a minimal better-auth session with deviceAgent=false (legacy web) */
+/** Returns a minimal legacy session record with deviceAgent=false. */
 function makeLegacySession(overrides: Record<string, unknown> = {}) {
   return {
     user: { id: USER_ID, email: 'test@example.com', role: null },

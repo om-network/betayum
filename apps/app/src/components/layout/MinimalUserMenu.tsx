@@ -1,5 +1,6 @@
 'use client';
 
+import { clearActiveOrganizationCookieClient } from '@/lib/active-organization-client';
 import { useClerk } from '@clerk/nextjs';
 import { Avatar, AvatarFallback, AvatarImageNext } from '@trycompai/ui/avatar';
 import {
@@ -26,6 +27,7 @@ export function MinimalUserMenu({ user }: MinimalUserMenuProps) {
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
+    clearActiveOrganizationCookieClient();
     await signOut();
     router.push('/auth');
   };

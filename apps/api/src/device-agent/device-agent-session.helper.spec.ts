@@ -24,7 +24,7 @@ describe('createDeviceAgentSession', () => {
     jest.useRealTimers();
   });
 
-  it('calls better-auth internalAdapter.createSession with deviceAgent=true and 1-year expiry', async () => {
+  it('calls auth.server internalAdapter.createSession with deviceAgent=true and 1-year expiry', async () => {
     createSessionMock.mockResolvedValue({
       id: 'ses_123',
       token: 'tok_abc',

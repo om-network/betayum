@@ -7,10 +7,6 @@ export type ClerkAuthConfig = {
   jwksUrl: string;
 };
 
-export function isClerkAuthProvider(): boolean {
-  return process.env.AUTH_PROVIDER === 'clerk';
-}
-
 export function getClerkAuthConfig(): ClerkAuthConfig {
   const secretKey = getRequiredEnv('CLERK_SECRET_KEY');
   const issuer = getRequiredEnv('CLERK_JWT_ISSUER');
@@ -30,17 +26,13 @@ export function getClerkAuthConfig(): ClerkAuthConfig {
 }
 
 export function validateClerkAuthConfig(): void {
-  if (!isClerkAuthProvider()) {
-    return;
-  }
-
   getClerkAuthConfig();
 }
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`${name} is required when AUTH_PROVIDER=clerk.`);
+    throw new Error(`${name} is required for Clerk authentication.`);
   }
 
   return value;
@@ -54,7 +46,7 @@ function parseAuthorizedParties(value: string): string[] {
 
   if (!parties.length) {
     throw new Error(
-      'CLERK_AUTHORIZED_PARTIES must include at least one origin when AUTH_PROVIDER=clerk.',
+      'CLERK_AUTHORIZED_PARTIES must include at least one trusted origin.',
     );
   }
 
@@ -65,6 +57,6 @@ function assertValidUrl({ name, value }: { name: string; value: string }): void 
   try {
     new URL(value);
   } catch {
-    throw new Error(`${name} must be a valid URL when AUTH_PROVIDER=clerk.`);
+    throw new Error(`${name} must be a valid URL for Clerk authentication.`);
   }
 }

@@ -19,5 +19,3 @@ export {
   parseRolePermissions,
   parseRoleObligations,
 } from './permissions';
-
-export { createAuthServer, type CreateAuthServerOptions, type AuthServer } from './server';

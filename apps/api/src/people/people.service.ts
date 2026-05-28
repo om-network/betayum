@@ -410,7 +410,7 @@ export class PeopleService {
     });
 
     // Direct DB session deletion is correct here — the API server IS the auth server,
-    // and better-auth's own revokeUserSessions internally calls the same deleteSessions operation.
+    // and session revocation ultimately uses the same deleteSessions operation.
     // The admin endpoint wrapper requires an authenticated admin session context we don't have.
     await db.session.deleteMany({ where: { userId: member.userId } });
 

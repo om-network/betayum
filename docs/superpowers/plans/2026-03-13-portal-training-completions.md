@@ -6,7 +6,7 @@
 
 **Architecture:** New `portal` permission resource grants employees self-service access. Two new NestJS endpoints (`GET /v1/training/completions`, `POST /v1/training/completions/:videoId/complete`) replace the portal's direct DB route. Portal components consume a shared SWR hook for reactive data with optimistic updates.
 
-**Tech Stack:** NestJS (API), better-auth RBAC, SWR (portal), Prisma (DB)
+**Tech Stack:** NestJS (API), Clerk identity + API RBAC, SWR (portal), Prisma (DB)
 
 **Spec:** `docs/superpowers/specs/2026-03-13-portal-training-completions-design.md`
 

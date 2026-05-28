@@ -6,64 +6,13 @@
  * this resource MUST never be implicit (e.g. via `organization:read`) because
  * read-only auditors would otherwise gain access to plaintext credentials.
  *
- * We mock the `better-auth/plugins/access` and
- * `better-auth/plugins/organization/access` ESM modules using their resolved
- * paths from inside `@trycompai/auth` (otherwise Jest would try to evaluate
- * the real `.mjs` files as CommonJS and crash). Then we import the role
- * definitions directly from `permissions.ts` — bypassing `server.ts`, which
- * pulls in the rest of better-auth.
+ * The permission definitions are now standalone, so this spec can import them
+ * directly without any auth-runtime shims.
  */
-
-jest.mock(
-  require.resolve('better-auth/plugins/access', {
-    paths: [require.resolve('@trycompai/auth')],
-  }),
-  () => ({
-    createAccessControl: (_stmt: Record<string, readonly string[]>) => ({
-      newRole: (statements: Record<string, readonly string[]>) => ({
-        statements,
-      }),
-    }),
-  }),
-);
-
-jest.mock(
-  require.resolve('better-auth/plugins/organization/access', {
-    paths: [require.resolve('@trycompai/auth')],
-  }),
-  () => ({
-    defaultStatements: {
-      organization: ['update', 'delete'],
-      member: ['create', 'update', 'delete'],
-      invitation: ['create', 'delete'],
-      team: ['create', 'update', 'delete'],
-    },
-    ownerAc: {
-      statements: {
-        organization: ['update', 'delete'],
-        member: ['create', 'update', 'delete'],
-        invitation: ['create', 'delete'],
-        team: ['create', 'update', 'delete'],
-      },
-    },
-    adminAc: {
-      statements: {
-        organization: ['update'],
-        member: ['create', 'update', 'delete'],
-        invitation: ['create', 'delete'],
-        team: ['create', 'update', 'delete'],
-      },
-    },
-  }),
-);
-
-// Import permissions.ts directly — going through the package barrel
-// (@trycompai/auth) would also load server.ts which pulls the entire
-// better-auth surface and breaks the test.
 import {
   BUILT_IN_ROLE_PERMISSIONS,
   statement,
-} from '../../../../packages/auth/src/permissions';
+} from '@trycompai/auth';
 
 describe('Secrets resource — role grants', () => {
   const fullCrud = ['create', 'read', 'update', 'delete'];

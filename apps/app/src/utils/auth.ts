@@ -19,10 +19,6 @@ import { ac, allRoles } from './permissions';
 // Re-export permissions for convenience
 export { ac, allRoles };
 
-// Must point to the API server for server-to-server auth calls.
-const API_URL =
-  process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
 /**
@@ -125,26 +121,6 @@ interface MeResponse {
 }
 
 /**
- * Convert Headers to a plain object for fetch
- */
-function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, string> {
-  const obj: Record<string, string> = {};
-  headers.forEach((value, key) => {
-    const k = key.toLowerCase();
-    // Forward cookies, origin, and custom headers to the API auth endpoints.
-    if (k === 'cookie' || k === 'origin' || k.startsWith('x-')) {
-      obj[key] = value;
-    }
-  });
-  // Ensure Origin is always present — server actions may not have one.
-  // The API enforces trusted origins on auth mutations.
-  if (!obj.origin && !obj.Origin) {
-    obj.origin = API_URL;
-  }
-  return obj;
-}
-
-/**
  * Get the current session from the API.
  *
  * @param options.headers - The request headers (must include cookies)
@@ -191,21 +167,19 @@ async function getFullSession(options: {
   headers: ReadonlyHeaders | Headers;
 }): Promise<FullSession | null> {
   try {
-    const response = await fetch(`${API_URL}/api/auth/get-full-session`, {
-      method: 'GET',
-      headers: {
-        ...headersToObject(options.headers),
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
+    const session = await getSession(options);
+    if (!session) {
       return null;
     }
 
-    const data = await response.json();
-    return data as FullSession;
+    const activeOrganization = await getActiveOrganization(options);
+    const activeMember = await getActiveMember(options);
+
+    return {
+      ...session,
+      activeOrganization,
+      activeMember,
+    };
   } catch (error) {
     if (IS_DEVELOPMENT) {
       console.error('[auth] Failed to get full session:', error);
@@ -250,44 +224,6 @@ async function getActiveMember(options: {
       console.error('[auth] Failed to get active member:', error);
     }
     return null;
-  }
-}
-
-/**
- * Check if the current user has a specific permission.
- *
- * @param options.headers - The request headers (must include cookies)
- * @param options.body.permission - The permission to check
- * @returns Object with success boolean
- */
-async function hasPermission(options: {
-  headers: ReadonlyHeaders | Headers;
-  body: {
-    permission: Record<string, string[]>;
-  };
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    const response = await fetch(`${API_URL}/api/auth/organization/has-permission`, {
-      method: 'POST',
-      headers: {
-        ...headersToObject(options.headers),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(options.body),
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      return { success: false, error: 'Request failed' };
-    }
-
-    const data = await response.json();
-    return { success: data.success === true };
-  } catch (error) {
-    if (IS_DEVELOPMENT) {
-      console.error('[auth] Failed to check permission:', error);
-    }
-    return { success: false, error: 'Request failed' };
   }
 }
 
@@ -354,6 +290,23 @@ async function setActiveOrganization(options: {
 export interface FullOrganization extends Organization {
   members: Member[];
   invitations?: Invitation[];
+}
+
+async function getActiveOrganization(options: {
+  headers: ReadonlyHeaders | Headers;
+}): Promise<ActiveOrganization | null> {
+  const organizations = await listOrganizations(options);
+  const activeOrganizationId =
+    (await getActiveOrganizationCookie()) ?? organizations[0]?.id ?? null;
+
+  if (!activeOrganizationId) {
+    return null;
+  }
+
+  return (
+    organizations.find((organization) => organization.id === activeOrganizationId) ??
+    null
+  );
 }
 
 /**
@@ -452,147 +405,6 @@ async function createInvitation(options: {
 }
 
 /**
- * Add a member to an organization.
- *
- * @param options.headers - The request headers (must include cookies)
- * @param options.body - The member data
- * @returns The created member or null
- */
-async function addMember(options: {
-  headers: ReadonlyHeaders | Headers;
-  body: {
-    userId: string;
-    role: string;
-    organizationId: string;
-  };
-}): Promise<Member | null> {
-  try {
-    const response = await fetch(`${API_URL}/api/auth/organization/add-member`, {
-      method: 'POST',
-      headers: {
-        ...headersToObject(options.headers),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(options.body),
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to add member');
-    }
-
-    const data = await response.json();
-    return data as Member;
-  } catch (error) {
-    if (IS_DEVELOPMENT) {
-      console.error('[auth] Failed to add member:', error);
-    }
-    throw error;
-  }
-}
-
-/**
- * Sign up with email and password.
- * Note: This is mainly for testing. In production, use the auth client.
- */
-function signUpEmail(options: {
-  body: { email: string; password: string; name: string };
-  headers?: ReadonlyHeaders | Headers;
-  asResponse: true;
-}): Promise<Response>;
-function signUpEmail(options: {
-  body: { email: string; password: string; name: string };
-  headers?: ReadonlyHeaders | Headers;
-  asResponse?: false;
-}): Promise<Session | null>;
-async function signUpEmail(options: {
-  body: { email: string; password: string; name: string };
-  headers?: ReadonlyHeaders | Headers;
-  asResponse?: boolean;
-}): Promise<Response | Session | null> {
-  try {
-    const response = await fetch(`${API_URL}/api/auth/sign-up/email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers ? headersToObject(options.headers) : {}),
-      },
-      body: JSON.stringify(options.body),
-    });
-
-    if (options.asResponse) {
-      return response;
-    }
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data as Session;
-  } catch (error) {
-    if (IS_DEVELOPMENT) {
-      console.error('[auth] Failed to sign up:', error);
-    }
-    if (options.asResponse) {
-      return new Response(JSON.stringify({ error: 'Failed to sign up' }), { status: 500 });
-    }
-    return null;
-  }
-}
-
-/**
- * Sign in with email and password.
- * Note: This is mainly for testing. In production, use the auth client.
- */
-function signInEmail(options: {
-  body: { email: string; password: string };
-  headers?: ReadonlyHeaders | Headers;
-  asResponse: true;
-}): Promise<Response>;
-function signInEmail(options: {
-  body: { email: string; password: string };
-  headers?: ReadonlyHeaders | Headers;
-  asResponse?: false;
-}): Promise<Session | null>;
-async function signInEmail(options: {
-  body: { email: string; password: string };
-  headers?: ReadonlyHeaders | Headers;
-  asResponse?: boolean;
-}): Promise<Response | Session | null> {
-  try {
-    const response = await fetch(`${API_URL}/api/auth/sign-in/email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers ? headersToObject(options.headers) : {}),
-      },
-      body: JSON.stringify(options.body),
-    });
-
-    if (options.asResponse) {
-      return response;
-    }
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data as Session;
-  } catch (error) {
-    if (IS_DEVELOPMENT) {
-      console.error('[auth] Failed to sign in:', error);
-    }
-    if (options.asResponse) {
-      return new Response(JSON.stringify({ error: 'Failed to sign in' }), { status: 500 });
-    }
-    return null;
-  }
-}
-
-/**
  * Server-side auth API object that preserves the legacy app auth interface.
  *
  * Usage:
@@ -607,14 +419,10 @@ export const auth = {
     getSession,
     getFullSession,
     getActiveMember,
-    hasPermission,
     listOrganizations,
     setActiveOrganization,
     getFullOrganization,
     createInvitation,
-    addMember,
-    signUpEmail,
-    signInEmail,
   },
   /**
    * Type inference helpers for compatibility with existing code.

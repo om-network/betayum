@@ -21,7 +21,7 @@ describe('reportCheckResults silent upgrade', () => {
   it('swaps the token when the first response returns upgradedSessionToken', async () => {
     getAuthMock.mockReturnValue({
       sessionToken: 'old_tok',
-      cookieName: 'better-auth.session_token',
+      cookieName: '__session',
       userId: 'usr_1',
       organizations: [
         { organizationId: 'org_1', organizationName: 'A', deviceId: 'dev_1' },
@@ -55,7 +55,7 @@ describe('reportCheckResults silent upgrade', () => {
   it('aborts further check-ins if persisting the upgraded token fails', async () => {
     getAuthMock.mockReturnValue({
       sessionToken: 'old_tok',
-      cookieName: 'better-auth.session_token',
+      cookieName: '__session',
       userId: 'usr_1',
       organizations: [
         { organizationId: 'org_1', organizationName: 'A', deviceId: 'dev_1' },

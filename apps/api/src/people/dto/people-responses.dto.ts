@@ -70,8 +70,7 @@ export class UserResponseDto {
   lastLogin: Date | null;
 
   @ApiProperty({
-    description:
-      'Platform role of the user (managed by Better Auth admin plugin)',
+    description: 'Platform role of the user (managed by Comp AI auth controls)',
     example: 'user',
     nullable: true,
   })

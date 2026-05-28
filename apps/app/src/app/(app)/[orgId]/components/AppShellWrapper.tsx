@@ -6,8 +6,8 @@ import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-d
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
+import { clearActiveOrganizationCookieClient } from '@/lib/active-organization-client';
 import { canAccessCompliance, canAccessRoute, hasAnyPermission, type UserPermissions } from '@/lib/permissions';
-import { authClient } from '@/utils/auth-client';
 import { useClerk } from '@clerk/nextjs';
 import { Badge, Globe, Locked, Logout, ManageProtection, Settings } from '@carbon/icons-react';
 import {
@@ -235,6 +235,7 @@ function AppShellWrapperContent({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={async () => {
+                      clearActiveOrganizationCookieClient();
                       await signOut();
                       router.push('/auth');
                     }}

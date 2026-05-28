@@ -3,7 +3,7 @@
 // Skipped by default to avoid side effects in CI.
 // Run manually with: cd apps/api && GEN_OPENAPI=1 bunx jest src/gen-openapi.spec.ts
 
-// Mock better-auth ESM-only modules so Jest (CJS) can import AppModule's transitive AuthModule.
+// Mock auth dependencies before any imports so module evaluation stays isolated.
 jest.mock('./auth/auth.server', () => ({
   auth: {
     api: {},
@@ -13,35 +13,6 @@ jest.mock('./auth/auth.server', () => ({
   getTrustedOrigins: () => [],
   isTrustedOrigin: async () => false,
   isStaticTrustedOrigin: () => false,
-}));
-
-jest.mock('@thallesp/nestjs-better-auth', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { Module } = require('@nestjs/common');
-  @Module({})
-  class AuthModuleStub {
-    static forRoot() {
-      return {
-        module: AuthModuleStub,
-        imports: [],
-        providers: [],
-        exports: [],
-      };
-    }
-  }
-  return { AuthModule: AuthModuleStub };
-});
-
-jest.mock('better-auth/plugins/access', () => ({
-  createAccessControl: () => ({
-    newRole: () => ({}),
-    statement: {},
-  }),
-}));
-jest.mock('better-auth/plugins/organization/access', () => ({
-  defaultStatements: {},
-  adminAc: {},
-  ownerAc: {},
 }));
 
 jest.mock('@trycompai/auth', () => {
@@ -98,6 +69,9 @@ process.env.APP_AWS_ACCESS_KEY_ID = 'test-access-key-id';
 process.env.APP_AWS_SECRET_ACCESS_KEY = 'test-secret-access-key';
 process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
 process.env.APP_AWS_REGION = 'us-east-1';
+process.env.CLERK_SECRET_KEY = 'sk_test';
+process.env.CLERK_JWT_ISSUER = 'https://test.clerk.accounts.dev';
+process.env.CLERK_AUTHORIZED_PARTIES = 'http://localhost:3000';
 
 import path from 'path';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';

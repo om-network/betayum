@@ -81,7 +81,7 @@ export interface OrgRegistration {
 /** Stored authentication data — supports multiple organizations */
 export interface StoredAuth {
   sessionToken: string;
-  /** The cookie name used by the server (e.g. 'better-auth.session_token' or '__Secure-better-auth.session_token') */
+  /** The browser session cookie name used by the server (for Clerk, usually '__session'). */
   cookieName: string;
   userId: string;
   organizations: OrgRegistration[];
