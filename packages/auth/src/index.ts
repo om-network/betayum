@@ -19,3 +19,19 @@ export {
   parseRolePermissions,
   parseRoleObligations,
 } from './permissions';
+
+export {
+  CLERK_ORGANIZATION_PERMISSION_KEYS,
+  getCompAiPermissionActions,
+  isCompAiPermissionResource,
+  isValidCompAiPermission,
+  parseClerkOrganizationPermissionKey,
+  parseCompAiPermission,
+  toClerkOrganizationPermissionKey,
+  toClerkOrganizationPermissionKeys,
+  type ClerkOrganizationPermissionKey,
+  type CompAiPermission,
+  type CompAiPermissionAction,
+  type CompAiPermissionInput,
+  type CompAiPermissionResource,
+} from './clerk-authorization-catalog';
