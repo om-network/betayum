@@ -2,6 +2,10 @@
 
 import { apiClient } from '@/lib/api-client';
 import { ACTIVE_ORGANIZATION_COOKIE } from '@/lib/active-organization';
+import {
+  clearActiveOrganizationCookieClient,
+  setActiveOrganizationCookieClient,
+} from '@/lib/active-organization-client';
 import type {
   ActiveOrganization,
   Member,
@@ -38,10 +42,6 @@ function getActiveOrganizationId(): string | null {
 
   const value = match.slice(prefix.length);
   return value ? decodeURIComponent(value) : null;
-}
-
-function setActiveOrganizationId(organizationId: string): void {
-  document.cookie = `${ACTIVE_ORGANIZATION_COOKIE}=${encodeURIComponent(organizationId)}; path=/; samesite=lax`;
 }
 
 async function fetchMe(): Promise<MeResponse | null> {
@@ -133,7 +133,7 @@ export const authClient = {
   },
   organization: {
     setActive: async ({ organizationId }: { organizationId: string }) => {
-      setActiveOrganizationId(organizationId);
+      setActiveOrganizationCookieClient(organizationId);
       return { data: { organizationId }, error: null };
     },
     updateMemberRole: async ({
@@ -163,9 +163,7 @@ export const authClient = {
   }: {
     fetchOptions?: { onSuccess?: () => void };
   } = {}) => {
-    if (typeof document !== 'undefined') {
-      document.cookie = `${ACTIVE_ORGANIZATION_COOKIE}=; path=/; max-age=0; samesite=lax`;
-    }
+    clearActiveOrganizationCookieClient();
 
     fetchOptions?.onSuccess?.();
     return { error: null };

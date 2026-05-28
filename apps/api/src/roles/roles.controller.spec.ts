@@ -6,7 +6,7 @@ import { PermissionGuard } from '../auth/permission.guard';
 
 import { RolesController } from './roles.controller';
 
-// Mock @trycompai/auth and auth.server to avoid importing better-auth ESM in Jest
+// Mock @trycompai/auth and auth.server to keep the auth runtime out of Jest.
 jest.mock('@trycompai/auth', () => ({
   statement: {},
   allRoles: { owner: {}, admin: {}, auditor: {}, employee: {}, contractor: {} },

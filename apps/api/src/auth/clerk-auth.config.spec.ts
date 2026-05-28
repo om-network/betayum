@@ -1,6 +1,5 @@
 import {
   getClerkAuthConfig,
-  isClerkAuthProvider,
   validateClerkAuthConfig,
 } from './clerk-auth.config';
 
@@ -9,7 +8,6 @@ describe('Clerk auth config', () => {
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    delete process.env.AUTH_PROVIDER;
     delete process.env.CLERK_SECRET_KEY;
     delete process.env.CLERK_JWT_ISSUER;
     delete process.env.CLERK_AUTHORIZED_PARTIES;
@@ -20,53 +18,43 @@ describe('Clerk auth config', () => {
     process.env = originalEnv;
   });
 
-  it('does not require Clerk env when Clerk auth is disabled', () => {
-    expect(isClerkAuthProvider()).toBe(false);
-    expect(() => validateClerkAuthConfig()).not.toThrow();
-  });
-
-  it('fails fast when Clerk auth is enabled without issuer', () => {
-    process.env.AUTH_PROVIDER = 'clerk';
+  it('fails fast when issuer is missing', () => {
     process.env.CLERK_SECRET_KEY = 'sk_test';
     process.env.CLERK_AUTHORIZED_PARTIES = 'http://localhost:3000';
 
     expect(() => validateClerkAuthConfig()).toThrow(
-      'CLERK_JWT_ISSUER is required when AUTH_PROVIDER=clerk.',
+      'CLERK_JWT_ISSUER is required for Clerk authentication.',
     );
   });
 
-  it('fails fast when Clerk auth is enabled without secret key', () => {
-    process.env.AUTH_PROVIDER = 'clerk';
+  it('fails fast when secret key is missing', () => {
     process.env.CLERK_JWT_ISSUER = 'https://test.clerk.accounts.dev';
     process.env.CLERK_AUTHORIZED_PARTIES = 'http://localhost:3000';
 
     expect(() => validateClerkAuthConfig()).toThrow(
-      'CLERK_SECRET_KEY is required when AUTH_PROVIDER=clerk.',
+      'CLERK_SECRET_KEY is required for Clerk authentication.',
     );
   });
 
-  it('fails fast when Clerk auth is enabled without authorized parties', () => {
-    process.env.AUTH_PROVIDER = 'clerk';
+  it('fails fast when authorized parties are missing', () => {
     process.env.CLERK_SECRET_KEY = 'sk_test';
     process.env.CLERK_JWT_ISSUER = 'https://test.clerk.accounts.dev';
 
     expect(() => validateClerkAuthConfig()).toThrow(
-      'CLERK_AUTHORIZED_PARTIES is required when AUTH_PROVIDER=clerk.',
+      'CLERK_AUTHORIZED_PARTIES is required for Clerk authentication.',
     );
   });
 
   it('checks issuer after secret key is present', () => {
-    process.env.AUTH_PROVIDER = 'clerk';
     process.env.CLERK_SECRET_KEY = 'sk_test';
     process.env.CLERK_AUTHORIZED_PARTIES = 'http://localhost:3000';
 
     expect(() => validateClerkAuthConfig()).toThrow(
-      'CLERK_JWT_ISSUER is required when AUTH_PROVIDER=clerk.',
+      'CLERK_JWT_ISSUER is required for Clerk authentication.',
     );
   });
 
   it('parses Clerk auth config when required env is present', () => {
-    process.env.AUTH_PROVIDER = 'clerk';
     process.env.CLERK_SECRET_KEY = 'sk_test';
     process.env.CLERK_JWT_ISSUER = 'https://test.clerk.accounts.dev';
     process.env.CLERK_AUTHORIZED_PARTIES =
@@ -81,14 +69,13 @@ describe('Clerk auth config', () => {
   });
 
   it('rejects an invalid custom JWKS URL', () => {
-    process.env.AUTH_PROVIDER = 'clerk';
     process.env.CLERK_SECRET_KEY = 'sk_test';
     process.env.CLERK_JWT_ISSUER = 'https://test.clerk.accounts.dev';
     process.env.CLERK_AUTHORIZED_PARTIES = 'http://localhost:3000';
     process.env.CLERK_JWKS_URL = 'not a url';
 
     expect(() => validateClerkAuthConfig()).toThrow(
-      'CLERK_JWKS_URL must be a valid URL when AUTH_PROVIDER=clerk.',
+      'CLERK_JWKS_URL must be a valid URL for Clerk authentication.',
     );
   });
 });

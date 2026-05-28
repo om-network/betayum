@@ -7,48 +7,6 @@
  * separately in integration tests.
  */
 
-jest.mock('better-auth', () => ({ betterAuth: jest.fn() }));
-jest.mock('better-auth/adapters/prisma', () => ({ prismaAdapter: jest.fn() }));
-jest.mock('better-auth/plugins', () => ({
-  bearer: jest.fn(),
-  emailOTP: jest.fn(),
-  jwt: jest.fn(),
-  magicLink: jest.fn(),
-  multiSession: jest.fn(),
-  organization: jest.fn(),
-}));
-jest.mock('better-auth/plugins/access', () => ({
-  createAccessControl: (stmt: Record<string, readonly string[]>) => ({
-    newRole: (statements: Record<string, readonly string[]>) => ({
-      statements,
-    }),
-  }),
-}));
-jest.mock('better-auth/plugins/organization/access', () => ({
-  defaultStatements: {
-    organization: ['update', 'delete'],
-    member: ['create', 'update', 'delete'],
-    invitation: ['create', 'delete'],
-    team: ['create', 'update', 'delete'],
-  },
-  ownerAc: {
-    statements: {
-      organization: ['update', 'delete'],
-      member: ['create', 'update', 'delete'],
-      invitation: ['create', 'delete'],
-      team: ['create', 'update', 'delete'],
-    },
-  },
-  adminAc: {
-    statements: {
-      organization: ['update'],
-      member: ['create', 'update', 'delete'],
-      invitation: ['create', 'delete'],
-      team: ['create', 'update', 'delete'],
-    },
-  },
-}));
-
 import {
   BUILT_IN_ROLE_PERMISSIONS,
   BUILT_IN_ROLE_OBLIGATIONS,

@@ -24,7 +24,7 @@ jest.mock('@trycompai/auth', () => ({
   parseRolePermissions: jest.fn(),
 }));
 
-// Mock the permission.guard module so we don't pull better-auth's init chain
+// Mock the permission.guard module so we don't pull the full auth guard chain
 // (the guard only borrows the PERMISSIONS_KEY constant + RequiredPermission
 // type — both safe to redefine here).
 jest.mock('../auth/permission.guard', () => ({

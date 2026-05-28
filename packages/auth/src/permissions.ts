@@ -1,17 +1,44 @@
-import {
-  createAccessControl,
-  type AccessControl,
-} from 'better-auth/plugins/access';
-import {
-  defaultStatements,
-  adminAc,
-  ownerAc,
-} from 'better-auth/plugins/organization/access';
+type StatementMap = Record<string, readonly string[]>;
+
+export interface AccessRole<TStatements extends StatementMap = StatementMap> {
+  statements: TStatements;
+}
+
+export interface AccessControl {
+  newRole<TStatements extends StatementMap>(
+    statements: TStatements,
+  ): AccessRole<TStatements>;
+}
+
+const defaultStatements = {
+  organization: ['update', 'delete'],
+  member: ['create', 'update', 'delete'],
+  invitation: ['create', 'delete'],
+  team: ['create', 'update', 'delete'],
+  ac: ['create', 'read', 'update', 'delete'],
+} as const;
+
+function cloneStatements<TStatements extends StatementMap>(
+  statements: TStatements,
+): TStatements {
+  return Object.fromEntries(
+    Object.entries(statements).map(([resource, actions]) => [
+      resource,
+      [...actions],
+    ]),
+  ) as unknown as TStatements;
+}
+
+function createRole<TStatements extends StatementMap>(
+  statements: TStatements,
+): AccessRole<TStatements> {
+  return { statements: cloneStatements(statements) };
+}
 
 /**
- * Permission statement extending better-auth's defaults with GRC resources.
+ * Permission statement extending the shared default org/member resources.
  *
- * Default resources from better-auth:
+ * Default resources:
  * - organization: ['update', 'delete']
  * - member: ['create', 'update', 'delete']
  * - invitation: ['create', 'delete']
@@ -20,7 +47,7 @@ import {
  */
 export const statement = {
   ...defaultStatements,
-  // Override better-auth defaults to add 'read' action
+  // Extend the default resources to include read access.
   organization: ['read', 'update', 'delete'],
   member: ['create', 'read', 'update', 'delete'],
   invitation: ['create', 'read', 'delete'],
@@ -53,14 +80,14 @@ export const statement = {
   secret: ['create', 'read', 'update', 'delete'],
 } as const;
 
-export const ac: AccessControl = createAccessControl(statement);
+export const ac: AccessControl = {
+  newRole: createRole,
+};
 
 /**
  * Owner role - Full access to everything
- * Extends better-auth's ownerAc with GRC permissions
  */
 export const owner = ac.newRole({
-  ...ownerAc.statements,
   organization: ['read', 'update', 'delete'],
   member: ['create', 'read', 'update', 'delete'],
   invitation: ['create', 'read', 'delete'],
@@ -95,10 +122,8 @@ export const owner = ac.newRole({
 
 /**
  * Admin role - Full access except organization deletion
- * Extends better-auth's adminAc with GRC permissions
  */
 export const admin = ac.newRole({
-  ...adminAc.statements,
   organization: ['read', 'update'], // No delete
   member: ['create', 'read', 'update', 'delete'],
   invitation: ['create', 'read', 'delete'],

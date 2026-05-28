@@ -6,7 +6,7 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { RisksController } from './risks.controller';
 import { RisksService } from './risks.service';
 
-// Mock auth.server to avoid importing better-auth ESM in Jest
+// Mock auth.server to keep the auth runtime out of this Jest unit test.
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
   db: {},

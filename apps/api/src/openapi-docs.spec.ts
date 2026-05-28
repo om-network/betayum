@@ -1,5 +1,4 @@
-// Mock better-auth ESM-only modules so Jest (CJS) can import AppModule's transitive AuthModule.
-// These must appear before any imports so that Jest hoists them before module evaluation.
+// Mock auth dependencies before any imports so module evaluation stays isolated.
 
 jest.mock('./auth/auth.server', () => ({
   auth: {
@@ -12,36 +11,7 @@ jest.mock('./auth/auth.server', () => ({
   isStaticTrustedOrigin: () => false,
 }));
 
-jest.mock('@thallesp/nestjs-better-auth', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { Module } = require('@nestjs/common');
-  @Module({})
-  class AuthModuleStub {
-    static forRoot() {
-      return {
-        module: AuthModuleStub,
-        imports: [],
-        providers: [],
-        exports: [],
-      };
-    }
-  }
-  return { AuthModule: AuthModuleStub };
-});
-
-jest.mock('better-auth/plugins/access', () => ({
-  createAccessControl: () => ({
-    newRole: () => ({}),
-    statement: {},
-  }),
-}));
-jest.mock('better-auth/plugins/organization/access', () => ({
-  defaultStatements: {},
-  adminAc: {},
-  ownerAc: {},
-}));
-
-// Stub @trycompai/auth (dist/ not built in worktree; avoids resolving better-auth ESM)
+// Stub @trycompai/auth so the spec does not depend on a built package.
 jest.mock('@trycompai/auth', () => {
   const emptyRole = { statements: {} };
   const roles = {
@@ -94,13 +64,16 @@ jest.mock('@upstash/redis', () => ({
 }));
 
 // Set required env vars before any module-level code runs.
-// These prevent config factories (aws.config.ts, better-auth, etc.) from throwing.
+// These prevent config factories from throwing.
 process.env.SECRET_KEY = 'test-secret-key-at-least-16-chars';
 process.env.BASE_URL = 'http://localhost:3333';
 process.env.APP_AWS_ACCESS_KEY_ID = 'test-access-key-id';
 process.env.APP_AWS_SECRET_ACCESS_KEY = 'test-secret-access-key';
 process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
 process.env.APP_AWS_REGION = 'us-east-1';
+process.env.CLERK_SECRET_KEY = 'sk_test';
+process.env.CLERK_JWT_ISSUER = 'https://test.clerk.accounts.dev';
+process.env.CLERK_AUTHORIZED_PARTIES = 'http://localhost:3000';
 
 import { Test } from '@nestjs/testing';
 import {

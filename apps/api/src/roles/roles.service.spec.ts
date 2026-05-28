@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 
-// Mock @trycompai/auth to avoid ESM import issues with better-auth in Jest
+// Mock @trycompai/auth so this spec can focus on role logic in Jest.
 jest.mock('@trycompai/auth', () => {
   const statement = {
     organization: ['read', 'update', 'delete'],

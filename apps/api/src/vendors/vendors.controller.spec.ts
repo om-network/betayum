@@ -3,7 +3,7 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import type { AuthContext } from '../auth/types';
 
-// Mock auth.server to avoid importing better-auth ESM in Jest
+// Mock auth.server to keep the auth runtime out of this Jest unit test.
 jest.mock('../auth/auth.server', () => ({
   auth: {
     api: {

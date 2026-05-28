@@ -524,9 +524,9 @@ export class RolesService {
    * `organizationRole.findMany` keyed by the distinct role names present in
    * the input.
    *
-   * Matches better-auth's `hasPermissionFn` semantics: comma-separated roles
-   * in `member.role` are treated as a union (ANY role granting the permission
-   * is sufficient). Unknown role names are skipped silently.
+   * Comma-separated roles in `member.role` are treated as a union (ANY role
+   * granting the permission is sufficient). Unknown role names are skipped
+   * silently.
    */
   async filterMembersWithPermission<M extends { role: string | null }>(
     organizationId: string,

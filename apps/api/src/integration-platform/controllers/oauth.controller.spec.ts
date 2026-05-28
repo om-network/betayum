@@ -323,7 +323,7 @@ describe('OAuthController', () => {
     const buildRequest = (overrides?: Partial<Request['headers']>) =>
       ({
         headers: {
-          cookie: 'better-auth.session_token=valid_cookie',
+          cookie: '__session=valid_cookie',
           ...overrides,
         },
       }) as unknown as Request;

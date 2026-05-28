@@ -16,7 +16,6 @@ describe('ClerkSessionService', () => {
   beforeEach(() => {
     process.env = {
       ...originalEnv,
-      AUTH_PROVIDER: 'clerk',
       CLERK_SECRET_KEY: 'sk_test',
       CLERK_JWT_ISSUER: 'https://test.clerk.accounts.dev',
       CLERK_AUTHORIZED_PARTIES: 'http://localhost:3000',
@@ -79,5 +78,26 @@ describe('ClerkSessionService', () => {
     await expect(
       service.verifyRequest({ authorization: 'Bearer token' }),
     ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('accepts E2E test session tokens without Clerk JWKS verification', async () => {
+    process.env.E2E_TEST_MODE = 'true';
+    const tokenPayload = Buffer.from(
+      JSON.stringify({
+        clerkUserId: 'clerk_e2e_1',
+        sessionId: 'sess_e2e_1',
+        organizationId: 'org_e2e_1',
+      }),
+    ).toString('base64url');
+
+    await expect(
+      service.verifyRequest({ cookie: `__session=e2e.${tokenPayload}` }),
+    ).resolves.toEqual({
+      clerkUserId: 'clerk_e2e_1',
+      sessionId: 'sess_e2e_1',
+      organizationId: 'org_e2e_1',
+    });
+
+    expect(mockJwtVerify).not.toHaveBeenCalled();
   });
 });

@@ -14,7 +14,7 @@ test('simple auth flow', async ({ page, context, browserName }) => {
 
   // Verify session cookie was set
   const cookies = await context.cookies();
-  const sessionCookie = cookies.find((c) => c.name === 'better-auth.session_token');
+  const sessionCookie = cookies.find((c) => c.name === '__session');
   expect(sessionCookie).toBeDefined();
 
   // Navigate to root first to let the user settle into their authenticated state

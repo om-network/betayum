@@ -1,6 +1,6 @@
 // Stub out the dependencies pulled in transitively by HybridAuthGuard so
 // the controller can be imported in this unit-test env without booting
-// Prisma or loading better-auth's ESM modules. We only test the
+// Prisma or loading the auth runtime. We only test the
 // controller's orchestration logic — the guards themselves are tested
 // elsewhere.
 jest.mock('@db', () => ({ db: {} }));

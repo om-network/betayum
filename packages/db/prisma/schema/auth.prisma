@@ -97,8 +97,8 @@ model Verification {
   updatedAt  DateTime @updatedAt
 }
 
-// JWT Plugin - Required by Better Auth JWT plugin
-// https://www.better-auth.com/docs/plugins/jwt
+// Legacy JWT signing keys retained for historical compatibility with older
+// auth records. New browser-session auth is Clerk-backed.
 model Jwks {
   id         String    @id @default(dbgenerated("generate_prefixed_cuid('jwk'::text)"))
   publicKey  String
@@ -115,7 +115,7 @@ model Member {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role           String // Purposefully a string, since BetterAuth doesn't support enums this way
+  role           String // Stored as a string to support built-in and custom roles.
   createdAt      DateTime     @default(now())
 
   department                      Departments                       @default(none)
@@ -162,7 +162,7 @@ model Invitation {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   email          String
-  role           String // Purposefully a string, since BetterAuth doesn't support enums this way
+  role           String // Stored as a string to support built-in and custom roles.
   status         String
   expiresAt      DateTime
   inviterId      String
@@ -170,8 +170,8 @@ model Invitation {
   createdAt      DateTime     @default(now())
 }
 
-// This is only for the app to consume, shouldn't be enforced by DB
-// Otherwise it won't work with Better Auth, as per https://www.better-auth.com/docs/plugins/organization#access-control
+// This is only for the app to consume and should not be enforced by the DB
+// because custom organization roles remain data-driven.
 enum Role {
   owner
   admin
@@ -180,13 +180,11 @@ enum Role {
   contractor
 }
 
-// Custom roles for dynamic access control
-// This table stores organization-specific custom roles created via better-auth
-// See: https://www.better-auth.com/docs/plugins/organization#dynamic-access-control
+// Custom roles for organization-specific access control.
 model OrganizationRole {
   id             String       @id @default(dbgenerated("generate_prefixed_cuid('rol'::text)"))
   name           String
-  permissions    String       @db.Text // Stored as serialized JSON string for better-auth compatibility
+  permissions    String       @db.Text // Stored as serialized JSON for runtime role resolution.
   obligations    String       @default("{}") @db.Text // JSON: { compliance?: boolean }
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

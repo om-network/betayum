@@ -1,9 +1,9 @@
 /**
  * Tests for the getTrustedOrigins / isTrustedOrigin logic.
  *
- * Because auth.server.ts has side effects at module load time (better-auth
- * initialization, DB connections, validateSecurityConfig), we test the logic
- * in isolation rather than importing the module directly.
+ * Because auth.server.ts has side effects at module load time (DB connections,
+ * config validation, and auth setup), we test the logic in isolation rather
+ * than importing the module directly.
  */
 
 function getTrustedOriginsLogic(

@@ -37,7 +37,7 @@ export const test = base.extend<AuthFixtures>({
       // Go to login page and authenticate
       await page.goto('/auth');
 
-      // For Google OAuth with better-auth
+      // For real Clerk-hosted auth in E2E
       // Option 1: Use test account with real Google OAuth (recommended for E2E)
       if (process.env.E2E_USE_REAL_AUTH === 'true') {
         // Click Google sign-in button

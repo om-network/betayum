@@ -281,8 +281,9 @@ export class ApiKeyService {
   }
 
   /**
-   * Resources from better-auth that are not used by any API endpoint's @RequirePermission.
-   * These are handled internally by better-auth for session-based auth only.
+   * Auth-related resources that are not exposed through customer-facing
+   * `@RequirePermission` endpoints. Session validation and platform auth flows
+   * are handled outside this API-key permission map.
    */
   private static readonly INTERNAL_ONLY_RESOURCES = ['invitation', 'team'];
 

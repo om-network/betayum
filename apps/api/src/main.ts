@@ -13,7 +13,6 @@ import {
   PUBLIC_OPENAPI_DESCRIPTION,
   PUBLIC_OPENAPI_TITLE,
 } from './openapi/public-docs-metadata';
-import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { validateClerkAuthConfig } from './auth/clerk-auth.config';
 import { originCheckMiddleware } from './auth/origin-check.middleware';
 import { isTrustedOrigin } from './auth/trusted-origins';
@@ -76,8 +75,6 @@ async function bootstrap(): Promise<void> {
   // Rejects state-changing requests from untrusted origins.
   // Defense-in-depth: CORS blocks fetch-based CSRF, this blocks form-based CSRF.
   app.use(originCheckMiddleware);
-
-  app.use(adminAuthRateLimiter);
 
   // STEP 4a: Configure body parser
   // NOTE: Attachment uploads are sent as base64 in JSON, so request payloads are

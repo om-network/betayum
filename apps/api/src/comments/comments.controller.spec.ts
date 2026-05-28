@@ -6,7 +6,7 @@ import type { AuthContext } from '../auth/types';
 import { CommentsController } from './comments.controller';
 import { CommentsService } from './comments.service';
 
-// Mock auth.server to avoid importing better-auth ESM in Jest
+// Mock auth.server to keep the auth runtime out of this Jest unit test.
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
   db: {},

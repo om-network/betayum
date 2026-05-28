@@ -4,53 +4,8 @@
  * Verifies that adding the `portal` resource did not alter
  * the pre-existing permissions of any built-in role.
  *
- * We mock better-auth's ESM modules so the permissions.ts code
- * can execute under Jest, while still testing the real role definitions.
+ * Verifies the standalone role definitions directly.
  */
-
-// Mock better-auth ESM modules before importing @trycompai/auth
-jest.mock('better-auth', () => ({ betterAuth: jest.fn() }));
-jest.mock('better-auth/adapters/prisma', () => ({ prismaAdapter: jest.fn() }));
-jest.mock('better-auth/plugins', () => ({
-  bearer: jest.fn(),
-  emailOTP: jest.fn(),
-  jwt: jest.fn(),
-  magicLink: jest.fn(),
-  multiSession: jest.fn(),
-  organization: jest.fn(),
-}));
-jest.mock('better-auth/plugins/access', () => ({
-  createAccessControl: (stmt: Record<string, readonly string[]>) => ({
-    newRole: (statements: Record<string, readonly string[]>) => ({
-      statements,
-    }),
-  }),
-}));
-
-jest.mock('better-auth/plugins/organization/access', () => ({
-  defaultStatements: {
-    organization: ['update', 'delete'],
-    member: ['create', 'update', 'delete'],
-    invitation: ['create', 'delete'],
-    team: ['create', 'update', 'delete'],
-  },
-  ownerAc: {
-    statements: {
-      organization: ['update', 'delete'],
-      member: ['create', 'update', 'delete'],
-      invitation: ['create', 'delete'],
-      team: ['create', 'update', 'delete'],
-    },
-  },
-  adminAc: {
-    statements: {
-      organization: ['update'],
-      member: ['create', 'update', 'delete'],
-      invitation: ['create', 'delete'],
-      team: ['create', 'update', 'delete'],
-    },
-  },
-}));
 
 import {
   BUILT_IN_ROLE_PERMISSIONS,

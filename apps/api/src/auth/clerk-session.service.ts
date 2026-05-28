@@ -25,6 +25,11 @@ export class ClerkSessionService {
       );
     }
 
+    const e2eSession = this.resolveE2ETestSession(token);
+    if (e2eSession) {
+      return e2eSession;
+    }
+
     const { issuer, authorizedParties } = getClerkAuthConfig();
 
     try {
@@ -151,5 +156,46 @@ export class ClerkSessionService {
 
     const maybeActor = actor as Record<string, unknown>;
     return typeof maybeActor.sub === 'string' ? maybeActor.sub : undefined;
+  }
+
+  private resolveE2ETestSession(token: string): VerifiedClerkSession | null {
+    if (process.env.E2E_TEST_MODE !== 'true' || !token.startsWith('e2e.')) {
+      return null;
+    }
+
+    const encodedPayload = token.slice('e2e.'.length);
+    if (!encodedPayload) {
+      throw new UnauthorizedException('Invalid E2E test session token.');
+    }
+
+    try {
+      const payload = JSON.parse(
+        Buffer.from(encodedPayload, 'base64url').toString('utf8'),
+      ) as {
+        clerkUserId?: unknown;
+        sessionId?: unknown;
+        organizationId?: unknown;
+      };
+
+      if (
+        typeof payload.clerkUserId !== 'string' ||
+        !payload.clerkUserId ||
+        typeof payload.sessionId !== 'string' ||
+        !payload.sessionId
+      ) {
+        throw new Error('missing required claims');
+      }
+
+      return {
+        clerkUserId: payload.clerkUserId,
+        sessionId: payload.sessionId,
+        organizationId:
+          typeof payload.organizationId === 'string' && payload.organizationId
+            ? payload.organizationId
+            : undefined,
+      };
+    } catch {
+      throw new UnauthorizedException('Invalid E2E test session token.');
+    }
   }
 }

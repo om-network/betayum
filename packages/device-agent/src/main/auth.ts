@@ -267,7 +267,7 @@ async function fetchOrgsAndRegister(
 
   return {
     sessionToken,
-    cookieName: 'better-auth.session_token',
+    cookieName: '__session',
     userId,
     organizations: registrations,
   };

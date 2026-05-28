@@ -125,7 +125,7 @@ async function statusAction(apiUrlOverride: string | undefined, json: boolean): 
   try {
     const session = await rawApiRequest<{
       user?: { id: string; email: string; name: string; role: string };
-    }>('/api/auth/get-session', { apiUrl });
+    }>('/v1/auth/me', { apiUrl });
 
     outputResult(
       {

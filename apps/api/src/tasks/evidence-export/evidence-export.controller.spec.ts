@@ -1,5 +1,5 @@
 // Mocks must be declared before any SUT import so guards' transitive deps
-// (Prisma, better-auth) don't instantiate in Jest.
+// (Prisma, auth runtime) don't instantiate in Jest.
 jest.mock('@db', () => ({
   ...jest.requireActual('@prisma/client'),
   db: {},
