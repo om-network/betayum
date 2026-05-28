@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockRedirect = vi.fn();
 const mockServerApiGet = vi.fn();
+const mockGetActiveOrganizationCookie = vi.fn();
 
 vi.mock('@/utils/auth', async () => {
   const { mockAuth } = await import('@/test-utils/mocks/auth');
@@ -12,6 +13,10 @@ vi.mock('@/lib/api-server', () => ({
   serverApi: {
     get: (...args: unknown[]) => mockServerApiGet(...args),
   },
+}));
+
+vi.mock('@/lib/active-organization', () => ({
+  getActiveOrganizationCookie: () => mockGetActiveOrganizationCookie(),
 }));
 
 vi.mock('next/headers', () => ({
@@ -32,6 +37,7 @@ const { default: AdminRedirectLayout } = await import('./layout');
 describe('(app)/admin/layout - redirect gate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetActiveOrganizationCookie.mockResolvedValue(null);
   });
 
   it('redirects to /auth when user has no session', async () => {
@@ -86,6 +92,21 @@ describe('(app)/admin/layout - redirect gate', () => {
 
     expect(mockServerApiGet).toHaveBeenCalledWith('/v1/admin/organizations');
     expect(mockRedirect).toHaveBeenCalledWith('/org_first/admin');
+  });
+
+  it('prefers the active organization cookie over retired session organization state', async () => {
+    setupAuthMocks({
+      session: createMockSession({ activeOrganizationId: 'org_retired' }),
+      user: createMockUser({ role: 'admin' }),
+    });
+    mockGetActiveOrganizationCookie.mockResolvedValue('org_second');
+    mockServerApiGet.mockResolvedValue({
+      data: { data: [{ id: 'org_first' }, { id: 'org_second' }] },
+    });
+
+    await expect(AdminRedirectLayout({ children: null })).rejects.toThrow('NEXT_REDIRECT');
+
+    expect(mockRedirect).toHaveBeenCalledWith('/org_second/admin');
   });
 
   it('redirects admin to / when no orgs found', async () => {

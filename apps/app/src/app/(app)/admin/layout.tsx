@@ -1,3 +1,4 @@
+import { getActiveOrganizationCookie } from '@/lib/active-organization';
 import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
@@ -23,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   const orgs = organizationsRes.data.data;
-  const activeOrgId = session.session.activeOrganizationId;
+  const activeOrgId = await getActiveOrganizationCookie();
   const targetOrg = orgs.find((o) => o.id === activeOrgId) ?? orgs[0];
 
   if (targetOrg) {

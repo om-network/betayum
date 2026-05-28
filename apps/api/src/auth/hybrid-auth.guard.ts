@@ -195,7 +195,6 @@ export class HybridAuthGuard implements CanActivate {
         user: {
           select: {
             email: true,
-            role: true,
           },
         },
       },
@@ -245,7 +244,7 @@ export class HybridAuthGuard implements CanActivate {
     request.authType = 'session';
     request.isApiKey = false;
     request.isServiceToken = false;
-    request.isPlatformAdmin = session.user.role === 'admin';
+    request.isPlatformAdmin = false;
     request.sessionId = session.id;
     request.sessionDeviceAgent = true;
 
