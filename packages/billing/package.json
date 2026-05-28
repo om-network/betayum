@@ -18,7 +18,8 @@
     "format": "prettier --write .",
     "lint": "prettier --check .",
     "test": "bun test src/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch"
   },
   "sideEffects": false,
   "devDependencies": {

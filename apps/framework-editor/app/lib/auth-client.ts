@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Auth client for browser-side authentication.
  *

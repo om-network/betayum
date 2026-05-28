@@ -12,6 +12,7 @@ import { HybridAuthGuard } from './hybrid-auth.guard';
 import { PermissionEvaluatorService } from './permission-evaluator.service';
 import { PermissionGuard } from './permission.guard';
 import { SupportContextService } from './support-context.service';
+import { PlatformAdminGuard } from './platform-admin.guard';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SupportContextService } from './support-context.service';
     PermissionEvaluatorService,
     PermissionGuard,
     SupportContextService,
+    PlatformAdminGuard,
     ActingUserResolver,
   ],
   exports: [
@@ -52,6 +54,7 @@ import { SupportContextService } from './support-context.service';
     PermissionEvaluatorService,
     PermissionGuard,
     SupportContextService,
+    PlatformAdminGuard,
     ActingUserResolver,
     BetterAuthModule,
   ],
