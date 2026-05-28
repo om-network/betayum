@@ -11,6 +11,8 @@ export type SupportContextPayload = {
   targetUserId: string;
   targetUserName: string;
   targetUserEmail: string;
+  reason?: string;
+  context?: string;
   expiresAt: number;
 };
 
@@ -32,6 +34,8 @@ export function createSupportContextPayload(input: {
   targetUserId: string;
   targetUserName: string;
   targetUserEmail: string;
+  reason?: string;
+  context?: string;
   expiresAt: number;
 }): SupportContextPayload {
   return {
@@ -42,14 +46,13 @@ export function createSupportContextPayload(input: {
     targetUserId: input.targetUserId,
     targetUserName: input.targetUserName,
     targetUserEmail: input.targetUserEmail.toLowerCase(),
+    reason: input.reason,
+    context: input.context,
     expiresAt: input.expiresAt,
   };
 }
 
-export function signSupportContext({
-  payload,
-  secret,
-}: SignSupportContextParams): string {
+export function signSupportContext({ payload, secret }: SignSupportContextParams): string {
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signature = signValue({ encodedPayload, secret });
 
@@ -104,16 +107,12 @@ export function parseSupportContext({
     targetUserId: parsed.targetUserId,
     targetUserName: parsed.targetUserName,
     targetUserEmail: parsed.targetUserEmail,
+    reason: typeof parsed.reason === 'string' ? parsed.reason : undefined,
+    context: typeof parsed.context === 'string' ? parsed.context : undefined,
     expiresAt: parsed.expiresAt,
   };
 }
 
-function signValue({
-  encodedPayload,
-  secret,
-}: {
-  encodedPayload: string;
-  secret: string;
-}): Buffer {
+function signValue({ encodedPayload, secret }: { encodedPayload: string; secret: string }): Buffer {
   return createHmac('sha256', secret).update(encodedPayload).digest();
 }

@@ -30,6 +30,7 @@ import { Reflector } from '@nestjs/core';
 import type { ApiKeyService } from './api-key.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import type { ClerkIdentityService } from './clerk-identity.service';
+import type { ClerkPlatformAdminService } from './clerk-platform-admin.service';
 import type { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import type {
@@ -103,13 +104,18 @@ describe('HybridAuthGuard Clerk org boundaries', () => {
   } as unknown as MemberProfileResolverService;
   const supportContextService = {
     resolve: jest.fn().mockResolvedValue(null),
+    resolveCookieValue: jest.fn().mockReturnValue(null),
   } as unknown as SupportContextService;
+  const clerkPlatformAdminService = {
+    isPlatformAdmin: jest.fn().mockResolvedValue(false),
+  } as unknown as ClerkPlatformAdminService;
   const clerkRequestAuthService = new ClerkRequestAuthService(
     clerkIdentityService,
     clerkSessionService,
     organizationProfileResolver,
     memberProfileResolver,
     supportContextService,
+    clerkPlatformAdminService,
   );
 
   let guard: HybridAuthGuard;
@@ -118,6 +124,10 @@ describe('HybridAuthGuard Clerk org boundaries', () => {
     jest.resetAllMocks();
     jest.mocked(reflector.getAllAndOverride).mockReturnValue(false);
     jest.mocked(supportContextService.resolve).mockResolvedValue(null);
+    jest.mocked(supportContextService.resolveCookieValue).mockReturnValue(null);
+    jest
+      .mocked(clerkPlatformAdminService.isPlatformAdmin)
+      .mockResolvedValue(false);
     mockDb.session.findFirst.mockResolvedValue(null);
     guard = new HybridAuthGuard(
       apiKeyService,

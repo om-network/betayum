@@ -6,6 +6,12 @@ const mockServerApiPost = vi.fn();
 const mockCreateSupportContextPayload = vi.fn();
 const mockSignSupportContext = vi.fn();
 
+vi.mock('@/env.mjs', () => ({
+  env: {
+    AUTH_SECRET: 'test-secret',
+  },
+}));
+
 vi.mock('@clerk/nextjs/server', () => ({
   auth: () => mockClerkAuth(),
 }));
@@ -20,8 +26,7 @@ vi.mock('@/lib/api-server', () => ({
 
 vi.mock('@trycompai/utils/support-context', () => ({
   SUPPORT_CONTEXT_COOKIE: 'comp_support_context',
-  createSupportContextPayload: (...args: unknown[]) =>
-    mockCreateSupportContextPayload(...args),
+  createSupportContextPayload: (...args: unknown[]) => mockCreateSupportContextPayload(...args),
   parseSupportContext: vi.fn(),
   signSupportContext: (...args: unknown[]) => mockSignSupportContext(...args),
 }));

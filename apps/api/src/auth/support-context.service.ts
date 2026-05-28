@@ -7,7 +7,7 @@ import {
 
 type SupportContextActor = {
   id: string;
-  role: string | null;
+  isPlatformAdmin: boolean;
 };
 
 type ResolveSupportContextParams = {
@@ -55,7 +55,7 @@ export class SupportContextService {
       return null;
     }
 
-    if (actor.role !== 'admin') {
+    if (!actor.isPlatformAdmin) {
       throw new UnauthorizedException(
         'Support context requires platform admin privileges.',
       );

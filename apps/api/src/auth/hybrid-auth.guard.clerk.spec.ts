@@ -30,6 +30,7 @@ import { Reflector } from '@nestjs/core';
 import type { ApiKeyService } from './api-key.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import type { ClerkIdentityService } from './clerk-identity.service';
+import type { ClerkPlatformAdminService } from './clerk-platform-admin.service';
 import type { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import type {
@@ -128,19 +129,28 @@ describe('HybridAuthGuard with Clerk session auth', () => {
   } as unknown as MemberProfileResolverService;
   const supportContextService = {
     resolve: jest.fn().mockResolvedValue(null),
+    resolveCookieValue: jest.fn().mockReturnValue(null),
   } as unknown as SupportContextService;
+  const clerkPlatformAdminService = {
+    isPlatformAdmin: jest.fn().mockResolvedValue(false),
+  } as unknown as ClerkPlatformAdminService;
   const clerkRequestAuthService = new ClerkRequestAuthService(
     clerkIdentityService,
     clerkSessionService,
     organizationProfileResolver,
     memberProfileResolver,
     supportContextService,
+    clerkPlatformAdminService,
   );
 
   let guard: HybridAuthGuard;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(supportContextService.resolveCookieValue).mockReturnValue(null);
+    jest
+      .mocked(clerkPlatformAdminService.isPlatformAdmin)
+      .mockResolvedValue(false);
     mockDb.session.findFirst.mockResolvedValue(null);
     guard = new HybridAuthGuard(
       apiKeyService,
@@ -202,9 +212,11 @@ describe('HybridAuthGuard with Clerk session auth', () => {
       authType: 'session',
       isApiKey: false,
       isServiceToken: false,
+      isPlatformAdmin: false,
       sessionId: 'sess_1',
       sessionDeviceAgent: false,
     });
+    expect(clerkPlatformAdminService.isPlatformAdmin).not.toHaveBeenCalled();
     expect(
       memberProfileResolver.resolveByClerkUserAndOrganization,
     ).toHaveBeenCalledWith({
@@ -293,5 +305,60 @@ describe('HybridAuthGuard with Clerk session auth', () => {
         buildContext({ headers: { authorization: 'Bearer session_token' } }),
       ),
     ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('uses Clerk platform admin capability for support context attribution', async () => {
+    const request: TestAuthenticatedRequest = {
+      headers: {
+        authorization: 'Bearer session_token',
+        cookie: 'comp_support_context=signed',
+      },
+    };
+    jest.mocked(clerkSessionService.verifyRequest).mockResolvedValueOnce({
+      clerkUserId: 'clerk_admin',
+      sessionId: 'sess_1',
+      organizationId: 'clerk_org_1',
+      organizationRole: 'org:admin',
+    });
+    jest
+      .mocked(clerkIdentityService.resolveMappedUser)
+      .mockResolvedValueOnce({ ...baseUser, id: 'usr_admin' });
+    jest
+      .mocked(supportContextService.resolveCookieValue)
+      .mockReturnValueOnce('signed');
+    jest
+      .mocked(clerkPlatformAdminService.isPlatformAdmin)
+      .mockResolvedValueOnce(true);
+    jest.mocked(supportContextService.resolve).mockResolvedValueOnce({
+      memberId: 'mem_target',
+      memberDepartment: 'none',
+      organizationId: 'org_1',
+      targetUserId: 'usr_target',
+      targetUserEmail: 'target@example.com',
+      targetUserRoles: ['employee'],
+      impersonatedBy: 'usr_admin',
+    });
+
+    await expect(guard.canActivate(buildContext(request))).resolves.toBe(true);
+
+    expect(clerkPlatformAdminService.isPlatformAdmin).toHaveBeenCalledWith(
+      'clerk_admin',
+    );
+    expect(supportContextService.resolve).toHaveBeenCalledWith({
+      actor: {
+        id: 'usr_admin',
+        isPlatformAdmin: true,
+      },
+      cookieHeader: 'comp_support_context=signed',
+      requestedOrganizationId: undefined,
+    });
+    expect(request).toMatchObject({
+      userId: 'usr_target',
+      userEmail: 'target@example.com',
+      organizationId: 'org_1',
+      memberId: 'mem_target',
+      impersonatedBy: 'usr_admin',
+      isPlatformAdmin: false,
+    });
   });
 });

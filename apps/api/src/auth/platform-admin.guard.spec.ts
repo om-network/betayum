@@ -4,11 +4,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ClerkIdentityService } from './clerk-identity.service';
+import { ClerkPlatformAdminService } from './clerk-platform-admin.service';
 import { ClerkSessionService } from './clerk-session.service';
 import { PlatformAdminGuard } from './platform-admin.guard';
 
 const mockVerifyRequest = jest.fn();
 const mockResolveMappedUser = jest.fn();
+const mockRequirePlatformAdmin = jest.fn();
 
 jest.mock('./clerk-identity.service', () => ({
   ClerkIdentityService: class ClerkIdentityService {},
@@ -16,6 +18,10 @@ jest.mock('./clerk-identity.service', () => ({
 
 jest.mock('./clerk-session.service', () => ({
   ClerkSessionService: class ClerkSessionService {},
+}));
+
+jest.mock('./clerk-platform-admin.service', () => ({
+  ClerkPlatformAdminService: class ClerkPlatformAdminService {},
 }));
 
 function buildContext(
@@ -38,6 +44,7 @@ describe('PlatformAdminGuard', () => {
   let guard: PlatformAdminGuard;
   let clerkSessionService: ClerkSessionService;
   let clerkIdentityService: ClerkIdentityService;
+  let clerkPlatformAdminService: ClerkPlatformAdminService;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -47,7 +54,15 @@ describe('PlatformAdminGuard', () => {
     clerkIdentityService = {
       resolveMappedUser: (...args: unknown[]) => mockResolveMappedUser(...args),
     } as unknown as ClerkIdentityService;
-    guard = new PlatformAdminGuard(clerkSessionService, clerkIdentityService);
+    clerkPlatformAdminService = {
+      requirePlatformAdmin: (...args: unknown[]) =>
+        mockRequirePlatformAdmin(...args),
+    } as unknown as ClerkPlatformAdminService;
+    guard = new PlatformAdminGuard(
+      clerkSessionService,
+      clerkIdentityService,
+      clerkPlatformAdminService,
+    );
   });
 
   it('throws UnauthorizedException when no auth headers are present', async () => {
@@ -82,13 +97,18 @@ describe('PlatformAdminGuard', () => {
     await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException);
   });
 
-  it('throws ForbiddenException when user role is not admin', async () => {
+  it('throws ForbiddenException when Clerk admin capability is missing', async () => {
     mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
     mockResolveMappedUser.mockResolvedValue({
       id: 'usr_1',
       email: 'user@test.com',
-      role: 'user',
+      role: 'admin',
     });
+    mockRequirePlatformAdmin.mockRejectedValue(
+      new ForbiddenException(
+        'Access denied: Platform admin privileges required',
+      ),
+    );
     const ctx = buildContext({ cookie: 'session=abc' });
 
     await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
@@ -97,30 +117,38 @@ describe('PlatformAdminGuard', () => {
     );
   });
 
-  it('throws ForbiddenException when user role is null', async () => {
+  it('does not use the local user role as platform admin authority', async () => {
     mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
     mockResolveMappedUser.mockResolvedValue({
       id: 'usr_1',
       email: 'user@test.com',
-      role: null,
+      role: 'user',
     });
+    mockRequirePlatformAdmin.mockResolvedValue(undefined);
     const ctx = buildContext({ cookie: 'session=abc' });
 
-    await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    expect(mockRequirePlatformAdmin).toHaveBeenCalledWith('clerk_1');
   });
 
   it('returns true and sets request context for valid admin', async () => {
-    mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_admin' });
+    mockVerifyRequest.mockResolvedValue({
+      clerkUserId: 'clerk_admin',
+      sessionId: 'sess_1',
+    });
     mockResolveMappedUser.mockResolvedValue({
       id: 'usr_admin',
       email: 'admin@platform.com',
-      role: 'admin',
+      role: 'user',
     });
+    mockRequirePlatformAdmin.mockResolvedValue(undefined);
 
     const request = {
       headers: { authorization: 'Bearer valid_token' },
       userId: undefined as string | undefined,
       userEmail: undefined as string | undefined,
+      clerkUserId: undefined as string | undefined,
+      sessionId: undefined as string | undefined,
       isPlatformAdmin: undefined as boolean | undefined,
     };
     const ctx = {
@@ -133,6 +161,8 @@ describe('PlatformAdminGuard', () => {
     expect(request.userId).toBe('usr_admin');
     expect(request.userEmail).toBe('admin@platform.com');
     expect(request.isPlatformAdmin).toBe(true);
+    expect(request.clerkUserId).toBe('clerk_admin');
+    expect(request.sessionId).toBe('sess_1');
   });
 
   it('always queries the DB even if session contains role info', async () => {
@@ -142,6 +172,11 @@ describe('PlatformAdminGuard', () => {
       email: 'user@test.com',
       role: 'user',
     });
+    mockRequirePlatformAdmin.mockRejectedValue(
+      new ForbiddenException(
+        'Access denied: Platform admin privileges required',
+      ),
+    );
     const ctx = buildContext({ cookie: 'session=abc' });
 
     await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
@@ -163,8 +198,9 @@ describe('PlatformAdminGuard', () => {
     mockResolveMappedUser.mockResolvedValue({
       id: 'usr_admin',
       email: 'admin@test.com',
-      role: 'admin',
+      role: 'user',
     });
+    mockRequirePlatformAdmin.mockResolvedValue(undefined);
     const ctx = buildContext({ authorization: 'Bearer token123' });
 
     await guard.canActivate(ctx);
@@ -180,8 +216,9 @@ describe('PlatformAdminGuard', () => {
     mockResolveMappedUser.mockResolvedValue({
       id: 'usr_admin',
       email: 'admin@test.com',
-      role: 'admin',
+      role: 'user',
     });
+    mockRequirePlatformAdmin.mockResolvedValue(undefined);
     const ctx = buildContext({ cookie: 'session=xyz' });
 
     await guard.canActivate(ctx);

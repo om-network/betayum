@@ -4,11 +4,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ClerkIdentityService } from '../auth/clerk-identity.service';
+import { ClerkPlatformAdminService } from '../auth/clerk-platform-admin.service';
 import { ClerkSessionService } from '../auth/clerk-session.service';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 
 const mockVerifyRequest = jest.fn();
 const mockResolveMappedUser = jest.fn();
+const mockRequirePlatformAdmin = jest.fn();
 
 jest.mock('../auth/clerk-identity.service', () => ({
   ClerkIdentityService: class ClerkIdentityService {},
@@ -16,6 +18,10 @@ jest.mock('../auth/clerk-identity.service', () => ({
 
 jest.mock('../auth/clerk-session.service', () => ({
   ClerkSessionService: class ClerkSessionService {},
+}));
+
+jest.mock('../auth/clerk-platform-admin.service', () => ({
+  ClerkPlatformAdminService: class ClerkPlatformAdminService {},
 }));
 
 function buildContext(
@@ -38,6 +44,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
   let guard: PlatformAdminGuard;
   let clerkSessionService: ClerkSessionService;
   let clerkIdentityService: ClerkIdentityService;
+  let clerkPlatformAdminService: ClerkPlatformAdminService;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -47,7 +54,15 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
     clerkIdentityService = {
       resolveMappedUser: (...args: unknown[]) => mockResolveMappedUser(...args),
     } as unknown as ClerkIdentityService;
-    guard = new PlatformAdminGuard(clerkSessionService, clerkIdentityService);
+    clerkPlatformAdminService = {
+      requirePlatformAdmin: (...args: unknown[]) =>
+        mockRequirePlatformAdmin(...args),
+    } as unknown as ClerkPlatformAdminService;
+    guard = new PlatformAdminGuard(
+      clerkSessionService,
+      clerkIdentityService,
+      clerkPlatformAdminService,
+    );
   });
 
   describe('returns 401 for unauthenticated requests', () => {
@@ -93,8 +108,16 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
     });
   });
 
-  describe('returns 403 for authenticated non-admin users', () => {
-    it('rejects a user with role "user"', async () => {
+  describe('returns 403 when Clerk platform admin capability is missing', () => {
+    beforeEach(() => {
+      mockRequirePlatformAdmin.mockRejectedValue(
+        new ForbiddenException(
+          'Access denied: Platform admin privileges required',
+        ),
+      );
+    });
+
+    it('rejects a user without Clerk admin metadata even when local role is user', async () => {
       mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
       mockResolveMappedUser.mockResolvedValue({
         id: 'usr_regular',
@@ -109,7 +132,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       );
     });
 
-    it('rejects a user with role null (no role set)', async () => {
+    it('rejects a user without Clerk admin metadata even when local role is null', async () => {
       mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
       mockResolveMappedUser.mockResolvedValue({
         id: 'usr_norole',
@@ -121,7 +144,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
     });
 
-    it('rejects a user with role "owner" (org role, not platform admin)', async () => {
+    it('rejects a user without Clerk admin metadata even when local role is owner', async () => {
       mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
       mockResolveMappedUser.mockResolvedValue({
         id: 'usr_owner',
@@ -133,7 +156,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
     });
 
-    it('rejects when session claims admin but DB says user', async () => {
+    it('checks Clerk platform admin metadata after local identity mapping', async () => {
       mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
       mockResolveMappedUser.mockResolvedValue({
         id: 'usr_sneaky',
@@ -144,6 +167,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
 
       await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
       expect(mockResolveMappedUser).toHaveBeenCalledWith('clerk_1');
+      expect(mockRequirePlatformAdmin).toHaveBeenCalledWith('clerk_1');
     });
 
     it('rejects a user who was deleted between session check and DB lookup', async () => {
@@ -160,18 +184,24 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
   });
 
   describe('allows authenticated platform admin', () => {
-    it('succeeds and sets request context for role=admin', async () => {
-      mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_admin' });
+    it('succeeds and sets request context from Clerk admin metadata', async () => {
+      mockVerifyRequest.mockResolvedValue({
+        clerkUserId: 'clerk_admin',
+        sessionId: 'sess_admin',
+      });
       mockResolveMappedUser.mockResolvedValue({
         id: 'usr_admin',
         email: 'admin@platform.com',
-        role: 'admin',
+        role: 'user',
       });
+      mockRequirePlatformAdmin.mockResolvedValue(undefined);
 
       const request = {
         headers: { cookie: 'session=admin_session' },
         userId: undefined as string | undefined,
         userEmail: undefined as string | undefined,
+        clerkUserId: undefined as string | undefined,
+        sessionId: undefined as string | undefined,
         isPlatformAdmin: undefined as boolean | undefined,
       };
       const ctx = {
@@ -183,6 +213,8 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       expect(result).toBe(true);
       expect(request.userId).toBe('usr_admin');
       expect(request.userEmail).toBe('admin@platform.com');
+      expect(request.clerkUserId).toBe('clerk_admin');
+      expect(request.sessionId).toBe('sess_admin');
       expect(request.isPlatformAdmin).toBe(true);
     });
   });

@@ -5,6 +5,7 @@ import { ApiKeyService } from './api-key.service';
 import { AuthController } from './auth.controller';
 import { ClerkIdentityService } from './clerk-identity.service';
 import { ClerkOrganizationManagementService } from './clerk-organization-management.service';
+import { ClerkPlatformAdminService } from './clerk-platform-admin.service';
 import { ClerkReconciliationService } from './clerk-reconciliation.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { ClerkSessionService } from './clerk-session.service';
@@ -23,6 +24,7 @@ import { SupportContextService } from './support-context.service';
     ApiKeyGuard,
     ClerkIdentityService,
     ClerkOrganizationManagementService,
+    ClerkPlatformAdminService,
     ClerkReconciliationService,
     ClerkRequestAuthService,
     ClerkSessionService,
@@ -39,6 +41,7 @@ import { SupportContextService } from './support-context.service';
     ApiKeyGuard,
     ClerkIdentityService,
     ClerkOrganizationManagementService,
+    ClerkPlatformAdminService,
     ClerkReconciliationService,
     ClerkRequestAuthService,
     ClerkSessionService,

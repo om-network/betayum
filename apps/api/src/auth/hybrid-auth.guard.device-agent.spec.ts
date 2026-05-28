@@ -23,6 +23,7 @@ import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { ApiKeyService } from './api-key.service';
 import { ClerkIdentityService } from './clerk-identity.service';
+import type { ClerkPlatformAdminService } from './clerk-platform-admin.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
@@ -70,19 +71,28 @@ describe('HybridAuthGuard device-agent sessions', () => {
   } as unknown as MemberProfileResolverService;
   const supportContextService = {
     resolve: jest.fn().mockResolvedValue(null),
+    resolveCookieValue: jest.fn().mockReturnValue(null),
   } as unknown as SupportContextService;
+  const clerkPlatformAdminService = {
+    isPlatformAdmin: jest.fn().mockResolvedValue(false),
+  } as unknown as ClerkPlatformAdminService;
   const clerkRequestAuthService = new ClerkRequestAuthService(
     clerkIdentityService,
     clerkSessionService,
     organizationProfileResolver,
     memberProfileResolver,
     supportContextService,
+    clerkPlatformAdminService,
   );
 
   let guard: HybridAuthGuard;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(supportContextService.resolveCookieValue).mockReturnValue(null);
+    jest
+      .mocked(clerkPlatformAdminService.isPlatformAdmin)
+      .mockResolvedValue(false);
     mockDb.session.findFirst.mockResolvedValue(null);
     guard = new HybridAuthGuard(
       apiKeyService,

@@ -25,7 +25,7 @@ vi.mock('next/navigation', () => ({
   },
 }));
 
-import { setupAuthMocks, createMockUser, createMockSession } from '@/test-utils/mocks/auth';
+import { createMockSession, createMockUser, setupAuthMocks } from '@/test-utils/mocks/auth';
 
 const { default: AdminRedirectLayout } = await import('./layout');
 
@@ -37,37 +37,40 @@ describe('(app)/admin/layout - redirect gate', () => {
   it('redirects to /auth when user has no session', async () => {
     setupAuthMocks({ session: null, user: null });
 
-    await expect(
-      AdminRedirectLayout({ children: null }),
-    ).rejects.toThrow('NEXT_REDIRECT');
+    await expect(AdminRedirectLayout({ children: null })).rejects.toThrow('NEXT_REDIRECT');
 
     expect(mockRedirect).toHaveBeenCalledWith('/auth');
   });
 
-  it('redirects to / when user role is not admin (defense in depth)', async () => {
+  it('redirects to / when the admin API denies access', async () => {
     setupAuthMocks({
       session: createMockSession(),
       user: createMockUser({ role: 'user' }),
     });
+    mockServerApiGet.mockResolvedValue({
+      data: undefined,
+      error: 'Forbidden',
+      status: 403,
+    });
 
-    await expect(
-      AdminRedirectLayout({ children: null }),
-    ).rejects.toThrow('NEXT_REDIRECT');
+    await expect(AdminRedirectLayout({ children: null })).rejects.toThrow('NEXT_REDIRECT');
 
     expect(mockRedirect).toHaveBeenCalledWith('/');
   });
 
-  it('does NOT call serverApi when user is not admin', async () => {
+  it('uses the admin API instead of local user role for authorization', async () => {
     setupAuthMocks({
       session: createMockSession(),
       user: createMockUser({ role: 'user' }),
     });
+    mockServerApiGet.mockResolvedValue({
+      data: { data: [{ id: 'org_first' }] },
+    });
 
-    await expect(
-      AdminRedirectLayout({ children: null }),
-    ).rejects.toThrow('NEXT_REDIRECT');
+    await expect(AdminRedirectLayout({ children: null })).rejects.toThrow('NEXT_REDIRECT');
 
-    expect(mockServerApiGet).not.toHaveBeenCalled();
+    expect(mockServerApiGet).toHaveBeenCalledWith('/v1/admin/organizations');
+    expect(mockRedirect).toHaveBeenCalledWith('/org_first/admin');
   });
 
   it('redirects admin to /{orgId}/admin when org is found', async () => {
@@ -76,14 +79,12 @@ describe('(app)/admin/layout - redirect gate', () => {
       user: createMockUser({ role: 'admin' }),
     });
     mockServerApiGet.mockResolvedValue({
-      data: { organizations: [{ id: 'org_first' }] },
+      data: { data: [{ id: 'org_first' }] },
     });
 
-    await expect(
-      AdminRedirectLayout({ children: null }),
-    ).rejects.toThrow('NEXT_REDIRECT');
+    await expect(AdminRedirectLayout({ children: null })).rejects.toThrow('NEXT_REDIRECT');
 
-    expect(mockServerApiGet).toHaveBeenCalledWith('/v1/auth/me');
+    expect(mockServerApiGet).toHaveBeenCalledWith('/v1/admin/organizations');
     expect(mockRedirect).toHaveBeenCalledWith('/org_first/admin');
   });
 
@@ -93,12 +94,10 @@ describe('(app)/admin/layout - redirect gate', () => {
       user: createMockUser({ role: 'admin' }),
     });
     mockServerApiGet.mockResolvedValue({
-      data: { organizations: [] },
+      data: { data: [] },
     });
 
-    await expect(
-      AdminRedirectLayout({ children: null }),
-    ).rejects.toThrow('NEXT_REDIRECT');
+    await expect(AdminRedirectLayout({ children: null })).rejects.toThrow('NEXT_REDIRECT');
 
     expect(mockRedirect).toHaveBeenCalledWith('/');
   });
