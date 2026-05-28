@@ -1,4 +1,5 @@
 import { openai } from '@ai-sdk/openai';
+import { BUCKET_NAME, createStorageClient } from '@/app/s3';
 import { db } from '@db';
 import type {
   FrameworkEditorFramework,
@@ -254,13 +255,10 @@ export async function updatePolicyInDatabase(
 
     if (pdfUrlsToDelete.length > 0) {
       try {
-        const { S3Client, DeleteObjectCommand } =
-          await import('@aws-sdk/client-s3');
-        const bucketName = process.env.APP_AWS_BUCKET_NAME;
+        const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+        const bucketName = BUCKET_NAME;
         if (bucketName) {
-          const s3 = new S3Client({
-            region: process.env.AWS_REGION || 'us-east-1',
-          });
+          const s3 = createStorageClient();
           await Promise.allSettled(
             pdfUrlsToDelete.map((pdfUrl) =>
               s3.send(

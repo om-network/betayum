@@ -94,7 +94,7 @@ jest.mock('@upstash/redis', () => ({
 }));
 
 // Set required env vars before any module-level code runs.
-// These prevent config factories (aws.config.ts, better-auth, etc.) from throwing.
+// These prevent config factories (storage.config.ts, better-auth, etc.) from throwing.
 process.env.SECRET_KEY = 'test-secret-key-at-least-16-chars';
 process.env.BASE_URL = 'http://localhost:3333';
 process.env.APP_AWS_ACCESS_KEY_ID = 'test-access-key-id';

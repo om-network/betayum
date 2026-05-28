@@ -1,20 +1,32 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
+import { ClerkProvider } from '@clerk/nextjs';
 import { AnalyticsProvider } from '@trycompai/analytics';
 import type { ReactNode } from 'react';
 
 type ProviderProps = {
   children: ReactNode;
+  session: {
+    session: {
+      id: string;
+      userId: string;
+    } | null;
+    user: {
+      id: string;
+      email: string;
+    } | null;
+  } | null;
 };
 
-export function Providers({ children }: ProviderProps) {
-  const { user } = useUser();
-  const primaryEmail = user?.primaryEmailAddress?.emailAddress;
-
+export function Providers({ children, session }: ProviderProps) {
   return (
-    <AnalyticsProvider userId={user?.id} userEmail={primaryEmail}>
-      {children}
-    </AnalyticsProvider>
+    <ClerkProvider signInUrl="/auth" signUpUrl="/auth">
+      <AnalyticsProvider
+        userId={session?.user?.id ?? undefined}
+        userEmail={session?.user?.email ?? undefined}
+      >
+        {children}
+      </AnalyticsProvider>
+    </ClerkProvider>
   );
 }
