@@ -7,7 +7,8 @@ import {
 } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { db, Prisma } from '@db';
-import { auth } from '../auth/auth.server';
+import { ClerkIdentityService } from '../auth/clerk-identity.service';
+import { ClerkSessionService } from '../auth/clerk-session.service';
 import { deviceAgentRedisClient } from './device-agent-kv';
 import { createDeviceAgentSession } from './device-agent-session.helper';
 import {
@@ -34,6 +35,11 @@ const CHECK_TYPE_TO_FIELD: Record<string, string> = {
 export class DeviceAgentAuthService {
   private readonly logger = new Logger(DeviceAgentAuthService.name);
 
+  constructor(
+    private readonly clerkSessionService: ClerkSessionService,
+    private readonly clerkIdentityService: ClerkIdentityService,
+  ) {}
+
   async generateAuthCode({
     headers,
     state,
@@ -41,18 +47,20 @@ export class DeviceAgentAuthService {
     headers: Headers;
     state: string;
   }) {
-    const session = await auth.api.getSession({ headers });
-
-    if (!session?.user) {
-      throw new UnauthorizedException('No active session');
-    }
+    const session = await this.clerkSessionService.verifyRequest({
+      authorization: headers.get('authorization') ?? undefined,
+      cookie: headers.get('cookie') ?? undefined,
+    });
+    const user = await this.clerkIdentityService.resolveMappedUser(
+      session.clerkUserId,
+    );
 
     const code = randomBytes(32).toString('hex');
 
     await deviceAgentRedisClient.set(
       `device-auth:${code}`,
       {
-        userId: session.user.id,
+        userId: user.id,
         state,
         createdAt: Date.now(),
       },

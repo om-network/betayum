@@ -13,10 +13,10 @@ import {
   PUBLIC_OPENAPI_DESCRIPTION,
   PUBLIC_OPENAPI_TITLE,
 } from './openapi/public-docs-metadata';
-import { isTrustedOrigin } from './auth/auth.server';
 import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { validateClerkAuthConfig } from './auth/clerk-auth.config';
 import { originCheckMiddleware } from './auth/origin-check.middleware';
+import { isTrustedOrigin } from './auth/trusted-origins';
 import { mkdirSync, writeFileSync, existsSync } from 'fs';
 
 declare module 'express-serve-static-core' {
@@ -37,11 +37,7 @@ function describeServer(baseUrl: string): string {
 async function bootstrap(): Promise<void> {
   validateClerkAuthConfig();
 
-  // Disable body parser - required for better-auth NestJS integration
-  // The library will re-add body parsers after handling auth routes
-  app = await NestFactory.create(AppModule, {
-    bodyParser: false,
-  });
+  app = await NestFactory.create(AppModule);
 
   // Enable CORS with origin validation.
   // Uses a callback to support dynamic trust portal subdomains
@@ -81,17 +77,11 @@ async function bootstrap(): Promise<void> {
   // Defense-in-depth: CORS blocks fetch-based CSRF, this blocks form-based CSRF.
   app.use(originCheckMiddleware);
 
-  // STEP 3b: Rate-limit better-auth admin routes (impersonation, ban, set-role, etc.)
-  // These bypass NestJS controllers so the global ThrottlerGuard doesn't apply.
   app.use(adminAuthRateLimiter);
 
   // STEP 4a: Configure body parser
   // NOTE: Attachment uploads are sent as base64 in JSON, so request payloads are
   // larger than the raw file size. Keep this above the user-facing max file size.
-  // IMPORTANT: Skip body parsing for /api/auth routes — better-auth needs the raw
-  // request stream to properly read the body (including OAuth callbackURL).
-  // Express-level middleware runs BEFORE NestJS module middleware, so without this
-  // skip, express.json() would consume the stream before better-auth's handler.
   // Routes that need the exact request bytes for HMAC signature verification.
   // Anything matched here gets `req.rawBody` populated; everything else uses
   // the standard parser which discards the buffer to avoid keeping a 150MB
@@ -124,9 +114,6 @@ async function bootstrap(): Promise<void> {
       res: express.Response,
       next: express.NextFunction,
     ) => {
-      if (req.path.startsWith('/api/auth')) {
-        return next();
-      }
       const parser = needsRawBody(req) ? jsonParserWithRaw : jsonParser;
       parser(req, res, (err?: unknown) => {
         if (err) return next(err);

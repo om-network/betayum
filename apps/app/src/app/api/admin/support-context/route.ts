@@ -26,6 +26,12 @@ type SupportContextApiResponse = {
   targetUserEmail: string;
 };
 
+type MeApiResponse = {
+  user: {
+    id: string;
+  } | null;
+};
+
 export async function GET() {
   const cookieStore = await cookies();
   const cookieValue = cookieStore.get(SUPPORT_CONTEXT_COOKIE)?.value;
@@ -68,6 +74,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const meResponse = await serverApi.get<MeApiResponse>('/v1/auth/me');
+  const actorUserId = meResponse.data?.user?.id;
+  if (!actorUserId) {
+    return NextResponse.json(
+      { error: meResponse.error ?? 'Unable to resolve current user' },
+      { status: meResponse.status || 401 },
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = supportContextRequestSchema.safeParse(body);
   if (!parsed.success) {
@@ -90,7 +105,7 @@ export async function POST(request: Request) {
   const expiresAt = Date.now() + SUPPORT_CONTEXT_DURATION_MS;
   const signedCookie = signSupportContext({
     payload: createSupportContextPayload({
-      actorUserId: userId,
+      actorUserId,
       organizationId: apiResponse.data.organizationId,
       organizationName: apiResponse.data.organizationName,
       targetUserId: apiResponse.data.targetUserId,
