@@ -5,7 +5,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import type { Response, Request } from 'express';
-import { isStaticTrustedOrigin } from '../../auth/auth.server';
+import { isStaticTrustedOrigin } from '../../auth/trusted-origins';
 
 @Catch(HttpException)
 export class CorsExceptionFilter implements ExceptionFilter {
