@@ -1,6 +1,6 @@
-import { auth } from '@/app/lib/auth';
 import { validateMemberAndOrg } from '@/app/api/download-agent/utils';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '@/utils/s3';
+import { getPortalAuthContext } from '@/app/lib/portal-auth';
+import { APP_AWS_ORG_ASSETS_BUCKET, getSignedUrl, s3Client } from '@/utils/s3';
 import { DeleteObjectsCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db/server';
 import { NextRequest, NextResponse } from 'next/server';
@@ -15,19 +15,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'No organization ID' }, { status: 400 });
   }
 
-  const session = await auth.api.getSession({ headers: req.headers });
+  const authContext = await getPortalAuthContext({ headers: req.headers });
 
-  if (!session?.user) {
+  if (!authContext) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const member = await validateMemberAndOrg(session.user.id, organizationId);
+  const member = await validateMemberAndOrg(authContext.user.id, organizationId);
   if (!member) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const results = await db.fleetPolicyResult.findMany({
-    where: { organizationId, userId: session.user.id },
+    where: { organizationId, userId: authContext.user.id },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -35,19 +35,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, data: results });
   }
 
-  const storageClient = s3Client;
-  const bucketName = APP_AWS_ORG_ASSETS_BUCKET;
-
   const withSignedUrls = await Promise.all(
     results.map(async (result) => {
       const signedAttachments = await Promise.all(
         result.attachments.map(async (key) => {
           try {
             const command = new GetObjectCommand({
-              Bucket: bucketName,
+              Bucket: APP_AWS_ORG_ASSETS_BUCKET,
               Key: key,
             });
-            return await getSignedUrl(storageClient, command, { expiresIn: 3600 });
+            return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
           } catch {
             return key;
           }
@@ -77,13 +74,13 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid or missing policy ID' }, { status: 400 });
   }
 
-  const session = await auth.api.getSession({ headers: req.headers });
+  const authContext = await getPortalAuthContext({ headers: req.headers });
 
-  if (!session?.user) {
+  if (!authContext) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const member = await validateMemberAndOrg(session.user.id, organizationId);
+  const member = await validateMemberAndOrg(authContext.user.id, organizationId);
   if (!member) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -91,7 +88,7 @@ export async function DELETE(req: NextRequest) {
   const where = {
     organizationId,
     fleetPolicyId: policyId,
-    userId: session.user.id,
+    userId: authContext.user.id,
   };
 
   const recordsToDelete = await db.fleetPolicyResult.findMany({
@@ -107,15 +104,12 @@ export async function DELETE(req: NextRequest) {
 
   const S3_DELETE_MAX_KEYS = 1000;
   if (s3Client && APP_AWS_ORG_ASSETS_BUCKET && allKeys.length > 0) {
-    const storageClient = s3Client;
-    const bucketName = APP_AWS_ORG_ASSETS_BUCKET;
-
     try {
       for (let i = 0; i < allKeys.length; i += S3_DELETE_MAX_KEYS) {
         const batch = allKeys.slice(i, i + S3_DELETE_MAX_KEYS);
-        await storageClient.send(
+        await s3Client.send(
           new DeleteObjectsCommand({
-            Bucket: bucketName,
+            Bucket: APP_AWS_ORG_ASSETS_BUCKET,
             Delete: {
               Objects: batch.map((key) => ({ Key: key })),
             },

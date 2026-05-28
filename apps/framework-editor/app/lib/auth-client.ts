@@ -1,24 +1,15 @@
-'use client';
+/**
+ * Auth client for browser-side authentication.
+ *
+ * Points directly at the NestJS API where better-auth runs.
+ * Cross-subdomain cookies (.trycomp.ai) handle session sharing.
+ */
+import { createAuthClient } from 'better-auth/react';
 
-function getBrowserClerk() {
-  if (typeof window === 'undefined') return null;
-  return (window as Window & { Clerk?: { signOut: (options?: { redirectUrl?: string }) => Promise<void> } })
-    .Clerk;
-}
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
-export const authClient = {
-  signIn: {
-    async social() {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth';
-      }
-    },
-  },
-  async signOut(options?: { fetchOptions?: { onSuccess?: () => void }; redirectTo?: string }) {
-    const clerk = getBrowserClerk();
-    await clerk?.signOut({ redirectUrl: options?.redirectTo });
-    options?.fetchOptions?.onSuccess?.();
-  },
-};
+export const authClient = createAuthClient({
+  baseURL: BASE_URL,
+});
 
-export const signOut = authClient.signOut;
+export const { signIn, signOut, useSession } = authClient;
