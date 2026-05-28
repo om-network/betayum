@@ -7,6 +7,7 @@ import { ClerkIdentityService } from './clerk-identity.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
+import { MemberProfileResolverService } from './member-profile-resolver.service';
 import { OrganizationProfileResolverService } from './organization-profile-resolver.service';
 import { PermissionEvaluatorService } from './permission-evaluator.service';
 import { PermissionGuard } from './permission.guard';
@@ -21,6 +22,7 @@ import { SupportContextService } from './support-context.service';
     ClerkRequestAuthService,
     ClerkSessionService,
     HybridAuthGuard,
+    MemberProfileResolverService,
     OrganizationProfileResolverService,
     PermissionEvaluatorService,
     PermissionGuard,
@@ -34,6 +36,7 @@ import { SupportContextService } from './support-context.service';
     ClerkRequestAuthService,
     ClerkSessionService,
     HybridAuthGuard,
+    MemberProfileResolverService,
     OrganizationProfileResolverService,
     PermissionEvaluatorService,
     PermissionGuard,
