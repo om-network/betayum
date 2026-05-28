@@ -428,7 +428,7 @@ export class TrustAccessService {
     }
 
     // Construct review URL
-    const reviewUrl = `${process.env.BETTER_AUTH_URL}/${organizationId}/trust`;
+    const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${organizationId}/trust`;
 
     // Send notification to all recipients
     const emailPromises = notificationEmails.map((email) =>

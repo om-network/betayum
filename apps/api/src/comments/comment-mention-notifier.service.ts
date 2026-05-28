@@ -31,17 +31,12 @@ function extractMentionedUserIds(content: string | null): string[] {
 import { CommentEntityType } from '@db';
 
 function getAppBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.BETTER_AUTH_URL ??
-    'https://app.trycomp.ai'
-  );
+  return process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
 }
 
 function getAllowedOrigins(): string[] {
   const candidates = [
     process.env.NEXT_PUBLIC_APP_URL,
-    process.env.BETTER_AUTH_URL,
     'https://app.trycomp.ai',
   ].filter(Boolean) as string[];
 

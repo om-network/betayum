@@ -75,7 +75,7 @@ export const generateVendorMitigation = task({
     // Revalidate the vendor detail page so the new comment shows up
     try {
       const detailPath = `/${organizationId}/vendors/${vendorId}`;
-      await axios.post(`${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`, {
+      await axios.post(`${process.env.NEXT_PUBLIC_APP_URL}/api/revalidate/path`, {
         path: detailPath,
         secret: process.env.REVALIDATION_SECRET,
       });
@@ -138,7 +138,7 @@ export const generateVendorMitigationsForOrg = task({
     // Revalidate the parent vendors route after batch triggering
     try {
       const parentPath = `/${organizationId}/vendors`;
-      await axios.post(`${process.env.NEXT_PUBLIC_BETTER_AUTH_URL}/api/revalidate/path`, {
+      await axios.post(`${process.env.NEXT_PUBLIC_APP_URL}/api/revalidate/path`, {
         path: parentPath,
         secret: process.env.REVALIDATION_SECRET,
       });

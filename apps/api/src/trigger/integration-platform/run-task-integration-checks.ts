@@ -62,9 +62,7 @@ async function sendTaskStatusChangeEmails(params: {
 
     const organizationName = organization?.name ?? 'your organization';
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.BETTER_AUTH_URL ||
-      'https://app.trycomp.ai';
+      process.env.NEXT_PUBLIC_APP_URL || 'https://app.trycomp.ai';
     const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
 
     // Filter for admins/owners

@@ -5,7 +5,7 @@ import type { AuthenticatedRequest } from './types';
 /**
  * The auth flow that produced the userId we'll attribute a mutation to.
  *
- *   - 'session' — req.userId set by better-auth from a session cookie / bearer token.
+ *   - 'session' — req.userId set by HybridAuthGuard from a validated session request.
  *   - 'service-token-acting' — service token caller passed an `x-user-id` header
  *     which HybridAuthGuard validated against Member and set on req.userId.
  *   - 'org-owner-fallback' — API key (or service token without x-user-id)

@@ -159,9 +159,7 @@ export class TaskNotifierService {
       const statusLabel = newStatus.replace('_', ' ');
 
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const tasksUrl = `${appUrl}/${organizationId}/tasks`;
 
       this.logger.log(
@@ -321,9 +319,7 @@ export class TaskNotifierService {
       const taskCount = tasks.length;
 
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const tasksUrl = `${appUrl}/${organizationId}/tasks`;
 
       this.logger.log(
@@ -486,9 +482,7 @@ export class TaskNotifierService {
       const recipients = Array.from(recipientMap.values());
 
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
 
       this.logger.log(
@@ -670,9 +664,7 @@ export class TaskNotifierService {
       }
 
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
 
       this.logger.log(
@@ -841,9 +833,7 @@ export class TaskNotifierService {
       }
 
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
 
       // Send email notification
@@ -996,9 +986,7 @@ export class TaskNotifierService {
       }
 
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const tasksUrl = `${appUrl}/${organizationId}/tasks`;
       const taskText = taskCount === 1 ? 'task' : 'tasks';
 
@@ -1178,9 +1166,7 @@ export class TaskNotifierService {
       const recipients = Array.from(recipientMap.values());
 
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
 
       this.logger.log(
@@ -1390,9 +1376,7 @@ export class TaskNotifierService {
       const taskText = taskCount === 1 ? 'task' : 'tasks';
 
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const tasksUrl = `${appUrl}/${organizationId}/tasks`;
 
       // Build task items for the email template

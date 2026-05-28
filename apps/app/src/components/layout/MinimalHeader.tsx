@@ -2,12 +2,12 @@
 
 import { Logo } from '@/app/(app)/setup/components/Logo';
 import type { OrganizationFromMe } from '@/types';
-import type { User } from 'better-auth';
+import type { Session } from '@/utils/auth';
 import Link from 'next/link';
 import { OnboardingUserMenu } from './OnboardingUserMenu';
 
 interface MinimalHeaderProps {
-  user: User;
+  user: Session['user'];
   organizations: OrganizationFromMe[];
   currentOrganization: OrganizationFromMe | null;
   variant?: 'setup' | 'upgrade' | 'onboarding';

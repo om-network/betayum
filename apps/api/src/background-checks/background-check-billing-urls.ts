@@ -1,10 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 
 export function validateBackgroundCheckBillingRedirectUrl(url: string): void {
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    process.env.BETTER_AUTH_URL;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL;
   if (!appUrl) {
     throw new BadRequestException('App URL is not configured on the server.');
   }

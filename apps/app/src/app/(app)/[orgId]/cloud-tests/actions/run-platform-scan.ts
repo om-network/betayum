@@ -10,7 +10,7 @@ const POLL_INTERVAL_MS = 2000;
 
 /**
  * Get auth headers for calling guarded API endpoints server-side.
- * Uses Better Auth's jwt plugin to generate a Bearer token from the session cookie.
+ * Forwards the active Clerk-backed session cookie to the API.
  */
 async function getAuthHeaders(organizationId: string): Promise<Record<string, string>> {
   const reqHeaders = await headers();

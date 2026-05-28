@@ -74,7 +74,6 @@
         "@prisma/instrumentation": "7.6.0",
         "@react-email/components": "^0.0.41",
         "@react-email/render": "^2.0.4",
-        "@thallesp/nestjs-better-auth": "^2.4.0",
         "@trigger.dev/build": "4.4.3",
         "@trigger.dev/sdk": "4.4.3",
         "@trycompai/auth": "workspace:*",
@@ -91,7 +90,6 @@
         "ai": "^6.0.175",
         "archiver": "^7.0.1",
         "axios": "^1.12.2",
-        "better-auth": "^1.4.22",
         "class-transformer": "^0.5.1",
         "class-validator": "^0.14.2",
         "dotenv": "^17.2.3",
@@ -160,7 +158,7 @@
             "^.+\\.(t|j)sx?$": "ts-jest"
         },
         "transformIgnorePatterns": [
-            "node_modules/(?!(@maced/api-client|better-auth)/)"
+            "node_modules/(?!@maced/api-client/)"
         ],
         "collectCoverageFrom": [
             "**/*.(t|j)s"

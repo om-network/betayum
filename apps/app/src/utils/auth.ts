@@ -26,7 +26,7 @@ const API_URL =
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
 /**
- * Session type matching better-auth's session structure
+ * Session type matching the API session payload shape.
  */
 export interface Session {
   session: {
@@ -131,13 +131,13 @@ function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, str
   const obj: Record<string, string> = {};
   headers.forEach((value, key) => {
     const k = key.toLowerCase();
-    // Forward cookies, origin (required by better-auth CSRF), and custom headers
+    // Forward cookies, origin, and custom headers to the API auth endpoints.
     if (k === 'cookie' || k === 'origin' || k.startsWith('x-')) {
       obj[key] = value;
     }
   });
   // Ensure Origin is always present — server actions may not have one.
-  // better-auth requires it for CSRF protection on POST requests.
+  // The API enforces trusted origins on auth mutations.
   if (!obj.origin && !obj.Origin) {
     obj.origin = API_URL;
   }
@@ -593,7 +593,7 @@ async function signInEmail(options: {
 }
 
 /**
- * Server-side auth API object that mirrors the better-auth server API.
+ * Server-side auth API object that preserves the legacy app auth interface.
  *
  * Usage:
  * ```ts
@@ -618,7 +618,7 @@ export const auth = {
   },
   /**
    * Type inference helpers for compatibility with existing code.
-   * These mirror the better-auth $Infer types.
+   * These mirror the legacy auth helper surface used throughout the app.
    */
   $Infer: {
     Session: {} as Session,

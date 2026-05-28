@@ -25,7 +25,7 @@ phases:
       - echo "Validating environment variables..."
       - '[ -n "$DATABASE_URL" ] || { echo "❌ DATABASE_URL is not set"; exit 1; }'
       - '[ -n "$BASE_URL" ] || { echo "❌ BASE_URL is not set"; exit 1; }'
-      - '[ -n "$BETTER_AUTH_URL" ] || { echo "❌ BETTER_AUTH_URL is not set"; exit 1; }'
+      - '[ -n "$NEXT_PUBLIC_APP_URL" ] || { echo "❌ NEXT_PUBLIC_APP_URL is not set"; exit 1; }'
       - '[ -n "$TRUST_APP_URL" ] || { echo "❌ TRUST_APP_URL is not set"; exit 1; }'
       - '[ -n "$APP_AWS_BUCKET_NAME" ] || { echo "❌ APP_AWS_BUCKET_NAME is not set"; exit 1; }'
       - '[ -n "$APP_AWS_ACCESS_KEY_ID" ] || { echo "❌ APP_AWS_ACCESS_KEY_ID is not set"; exit 1; }'
