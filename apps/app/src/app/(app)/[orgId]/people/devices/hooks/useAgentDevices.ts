@@ -8,9 +8,10 @@ interface AgentDevicesResponse {
   data: DeviceWithChecks[];
 }
 
-async function fetchAgentDevices(): Promise<DeviceWithChecks[]> {
+async function fetchAgentDevices([, orgId]: [string, string]): Promise<DeviceWithChecks[]> {
   const res = await fetch('/api/people/agent-devices', {
     credentials: 'include',
+    headers: { 'X-Organization-Id': orgId },
   });
   if (!res.ok) {
     throw new Error(`Failed to fetch agent devices: ${res.status}`);

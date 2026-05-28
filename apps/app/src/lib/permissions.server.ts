@@ -36,14 +36,8 @@ interface AuthMeResponse {
 export async function resolveCurrentUserPermissions(
   orgId: string,
 ): Promise<UserPermissions | null> {
-  const authContext = await clerkAuth();
-  if (!authContext.userId || !authContext.orgId) return null;
-
-  const meResponse = await serverApi.get<AuthMeResponse>('/v1/auth/me');
-  const organization = meResponse.data?.organizations.find((org) => org.id === orgId);
-  if (organization?.clerkOrganizationId !== authContext.orgId) return null;
-
-  return resolveClerkOrganizationPermissions(authContext.orgPermissions);
+  const context = await resolveCurrentUserOrganizationContext(orgId);
+  return context?.permissions ?? null;
 }
 
 /**
@@ -101,6 +95,26 @@ export interface ApiPermissionContext {
   organizationId: string;
   userId: string;
   permissions: UserPermissions;
+}
+
+export async function resolveCurrentUserOrganizationContext(
+  orgId: string,
+): Promise<ApiPermissionContext | null> {
+  const authContext = await clerkAuth();
+  if (!authContext.userId || !authContext.orgId) return null;
+
+  const meResponse = await serverApi.get<AuthMeResponse>('/v1/auth/me');
+  const user = meResponse.data?.user;
+  const organization = meResponse.data?.organizations.find((org) => org.id === orgId);
+  if (!organization || !user || organization.clerkOrganizationId !== authContext.orgId) {
+    return null;
+  }
+
+  return {
+    organizationId: organization.id,
+    userId: user.id,
+    permissions: resolveClerkOrganizationPermissions(authContext.orgPermissions),
+  };
 }
 
 /**

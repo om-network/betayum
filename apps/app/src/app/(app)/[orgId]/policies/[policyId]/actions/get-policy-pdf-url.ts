@@ -4,11 +4,14 @@ import { authActionClient } from '@/actions/safe-action';
 import { BUCKET_NAME, s3Client } from '@/app/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@/lib/s3-presigner';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { db } from '@db/server';
 import { z } from 'zod';
 
 export const getPolicyPdfUrlAction = authActionClient
   .inputSchema(z.object({ 
+    organizationId: z.string(),
     policyId: z.string(),
     versionId: z.string().optional(), // If provided, get URL for this version's PDF
   }))
@@ -19,12 +22,10 @@ export const getPolicyPdfUrlAction = authActionClient
       channel: 'server',
     },
   })
-  .action(async ({ parsedInput, ctx }) => {
-    const { policyId, versionId } = parsedInput;
-    const { session } = ctx;
-    const organizationId = session.activeOrganizationId;
-
-    if (!organizationId) {
+  .action(async ({ parsedInput }) => {
+    const { organizationId, policyId, versionId } = parsedInput;
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'policy', 'read')) {
       return { success: false, error: 'Not authorized' };
     }
 

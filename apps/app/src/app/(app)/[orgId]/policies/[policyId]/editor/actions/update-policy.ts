@@ -2,13 +2,13 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
-import { auth } from '@/utils/auth';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
 import { appErrors, updatePolicySchema } from '../types';
 
 // Helper function to clean the content by removing function references
-function cleanContent(content: any): any {
+function cleanContent(content: unknown): unknown {
   if (!content) return content;
 
   if (Array.isArray(content)) {
@@ -16,7 +16,7 @@ function cleanContent(content: any): any {
   }
 
   if (typeof content === 'object') {
-    const cleaned: any = {};
+    const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(content)) {
       // Skip function properties
       if (typeof value === 'function') continue;
@@ -38,15 +38,10 @@ export const updatePolicy = authActionClient
     },
   })
   .action(async ({ parsedInput }): Promise<ActionResponse> => {
-    const { policyId, content, status } = parsedInput;
+    const { organizationId, policyId, content, status } = parsedInput;
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    const organizationId = session?.session.activeOrganizationId;
-
-    if (!organizationId) {
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'policy', 'update')) {
       return {
         success: false,
         error: appErrors.UNAUTHORIZED.message,
@@ -68,7 +63,7 @@ export const updatePolicy = authActionClient
         };
       }
 
-      const updateData: Record<string, any> = {};
+      const updateData: Record<string, unknown> = {};
 
       if (content !== undefined) {
         // Clean the content before processing

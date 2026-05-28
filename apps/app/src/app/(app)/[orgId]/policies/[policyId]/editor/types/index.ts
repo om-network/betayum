@@ -7,7 +7,7 @@ export type PolicyChatUIMessage = UIMessage<never, never, PolicyToolSet>;
 export const policyDetailsSchema = z.object({
   id: z.string(),
   status: z.enum(['draft', 'published', 'archived']),
-  content: z.array(z.any()),
+  content: z.array(z.unknown()),
   createdAt: z.date(),
   updatedAt: z.date(),
   name: z.string(),
@@ -15,13 +15,15 @@ export const policyDetailsSchema = z.object({
 });
 
 export const policyDetailsInputSchema = z.object({
+  organizationId: z.string(),
   policyId: z.string(),
   _cache: z.number().optional(),
 });
 
 export const updatePolicySchema = z.object({
+  organizationId: z.string(),
   policyId: z.string(),
-  content: z.any().optional(),
+  content: z.unknown().optional(),
   status: z.enum(['draft', 'published', 'archived']).optional(),
 });
 

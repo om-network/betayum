@@ -8,9 +8,10 @@ interface FleetHostsResponse {
   data: Host[];
 }
 
-async function fetchFleetHosts(): Promise<Host[]> {
+async function fetchFleetHosts([, orgId]: [string, string]): Promise<Host[]> {
   const res = await fetch('/api/people/fleet-hosts', {
     credentials: 'include',
+    headers: { 'X-Organization-Id': orgId },
   });
   if (!res.ok) {
     throw new Error(`Failed to fetch fleet hosts: ${res.status}`);

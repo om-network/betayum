@@ -1,8 +1,9 @@
 'use server';
 
 import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
-import { auth } from '@/utils/auth';
-import { headers } from 'next/headers';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
+import { getRequestOrganizationId } from '@/lib/request-organization';
 
 interface PreviewInput {
   connectionId: string;
@@ -15,17 +16,12 @@ export async function startPreview(
   input: PreviewInput,
 ): Promise<{ data?: { runId: string; accessToken: string }; error?: string }> {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const organizationId = await getRequestOrganizationId();
+    if (!organizationId) return { error: 'No organization context' };
 
-    if (!session?.user?.id) {
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'integration', 'update')) {
       return { error: 'Unauthorized' };
-    }
-
-    const organizationId = session.session?.activeOrganizationId;
-    if (!organizationId) {
-      return { error: 'No active organization' };
     }
 
     const handle = await tasks.trigger('remediate-preview', {
@@ -33,7 +29,7 @@ export async function startPreview(
       organizationId,
       checkResultId: input.checkResultId,
       remediationKey: input.remediationKey,
-      userId: session.user.id,
+      userId: context.userId,
       cachedPermissions: input.cachedPermissions,
     });
 
@@ -59,17 +55,12 @@ export async function startSingleFix(
   input: SingleFixInput,
 ): Promise<{ data?: { runId: string; accessToken: string }; error?: string }> {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const organizationId = await getRequestOrganizationId();
+    if (!organizationId) return { error: 'No organization context' };
 
-    if (!session?.user?.id) {
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'integration', 'update')) {
       return { error: 'Unauthorized' };
-    }
-
-    const organizationId = session.session?.activeOrganizationId;
-    if (!organizationId) {
-      return { error: 'No active organization' };
     }
 
     const handle = await tasks.trigger('remediate-single', {
@@ -77,7 +68,7 @@ export async function startSingleFix(
       organizationId,
       checkResultId: input.checkResultId,
       remediationKey: input.remediationKey,
-      userId: session.user.id,
+      userId: context.userId,
       acknowledgment: input.acknowledgment,
     });
 

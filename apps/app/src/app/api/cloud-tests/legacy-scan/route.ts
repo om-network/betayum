@@ -1,42 +1,49 @@
 import { runIntegrationTests } from '@/trigger/tasks/integration/run-integration-tests';
-import { auth } from '@/utils/auth';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { runs, tasks } from '@trigger.dev/sdk';
-import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const MAX_POLL_ATTEMPTS = 60; // Max 2 minutes (60 * 2 seconds)
 const POLL_INTERVAL_MS = 2000;
+
+const legacyScanSchema = z.object({
+  integrationId: z.string().optional(),
+});
 
 /**
  * POST /api/cloud-tests/legacy-scan
  * Triggers a legacy integration test run and waits for completion.
  */
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const organizationId = request.headers.get('x-organization-id')?.trim();
 
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const orgId = session.session?.activeOrganizationId;
-  if (!orgId) {
+  if (!organizationId) {
     return NextResponse.json(
-      { error: 'No active organization' },
+      { error: 'Organization context required (missing X-Organization-Id).' },
       { status: 400 },
     );
   }
 
-  const body = await request.json().catch(() => ({}));
-  const integrationId = body?.integrationId as string | undefined;
+  const context = await resolveCurrentUserOrganizationContext(organizationId);
+
+  if (!context || !hasPermission(context.permissions, 'integration', 'update')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const body: unknown = await request.json().catch(() => ({}));
+  const parsed = legacyScanSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+  }
 
   try {
     const handle = await tasks.trigger<typeof runIntegrationTests>(
       'run-integration-tests',
       {
-        organizationId: orgId,
-        ...(integrationId ? { integrationId } : {}),
+        organizationId,
+        ...(parsed.data.integrationId ? { integrationId: parsed.data.integrationId } : {}),
       },
     );
 

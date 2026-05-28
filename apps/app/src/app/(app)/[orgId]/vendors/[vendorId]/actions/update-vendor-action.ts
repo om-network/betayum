@@ -3,6 +3,8 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { db } from '@db/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { updateVendorSchema } from './schema';
@@ -16,13 +18,13 @@ export const updateVendorAction = authActionClient
       channel: 'server',
     },
   })
-  .action(async ({ parsedInput, ctx }) => {
-    const { id, name, description, category, assigneeId, status, website, isSubProcessor } =
+  .action(async ({ parsedInput }) => {
+    const { organizationId, id, name, description, category, assigneeId, status, website, isSubProcessor } =
       parsedInput;
-    const { session } = ctx;
     const normalizedWebsite = website === '' ? null : website;
 
-    if (!session.activeOrganizationId) {
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'vendor', 'update')) {
       throw new Error('Invalid user input');
     }
 
@@ -30,7 +32,7 @@ export const updateVendorAction = authActionClient
       await db.vendor.update({
         where: {
           id,
-          organizationId: session.activeOrganizationId,
+          organizationId,
         },
         data: {
           name,
@@ -43,9 +45,9 @@ export const updateVendorAction = authActionClient
         },
       });
 
-      revalidatePath(`/${session.activeOrganizationId}/vendors`);
-      revalidatePath(`/${session.activeOrganizationId}/vendors/register`);
-      revalidatePath(`/${session.activeOrganizationId}/vendors/${id}`);
+      revalidatePath(`/${organizationId}/vendors`);
+      revalidatePath(`/${organizationId}/vendors/register`);
+      revalidatePath(`/${organizationId}/vendors/${id}`);
       revalidateTag('vendors', 'max');
 
       return {

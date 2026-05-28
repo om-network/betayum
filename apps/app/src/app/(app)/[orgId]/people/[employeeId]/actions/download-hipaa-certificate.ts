@@ -2,6 +2,8 @@
 
 import { authActionClient } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 
@@ -19,11 +21,11 @@ export const downloadHipaaCertificate = authActionClient
       channel: 'server',
     },
   })
-  .action(async ({ parsedInput, ctx }) => {
+  .action(async ({ parsedInput }) => {
     const { memberId, organizationId } = parsedInput;
-    const { session } = ctx;
 
-    if (session.activeOrganizationId !== organizationId) {
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+    if (!context || !hasPermission(context.permissions, 'training', 'read')) {
       throw new Error(
         'Unauthorized: You do not have access to this organization',
       );
@@ -44,6 +46,7 @@ export const downloadHipaaCertificate = authActionClient
     if (cookieHeader) {
       requestHeaders['Cookie'] = cookieHeader;
     }
+    requestHeaders['X-Organization-Id'] = organizationId;
 
     const response = await fetch(
       `${apiUrl}/v1/training/generate-hipaa-certificate`,

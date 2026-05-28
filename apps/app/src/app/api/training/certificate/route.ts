@@ -1,33 +1,32 @@
-import { auth } from '@/utils/auth';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { db } from '@db/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+const certificateRequestSchema = z.object({
+  memberId: z.string(),
+  organizationId: z.string(),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: req.headers });
+    const parsed = certificateRequestSchema.safeParse(await req.json());
 
-    if (
-      !session?.session?.activeOrganizationId ||
-      !session.session.userId
-    ) {
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+    }
+
+    const { memberId, organizationId } = parsed.data;
+    const context = await resolveCurrentUserOrganizationContext(organizationId);
+
+    if (!context) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = session.session.activeOrganizationId;
-    const currentUserId = session.session.userId;
-
-    const { memberId, organizationId: bodyOrgId } = await req.json();
-
-    if (organizationId !== bodyOrgId) {
-      return NextResponse.json(
-        { error: 'You do not have access to this organization.' },
-        { status: 403 },
-      );
-    }
-
-    // Check caller is a member and has permission
     const currentUserMember = await db.member.findFirst({
-      where: { organizationId, userId: currentUserId, deactivated: false },
+      where: { organizationId, userId: context.userId, deactivated: false },
+      select: { id: true },
     });
 
     if (!currentUserMember) {
@@ -37,13 +36,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Users can generate their own certificate; admins/owners can generate for anyone
-    const isAdmin =
-      currentUserMember.role.includes('admin') ||
-      currentUserMember.role.includes('owner');
     const isSelf = currentUserMember.id === memberId;
+    const canReadTraining = hasPermission(context.permissions, 'training', 'read');
 
-    if (!isAdmin && !isSelf) {
+    if (!canReadTraining && !isSelf) {
       return NextResponse.json(
         { error: 'You do not have permission to generate this certificate.' },
         { status: 403 },
@@ -64,6 +60,7 @@ export async function POST(req: NextRequest) {
     };
     if (cookieHeader) headers['cookie'] = cookieHeader;
     if (authHeader) headers['authorization'] = authHeader;
+    headers['X-Organization-Id'] = organizationId;
 
     const response = await fetch(`${apiUrl}/v1/training/generate-certificate`, {
       method: 'POST',

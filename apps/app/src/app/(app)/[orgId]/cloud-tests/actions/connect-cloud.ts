@@ -1,6 +1,8 @@
 'use server';
 
 import { encrypt } from '@/lib/encryption';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { getIntegrationHandler } from '@trycompai/integrations';
 import { db, Prisma } from '@db/server';
 import { revalidatePath } from 'next/cache';
@@ -10,6 +12,7 @@ import { authActionClient } from '../../../../../actions/safe-action';
 import { runTests } from './run-tests';
 
 const connectCloudSchema = z.object({
+  organizationId: z.string(),
   cloudProvider: z.enum(['aws', 'gcp', 'azure']),
   credentials: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
 });
@@ -23,12 +26,13 @@ export const connectCloudAction = authActionClient
       channel: 'cloud-tests',
     },
   })
-  .action(async ({ parsedInput: { cloudProvider, credentials }, ctx: { session } }) => {
+  .action(async ({ parsedInput: { organizationId, cloudProvider, credentials } }) => {
     try {
-      if (!session.activeOrganizationId) {
+      const context = await resolveCurrentUserOrganizationContext(organizationId);
+      if (!context || !hasPermission(context.permissions, 'integration', 'create')) {
         return {
           success: false,
-          error: 'No active organization found',
+          error: 'Unauthorized',
         };
       }
 
@@ -118,7 +122,7 @@ export const connectCloudAction = authActionClient
         data: {
           name: connectionName || cloudProvider.toUpperCase(),
           integrationId: cloudProvider,
-          organizationId: session.activeOrganizationId,
+          organizationId,
           userSettings: encryptedCredentials as Prisma.JsonObject,
           settings: settings as Prisma.JsonObject,
         },
@@ -126,7 +130,7 @@ export const connectCloudAction = authActionClient
 
       // Trigger immediate scan for only this new connection
       // runTests now waits for completion before returning
-      const runResult = await runTests(newIntegration.id);
+      const runResult = await runTests({ organizationId, integrationId: newIntegration.id });
 
       // Revalidate the path
       const headersList = await headers();

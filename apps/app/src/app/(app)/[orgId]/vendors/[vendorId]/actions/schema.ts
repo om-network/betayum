@@ -43,6 +43,7 @@ export const createVendorSchema = z.object({
 });
 
 export const updateVendorSchema = z.object({
+  organizationId: z.string(),
   id: z.string(),
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),

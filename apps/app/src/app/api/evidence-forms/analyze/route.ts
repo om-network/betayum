@@ -1,9 +1,8 @@
 import { env } from '@/env.mjs';
-import { serverApi } from '@/lib/api-server';
-import { auth } from '@/utils/auth';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
-import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -78,26 +77,12 @@ export type EvidenceFormAnalysisResult = z.infer<typeof analysisResultSchema>;
 /** @deprecated Use EvidenceFormAnalysisResult instead */
 export type MeetingMinutesAnalysisResult = EvidenceFormAnalysisResult;
 
-interface AuthMeResponse {
-  user: { id: string } | null;
-  organizations: Array<{ id: string }>;
-}
-
 export async function POST(req: Request) {
   if (!env.OPENAI_API_KEY) {
     return NextResponse.json({ error: 'AI analysis is not configured.' }, { status: 500 });
   }
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const organizationId =
-    req.headers.get('x-organization-id')?.trim() ?? session.session.activeOrganizationId;
+  const organizationId = req.headers.get('x-organization-id')?.trim();
 
   if (!organizationId) {
     return NextResponse.json(
@@ -106,12 +91,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const meResponse = await serverApi.get<AuthMeResponse>('/v1/auth/me');
-  const organizations = meResponse.data?.organizations ?? [];
-  const isMember = organizations.some((org) => org.id === organizationId);
+  const context = await resolveCurrentUserOrganizationContext(organizationId);
 
-  if (!isMember) {
-    return new Response('Unauthorized', { status: 401 });
+  if (!context || !hasPermission(context.permissions, 'evidence', 'create')) {
+    return new Response('Forbidden', { status: 403 });
   }
 
   let body: unknown;
