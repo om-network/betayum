@@ -1,5 +1,5 @@
 import { ClerkProvider } from '@clerk/nextjs';
-import { Toaster } from '@trycompai/design-system';
+import { Toaster } from '@trycompai/ui/toaster';
 import type { Metadata } from 'next';
 import { type ReactNode } from 'react';
 import { Toaster as SonnerToaster } from 'sonner';
@@ -7,7 +7,8 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { headers } from 'next/headers';
 import '../styles/globals.css';
 import { Header } from './components/HeaderFrameworks';
-import { canAccessFrameworkEditor, getFrameworkEditorUser } from './lib/framework-auth';
+import { auth } from './lib/auth';
+import { isInternalUser } from './lib/utils';
 
 export const metadata: Metadata = {
   title: 'Comp AI - Framework Editor',
@@ -15,21 +16,27 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const user = await getFrameworkEditorUser({ headers: await headers() });
-  const hasSession = canAccessFrameworkEditor(user);
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const hasSession =
+    !!session?.user &&
+    session.user.role === 'admin' &&
+    isInternalUser(session.user.email);
 
   return (
-    <ClerkProvider>
-      <html lang="en" className="h-full">
-        <body className="flex h-full flex-col">
+    <html lang="en" className="h-full">
+      <body className="flex h-full flex-col">
+        <ClerkProvider>
           {hasSession && <Header />}
           <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
             {children}
             <Toaster />
             <SonnerToaster richColors position="top-right" />
           </div>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

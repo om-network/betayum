@@ -1,4 +1,5 @@
 import { clerkMiddleware } from '@clerk/nextjs/server';
+import type { NextFetchEvent } from 'next/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
@@ -8,7 +9,7 @@ export const config = {
   ],
 };
 
-async function handleProxy(request: NextRequest) {
+const clerkProxy = clerkMiddleware(async (auth, request: NextRequest) => {
   try {
     // E2E Test Mode: Check for test auth header
     if (process.env.E2E_TEST_MODE === 'true') {
@@ -22,16 +23,13 @@ async function handleProxy(request: NextRequest) {
             response.headers.set('x-pathname', request.nextUrl.pathname);
             return response;
           }
-        } catch (e) {
+        } catch {
           // Invalid test auth header, continue with normal auth flow
         }
       }
     }
 
-    // Check for Clerk session cookies.
-    const sessionToken =
-      request.cookies.get('__session')?.value || request.cookies.get('__Secure-__session')?.value;
-    const hasToken = Boolean(sessionToken);
+    const { userId } = await auth();
     const nextUrl = request.nextUrl;
     const requestHeaders = new Headers(request.headers);
 
@@ -61,7 +59,7 @@ async function handleProxy(request: NextRequest) {
     }
 
     // 1. Not authenticated
-    if (!hasToken && nextUrl.pathname !== '/auth') {
+    if (!userId && nextUrl.pathname !== '/auth' && nextUrl.pathname !== '/sso-callback') {
       const url = new URL('/auth', request.url);
       // Preserve existing search params
       nextUrl.searchParams.forEach((value, key) => {
@@ -95,6 +93,9 @@ async function handleProxy(request: NextRequest) {
     console.error('[Proxy] error', err);
     return NextResponse.next();
   }
-}
+});
 
-export const proxy = clerkMiddleware(async (_auth, request) => handleProxy(request));
+export async function proxy(request: NextRequest, event?: NextFetchEvent): Promise<NextResponse> {
+  const response = await clerkProxy(request, event as NextFetchEvent);
+  return (response ?? NextResponse.next()) as NextResponse;
+}

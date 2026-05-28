@@ -10,8 +10,8 @@ import { CommentsModule } from './comments/comments.module';
 import { PeopleModule } from './people/people.module';
 import { DevicesModule } from './devices/devices.module';
 import { DeviceAgentModule } from './device-agent/device-agent.module';
-import { awsConfig } from './config/aws.config';
 import { betterAuthConfig } from './config/better-auth.config';
+import { storageConfig } from './config/storage.config';
 import { HealthModule } from './health/health.module';
 import { OrganizationModule } from './organization/organization.module';
 import { OrganizationAccessModule } from './organization-access/organization-access.module';
@@ -62,7 +62,7 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     ConfigModule.forRoot({
       isGlobal: true,
       // .env file is loaded manually in main.ts before NestJS starts
-      load: [awsConfig, betterAuthConfig],
+      load: [storageConfig, betterAuthConfig],
       validationOptions: {
         allowUnknown: true,
         abortEarly: true,

@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import { s3Client } from '@/utils/s3';
+import { BUCKET_NAME, s3Client } from '@/utils/s3';
 import { GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { client as kv } from '@trycompai/kv';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -56,7 +56,7 @@ const getDownloadToken = async (token: string): Promise<DownloadTokenInfo | null
 };
 
 const ensureBucket = (): string | null => {
-  const bucket = process.env.FLEET_AGENT_BUCKET_NAME;
+  const bucket = process.env.FLEET_AGENT_BUCKET_NAME || BUCKET_NAME;
   return bucket ?? null;
 };
 
@@ -75,7 +75,7 @@ const handleDownload = async (req: NextRequest, isHead: boolean) => {
 
   const fleetBucketName = ensureBucket();
 
-  if (!fleetBucketName) {
+  if (!s3Client || !fleetBucketName) {
     logger('Device agent download misconfigured: missing bucket');
     return new NextResponse('Server configuration error', { status: 500 });
   }
