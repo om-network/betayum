@@ -13,6 +13,10 @@
       "types": "./dist/permissions.d.ts",
       "default": "./dist/permissions.js"
     },
+    "./clerk-authorization-catalog": {
+      "types": "./dist/clerk-authorization-catalog.d.ts",
+      "default": "./dist/clerk-authorization-catalog.js"
+    },
     "./server": {
       "types": "./dist/server.d.ts",
       "default": "./dist/server.js"
@@ -20,6 +24,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "test": "bun test src",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
