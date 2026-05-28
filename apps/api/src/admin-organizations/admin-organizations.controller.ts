@@ -169,6 +169,35 @@ export class AdminOrganizationsController {
     return this.service.listInvitations(id);
   }
 
+  @Post(':id/support-context')
+  @ApiOperation({
+    summary: 'Start support context for a member in an organization',
+  })
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
+  async startSupportContext(
+    @Param('id') id: string,
+    @Req() req: { userId: string },
+    @Body('targetUserId') targetUserId: string,
+  ) {
+    return this.service.createSupportContext({
+      orgId: id,
+      actorUserId: req.userId,
+      targetUserId,
+    });
+  }
+
+  @Delete(':id/support-context')
+  @ApiOperation({
+    summary: 'Stop support context for an organization',
+  })
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
+  async stopSupportContext(@Param('id') id: string, @Req() req: { userId: string }) {
+    return this.service.stopSupportContext({
+      orgId: id,
+      actorUserId: req.userId,
+    });
+  }
+
   @Delete(':id')
   @SkipAdminAuditLog()
   @ApiOperation({
