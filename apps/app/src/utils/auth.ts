@@ -8,6 +8,11 @@
  * For browser-side auth (login, logout, hooks), use auth-client.ts instead.
  */
 
+import { serverApi } from '@/lib/api-server';
+import {
+  getActiveOrganizationCookie,
+  setActiveOrganizationCookie,
+} from '@/lib/active-organization';
 import type { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers';
 import { ac, allRoles } from './permissions';
 
@@ -108,6 +113,17 @@ export interface FullSession extends Session {
   activeMember?: Member | null;
 }
 
+interface MeResponse {
+  user: Session['user'] | null;
+  organizations: Array<
+    Organization & {
+      memberRole: string;
+      memberId: string;
+    }
+  >;
+  pendingInvitation: { id: string } | null;
+}
+
 /**
  * Convert Headers to a plain object for fetch
  */
@@ -136,21 +152,27 @@ function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, str
  */
 async function getSession(options: { headers: ReadonlyHeaders | Headers }): Promise<Session | null> {
   try {
-    const response = await fetch(`${API_URL}/api/auth/get-session`, {
-      method: 'GET',
-      headers: {
-        ...headersToObject(options.headers),
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
+    const response = await serverApi.get<MeResponse>('/v1/auth/me');
+    const data = response.data;
+    if (!data?.user) {
       return null;
     }
 
-    const data = await response.json();
-    return data as Session;
+    const activeOrganizationId =
+      (await getActiveOrganizationCookie()) ?? data.organizations[0]?.id ?? null;
+
+    return {
+      session: {
+        id: 'clerk-session',
+        userId: data.user.id,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        token: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        activeOrganizationId,
+      },
+      user: data.user,
+    };
   } catch (error) {
     if (IS_DEVELOPMENT) {
       console.error('[auth] Failed to get session:', error);
@@ -202,21 +224,27 @@ async function getActiveMember(options: {
   headers: ReadonlyHeaders | Headers;
 }): Promise<Member | null> {
   try {
-    const response = await fetch(`${API_URL}/api/auth/organization/get-active-member`, {
-      method: 'GET',
-      headers: {
-        ...headersToObject(options.headers),
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
+    const response = await serverApi.get<MeResponse>('/v1/auth/me');
+    const data = response.data;
+    if (!data?.user) {
       return null;
     }
 
-    const data = await response.json();
-    return data as Member;
+    const activeOrganizationId =
+      (await getActiveOrganizationCookie()) ?? data.organizations[0]?.id ?? null;
+    const organization = data.organizations.find((item) => item.id === activeOrganizationId);
+
+    if (!organization) {
+      return null;
+    }
+
+    return {
+      id: organization.memberId,
+      organizationId: organization.id,
+      userId: data.user.id,
+      role: organization.memberRole,
+      createdAt: new Date(organization.createdAt),
+    };
   } catch (error) {
     if (IS_DEVELOPMENT) {
       console.error('[auth] Failed to get active member:', error);
@@ -273,21 +301,8 @@ async function listOrganizations(options: {
   headers: ReadonlyHeaders | Headers;
 }): Promise<Organization[]> {
   try {
-    const response = await fetch(`${API_URL}/api/auth/organization/list`, {
-      method: 'GET',
-      headers: {
-        ...headersToObject(options.headers),
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      return [];
-    }
-
-    const data = await response.json();
-    return (data as Organization[]) || [];
+    const response = await serverApi.get<MeResponse>('/v1/auth/me');
+    return response.data?.organizations ?? [];
   } catch (error) {
     if (IS_DEVELOPMENT) {
       console.error('[auth] Failed to list organizations:', error);
@@ -315,26 +330,13 @@ async function setActiveOrganization(options: {
   asResponse?: boolean;
 }): Promise<Response | Session | null> {
   try {
-    const response = await fetch(`${API_URL}/api/auth/organization/set-active`, {
-      method: 'POST',
-      headers: {
-        ...headersToObject(options.headers),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(options.body),
-      cache: 'no-store',
-    });
+    await setActiveOrganizationCookie(options.body.organizationId);
 
     if (options.asResponse) {
-      return response;
+      return new Response(null, { status: 204 });
     }
 
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-    return data as Session;
+    return getSession({ headers: options.headers });
   } catch (error) {
     if (IS_DEVELOPMENT) {
       console.error('[auth] Failed to set active organization:', error);
@@ -364,21 +366,33 @@ async function getFullOrganization(options: {
   headers: ReadonlyHeaders | Headers;
 }): Promise<FullOrganization | null> {
   try {
-    const response = await fetch(`${API_URL}/api/auth/organization/get-full-organization`, {
-      method: 'GET',
-      headers: {
-        ...headersToObject(options.headers),
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
+    const response = await serverApi.get<MeResponse>('/v1/auth/me');
+    const data = response.data;
+    if (!data?.user) {
       return null;
     }
 
-    const data = await response.json();
-    return data as FullOrganization;
+    const activeOrganizationId =
+      (await getActiveOrganizationCookie()) ?? data.organizations[0]?.id ?? null;
+    const organization = data.organizations.find((item) => item.id === activeOrganizationId);
+
+    if (!organization) {
+      return null;
+    }
+
+    return {
+      ...organization,
+      members: [
+        {
+          id: organization.memberId,
+          organizationId: organization.id,
+          userId: data.user.id,
+          role: organization.memberRole,
+          createdAt: new Date(organization.createdAt),
+        },
+      ],
+      invitations: [],
+    };
   } catch (error) {
     if (IS_DEVELOPMENT) {
       console.error('[auth] Failed to get full organization:', error);
@@ -403,23 +417,32 @@ async function createInvitation(options: {
   };
 }): Promise<Invitation | null> {
   try {
-    const response = await fetch(`${API_URL}/api/auth/organization/invite-member`, {
-      method: 'POST',
-      headers: {
-        ...headersToObject(options.headers),
-        'Content-Type': 'application/json',
+    const response = await serverApi.post(
+      '/v1/people/invite',
+      {
+        invites: [
+          {
+            email: options.body.email,
+            roles: options.body.role.split(','),
+          },
+        ],
       },
-      body: JSON.stringify(options.body),
-      cache: 'no-store',
-    });
+      options.body.organizationId,
+    );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to create invitation');
+    if (response.error) {
+      throw new Error(response.error);
     }
 
-    const data = await response.json();
-    return data as Invitation;
+    return {
+      id: `invited:${options.body.email}`,
+      organizationId: options.body.organizationId,
+      email: options.body.email,
+      role: options.body.role,
+      status: 'pending',
+      expiresAt: new Date(),
+      inviterId: '',
+    };
   } catch (error) {
     if (IS_DEVELOPMENT) {
       console.error('[auth] Failed to create invitation:', error);

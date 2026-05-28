@@ -11,10 +11,12 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
+import { db } from '@db';
 import { ApiTags, ApiSecurity, ApiOperation } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { randomBytes, createHash } from 'crypto';
-import { auth } from '../../auth/auth.server';
+import { ClerkIdentityService } from '../../auth/clerk-identity.service';
+import { ClerkSessionService } from '../../auth/clerk-session.service';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { SessionOnlyGuard } from '../../auth/session-only.guard';
@@ -55,6 +57,8 @@ export class OAuthController {
     private readonly connectionService: ConnectionService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
     private readonly autoCheckRunnerService: AutoCheckRunnerService,
+    private readonly clerkSessionService: ClerkSessionService,
+    private readonly clerkIdentityService: ClerkIdentityService,
   ) {}
 
   /**
@@ -439,8 +443,8 @@ export class OAuthController {
   }
 
   /**
-   * Verify that the caller's better-auth session matches the user (and active
-   * org, when present) recorded on the OAuthState. Returns a reason on
+   * Verify that the caller's Clerk session matches the user recorded on the
+   * OAuthState. Returns a reason on
    * mismatch, or `null` if the session is OK to continue. We intentionally
    * resolve the session manually (rather than via HybridAuthGuard) so we can
    * return a friendly redirect with `error=session_mismatch` instead of a 401.
@@ -467,9 +471,17 @@ export class OAuthController {
       };
     }
 
-    const session = await auth.api.getSession({ headers });
-    const sessionUserId = session?.user?.id;
-    if (!sessionUserId) {
+    let sessionUserId: string;
+    try {
+      const verifiedSession = await this.clerkSessionService.verifyRequest({
+        authorization: headers.get('authorization') ?? undefined,
+        cookie: headers.get('cookie') ?? undefined,
+      });
+      const mappedUser = await this.clerkIdentityService.resolveMappedUser(
+        verifiedSession.clerkUserId,
+      );
+      sessionUserId = mappedUser.id;
+    } catch {
       return {
         reason: 'no_session',
         message:
@@ -485,14 +497,15 @@ export class OAuthController {
       };
     }
 
-    const sessionData = session.session as Record<string, unknown> | undefined;
-    const activeOrgRaw = sessionData?.activeOrganizationId;
-    const activeOrganizationId =
-      typeof activeOrgRaw === 'string' ? activeOrgRaw : undefined;
-    if (
-      activeOrganizationId &&
-      activeOrganizationId !== oauthState.organizationId
-    ) {
+    const member = await db.member.findFirst({
+      where: {
+        userId: sessionUserId,
+        organizationId: oauthState.organizationId,
+        deactivated: false,
+      },
+      select: { id: true },
+    });
+    if (!member) {
       return {
         reason: 'organization_mismatch',
         message: 'OAuth flow organization does not match the active session.',
