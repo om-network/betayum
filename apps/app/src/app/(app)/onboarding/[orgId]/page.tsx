@@ -1,3 +1,4 @@
+import { setActiveOrganizationCookie } from '@/lib/active-organization';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { headers } from 'next/headers';
@@ -7,6 +8,8 @@ import { PostPaymentOnboarding } from '../components/PostPaymentOnboarding';
 interface OnboardingPageProps {
   params: Promise<{ orgId: string }>;
 }
+
+type OnboardingInitialData = Record<string, string | string[]>;
 
 export default async function OnboardingPage({ params }: OnboardingPageProps) {
   const { orgId } = await params;
@@ -23,7 +26,7 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
     redirect('/auth');
   }
 
-  // Verify membership BEFORE syncing activeOrganizationId
+  // Verify membership before setting the route organization cookie.
   const organization = await db.organization.findFirst({
     where: {
       id: orgId,
@@ -48,19 +51,10 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
     notFound();
   }
 
-  // Sync activeOrganizationId only after membership is verified
-  const currentActiveOrgId = session.session.activeOrganizationId;
-  if (!currentActiveOrgId || currentActiveOrgId !== orgId) {
-    try {
-      await auth.api.setActiveOrganization({
-        headers: requestHeaders,
-        body: {
-          organizationId: orgId,
-        },
-      });
-    } catch (error) {
-      console.error('[OnboardingPage] Failed to sync activeOrganizationId:', error);
-    }
+  try {
+    await setActiveOrganizationCookie(orgId);
+  } catch (error) {
+    console.error('[OnboardingPage] Failed to set active organization cookie:', error);
   }
 
   // Check if already completed onboarding
@@ -74,7 +68,7 @@ export default async function OnboardingPage({ params }: OnboardingPageProps) {
   }
 
   // Convert context to initial data format
-  const initialData: Record<string, any> = {};
+  const initialData: OnboardingInitialData = {};
   organization.context.forEach((ctx) => {
     // Map questions back to field keys (this is a bit hacky but works)
     if (ctx.question.includes('framework')) {

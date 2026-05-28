@@ -1,9 +1,10 @@
 'use server';
 
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
-import { auth } from '@/utils/auth';
+import { setActiveOrganizationCookie } from '@/lib/active-organization';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
 import { z } from 'zod';
 
 const cancelSchema = z.object({
@@ -20,20 +21,21 @@ export const cancelOnboarding = authActionClientWithoutOrg
     },
   })
   .action(async ({ parsedInput, ctx }) => {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session) {
+    if (!ctx.user) {
       return { success: false, error: 'Not authorized.' };
     }
 
-    // Verify the user owns this org and it's still incomplete
+    const context = await resolveCurrentUserOrganizationContext(parsedInput.organizationId);
+    if (!context || !hasPermission(context.permissions, 'organization', 'delete')) {
+      return { success: false, error: 'Only the owner can cancel onboarding.' };
+    }
+
+    // Verify the org belongs to this user and is still incomplete.
     const member = await db.member.findFirst({
       where: {
-        userId: session.user.id,
+        userId: ctx.user.id,
         organizationId: parsedInput.organizationId,
-        role: { contains: 'owner' },
+        deactivated: false,
       },
       include: { organization: { select: { onboardingCompleted: true } } },
     });
@@ -49,7 +51,7 @@ export const cancelOnboarding = authActionClientWithoutOrg
     // Find a fallback org to switch to BEFORE deleting
     const fallbackOrg = await db.member.findFirst({
       where: {
-        userId: session.user.id,
+        userId: ctx.user.id,
         organizationId: { not: parsedInput.organizationId },
         deactivated: false,
         organization: {
@@ -68,13 +70,9 @@ export const cancelOnboarding = authActionClientWithoutOrg
       return { success: false, error: 'No other organization to switch to.' };
     }
 
-    // Switch active org BEFORE deletion so the session never
-    // references a deleted org (even if the client redirect is slow).
+    // Switch active org BEFORE deletion so route helpers never reference a deleted org.
     try {
-      await auth.api.setActiveOrganization({
-        headers: await headers(),
-        body: { organizationId: fallbackOrg.organizationId },
-      });
+      await setActiveOrganizationCookie(fallbackOrg.organizationId);
     } catch (error) {
       console.error('Failed to switch to fallback org:', error);
       return { success: false, error: 'Failed to switch organization.' };
@@ -89,10 +87,7 @@ export const cancelOnboarding = authActionClientWithoutOrg
     } catch (error) {
       console.error('Failed to delete organization:', error);
       try {
-        await auth.api.setActiveOrganization({
-          headers: await headers(),
-          body: { organizationId: parsedInput.organizationId },
-        });
+        await setActiveOrganizationCookie(parsedInput.organizationId);
       } catch (rollbackError) {
         console.error('Failed to rollback active org switch:', rollbackError);
       }

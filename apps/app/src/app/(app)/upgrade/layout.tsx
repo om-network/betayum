@@ -1,4 +1,5 @@
 import { MinimalHeader } from '@/components/layout/MinimalHeader';
+import { getActiveOrganizationCookie } from '@/lib/active-organization';
 import { serverApi } from '@/lib/api-server';
 import type { OrganizationFromMe } from '@/types';
 import { auth } from '@/utils/auth';
@@ -19,8 +20,8 @@ export default async function UpgradeLayout({ children }: { children: React.Reac
   const meRes = await serverApi.get<{ organizations: OrganizationFromMe[] }>('/v1/auth/me');
   const organizations = meRes.data?.organizations ?? [];
 
-  // Get current active organization from session
-  const currentOrgId = session.session.activeOrganizationId;
+  // The active organization is a route-selection cookie, not auth authority.
+  const currentOrgId = await getActiveOrganizationCookie();
   const currentOrganization = currentOrgId
     ? organizations.find((org) => org.id === currentOrgId) || null
     : null;

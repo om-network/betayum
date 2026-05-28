@@ -1,4 +1,9 @@
 import { render, screen } from '@testing-library/react';
+import type {
+  ButtonHTMLAttributes,
+  CSSProperties,
+  ReactNode,
+} from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setMockPermissions,
@@ -6,6 +11,7 @@ import {
   AUDITOR_PERMISSIONS,
   mockHasPermission,
 } from '@/test-utils/mocks/permissions';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
@@ -16,16 +22,6 @@ vi.mock('@/hooks/use-permissions', () => ({
 
 vi.mock('./AddFrameworkModal', () => ({
   AddFrameworkModal: () => <div data-testid="add-framework-modal" />,
-}));
-
-vi.mock('@trycompai/ui/dialog', () => ({
-  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
-vi.mock('@trycompai/ui/scroll-area', () => ({
-  ScrollArea: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -39,6 +35,31 @@ vi.mock('next/image', () => ({
   ),
 }));
 
+type MockLayoutProps = {
+  children?: ReactNode;
+  style?: CSSProperties;
+};
+
+vi.mock('@trycompai/design-system', () => ({
+  Button: ({
+    children,
+    ...props
+  }: { children?: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button {...props}>{children}</button>
+  ),
+  Card: ({ children, style }: MockLayoutProps) => <div style={style}>{children}</div>,
+  CardContent: ({ children, style }: MockLayoutProps) => <div style={style}>{children}</div>,
+  CardFooter: ({ children, style }: MockLayoutProps) => <div style={style}>{children}</div>,
+  CardHeader: ({ children }: MockLayoutProps) => <div>{children}</div>,
+  CardTitle: ({ children }: MockLayoutProps) => <div>{children}</div>,
+  Dialog: ({ children }: MockLayoutProps) => <div>{children}</div>,
+  ScrollArea: ({ children }: MockLayoutProps) => <div>{children}</div>,
+}));
+
+vi.mock('@trycompai/design-system/icons', () => ({
+  Add: () => <span data-testid="add-icon" />,
+}));
+
 import { FrameworksOverview } from './FrameworksOverview';
 
 const baseProps = {
@@ -46,7 +67,39 @@ const baseProps = {
   allFrameworks: [],
   frameworksWithCompliance: [],
   organizationId: 'org_123',
+  overallComplianceScore: 0,
 };
+
+function makeFrameworkInstance({
+  id,
+  frameworkId,
+  name,
+  description,
+}: {
+  id: string;
+  frameworkId: string;
+  name: string;
+  description: string;
+}): FrameworkInstanceWithControls {
+  return {
+    id,
+    organizationId: 'org_123',
+    frameworkId,
+    customFrameworkId: null,
+    currentVersionId: null,
+    customFramework: null,
+    controls: [],
+    framework: {
+      id: frameworkId,
+      name,
+      description,
+      version: '1.0.0',
+      visible: true,
+      createdAt: new Date('2025-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2025-01-01T00:00:00.000Z'),
+    },
+  };
+}
 
 describe('FrameworksOverview permission gating', () => {
   beforeEach(() => {
@@ -79,15 +132,12 @@ describe('FrameworksOverview permission gating', () => {
         {...baseProps}
         overallComplianceScore={0}
         frameworksWithControls={[
-          {
+          makeFrameworkInstance({
             id: 'fi_pci_level_1',
-            controls: [],
-            framework: {
-              id: 'fw_pci_level_1',
-              name: 'PCI DSS Level 1',
-              description: 'Payment Card Industry Data Security Standard Level 1',
-            },
-          } as any,
+            frameworkId: 'fw_pci_level_1',
+            name: 'PCI DSS Level 1',
+            description: 'Payment Card Industry Data Security Standard Level 1',
+          }),
         ]}
       />,
     );
@@ -104,15 +154,12 @@ describe('FrameworksOverview permission gating', () => {
         {...baseProps}
         overallComplianceScore={0}
         frameworksWithControls={[
-          {
+          makeFrameworkInstance({
             id: 'fi_pci_variant',
-            controls: [],
-            framework: {
-              id: 'fw_pci_variant',
-              name: 'PCI DSS v4.0 Level 1',
-              description: 'PCI DSS framework variant',
-            },
-          } as any,
+            frameworkId: 'fw_pci_variant',
+            name: 'PCI DSS v4.0 Level 1',
+            description: 'PCI DSS framework variant',
+          }),
         ]}
       />,
     );

@@ -6,6 +6,13 @@ import {
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
 } from '@/test-utils/mocks/permissions';
+import type { Provider } from '../types';
+
+interface MockApiResponse {
+  data: { data: { data: unknown[]; count: number } };
+  mutate: ReturnType<typeof vi.fn>;
+  isValidating: boolean;
+}
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -16,7 +23,7 @@ vi.mock('@/hooks/use-permissions', () => ({
 }));
 
 // Mock useApi hook
-const mockUseSWR = vi.fn(() => ({
+const mockUseSWR = vi.fn<() => MockApiResponse>(() => ({
   data: { data: { data: [], count: 0 } },
   mutate: vi.fn(),
   isValidating: false,
@@ -63,6 +70,14 @@ vi.mock('@/components/integrations/ManageIntegrationDialog', () => ({
 
 vi.mock('../constants', () => ({
   isCloudProviderSlug: vi.fn(() => false),
+}));
+
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ orgId: 'org_123' }),
+  useRouter: () => ({
+    replace: vi.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // Mock design system
@@ -126,15 +141,18 @@ const mockProvider = {
   integrationId: 'aws',
   name: 'AWS',
   displayName: 'AWS Production',
+  organizationId: 'org_123',
   status: 'active',
-  lastRunAt: '2024-01-01',
+  lastRunAt: new Date('2024-01-01T00:00:00.000Z'),
+  createdAt: new Date('2024-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2024-01-01T00:00:00.000Z'),
   isLegacy: false,
   supportsMultipleConnections: false,
   requiredVariables: [],
   variables: {},
   accountId: '123456789012',
   regions: ['us-east-1'],
-};
+} satisfies Provider;
 
 const defaultProps = {
   initialFindings: [],

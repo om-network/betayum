@@ -1,7 +1,6 @@
-import { auth } from '@/utils/auth';
+import { requireApiOrganizationPermission } from '@/lib/permissions.server';
 import { groq } from '@ai-sdk/groq';
 import { generateObject, NoObjectGeneratedError } from 'ai';
-import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -30,12 +29,9 @@ const RequestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const permission = await requireApiOrganizationPermission(request, 'integration', 'read');
+  if (permission instanceof NextResponse) {
+    return permission;
   }
 
   const body = await request.json();

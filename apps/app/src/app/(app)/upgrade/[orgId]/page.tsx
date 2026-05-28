@@ -1,4 +1,5 @@
 import { env } from '@/env.mjs';
+import { setActiveOrganizationCookie } from '@/lib/active-organization';
 import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
@@ -34,7 +35,7 @@ export default async function UpgradePage({ params }: PageProps) {
     redirect('/sign-in');
   }
 
-  // Verify user has access to this org BEFORE syncing activeOrganizationId
+  // Verify user has access to this org before setting the route organization cookie.
   const member = await db.member.findFirst({
     where: {
       organizationId: orgId,
@@ -50,21 +51,10 @@ export default async function UpgradePage({ params }: PageProps) {
     redirect('/');
   }
 
-  // Sync activeOrganizationId only after membership is verified.
-  // Required so the API's HybridAuthGuard resolves the right org from session
-  // when we call /v1/organization-access/auto-approve below.
-  const currentActiveOrgId = authSession.session.activeOrganizationId;
-  if (!currentActiveOrgId || currentActiveOrgId !== orgId) {
-    try {
-      await auth.api.setActiveOrganization({
-        headers: requestHeaders,
-        body: {
-          organizationId: orgId,
-        },
-      });
-    } catch (error) {
-      console.error('[UpgradePage] Failed to sync activeOrganizationId:', error);
-    }
+  try {
+    await setActiveOrganizationCookie(orgId);
+  } catch (error) {
+    console.error('[UpgradePage] Failed to set active organization cookie:', error);
   }
 
   let hasAccess = member.organization.hasAccess;
@@ -89,6 +79,8 @@ export default async function UpgradePage({ params }: PageProps) {
       // API error never blocks the booking step from rendering.
       const response = await serverApi.post<AutoApproveResponse>(
         '/v1/organization-access/auto-approve',
+        undefined,
+        orgId,
       );
 
       if (response.data?.hasAccess) {

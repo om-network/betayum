@@ -1,9 +1,10 @@
 'use server';
 
 import type { ActionResponse } from '@/actions/types';
-import { auth } from '@/utils/auth';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
+import { getRequestOrganizationId } from '@/lib/request-organization';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
 
 export const getApiKeysAction = async (): Promise<
   ActionResponse<
@@ -18,11 +19,12 @@ export const getApiKeysAction = async (): Promise<
   >
 > => {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const organizationId = await getRequestOrganizationId();
+    const context = organizationId
+      ? await resolveCurrentUserOrganizationContext(organizationId)
+      : null;
 
-    if (!session?.session.activeOrganizationId) {
+    if (!context || !hasPermission(context.permissions, 'apiKey', 'read')) {
       return {
         success: false,
         error: {
@@ -34,7 +36,7 @@ export const getApiKeysAction = async (): Promise<
 
     const apiKeys = await db.apiKey.findMany({
       where: {
-        organizationId: session.session.activeOrganizationId,
+        organizationId: context.organizationId,
         isActive: true,
       },
       select: {

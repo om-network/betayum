@@ -50,7 +50,7 @@ function processContent(content: ContentNode | ContentNode[]): ContentNode | Con
 const updateVersionContentSchema = z.object({
   policyId: z.string().min(1, 'Policy ID is required'),
   versionId: z.string().min(1, 'Version ID is required'),
-  content: z.any(), // TipTap content can be complex
+  content: z.unknown(), // TipTap content can be complex
   entityId: z.string(), // Required for audit tracking
 });
 
@@ -66,17 +66,17 @@ export const updateVersionContentAction = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     const { policyId, versionId, content } = parsedInput;
-    const { activeOrganizationId, userId } = ctx.session;
+    const { organizationId, user } = ctx;
 
-    if (!activeOrganizationId) {
+    if (!organizationId || !user?.id) {
       return { success: false, error: 'Not authorized' };
     }
 
     // Get member ID for tracking who updated
     const member = await db.member.findFirst({
       where: {
-        organizationId: activeOrganizationId,
-        userId,
+        organizationId,
+        userId: user.id,
       },
       select: { id: true },
     });
@@ -97,7 +97,7 @@ export const updateVersionContentAction = authActionClient
       },
     });
 
-    if (!version || version.policy.organizationId !== activeOrganizationId) {
+    if (!version || version.policy.organizationId !== organizationId) {
       return { success: false, error: 'Version not found' };
     }
 
@@ -135,7 +135,7 @@ export const updateVersionContentAction = authActionClient
       },
     });
 
-    revalidatePath(`/${activeOrganizationId}/policies/${policyId}`);
+    revalidatePath(`/${organizationId}/policies/${policyId}`);
 
     return {
       success: true,

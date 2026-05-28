@@ -14,8 +14,8 @@ export const getOrganizationUsersAction = authActionClient
     name: 'get-organization-users',
   })
   .action(
-    async ({ parsedInput, ctx }): Promise<{ success: boolean; error?: string; data?: User[] }> => {
-      if (!ctx.session.activeOrganizationId) {
+    async ({ ctx }): Promise<{ success: boolean; error?: string; data?: User[] }> => {
+      if (!ctx.organizationId) {
         return {
           success: false,
           error: 'User does not have an organization',
@@ -25,7 +25,7 @@ export const getOrganizationUsersAction = authActionClient
       try {
         const users = await db.member.findMany({
           where: {
-            organizationId: ctx.session.activeOrganizationId,
+            organizationId: ctx.organizationId,
             deactivated: false,
           },
           select: {

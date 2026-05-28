@@ -158,3 +158,42 @@ export async function requireApiPermission(
 
   return { organizationId: organization.id, userId: user.id, permissions };
 }
+
+export async function requireApiOrganizationPermission(
+  req: Request,
+  resource: string,
+  action: string,
+): Promise<ApiPermissionContext | NextResponse> {
+  const organizationId =
+    req.headers.get('x-organization-id')?.trim() ||
+    getOrganizationIdFromPath(req.headers.get('referer'));
+
+  if (!organizationId) {
+    return NextResponse.json(
+      { error: 'Organization context required (missing X-Organization-Id).' },
+      { status: 400 },
+    );
+  }
+
+  const context = await resolveCurrentUserOrganizationContext(organizationId);
+
+  if (!context || !hasPermission(context.permissions, resource, action)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  return context;
+}
+
+function getOrganizationIdFromPath(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const [, organizationId] = new URL(value).pathname.match(/^\/([^/]+)/) ?? [];
+    return organizationId ?? null;
+  } catch {
+    const [, organizationId] = value.match(/^\/([^/]+)/) ?? [];
+    return organizationId ?? null;
+  }
+}

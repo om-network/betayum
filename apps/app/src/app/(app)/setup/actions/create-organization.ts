@@ -2,14 +2,14 @@
 
 import { initializeOrganization } from '@/actions/organization/lib/initialize-organization';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
+import { setActiveOrganizationCookie } from '@/lib/active-organization';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
-import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { companyDetailsSchema, steps } from '../lib/constants';
 
 export const createOrganization = authActionClientWithoutOrg
@@ -23,11 +23,7 @@ export const createOrganization = authActionClientWithoutOrg
   })
   .action(async ({ parsedInput, ctx }) => {
     try {
-      const session = await auth.api.getSession({
-        headers: await headers(),
-      });
-
-      if (!session) {
+      if (!ctx.user) {
         return {
           success: false,
           error: 'Not authorized.',
@@ -35,7 +31,7 @@ export const createOrganization = authActionClientWithoutOrg
       }
 
       // Check if user email domain is trycomp.ai
-      const userEmail = session.user.email;
+      const userEmail = ctx.user.email;
       const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
 
       // Create a new organization directly in the database
@@ -58,7 +54,7 @@ export const createOrganization = authActionClientWithoutOrg
           }),
           members: {
             create: {
-              userId: session.user.id,
+              userId: ctx.user.id,
               role: 'owner',
             },
           },
@@ -82,7 +78,7 @@ export const createOrganization = authActionClientWithoutOrg
       // Get the member that was created with the organization (the owner)
       const ownerMember = await db.member.findFirst({
         where: {
-          userId: session.user.id,
+          userId: ctx.user.id,
           organizationId: orgId,
         },
       });
@@ -109,16 +105,11 @@ export const createOrganization = authActionClientWithoutOrg
       }
 
       // Set new org as active
-      await auth.api.setActiveOrganization({
-        headers: await headers(),
-        body: {
-          organizationId: orgId,
-        },
-      });
+      await setActiveOrganizationCookie(orgId);
 
       const userOrgs = await db.member.findMany({
         where: {
-          userId: session.user.id,
+          userId: ctx.user.id,
         },
         select: {
           organizationId: true,
