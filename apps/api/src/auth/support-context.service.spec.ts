@@ -37,7 +37,7 @@ describe('SupportContextService', () => {
   it('returns null when the support context cookie is missing', async () => {
     await expect(
       service.resolve({
-        actor: { id: 'usr_admin', role: 'admin' },
+        actor: { id: 'usr_admin', isPlatformAdmin: false },
         cookieHeader: undefined,
       }),
     ).resolves.toBeNull();
@@ -46,7 +46,7 @@ describe('SupportContextService', () => {
   it('rejects support context for non-admin actors', async () => {
     await expect(
       service.resolve({
-        actor: { id: 'usr_regular', role: 'user' },
+        actor: { id: 'usr_regular', isPlatformAdmin: false },
         cookieHeader: 'comp_support_context=value',
       }),
     ).rejects.toThrow(UnauthorizedException);
@@ -62,7 +62,7 @@ describe('SupportContextService', () => {
 
     await expect(
       service.resolve({
-        actor: { id: 'usr_admin', role: 'admin' },
+        actor: { id: 'usr_admin', isPlatformAdmin: true },
         cookieHeader: 'comp_support_context=value',
       }),
     ).rejects.toThrow('Support context actor does not match');
@@ -78,7 +78,7 @@ describe('SupportContextService', () => {
 
     await expect(
       service.resolve({
-        actor: { id: 'usr_admin', role: 'admin' },
+        actor: { id: 'usr_admin', isPlatformAdmin: true },
         cookieHeader: 'comp_support_context=value',
         requestedOrganizationId: 'org_2',
       }),
@@ -104,7 +104,7 @@ describe('SupportContextService', () => {
 
     await expect(
       service.resolve({
-        actor: { id: 'usr_admin', role: 'admin' },
+        actor: { id: 'usr_admin', isPlatformAdmin: true },
         cookieHeader: 'comp_support_context=value',
         requestedOrganizationId: 'org_1',
       }),

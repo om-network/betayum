@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ClerkIdentityService } from './clerk-identity.service';
+import { ClerkPlatformAdminService } from './clerk-platform-admin.service';
 import { ClerkSessionService } from './clerk-session.service';
 import { MemberProfileResolverService } from './member-profile-resolver.service';
 import { OrganizationProfileResolverService } from './organization-profile-resolver.service';
@@ -14,6 +15,7 @@ export class ClerkRequestAuthService {
     private readonly organizationProfileResolver: OrganizationProfileResolverService,
     private readonly memberProfileResolver: MemberProfileResolverService,
     private readonly supportContextService: SupportContextService,
+    private readonly clerkPlatformAdminService: ClerkPlatformAdminService,
   ) {}
 
   async authenticate(
@@ -37,14 +39,23 @@ export class ClerkRequestAuthService {
       'x-organization-id'
     ] as string | undefined;
     const clerkOrganizationId = session.organizationId;
-    const supportContext = await this.supportContextService.resolve({
-      actor: {
-        id: actorUser.id,
-        role: actorUser.role,
-      },
-      cookieHeader: cookie,
-      requestedOrganizationId: requestedLocalOrganizationId,
-    });
+    const hasSupportContextCookie =
+      this.supportContextService.resolveCookieValue(cookie) !== null;
+    const actorIsPlatformAdmin = hasSupportContextCookie
+      ? await this.clerkPlatformAdminService.isPlatformAdmin(
+          session.clerkUserId,
+        )
+      : false;
+    const supportContext = hasSupportContextCookie
+      ? await this.supportContextService.resolve({
+          actor: {
+            id: actorUser.id,
+            isPlatformAdmin: actorIsPlatformAdmin,
+          },
+          cookieHeader: cookie,
+          requestedOrganizationId: requestedLocalOrganizationId,
+        })
+      : null;
 
     if (!supportContext && !clerkOrganizationId && !skipOrgCheck) {
       throw new UnauthorizedException(
@@ -80,7 +91,7 @@ export class ClerkRequestAuthService {
     let resolvedUserEmail = actorUser.email;
     let userRoles: string[] | null = null;
     let impersonatedBy = session.impersonatedBy;
-    let isPlatformAdmin = actorUser.role === 'admin';
+    let isPlatformAdmin = actorIsPlatformAdmin;
 
     if (supportContext) {
       resolvedUserId = supportContext.targetUserId;

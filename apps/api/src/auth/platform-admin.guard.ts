@@ -2,15 +2,17 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ClerkIdentityService } from './clerk-identity.service';
+import { ClerkPlatformAdminService } from './clerk-platform-admin.service';
 import { ClerkSessionService } from './clerk-session.service';
 
 interface PlatformAdminRequest {
   userId?: string;
   userEmail?: string;
+  clerkUserId?: string;
+  sessionId?: string;
   isPlatformAdmin?: boolean;
   headers: {
     authorization?: string;
@@ -24,6 +26,7 @@ export class PlatformAdminGuard implements CanActivate {
   constructor(
     private readonly clerkSessionService: ClerkSessionService,
     private readonly clerkIdentityService: ClerkIdentityService,
+    private readonly clerkPlatformAdminService: ClerkPlatformAdminService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -49,15 +52,15 @@ export class PlatformAdminGuard implements CanActivate {
       throw new UnauthorizedException('User not found');
     }
 
-    if (user.role !== 'admin') {
-      throw new ForbiddenException(
-        'Access denied: Platform admin privileges required',
-      );
-    }
+    await this.clerkPlatformAdminService.requirePlatformAdmin(
+      session.clerkUserId,
+    );
 
     // Set request context
     request.userId = user.id;
     request.userEmail = user.email;
+    request.clerkUserId = session.clerkUserId;
+    request.sessionId = session.sessionId;
     request.isPlatformAdmin = true;
 
     return true;

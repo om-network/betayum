@@ -14,6 +14,8 @@ import { z } from 'zod';
 const supportContextRequestSchema = z.object({
   organizationId: z.string().trim().min(1),
   targetUserId: z.string().trim().min(1),
+  reason: z.string().trim().min(1).max(500).optional(),
+  context: z.string().trim().min(1).max(1000).optional(),
 });
 
 const SUPPORT_CONTEXT_DURATION_MS = 30 * 60 * 1000;
@@ -53,6 +55,8 @@ export async function GET() {
         targetUserId: payload.targetUserId,
         targetUserName: payload.targetUserName,
         targetUserEmail: payload.targetUserEmail,
+        reason: payload.reason,
+        context: payload.context,
         expiresAt: payload.expiresAt,
       },
     });
@@ -89,7 +93,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid support context payload' }, { status: 400 });
   }
 
-  const { organizationId, targetUserId } = parsed.data;
+  const { organizationId, targetUserId, reason, context } = parsed.data;
   const apiResponse = await serverApi.post<SupportContextApiResponse>(
     `/v1/admin/organizations/${organizationId}/support-context`,
     { targetUserId },
@@ -111,6 +115,8 @@ export async function POST(request: Request) {
       targetUserId: apiResponse.data.targetUserId,
       targetUserName: apiResponse.data.targetUserName,
       targetUserEmail: apiResponse.data.targetUserEmail,
+      reason: reason ?? 'support',
+      context,
       expiresAt,
     }),
     secret: env.AUTH_SECRET,
@@ -124,6 +130,8 @@ export async function POST(request: Request) {
       targetUserId: apiResponse.data.targetUserId,
       targetUserName: apiResponse.data.targetUserName,
       targetUserEmail: apiResponse.data.targetUserEmail,
+      reason: reason ?? 'support',
+      context,
       expiresAt,
     },
   });
@@ -147,9 +155,7 @@ export async function DELETE(request: Request) {
   const organizationId = requestUrl.searchParams.get('organizationId');
 
   if (organizationId) {
-    await serverApi.delete(
-      `/v1/admin/organizations/${organizationId}/support-context`,
-    );
+    await serverApi.delete(`/v1/admin/organizations/${organizationId}/support-context`);
   }
 
   const response = NextResponse.json({ success: true });

@@ -62,6 +62,7 @@ function buildContext(overrides: {
   params?: Record<string, string>;
   body?: Record<string, unknown>;
   userId?: string;
+  impersonatedBy?: string;
 }) {
   const request = {
     method: overrides.method ?? 'PATCH',
@@ -69,6 +70,7 @@ function buildContext(overrides: {
     params: overrides.params ?? { orgId: 'org_1' },
     body: overrides.body ?? { status: 'published' },
     userId: 'userId' in overrides ? overrides.userId : 'usr_admin',
+    impersonatedBy: overrides.impersonatedBy,
   };
 
   return {
@@ -329,6 +331,33 @@ describe('AdminAuditLogInterceptor', () => {
               entityType: 'organization',
               entityId: 'org_1',
               description: 'Updated billing',
+            }),
+          });
+          done();
+        }, 50);
+      },
+    });
+  });
+
+  it('should include support context attribution in audit output', (done) => {
+    const ctx = buildContext({
+      method: 'PATCH',
+      url: '/v1/admin/organizations/org_1/tasks/tsk_1',
+      params: { orgId: 'org_1' },
+      body: { status: 'completed' },
+      userId: 'usr_target',
+      impersonatedBy: 'usr_admin',
+    });
+
+    interceptor.intercept(ctx, nextHandler).subscribe({
+      complete: () => {
+        setTimeout(() => {
+          expect(mockCreate).toHaveBeenCalledWith({
+            data: expect.objectContaining({
+              userId: 'usr_target',
+              data: expect.objectContaining({
+                impersonatedBy: 'usr_admin',
+              }),
             }),
           });
           done();

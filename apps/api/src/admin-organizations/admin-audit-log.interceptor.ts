@@ -72,6 +72,7 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
     const organizationId: string | undefined =
       request.params?.orgId ?? request.params?.id;
     const userId: string | undefined = request.userId;
+    const impersonatedBy: string | undefined = request.impersonatedBy;
 
     if (!organizationId || !userId) {
       this.logger.warn(
@@ -95,6 +96,7 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
             path: request.url,
             parsed,
             changes,
+            impersonatedBy,
           }).catch((err) => {
             this.logger.error('Failed to write admin audit log', err);
           });
@@ -110,6 +112,7 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
               ...(changes ?? {}),
               _failed: { previous: null, current: err.message },
             },
+            impersonatedBy,
           }).catch((logErr) => {
             this.logger.error(
               'Failed to write admin audit log for failed request',
@@ -275,6 +278,7 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
     path: string;
     parsed: ParsedPath;
     changes: Changes | null;
+    impersonatedBy?: string;
   }): Promise<void> {
     const entityName = await this.resolveEntityName(
       params.parsed.resource,
@@ -297,6 +301,10 @@ export class AdminAuditLogInterceptor implements NestInterceptor {
 
     if (params.changes) {
       auditData.changes = params.changes;
+    }
+
+    if (params.impersonatedBy) {
+      auditData.impersonatedBy = params.impersonatedBy;
     }
 
     await db.auditLog.create({

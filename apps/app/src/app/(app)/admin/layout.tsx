@@ -3,8 +3,8 @@ import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-interface AuthMeResponse {
-  organizations: Array<{ id: string }>;
+interface AdminOrganizationsResponse {
+  data: Array<{ id: string }>;
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -16,12 +16,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/auth');
   }
 
-  if (session.user.role !== 'admin') {
+  const organizationsRes =
+    await serverApi.get<AdminOrganizationsResponse>('/v1/admin/organizations');
+  if (!organizationsRes.data) {
     redirect('/');
   }
 
-  const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
-  const orgs = meRes.data?.organizations ?? [];
+  const orgs = organizationsRes.data.data;
   const activeOrgId = session.session.activeOrganizationId;
   const targetOrg = orgs.find((o) => o.id === activeOrgId) ?? orgs[0];
 
