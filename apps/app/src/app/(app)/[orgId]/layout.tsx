@@ -2,11 +2,12 @@ import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { serverApi } from '@/lib/api-server';
-import { canAccessApp, canAccessAuditorView, parseRolesString } from '@/lib/permissions';
 import {
-  resolveCurrentUserPermissions,
-  resolveCustomRolePermissions,
-} from '@/lib/permissions.server';
+  canAccessApp,
+  canAccessAuditorViewFromClerk,
+  parseRolesString,
+} from '@/lib/permissions';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
 import { getSignedUrl } from '@/lib/s3-presigner';
 import type { OrganizationFromMe } from '@/types';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -35,7 +36,8 @@ export default async function Layout({
   const isCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
   const publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
 
-  const { userId } = await clerkAuth();
+  const authContext = await clerkAuth();
+  const { userId } = authContext;
 
   if (!userId) {
     console.log('no session');
@@ -148,15 +150,10 @@ export default async function Layout({
   const hasAuditorRole = roles.includes(Role.auditor);
   const isOnlyAuditor = hasAuditorRole && roles.length === 1;
 
-  // CS-189: the Auditor View tab follows a stricter rule than bare
-  // audit:read — built-in `auditor` role OR a custom role with explicit
-  // audit:read. Resolve the custom-role permissions once so we don't
-  // second-guess the owner/admin's implicit all-permissions in the UI.
-  const customRolePermissions = await resolveCustomRolePermissions(
-    member.memberRole,
-    requestedOrgId,
-  );
-  const auditorViewVisible = canAccessAuditorView(member.memberRole, customRolePermissions);
+  const auditorViewVisible = canAccessAuditorViewFromClerk({
+    organizationRole: authContext.orgRole,
+    permissions,
+  });
 
   // User data for navbar
   const user = {

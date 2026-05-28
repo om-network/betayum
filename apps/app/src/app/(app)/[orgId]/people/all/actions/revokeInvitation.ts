@@ -8,6 +8,8 @@ import { z } from 'zod';
 // Adjust safe-action import for colocalized structure
 import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
 
 const revokeInvitationSchema = z.object({
   invitationId: z.string(),
@@ -33,18 +35,8 @@ export const revokeInvitation = authActionClient
     const { invitationId } = parsedInput;
 
     try {
-      const currentUserMember = await db.member.findFirst({
-        where: {
-          organizationId: ctx.session.activeOrganizationId,
-          userId: ctx.user!.id,
-          deactivated: false,
-        },
-      });
-
-      if (
-        !currentUserMember ||
-        (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
-      ) {
+      const permissions = await resolveCurrentUserPermissions(ctx.session.activeOrganizationId);
+      if (!permissions || !hasPermission(permissions, 'member', 'delete')) {
         return {
           success: false,
           error: "You don't have permission to revoke invitations",

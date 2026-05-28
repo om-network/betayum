@@ -1,10 +1,9 @@
 import { hasPermission } from '@/lib/permissions';
-import { resolveUserPermissions } from '@/lib/permissions.server';
-import { auth } from '@/utils/auth';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
+import { auth as clerkAuth } from '@clerk/nextjs/server';
 import { db } from '@db/server';
 import type { Metadata } from 'next';
 import type { Role } from '@db';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { TeamMembers } from './all/components/TeamMembers';
@@ -18,8 +17,8 @@ import { PeopleSettings } from './settings/components/PeopleSettings';
 export default async function PeoplePage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.session.activeOrganizationId) {
+  const { userId } = await clerkAuth();
+  if (!userId) {
     return redirect('/');
   }
 
@@ -29,15 +28,15 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
   // page shell on every tab switch. They've been moved into <TeamMembers>
   // (which is Suspense-wrapped), so switching to Chart / Devices / Org-chart
   // no longer waits on compliance bookkeeping.
-  const currentUserMember = await db.member.findFirst({
-    where: { organizationId: orgId, userId: session.user.id },
-  });
-  const currentUserRoles = currentUserMember?.role?.split(',').map((r) => r.trim()) ?? [];
-  const isCurrentUserOwner = currentUserRoles.includes('owner');
+  const userPermissions = await resolveCurrentUserPermissions(orgId);
+  if (!userPermissions) {
+    return redirect('/no-access');
+  }
 
-  const userPermissions = await resolveUserPermissions(
-    currentUserMember?.role ?? null,
-    orgId,
+  const isCurrentUserOwner = hasPermission(
+    userPermissions,
+    'organization',
+    'delete',
   );
   const canManageMembers = hasPermission(userPermissions, 'member', 'update');
   const canInviteUsers = hasPermission(userPermissions, 'member', 'create');
@@ -75,7 +74,7 @@ export default async function PeoplePage({ params }: { params: Promise<{ orgId: 
           />
         </Suspense>
       }
-      employeeTasksContent={<EmployeesOverview />}
+      employeeTasksContent={<EmployeesOverview organizationId={orgId} />}
       devicesContent={<DevicesTabContent isCurrentUserOwner={isCurrentUserOwner} />}
       orgChartContent={<OrgChartTabContent organizationId={orgId} />}
       findingsContent={null}

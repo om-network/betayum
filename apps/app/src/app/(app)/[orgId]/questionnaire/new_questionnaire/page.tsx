@@ -15,12 +15,17 @@ interface PolicyApiResponse {
   }>;
 }
 
-export default async function NewQuestionnairePage() {
+export default async function NewQuestionnairePage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId: organizationId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session?.user?.id || !session?.session?.activeOrganizationId) {
+  if (!session?.user?.id) {
     return notFound();
   }
 
@@ -31,9 +36,10 @@ export default async function NewQuestionnairePage() {
     return notFound();
   }
 
-  const organizationId = session.session.activeOrganizationId;
-
-  const policiesResult = await serverApi.get<PolicyApiResponse>('/v1/policies');
+  const policiesResult = await serverApi.get<PolicyApiResponse>(
+    '/v1/policies',
+    organizationId,
+  );
   const policies = policiesResult.data?.data ?? [];
   const hasPublishedPolicies = policies.some(
     (p) => p.status === 'published' && !p.isArchived,

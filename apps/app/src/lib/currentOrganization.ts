@@ -14,16 +14,7 @@ export async function getCurrentOrganization({
     headers: await headers(),
   });
 
-  const activeOrgId = session?.session?.activeOrganizationId;
   const userId = session?.session?.userId;
-
-  if (requestedOrgId === activeOrgId) {
-    return db.organization.findFirst({
-      where: {
-        id: activeOrgId,
-      },
-    });
-  }
 
   return db.organization.findFirst({
     where: {
