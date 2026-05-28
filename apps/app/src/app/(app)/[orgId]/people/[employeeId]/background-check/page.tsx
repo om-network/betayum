@@ -1,11 +1,9 @@
 import { serverApi } from '@/lib/server-api-client';
-import { auth } from '@/utils/auth';
 import type { Member, User } from '@db';
 import { db } from '@db/server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import type {
   BackgroundCheckBillingStatus,
   BackgroundCheckRecord,
@@ -25,8 +23,14 @@ export default async function EmployeeBackgroundCheckPage({
   }
 
   const [backgroundCheckRes, backgroundCheckBillingRes, org] = await Promise.all([
-    serverApi.get<BackgroundCheckRecord | null>(`/v1/people/${employeeId}/background-check`),
-    serverApi.get<BackgroundCheckBillingStatus>('/v1/background-check-billing/status'),
+    serverApi.get<BackgroundCheckRecord | null>(
+      `/v1/people/${employeeId}/background-check`,
+      { 'X-Organization-Id': orgId },
+    ),
+    serverApi.get<BackgroundCheckBillingStatus>(
+      '/v1/background-check-billing/status',
+      { 'X-Organization-Id': orgId },
+    ),
     db.organization.findUnique({
       where: { id: orgId },
       select: { backgroundCheckStepEnabled: true },
@@ -78,19 +82,10 @@ async function getEmployee({
   employeeId: string;
   orgId: string;
 }): Promise<(Member & { user: User }) | null> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId || organizationId !== orgId) {
-    redirect('/');
-  }
-
   return db.member.findFirst({
     where: {
       id: employeeId,
-      organizationId,
+      organizationId: orgId,
     },
     include: {
       user: true,

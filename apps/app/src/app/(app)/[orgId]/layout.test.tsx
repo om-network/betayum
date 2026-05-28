@@ -39,11 +39,10 @@ vi.mock('@/lib/api-server', () => ({
 const mockResolveCurrentUserPermissions = vi.fn();
 vi.mock('@/lib/permissions', () => ({
   canAccessApp: vi.fn().mockReturnValue(true),
-  canAccessAuditorView: vi.fn().mockReturnValue(true),
+  canAccessAuditorViewFromClerk: vi.fn().mockReturnValue(true),
   parseRolesString: (value: string) => value.split(',').map((role) => role.trim()),
 }));
 vi.mock('@/lib/permissions.server', () => ({
-  resolveCustomRolePermissions: vi.fn().mockResolvedValue({}),
   resolveCurrentUserPermissions: (...args: unknown[]) => mockResolveCurrentUserPermissions(...args),
 }));
 vi.mock('./components/AppShellWrapper', () => ({

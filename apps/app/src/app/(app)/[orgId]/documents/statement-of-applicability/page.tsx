@@ -59,16 +59,14 @@ export default async function StatementOfApplicabilityPage({
     headers: await headers(),
   });
 
-  if (!session?.user?.id || !session?.session?.activeOrganizationId) {
+  if (!session?.user?.id) {
     return notFound();
   }
 
-  const organizationId = session.session.activeOrganizationId;
-
   const [frameworksResult, peopleResult, contextResult] = await Promise.all([
-    serverApi.get<FrameworkApiResponse>('/v1/frameworks'),
-    serverApi.get<PeopleApiResponse>('/v1/people'),
-    serverApi.get<ContextApiResponse>('/v1/context'),
+    serverApi.get<FrameworkApiResponse>('/v1/frameworks', orgId),
+    serverApi.get<PeopleApiResponse>('/v1/people', orgId),
+    serverApi.get<ContextApiResponse>('/v1/context', orgId),
   ]);
 
   let soaData: SOAData | null = null;
@@ -95,7 +93,7 @@ export default async function StatementOfApplicabilityPage({
         error?: string;
         configuration: Record<string, unknown> | null;
         document: Record<string, unknown> | null;
-      }>('/v1/soa/ensure-setup', { frameworkId, organizationId });
+      }>('/v1/soa/ensure-setup', { frameworkId, organizationId: orgId }, orgId);
 
       const setupData = setupResult.data;
       if (!setupData?.success) {
@@ -181,7 +179,7 @@ export default async function StatementOfApplicabilityPage({
         ]}
       />
       <StatementOfApplicabilitySection
-        organizationId={organizationId}
+        organizationId={orgId}
         soaData={soaData}
         soaError={soaError}
       />

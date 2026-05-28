@@ -1,49 +1,31 @@
 import 'server-only';
 
+import { serverApi } from '@/lib/api-server';
 import { auth as clerkAuth } from '@clerk/nextjs/server';
-import { db } from '@db/server';
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 import {
   type UserPermissions,
-  canAccessAuditorView,
+  canAccessAuditorViewFromClerk,
   canAccessRoute,
   getDefaultRoute,
   hasPermission,
-  mergePermissions,
-  resolveBuiltInPermissions,
   resolveClerkOrganizationPermissions,
 } from './permissions';
 
-/**
- * Resolve effective permissions for a member's comma-separated role string.
- * Handles both built-in roles (from @trycompai/auth) and custom roles (from DB).
- */
-export async function resolveUserPermissions(
-  roleString: string | null | undefined,
-  organizationId: string,
-): Promise<UserPermissions> {
-  const { permissions, customRoleNames } = resolveBuiltInPermissions(roleString);
-
-  if (customRoleNames.length > 0) {
-    const customRoles = await db.organizationRole.findMany({
-      where: {
-        organizationId,
-        name: { in: customRoleNames },
-      },
-      select: { permissions: true },
-    });
-
-    for (const role of customRoles) {
-      if (!role.permissions) continue;
-      const parsed = parsePermissionMap(role.permissions);
-      if (parsed) {
-        mergePermissions(permissions, parsed);
-      }
-    }
-  }
-
-  return permissions;
+interface AuthMeResponse {
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    image: string | null;
+    role: string | null;
+  } | null;
+  organizations: Array<{
+    id: string;
+    clerkOrganizationId: string | null;
+    memberRole: string | null;
+  }>;
 }
 
 /**
@@ -57,10 +39,8 @@ export async function resolveCurrentUserPermissions(
   const authContext = await clerkAuth();
   if (!authContext.userId || !authContext.orgId) return null;
 
-  const organization = await db.organization.findUnique({
-    where: { id: orgId },
-    select: { clerkOrganizationId: true },
-  });
+  const meResponse = await serverApi.get<AuthMeResponse>('/v1/auth/me');
+  const organization = meResponse.data?.organizations.find((org) => org.id === orgId);
   if (organization?.clerkOrganizationId !== authContext.orgId) return null;
 
   return resolveClerkOrganizationPermissions(authContext.orgPermissions);
@@ -81,60 +61,24 @@ export async function requireRoutePermission(routeSegment: string, orgId: string
 }
 
 /**
- * CS-189: Resolve only the permissions granted by the user's CUSTOM org
- * roles (i.e. not from built-in roles). Needed for the Auditor View
- * visibility rule, which wants to know whether a custom role explicitly
- * grants `audit:read` — owner/admin's implicit all-permissions don't count.
- */
-export async function resolveCustomRolePermissions(
-  roleString: string | null | undefined,
-  orgId: string,
-): Promise<UserPermissions> {
-  const { customRoleNames } = resolveBuiltInPermissions(roleString);
-  const result: UserPermissions = {};
-  if (customRoleNames.length === 0) return result;
-
-  const customRoles = await db.organizationRole.findMany({
-    where: { organizationId: orgId, name: { in: customRoleNames } },
-    select: { permissions: true },
-  });
-
-  for (const role of customRoles) {
-    if (!role.permissions) continue;
-    const parsed = parsePermissionMap(role.permissions);
-    if (parsed) {
-      mergePermissions(result, parsed);
-    }
-  }
-  return result;
-}
-
-/**
  * Server-side Auditor View access check. Mirrors the client-side
- * `canAccessAuditorView` but pulls the custom-role permissions from the
- * DB for the current user. Returns null if the user isn't in the org.
+ * `canAccessAuditorViewFromClerk` after API-backed org membership validation.
+ * Returns null if the user isn't in the org.
  */
 export async function resolveAuditorViewAccess(
   orgId: string,
 ): Promise<{ canAccess: boolean; roleString: string | null } | null> {
   const authContext = await clerkAuth();
-  if (!authContext.userId || !authContext.orgId) return null;
+  if (!authContext.userId) return null;
 
-  const member = await db.member.findFirst({
-    where: {
-      user: { clerkUserId: authContext.userId },
-      organizationId: orgId,
-      organization: { clerkOrganizationId: authContext.orgId },
-      deactivated: false,
-    },
-    select: { role: true },
-  });
-  if (!member) return null;
-
-  const customPerms = await resolveCustomRolePermissions(member.role, orgId);
+  const permissions = await resolveCurrentUserPermissions(orgId);
+  if (!permissions) return null;
   return {
-    canAccess: canAccessAuditorView(member.role, customPerms),
-    roleString: member.role,
+    canAccess: canAccessAuditorViewFromClerk({
+      organizationRole: authContext.orgRole,
+      permissions,
+    }),
+    roleString: authContext.orgRole ?? null,
   };
 }
 
@@ -142,7 +86,7 @@ export async function resolveAuditorViewAccess(
  * Route guard for the Auditor View page. Replaces `requireRoutePermission(
  * 'auditor', orgId)` — the plain permission check let owner/admin through
  * via their implicit `audit:read`. This helper enforces the stricter
- * "built-in auditor OR custom role with audit:read" rule.
+ * "built-in Clerk auditor OR non-admin Clerk role with audit:read" rule.
  */
 export async function requireAuditorViewAccess(orgId: string): Promise<void> {
   const result = await resolveAuditorViewAccess(orgId);
@@ -184,16 +128,11 @@ export async function requireApiPermission(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const [organization, user] = await Promise.all([
-    db.organization.findUnique({
-      where: { clerkOrganizationId: authContext.orgId },
-      select: { id: true },
-    }),
-    db.user.findUnique({
-      where: { clerkUserId: authContext.userId },
-      select: { id: true },
-    }),
-  ]);
+  const meResponse = await serverApi.get<AuthMeResponse>('/v1/auth/me');
+  const user = meResponse.data?.user;
+  const organization = meResponse.data?.organizations.find(
+    (org) => org.clerkOrganizationId === authContext.orgId,
+  );
   if (!organization || !user) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -204,30 +143,4 @@ export async function requireApiPermission(
   }
 
   return { organizationId: organization.id, userId: user.id, permissions };
-}
-
-function parsePermissionMap(value: unknown): Record<string, string[]> | null {
-  const parsed = typeof value === 'string' ? safeParseJson(value) : value;
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    return null;
-  }
-
-  const permissions: Record<string, string[]> = {};
-  for (const [resource, actions] of Object.entries(parsed)) {
-    if (!Array.isArray(actions) || actions.some((action) => typeof action !== 'string')) {
-      return null;
-    }
-
-    permissions[resource] = actions;
-  }
-
-  return permissions;
-}
-
-function safeParseJson(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
 }
