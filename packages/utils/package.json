@@ -2,19 +2,44 @@
   "name": "@trycompai/utils",
   "version": "1.0.0",
   "devDependencies": {
+    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./devices": "./src/devices.ts",
-    "./envs": "./src/envs.ts",
-    "./format": "./src/format.ts",
-    "./support-context": "./src/support-context.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./devices": {
+      "types": "./dist/devices.d.ts",
+      "import": "./dist/devices.mjs",
+      "require": "./dist/devices.js"
+    },
+    "./envs": {
+      "types": "./dist/envs.d.ts",
+      "import": "./dist/envs.mjs",
+      "require": "./dist/envs.js"
+    },
+    "./format": {
+      "types": "./dist/format.d.ts",
+      "import": "./dist/format.mjs",
+      "require": "./dist/format.js"
+    },
+    "./support-context": {
+      "types": "./dist/support-context.d.ts",
+      "import": "./dist/support-context.mjs",
+      "require": "./dist/support-context.js"
+    }
   },
-  "main": "src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "private": true,
   "scripts": {
+    "build": "tsup src/index.ts src/devices.ts src/envs.ts src/format.ts src/support-context.ts --format cjs,esm --dts",
     "clean": "rm -rf .turbo node_modules",
+    "dev": "tsup src/index.ts src/devices.ts src/envs.ts src/format.ts src/support-context.ts --format cjs,esm --watch --dts",
     "format": "prettier --write .",
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"

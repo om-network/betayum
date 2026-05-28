@@ -1,6 +1,5 @@
 import { SignIn } from '@clerk/nextjs';
 import { auth as clerkAuth } from '@clerk/nextjs/server';
-import { Logo } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -9,6 +8,23 @@ import { redirect } from 'next/navigation';
 export const metadata: Metadata = {
   title: 'Login | Comp AI',
 };
+
+function AuthLogo() {
+  return (
+    <svg
+      viewBox="0 0 272 272"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      className="h-10 w-10"
+    >
+      <path
+        d="M204 52.885L195.465 46.2399L136.011 0L0 105.77V166.217L136.011 272L272 166.217V105.77L204 52.885ZM136.011 26.631L178.349 59.5553L156.598 76.4509L154.653 77.9583L136.011 63.4621L81.6113 105.77L100.253 120.266L117.369 133.594L136.011 148.091L190.4 105.758L171.781 91.2613L173.725 89.7538L195.476 72.8583L237.791 105.77L216.04 122.691L136.023 184.934L93.6851 152.01L76.5692 138.707L55.9827 122.703L34.2431 105.783L136.011 26.631Z"
+        fill="#16171B"
+      />
+    </svg>
+  );
+}
 
 export default async function Page({
   searchParams,
@@ -36,7 +52,7 @@ export default async function Page({
         <div className="w-full max-w-lg rounded-lg border bg-card text-card-foreground shadow-sm">
           <div className="space-y-3 px-6 pt-10 text-center">
             <div className="mx-auto flex h-10 w-10 items-center justify-center">
-              <Logo />
+              <AuthLogo />
             </div>
             <h1 className="text-2xl font-semibold tracking-tight">Employee Portal</h1>
             <p className="px-4 text-base text-muted-foreground">
