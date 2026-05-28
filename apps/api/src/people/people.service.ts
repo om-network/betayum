@@ -23,6 +23,7 @@ import {
 } from './utils/member-deactivation';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
+import { ClerkOrganizationManagementService } from '../auth/clerk-organization-management.service';
 
 @Injectable()
 export class PeopleService {
@@ -31,6 +32,7 @@ export class PeopleService {
   constructor(
     private readonly fleetService: FleetService,
     private readonly timelinesService: TimelinesService,
+    private readonly clerkOrganizations: ClerkOrganizationManagementService,
   ) {}
 
   async findAllByOrganization(
@@ -189,8 +191,8 @@ export class PeopleService {
         organizationId,
         timelinesService: this.timelinesService,
       }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+        this.logger.warn('timeline auto-complete check failed', err);
+      });
 
       return member;
     } catch (error) {
@@ -279,8 +281,8 @@ export class PeopleService {
           organizationId,
           timelinesService: this.timelinesService,
         }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed', err);
-    });
+          this.logger.warn('timeline auto-complete check failed', err);
+        });
       }
 
       return { created, errors, summary };
@@ -320,6 +322,24 @@ export class PeopleService {
           organizationId,
           targetMember: existingMember,
           newRole: updateData.role,
+        });
+
+        const clerkTarget = await db.member.findFirst({
+          where: { id: memberId, organizationId },
+          select: {
+            clerkUserId: true,
+            user: { select: { clerkUserId: true } },
+          },
+        });
+
+        await this.clerkOrganizations.updateMembershipRole({
+          organizationId,
+          clerkUserId:
+            clerkTarget?.clerkUserId ?? clerkTarget?.user.clerkUserId ?? null,
+          roles: updateData.role
+            .split(',')
+            .map((role) => role.trim())
+            .filter(Boolean),
         });
       }
 
@@ -391,6 +411,11 @@ export class PeopleService {
     if (member.user.role === 'admin') {
       throw new ForbiddenException('Cannot remove a platform admin');
     }
+
+    await this.clerkOrganizations.removeMembership({
+      organizationId,
+      clerkUserId: member.clerkUserId ?? member.user.clerkUserId ?? null,
+    });
 
     const unassignedItems = await collectAssignedItems({
       memberId,

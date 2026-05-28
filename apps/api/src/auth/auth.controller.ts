@@ -1,13 +1,4 @@
-import {
-  BadRequestException,
-  Controller,
-  Delete,
-  ForbiddenException,
-  Get,
-  NotFoundException,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Delete, Get, Param, UseGuards } from '@nestjs/common';
 import {
   ApiExcludeController,
   ApiOperation,
@@ -22,6 +13,7 @@ import { RequirePermission } from './require-permission.decorator';
 import { AuthContext } from './auth-context.decorator';
 import { HybridAuthGuard } from './hybrid-auth.guard';
 import { SkipOrgCheck } from './skip-org-check.decorator';
+import { ClerkOrganizationManagementService } from './clerk-organization-management.service';
 import type { AuthContext as AuthContextType } from './types';
 
 @ApiExcludeController()
@@ -30,6 +22,10 @@ import type { AuthContext as AuthContextType } from './types';
 @UseGuards(HybridAuthGuard)
 @ApiSecurity('apikey')
 export class AuthController {
+  constructor(
+    private readonly clerkOrganizations: ClerkOrganizationManagementService,
+  ) {}
+
   @Get('me')
   @SkipOrgCheck()
   @ApiOperation({
@@ -41,7 +37,7 @@ export class AuthController {
       return { user: null, organizations: [], pendingInvitation: null };
     }
 
-    const [user, memberships, pendingInvitation] = await Promise.all([
+    const [user, memberships] = await Promise.all([
       db.user.findUnique({
         where: { id: userId },
         select: {
@@ -72,13 +68,6 @@ export class AuthController {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      db.invitation.findFirst({
-        where: {
-          email: authContext.userEmail ?? '',
-          status: 'pending',
-        },
-        select: { id: true },
-      }),
     ]);
 
     return {
@@ -88,7 +77,7 @@ export class AuthController {
         memberRole: m.role,
         memberId: m.id,
       })),
-      pendingInvitation,
+      pendingInvitation: null,
     };
   }
 
@@ -97,10 +86,8 @@ export class AuthController {
   @RequirePermission('member', 'read')
   @ApiOperation({ summary: 'List pending invitations for the organization' })
   async listInvitations(@OrganizationId() organizationId: string) {
-    const invitations = await db.invitation.findMany({
-      where: { organizationId, status: 'pending' },
-      orderBy: { email: 'asc' },
-    });
+    const invitations =
+      await this.clerkOrganizations.listPendingInvitations(organizationId);
 
     return { data: invitations };
   }
@@ -114,15 +101,10 @@ export class AuthController {
     @Param('id') invitationId: string,
     @OrganizationId() organizationId: string,
   ) {
-    const invitation = await db.invitation.findFirst({
-      where: { id: invitationId, organizationId, status: 'pending' },
+    await this.clerkOrganizations.revokeInvitation({
+      organizationId,
+      invitationId,
     });
-
-    if (!invitation) {
-      throw new NotFoundException('Invitation not found or already accepted.');
-    }
-
-    await db.invitation.delete({ where: { id: invitationId } });
 
     return { success: true };
   }
