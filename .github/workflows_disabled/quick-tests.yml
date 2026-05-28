@@ -68,7 +68,7 @@ jobs:
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: test-secret-for-ci
           AUTH_SECRET: test-secret-for-ci
-          BETTER_AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
           # Additional env vars that might be needed
           UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
           UPSTASH_REDIS_REST_TOKEN: dummy-token

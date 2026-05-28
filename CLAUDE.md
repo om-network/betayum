@@ -34,13 +34,13 @@ packages/
 
 ## Authentication & Session
 
-- **Auth lives in `apps/api` (NestJS).** The API is the single source of truth for authentication via better-auth. All apps and packages that need to authenticate (app, portal, device-agent, etc.) MUST go through the API — never run a local better-auth instance or handle auth directly in a frontend app.
+- **Auth lives in Clerk + `apps/api` (NestJS).** Clerk is the identity/session provider, and the API is the single source of truth for Comp AI authorization and request context. All apps and packages that need to authenticate (app, portal, device-agent, etc.) MUST rely on that flow rather than running a local auth server.
 - **Session-based auth only.** No JWT tokens. Cross-subdomain cookies (`.trycomp.ai`) allow sessions to work across all apps.
 - **HybridAuthGuard** supports 3 methods in order: API Key (`x-api-key`), Service Token (`x-service-token`), Session (cookies). `@Public()` skips auth.
-- **Client-side auth**: `authClient` (better-auth client) with `baseURL` pointing to the API, NOT the current app.
+- **Client-side auth**: use the Clerk-backed auth helpers in each app plus API-backed data clients; do not instantiate a local Better Auth client.
 - **Client-side data**: `apiClient` from `@/lib/api-client` (always sends cookies).
 - **Server-side data**: `serverApi` from `@/lib/api-server.ts`.
-- **Server-side session checks**: Proxy to the API's `/api/auth/get-session` endpoint — do NOT instantiate better-auth locally.
+- **Server-side session checks**: resolve Clerk session state and API-backed auth context helpers — do NOT instantiate a local auth server.
 - **Raw `fetch()` to API**: MUST include `credentials: 'include'`, otherwise 401.
 
 ## API Architecture

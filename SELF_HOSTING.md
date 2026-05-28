@@ -22,7 +22,7 @@ Docker uses **separate env files** (not a root `.env`):
 For a functional deployment:
 
 - **Database**: `DATABASE_URL` in all three env files
-- **Auth**: `AUTH_SECRET`, `SECRET_KEY`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL` (app); `BETTER_AUTH_SECRET` (portal)
+- **Auth**: `AUTH_SECRET`, `SECRET_KEY`, Clerk keys/issuer settings, and `NEXT_PUBLIC_APP_URL` (app)
 - **Email**: `RESEND_API_KEY` in app and portal
 - **Workflows**: `TRIGGER_SECRET_KEY` in app
 - **Misc**: `REVALIDATION_SECRET`, `NEXT_PUBLIC_PORTAL_URL` in app
@@ -49,8 +49,7 @@ cp apps/portal/.env.example apps/portal/.env
 # Edit each with your production values
 
 # 2. Export build args
-export BETTER_AUTH_URL="https://app.yourdomain.com"
-export BETTER_AUTH_URL_PORTAL="https://portal.yourdomain.com"
+export NEXT_PUBLIC_APP_URL="https://app.yourdomain.com"
 
 # 3. Build
 docker compose build --no-cache

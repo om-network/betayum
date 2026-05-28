@@ -77,7 +77,7 @@ jobs:
         env:
           CI: true
           AUTH_SECRET: test-auth-secret-for-ci
-          BETTER_AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
 
       - name: Check build
         run: |
@@ -88,7 +88,7 @@ jobs:
           SKIP_ENV_VALIDATION: true
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
           AUTH_SECRET: test-secret-for-ci
-          BETTER_AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
           # Dummy values for build to succeed
           UPSTASH_REDIS_REST_URL: https://dummy.upstash.io
           UPSTASH_REDIS_REST_TOKEN: dummy-token

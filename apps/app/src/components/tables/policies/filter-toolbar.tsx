@@ -6,7 +6,7 @@ import { cn } from '@trycompai/ui/cn';
 import { Input } from '@trycompai/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
 import { Skeleton } from '@trycompai/ui/skeleton';
-import { User } from 'better-auth';
+import type { Session } from '@/utils/auth';
 import { Plus, Search, X } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
@@ -14,7 +14,7 @@ import { useCallback, useEffect, useState, useTransition } from 'react';
 
 interface FilterToolbarProps {
   isEmpty?: boolean;
-  users: User[];
+  users: Session['user'][];
 }
 
 export function FilterToolbar({ isEmpty = false, users }: FilterToolbarProps) {

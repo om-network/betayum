@@ -83,11 +83,7 @@ function truncate(s: string, n: number) {
 }
 
 function getAppUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.BETTER_AUTH_URL ??
-    'https://app.trycomp.ai'
-  );
+  return process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
 }
 
 /**

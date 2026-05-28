@@ -10,12 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
-import type { User } from 'better-auth';
+import type { Session } from '@/utils/auth';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 interface OnboardingUserMenuProps {
-  user: User;
+  user: Session['user'];
 }
 
 export function OnboardingUserMenu({ user }: OnboardingUserMenuProps) {

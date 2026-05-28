@@ -3,7 +3,7 @@ import { PERMISSIONS_KEY, RequiredPermission } from './permission.guard';
 
 /**
  * Decorator to require specific permissions on a controller or endpoint.
- * Uses better-auth's hasPermission API under the hood via PermissionGuard.
+ * PermissionGuard resolves these requirements against the shared permission model.
  *
  * @param resource - The resource being accessed (e.g., 'control', 'policy', 'task')
  * @param actions - The action(s) being performed (e.g., 'read', 'delete', ['create', 'update'])

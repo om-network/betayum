@@ -16,7 +16,7 @@ interface CallOptions {
 
 /**
  * Server-side API client for calling our internal NestJS API from server components
- * Forwards cookies for authentication - API handles auth via better-auth
+ * Forwards cookies for authentication - API handles session validation
  */
 async function call<T = unknown>(
   endpoint: string,
@@ -28,7 +28,7 @@ async function call<T = unknown>(
     'Content-Type': 'application/json',
   };
 
-  // Forward cookies for auth - better-auth handles session validation
+  // Forward cookies so the API can validate the active session.
   const cookieHeader = (await headers()).get('cookie');
   if (cookieHeader) {
     requestHeaders['Cookie'] = cookieHeader;

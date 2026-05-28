@@ -16,7 +16,7 @@ const API_URL =
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
 /**
- * Session type matching better-auth's session structure
+ * Session type matching the API session payload shape.
  */
 export interface Session {
   session: {
@@ -132,8 +132,7 @@ async function getSession(options: { headers: ReadonlyHeaders | Headers }): Prom
 
 /**
  * Set the active organization for the current session.
- * Calls the API's better-auth organization endpoint so both
- * server and client session state stay in sync.
+ * Calls the API endpoint that persists active-organization state.
  */
 async function setActiveOrganization(options: {
   headers: ReadonlyHeaders | Headers;
@@ -144,7 +143,7 @@ async function setActiveOrganization(options: {
 
 /**
  * Auth object matching the interface used throughout the portal.
- * All methods call the NestJS API — no local better-auth instance.
+ * All methods call the NestJS API — no local auth runtime.
  */
 export const auth = {
   api: {
@@ -153,5 +152,5 @@ export const auth = {
   },
 };
 
-// Type exports for backwards compatibility with files that imported from better-auth types
+// Type exports for backwards compatibility with existing portal auth imports.
 export type { Session as SessionType };

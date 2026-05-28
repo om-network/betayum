@@ -4,7 +4,6 @@ const nextConfig = {
     '@trycompai/ui',
     '@trycompai/db',
     '@trycompai/company',
-    'better-auth',
     '@noble/ciphers',
     '@noble/hashes',
   ],

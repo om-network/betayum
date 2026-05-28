@@ -37,7 +37,7 @@ export const UnassignedItemsNotificationEmail = ({
   unassignedItems,
   email,
 }: Props) => {
-  const baseUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL ?? 'https://app.trycomp.ai';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
   const link = `${baseUrl}/${organizationId}`;
 
   const getItemTypeLabel = (type: UnassignedItem['type']) => {
