@@ -2,10 +2,26 @@
 
 ## Decision
 
-Clerk is the identity and browser-session provider. The NestJS API remains the
-source of truth for Comp AI authorization: organization membership, custom
-roles, product access, API keys, service tokens, platform-admin checks, and
-audit attribution.
+Clerk is the identity, browser-session, organization membership, organization
+invitation, active organization, organization role, and customer-facing
+authorization provider.
+
+Clerk organizations and Clerk organization roles/custom permissions are the
+source of truth for customer organization membership and RBAC. The NestJS API
+remains the enforcement gateway and the source of truth for Comp AI product
+data: local organization profile rows, member/employee profile metadata,
+product settings, product entitlements, API keys, service tokens, billing
+relationships, and audit attribution.
+
+Local organization and member records may be kept as product profile/read-model
+rows linked to Clerk identifiers, but they must not decide whether a browser
+session belongs to an organization or what customer-facing permissions the
+session has.
+
+This contract supersedes the earlier Clerk migration boundary that kept Comp AI
+database membership and organization roles authoritative. The replacement PRD is
+GitHub issue #23: `prd: use Clerk organizations and roles as authorization
+source of truth`.
 
 There is no auth-provider runtime switch anymore. Browser sessions are Clerk
 sessions everywhere, while API keys and service tokens remain first-class
@@ -52,7 +68,9 @@ Production:
 
 Production Clerk instances must be configured with a root domain so Clerk
 sessions work across Comp AI subdomains. The API must still validate the Clerk
-session token and then resolve Comp AI organization context from the database.
+session token, validate the active Clerk organization/membership/permissions,
+and then resolve the linked local Comp AI organization profile row for product
+data access.
 
 ## Failure Modes
 
@@ -60,10 +78,18 @@ session token and then resolve Comp AI organization context from the database.
 - If a Clerk session maps to no Comp AI user and automatic provisioning is not
   allowed by the identity-mapping slice, the request must fail before
   authorization checks.
-- If a Clerk session is valid but the Comp AI member is deactivated or missing
-  from the requested organization, the API must reject the request.
-- If a Clerk session includes organization claims, they are hints only. The API
-  must validate organization membership in the Comp AI database.
+- If a Clerk session has no active organization and the route requires
+  organization context, the API must reject the request.
+- If a Clerk session is valid but the Clerk user is not a member of the active
+  Clerk organization, the API must reject the request.
+- If the active Clerk organization has no linked local Comp AI organization
+  profile row and automatic provisioning is not allowed by the organization
+  mapping slice, the API must reject the request before product data access.
+- If the Clerk organization role/custom permissions do not satisfy the
+  endpoint's `@RequirePermission` metadata, the API must reject the request.
+- Local member profile rows are not authorization authority. If Clerk membership
+  and local profile data disagree, browser-session authorization follows Clerk
+  and the local drift must be reconciled separately.
 
 ## Retirement Notes
 
@@ -93,3 +119,20 @@ switching the browser's primary Clerk identity.
   context; the cookie is signed with `AUTH_SECRET`; target users must exist,
   belong to the selected organization, remain active, and cannot cross
   organization boundaries.
+
+## Clerk Organization Authorization Rollout
+
+1. Define the Clerk authorization catalog that maps Comp AI resource/action
+   permissions to Clerk organization custom permission keys.
+2. Link existing local users and organizations to Clerk users and Clerk
+   organizations.
+3. Redesign local member rows into member/employee profile read models linked to
+   Clerk organization memberships.
+4. Add Clerk organization authorization to the API hybrid guard and permission
+   guard.
+5. Migrate organization switching, people management, invitations, platform
+   admin, portal, and device-agent workflows to Clerk organization authority.
+6. Add webhook and reconciliation coverage for Clerk organization, membership,
+   invitation, role, and permission drift.
+7. Remove local RBAC authority after Clerk-backed slices have landed and the
+   retirement issue is ready.
