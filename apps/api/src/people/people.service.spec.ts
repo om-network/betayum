@@ -7,8 +7,11 @@ import {
 import { PeopleService } from './people.service';
 import { FleetService } from '../lib/fleet.service';
 import { TimelinesService } from '../timelines/timelines.service';
+import { ClerkOrganizationManagementService } from '../auth/clerk-organization-management.service';
 import { MemberValidator } from './utils/member-validator';
 import { MemberQueries } from './utils/member-queries';
+import type { CreatePeopleDto } from './dto/create-people.dto';
+import type { UpdatePeopleDto } from './dto/update-people.dto';
 
 // Mock the database
 jest.mock('@db', () => ({
@@ -47,9 +50,21 @@ jest.mock('@db', () => ({
     user: {
       update: jest.fn(),
     },
+    device: {
+      deleteMany: jest.fn(),
+    },
   },
   FindingType: { soc2: 'soc2', iso27001: 'iso27001' },
   FindingStatus: { open: 'open', closed: 'closed' },
+  BackgroundCheckStatus: {
+    invited: 'invited',
+    in_progress: 'in_progress',
+    in_review: 'in_review',
+    completed: 'completed',
+    completed_with_flags: 'completed_with_flags',
+    failed: 'failed',
+    cancelled: 'cancelled',
+  },
   PhaseCompletionType: { manual: 'manual', auto: 'auto' },
   TimelinePhaseStatus: { pending: 'pending', completed: 'completed' },
   TimelineStatus: { draft: 'draft', active: 'active' },
@@ -73,8 +88,13 @@ jest.mock('@trycompai/auth', () => ({
 }));
 
 jest.mock('@trycompai/email', () => ({
+  getUnsubscribeUrl: jest.fn().mockReturnValue('https://app.test/unsubscribe'),
   isUserUnsubscribed: jest.fn().mockResolvedValue(false),
   sendUnassignedItemsNotificationEmail: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../email/trigger-email', () => ({
+  triggerEmail: jest.fn().mockResolvedValue({ id: 'email_1' }),
 }));
 
 jest.mock('./utils/member-validator');
@@ -85,6 +105,7 @@ import { db } from '@db';
 describe('PeopleService', () => {
   let service: PeopleService;
   let fleetService: jest.Mocked<FleetService>;
+  let clerkOrganizations: jest.Mocked<ClerkOrganizationManagementService>;
 
   const mockFleetService = {
     removeHostsByLabel: jest.fn(),
@@ -93,6 +114,10 @@ describe('PeopleService', () => {
   };
 
   const mockTimelinesService = {};
+  const mockClerkOrganizations = {
+    updateMembershipRole: jest.fn(),
+    removeMembership: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -100,11 +125,16 @@ describe('PeopleService', () => {
         PeopleService,
         { provide: FleetService, useValue: mockFleetService },
         { provide: TimelinesService, useValue: mockTimelinesService },
+        {
+          provide: ClerkOrganizationManagementService,
+          useValue: mockClerkOrganizations,
+        },
       ],
     }).compile();
 
     service = module.get<PeopleService>(PeopleService);
     fleetService = module.get(FleetService);
+    clerkOrganizations = module.get(ClerkOrganizationManagementService);
 
     jest.clearAllMocks();
   });
@@ -182,10 +212,9 @@ describe('PeopleService', () => {
 
   describe('create', () => {
     it('should create a new member', async () => {
-      const createData = {
+      const createData: CreatePeopleDto = {
         userId: 'usr_new',
         role: 'employee',
-        department: 'engineering',
       };
       const createdMember = {
         id: 'mem_new',
@@ -204,7 +233,7 @@ describe('PeopleService', () => {
         createdMember,
       );
 
-      const result = await service.create('org_123', createData as any);
+      const result = await service.create('org_123', createData);
 
       expect(result).toEqual(createdMember);
       expect(MemberQueries.createMember).toHaveBeenCalledWith(
@@ -223,7 +252,7 @@ describe('PeopleService', () => {
       );
 
       await expect(
-        service.create('org_123', { userId: 'usr_dup' } as any),
+        service.create('org_123', { userId: 'usr_dup', role: 'employee' }),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -235,7 +264,9 @@ describe('PeopleService', () => {
       role: string,
     ) => {
       (db.member.findFirst as jest.Mock).mockImplementation(
-        (args: { where: { userId?: string; organizationId?: string } }) => {
+        (args: {
+          where: { id?: string; userId?: string; organizationId?: string };
+        }) => {
           if (
             args?.where?.userId === callerUserId &&
             args?.where?.organizationId === organizationId
@@ -247,13 +278,19 @@ describe('PeopleService', () => {
               role,
             });
           }
+          if (args?.where?.id) {
+            return Promise.resolve({
+              clerkUserId: 'clerk_target',
+              user: { clerkUserId: 'clerk_user_target' },
+            });
+          }
           return Promise.resolve(null);
         },
       );
     };
 
     it('should update a member', async () => {
-      const updateData = { role: 'auditor' };
+      const updateData: UpdatePeopleDto = { role: 'auditor' };
       const existingMember = {
         id: 'mem_1',
         userId: 'usr_target',
@@ -279,7 +316,7 @@ describe('PeopleService', () => {
       const result = await service.updateById(
         'mem_1',
         'org_123',
-        updateData as any,
+        updateData,
         'usr_caller',
       );
 
@@ -289,10 +326,15 @@ describe('PeopleService', () => {
         'org_123',
         updateData,
       );
+      expect(clerkOrganizations.updateMembershipRole).toHaveBeenCalledWith({
+        organizationId: 'org_123',
+        clerkUserId: 'clerk_target',
+        roles: ['auditor'],
+      });
     });
 
     it('should validate new userId when changing user', async () => {
-      const updateData = { userId: 'usr_new' };
+      const updateData: UpdatePeopleDto = { userId: 'usr_new' };
       const existingMember = {
         id: 'mem_1',
         userId: 'usr_old',
@@ -319,12 +361,7 @@ describe('PeopleService', () => {
       );
       setupCallerMember('usr_caller', 'org_123', 'admin');
 
-      await service.updateById(
-        'mem_1',
-        'org_123',
-        updateData as any,
-        'usr_caller',
-      );
+      await service.updateById('mem_1', 'org_123', updateData, 'usr_caller');
 
       expect(MemberValidator.validateUser).toHaveBeenCalledWith('usr_new');
       expect(MemberValidator.validateUserNotMember).toHaveBeenCalledWith(
@@ -344,7 +381,7 @@ describe('PeopleService', () => {
       setupCallerMember('usr_caller', 'org_123', 'admin');
 
       await expect(
-        service.updateById('mem_none', 'org_123', {} as any, 'usr_caller'),
+        service.updateById('mem_none', 'org_123', {}, 'usr_caller'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -384,7 +421,7 @@ describe('PeopleService', () => {
           service.updateById(
             'mem_self',
             'org_123',
-            { role: 'owner' } as any,
+            { role: 'owner' },
             'usr_caller',
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -397,7 +434,7 @@ describe('PeopleService', () => {
           service.updateById(
             'mem_target',
             'org_123',
-            { role: 'owner' } as any,
+            { role: 'owner' },
             'usr_caller',
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -418,7 +455,7 @@ describe('PeopleService', () => {
           service.updateById(
             'mem_self',
             'org_123',
-            { role: 'auditor' } as any,
+            { role: 'auditor' },
             'usr_caller',
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -431,7 +468,7 @@ describe('PeopleService', () => {
           service.updateById(
             'mem_target',
             'org_123',
-            { role: 'custom_special' } as any,
+            { role: 'custom_special' },
             'usr_caller',
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -444,7 +481,7 @@ describe('PeopleService', () => {
           service.updateById(
             'mem_target',
             'org_123',
-            { role: 'auditor' } as any,
+            { role: 'auditor' },
             'usr_caller',
           ),
         ).resolves.toBeDefined();
@@ -459,7 +496,7 @@ describe('PeopleService', () => {
           service.updateById(
             'mem_target',
             'org_123',
-            { role: 'admin' } as any,
+            { role: 'admin' },
             'usr_caller',
           ),
         ).resolves.toBeDefined();
@@ -482,7 +519,7 @@ describe('PeopleService', () => {
           service.updateById(
             'mem_target',
             'org_123',
-            { role: 'admin' } as any,
+            { role: 'admin' },
             'usr_caller',
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -495,7 +532,7 @@ describe('PeopleService', () => {
           service.updateById(
             'mem_target',
             'org_123',
-            { role: 'auditor' } as any,
+            { role: 'auditor' },
             'usr_caller',
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -508,10 +545,12 @@ describe('PeopleService', () => {
           service.updateById(
             'mem_target',
             'org_123',
-            { jobTitle: 'Director' } as any,
+            { jobTitle: 'Director' },
             'usr_caller',
           ),
         ).resolves.toBeDefined();
+
+        expect(clerkOrganizations.updateMembershipRole).not.toHaveBeenCalled();
       });
     });
   });
@@ -521,9 +560,11 @@ describe('PeopleService', () => {
       id: 'mem_1',
       userId: 'usr_1',
       role: 'employee',
+      clerkUserId: 'clerk_member_1',
       fleetDmLabelId: null,
       user: {
         id: 'usr_1',
+        clerkUserId: 'clerk_user_1',
         name: 'Alice',
         email: 'alice@test.com',
         role: 'user',
@@ -545,6 +586,7 @@ describe('PeopleService', () => {
       (db.vendor.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
       (db.member.update as jest.Mock).mockResolvedValue({});
       (db.session.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+      (db.device.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
       (db.organization.findUnique as jest.Mock).mockResolvedValue({
         name: 'Test Org',
       });
@@ -556,9 +598,17 @@ describe('PeopleService', () => {
 
       expect(result.success).toBe(true);
       expect(result.deletedMember.id).toBe('mem_1');
+      expect(clerkOrganizations.removeMembership).toHaveBeenCalledWith({
+        organizationId: 'org_123',
+        clerkUserId: 'clerk_member_1',
+      });
       expect(db.member.update).toHaveBeenCalledWith({
         where: { id: 'mem_1', organizationId: 'org_123' },
-        data: { deactivated: true, isActive: false },
+        data: {
+          deactivated: true,
+          isActive: false,
+          offboardDate: expect.any(Date),
+        },
       });
       expect(db.session.deleteMany).toHaveBeenCalledWith({
         where: { userId: 'usr_1' },

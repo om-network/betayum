@@ -4,6 +4,7 @@ import { ApiKeyGuard } from './api-key.guard';
 import { ApiKeyService } from './api-key.service';
 import { AuthController } from './auth.controller';
 import { ClerkIdentityService } from './clerk-identity.service';
+import { ClerkOrganizationManagementService } from './clerk-organization-management.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
@@ -19,6 +20,7 @@ import { SupportContextService } from './support-context.service';
     ApiKeyService,
     ApiKeyGuard,
     ClerkIdentityService,
+    ClerkOrganizationManagementService,
     ClerkRequestAuthService,
     ClerkSessionService,
     HybridAuthGuard,
@@ -33,6 +35,7 @@ import { SupportContextService } from './support-context.service';
     ApiKeyService,
     ApiKeyGuard,
     ClerkIdentityService,
+    ClerkOrganizationManagementService,
     ClerkRequestAuthService,
     ClerkSessionService,
     HybridAuthGuard,

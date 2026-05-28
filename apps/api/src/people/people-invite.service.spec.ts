@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PeopleInviteService } from './people-invite.service';
 import { TimelinesService } from '../timelines/timelines.service';
+import { ClerkOrganizationManagementService } from '../auth/clerk-organization-management.service';
 
 jest.mock('@db', () => ({
   BackgroundCheckStatus: {
@@ -24,9 +25,6 @@ jest.mock('@db', () => ({
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
-    },
-    invitation: {
-      create: jest.fn(),
     },
     employeeTrainingVideoCompletion: {
       createMany: jest.fn(),
@@ -122,17 +120,39 @@ describe('PeopleInviteService', () => {
   let service: PeopleInviteService;
 
   const mockTimelinesService = {};
+  const mockClerkOrganizations = {
+    createInvitation: jest.fn().mockResolvedValue({
+      id: 'https://clerk.test/invitation',
+      email: 'admin@example.com',
+      role: 'org:admin',
+      status: 'pending',
+      expiresAt: null,
+      createdAt: new Date(),
+    }),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PeopleInviteService,
         { provide: TimelinesService, useValue: mockTimelinesService },
+        {
+          provide: ClerkOrganizationManagementService,
+          useValue: mockClerkOrganizations,
+        },
       ],
     }).compile();
 
     service = module.get<PeopleInviteService>(PeopleInviteService);
     jest.clearAllMocks();
+    mockClerkOrganizations.createInvitation.mockResolvedValue({
+      id: 'https://clerk.test/invitation',
+      email: 'admin@example.com',
+      role: 'org:admin',
+      status: 'pending',
+      expiresAt: null,
+      createdAt: new Date(),
+    });
   });
 
   it('should be defined', () => {
@@ -353,13 +373,10 @@ describe('PeopleInviteService', () => {
       expect(results[0].emailSent).toBe(false);
     });
 
-    it('should create invitation for admin role invites', async () => {
+    it('should create Clerk invitation for admin role invites', async () => {
       (mockDb.user.findFirst as jest.Mock).mockResolvedValue(null);
       (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
         name: 'Test Org',
-      });
-      (mockDb.invitation.create as jest.Mock).mockResolvedValue({
-        id: 'inv_new',
       });
 
       const results = await service.inviteMembers({
@@ -368,13 +385,36 @@ describe('PeopleInviteService', () => {
       });
 
       expect(results[0].success).toBe(true);
-      expect(mockDb.invitation.create).toHaveBeenCalledWith(
+      expect(mockClerkOrganizations.createInvitation).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            email: 'admin@example.com',
-            role: 'admin',
-            status: 'pending',
-          }),
+          email: 'admin@example.com',
+          roles: ['admin'],
+          organizationId: 'org_123',
+        }),
+      );
+    });
+
+    it('should create Clerk invitation for existing non-member users', async () => {
+      (mockDb.user.findFirst as jest.Mock).mockResolvedValue({
+        id: 'usr_existing',
+        email: 'existing@example.com',
+      });
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
+        name: 'Test Org',
+      });
+
+      const results = await service.inviteMembers({
+        ...baseParams,
+        invites: [{ email: 'existing@example.com', roles: ['auditor'] }],
+      });
+
+      expect(results[0].success).toBe(true);
+      expect(mockClerkOrganizations.createInvitation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'existing@example.com',
+          roles: ['auditor'],
+          organizationId: 'org_123',
         }),
       );
     });
@@ -385,12 +425,9 @@ describe('PeopleInviteService', () => {
         (mockDb.organization.findUnique as jest.Mock).mockResolvedValue({
           name: 'Test Org',
         });
-        (mockDb.invitation.create as jest.Mock).mockResolvedValue({
-          id: 'inv_new',
-        });
       }
 
-      it('admin + employee with portal checked: sends single app email with portal link', async () => {
+      it('admin + employee with portal checked: sends Clerk invite and portal email', async () => {
         setupNewUserInvite();
 
         const results = await service.inviteMembers({
@@ -406,13 +443,13 @@ describe('PeopleInviteService', () => {
 
         expect(results[0].success).toBe(true);
         expect(mockTriggerEmail).toHaveBeenCalledTimes(1);
-        expect(mockInviteEmail).toHaveBeenCalledWith(
+        expect(mockInvitePortalEmail).toHaveBeenCalledWith(
           expect.objectContaining({
             organizationName: 'Test Org',
-            portalLink: expect.stringContaining('org_123'),
+            email: 'both@example.com',
           }),
         );
-        expect(mockInvitePortalEmail).not.toHaveBeenCalled();
+        expect(mockInviteEmail).not.toHaveBeenCalled();
       });
 
       it('employee only with portal checked: sends portal-only email', async () => {
@@ -454,7 +491,7 @@ describe('PeopleInviteService', () => {
         expect(mockInviteEmail).not.toHaveBeenCalled();
       });
 
-      it('admin only (no portal): sends app email without portal link', async () => {
+      it('admin only (no portal): relies on Clerk invite email', async () => {
         setupNewUserInvite();
 
         const results = await service.inviteMembers({
@@ -469,19 +506,12 @@ describe('PeopleInviteService', () => {
         });
 
         expect(results[0].success).toBe(true);
-        expect(mockTriggerEmail).toHaveBeenCalledTimes(1);
-        expect(mockInviteEmail).toHaveBeenCalledWith(
-          expect.objectContaining({ organizationName: 'Test Org' }),
-        );
-        expect(mockInviteEmail).toHaveBeenCalledWith(
-          expect.not.objectContaining({
-            portalLink: expect.anything(),
-          }),
-        );
+        expect(mockTriggerEmail).not.toHaveBeenCalled();
+        expect(mockInviteEmail).not.toHaveBeenCalled();
         expect(mockInvitePortalEmail).not.toHaveBeenCalled();
       });
 
-      it('admin with portal checked but no compliance obligation: sends app email without portal', async () => {
+      it('admin with portal checked but no compliance obligation: relies on Clerk invite email', async () => {
         setupNewUserInvite();
 
         const results = await service.inviteMembers({
@@ -496,10 +526,8 @@ describe('PeopleInviteService', () => {
         });
 
         expect(results[0].success).toBe(true);
-        expect(mockTriggerEmail).toHaveBeenCalledTimes(1);
-        expect(mockInviteEmail).toHaveBeenCalledWith(
-          expect.objectContaining({ organizationName: 'Test Org' }),
-        );
+        expect(mockTriggerEmail).not.toHaveBeenCalled();
+        expect(mockInviteEmail).not.toHaveBeenCalled();
         expect(mockInvitePortalEmail).not.toHaveBeenCalled();
       });
     });

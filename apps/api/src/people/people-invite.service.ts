@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { db } from '@db';
 import { triggerEmail } from '../email/trigger-email';
 import { InviteEmail } from '../email/templates/invite-member';
@@ -17,6 +13,7 @@ import {
 import type { InviteItemDto } from './dto/invite-people.dto';
 import { checkAutoCompletePhases } from '../frameworks/frameworks-timeline.helper';
 import { TimelinesService } from '../timelines/timelines.service';
+import { ClerkOrganizationManagementService } from '../auth/clerk-organization-management.service';
 
 export interface InviteResult {
   email: string;
@@ -29,7 +26,10 @@ export interface InviteResult {
 export class PeopleInviteService {
   private readonly logger = new Logger(PeopleInviteService.name);
 
-  constructor(private readonly timelinesService: TimelinesService) {}
+  constructor(
+    private readonly timelinesService: TimelinesService,
+    private readonly clerkOrganizations: ClerkOrganizationManagementService,
+  ) {}
 
   async inviteMembers(params: {
     organizationId: string;
@@ -53,7 +53,11 @@ export class PeopleInviteService {
           callerMemberActions,
         );
         if (roleError) {
-          results.push({ email: invite.email, success: false, error: roleError });
+          results.push({
+            email: invite.email,
+            success: false,
+            error: roleError,
+          });
           continue;
         }
 
@@ -64,12 +68,7 @@ export class PeopleInviteService {
           invite.roles,
           organizationId,
         );
-        const shouldSendPortalEmail =
-          !!invite.sendPortalEmail && hasCompliance;
-        const shouldSendAppEmail = await this.rolesHaveAppAccess(
-          invite.roles,
-          organizationId,
-        );
+        const shouldSendPortalEmail = !!invite.sendPortalEmail && hasCompliance;
 
         if (isStrictlyEmployee) {
           const result = await this.addEmployeeWithoutInvite(
@@ -90,7 +89,6 @@ export class PeopleInviteService {
             organizationId,
             currentUserId: callerUserId,
             sendPortalEmail: shouldSendPortalEmail,
-            sendAppEmail: shouldSendAppEmail,
           });
           results.push({ email: invite.email, success: true });
         }
@@ -202,7 +200,10 @@ export class PeopleInviteService {
         await triggerEmail({
           to: email,
           subject: `You've been invited to join ${organization.name} on Comp AI`,
-          react: InviteEmail({ organizationName: organization.name, inviteLink }),
+          react: InviteEmail({
+            organizationName: organization.name,
+            inviteLink,
+          }),
         });
       }
     } catch (emailErr) {
@@ -222,16 +223,9 @@ export class PeopleInviteService {
     organizationId: string;
     currentUserId: string;
     sendPortalEmail?: boolean;
-    sendAppEmail?: boolean;
   }): Promise<void> {
-    const {
-      email,
-      roles,
-      organizationId,
-      currentUserId,
-      sendPortalEmail,
-      sendAppEmail,
-    } = params;
+    const { email, roles, organizationId, currentUserId, sendPortalEmail } =
+      params;
 
     const existingUser = await db.user.findFirst({
       where: { email: { equals: email, mode: 'insensitive' } },
@@ -252,19 +246,17 @@ export class PeopleInviteService {
           return;
         }
 
-        await this.sendInvitationEmailToExistingMember({
+        await this.createClerkInviteForExistingUser({
           email,
           roles,
           organizationId,
           inviterId: currentUserId,
           sendPortalEmail,
-          sendAppEmail,
         });
         return;
       }
     }
 
-    const roleString = roles.join(',');
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
       select: { name: true },
@@ -274,43 +266,30 @@ export class PeopleInviteService {
       throw new BadRequestException('Organization not found.');
     }
 
-    const invitation = await db.invitation.create({
-      data: {
-        email,
-        organizationId,
-        role: roleString,
-        status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        inviterId: currentUserId,
-      },
+    await this.clerkOrganizations.createInvitation({
+      organizationId,
+      email,
+      roles,
+      inviterUserId: currentUserId,
+      redirectUrl: this.buildInviteRedirectUrl(organizationId),
     });
 
     await this.sendInviteEmails({
       email,
       organizationName: organization.name,
       sendPortalEmail,
-      sendAppEmail,
       portalLink: this.buildPortalUrl(organizationId),
-      appLink: this.buildInviteLink(invitation.id),
     });
   }
 
-  private async sendInvitationEmailToExistingMember(params: {
+  private async createClerkInviteForExistingUser(params: {
     email: string;
     roles: string[];
     organizationId: string;
     inviterId: string;
     sendPortalEmail?: boolean;
-    sendAppEmail?: boolean;
   }): Promise<void> {
-    const {
-      email,
-      roles,
-      organizationId,
-      inviterId,
-      sendPortalEmail,
-      sendAppEmail,
-    } = params;
+    const { email, roles, organizationId, inviterId, sendPortalEmail } = params;
 
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
@@ -321,24 +300,19 @@ export class PeopleInviteService {
       throw new BadRequestException('Organization not found.');
     }
 
-    const invitation = await db.invitation.create({
-      data: {
-        email: email.toLowerCase(),
-        organizationId,
-        role: roles.length === 1 ? roles[0] : roles.join(','),
-        status: 'pending',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        inviterId,
-      },
+    await this.clerkOrganizations.createInvitation({
+      organizationId,
+      email: email.toLowerCase(),
+      roles,
+      inviterUserId: inviterId,
+      redirectUrl: this.buildInviteRedirectUrl(organizationId),
     });
 
     await this.sendInviteEmails({
       email: email.toLowerCase(),
       organizationName: organization.name,
       sendPortalEmail,
-      sendAppEmail,
       portalLink: this.buildPortalUrl(organizationId),
-      appLink: this.buildInviteLink(invitation.id),
     });
   }
 
@@ -413,30 +387,11 @@ export class PeopleInviteService {
     email: string;
     organizationName: string;
     sendPortalEmail?: boolean;
-    sendAppEmail?: boolean;
     portalLink: string;
-    appLink: string;
   }): Promise<void> {
-    const {
-      email,
-      organizationName,
-      sendPortalEmail,
-      sendAppEmail,
-      portalLink,
-      appLink,
-    } = params;
+    const { email, organizationName, sendPortalEmail, portalLink } = params;
 
-    if (sendAppEmail) {
-      await triggerEmail({
-        to: email,
-        subject: `You've been invited to join ${organizationName} on Comp AI`,
-        react: InviteEmail({
-          organizationName,
-          inviteLink: appLink,
-          portalLink: sendPortalEmail ? portalLink : undefined,
-        }),
-      });
-    } else if (sendPortalEmail) {
+    if (sendPortalEmail) {
       await triggerEmail({
         to: email,
         subject: `You've been invited to join ${organizationName} on Comp AI`,
@@ -446,42 +401,7 @@ export class PeopleInviteService {
           email,
         }),
       });
-    } else {
-      await triggerEmail({
-        to: email,
-        subject: `You've been invited to join ${organizationName} on Comp AI`,
-        react: InviteEmail({
-          organizationName,
-          inviteLink: appLink,
-        }),
-      });
     }
-  }
-
-  private async rolesHaveAppAccess(
-    roles: string[],
-    organizationId: string,
-  ): Promise<boolean> {
-    for (const role of roles) {
-      if (BUILT_IN_ROLE_PERMISSIONS[role]?.app) return true;
-    }
-
-    const customRoleNames = roles.filter(
-      (r) => !BUILT_IN_ROLE_PERMISSIONS[r],
-    );
-    if (customRoleNames.length === 0) return false;
-
-    const customRoles = await db.organizationRole.findMany({
-      where: {
-        organizationId,
-        name: { in: customRoleNames },
-      },
-      select: { permissions: true },
-    });
-
-    return customRoles.some((role) =>
-      parseRolePermissions(role.permissions)?.app,
-    );
   }
 
   private async rolesHaveComplianceObligation(
@@ -503,8 +423,8 @@ export class PeopleInviteService {
       select: { obligations: true },
     });
 
-    return customRoles.some((role) =>
-      parseRoleObligations(role.obligations).compliance,
+    return customRoles.some(
+      (role) => parseRoleObligations(role.obligations).compliance,
     );
   }
 
@@ -523,7 +443,8 @@ export class PeopleInviteService {
     if (hasWriteAccess) return null;
 
     const disallowed = targetRoles.filter(
-      (r) => !isRestrictedRole(r) && Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, r),
+      (r) =>
+        !isRestrictedRole(r) && Object.hasOwn(BUILT_IN_ROLE_PERMISSIONS, r),
     );
     if (disallowed.length > 0) {
       return `You cannot assign privileged roles: ${disallowed.join(', ')}.`;
@@ -569,9 +490,8 @@ export class PeopleInviteService {
     return `${portalUrl}/${organizationId}`;
   }
 
-  private buildInviteLink(invitationId: string): string {
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
-    return `${appUrl}/invite/${invitationId}`;
+  private buildInviteRedirectUrl(organizationId: string): string {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
+    return `${appUrl}/${organizationId}`;
   }
 }
