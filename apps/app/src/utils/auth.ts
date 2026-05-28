@@ -5,14 +5,18 @@
  * auth endpoints. The actual auth server runs on the API - this app only
  * consumes auth services.
  *
+ * The exported `auth.api` shape is a quarantined compatibility surface for
+ * legacy call sites that once imported Better Auth helpers. It must stay
+ * API/Clerk-backed and must not reintroduce Better Auth runtime state.
+ *
  * For browser-side auth (login, logout, hooks), use auth-client.ts instead.
  */
 
-import { serverApi } from '@/lib/api-server';
 import {
   getActiveOrganizationCookie,
   setActiveOrganizationCookie,
 } from '@/lib/active-organization';
+import { serverApi } from '@/lib/api-server';
 import type { ReadonlyHeaders } from 'next/dist/server/web/spec-extension/adapters/headers';
 import { ac, allRoles } from './permissions';
 
@@ -126,7 +130,9 @@ interface MeResponse {
  * @param options.headers - The request headers (must include cookies)
  * @returns The session data or null if not authenticated
  */
-async function getSession(options: { headers: ReadonlyHeaders | Headers }): Promise<Session | null> {
+async function getSession(options: {
+  headers: ReadonlyHeaders | Headers;
+}): Promise<Session | null> {
   try {
     const response = await serverApi.get<MeResponse>('/v1/auth/me');
     const data = response.data;
@@ -278,7 +284,9 @@ async function setActiveOrganization(options: {
       console.error('[auth] Failed to set active organization:', error);
     }
     if (options.asResponse) {
-      return new Response(JSON.stringify({ error: 'Failed to set active organization' }), { status: 500 });
+      return new Response(JSON.stringify({ error: 'Failed to set active organization' }), {
+        status: 500,
+      });
     }
     return null;
   }
@@ -303,10 +311,7 @@ async function getActiveOrganization(options: {
     return null;
   }
 
-  return (
-    organizations.find((organization) => organization.id === activeOrganizationId) ??
-    null
-  );
+  return organizations.find((organization) => organization.id === activeOrganizationId) ?? null;
 }
 
 /**
@@ -405,7 +410,8 @@ async function createInvitation(options: {
 }
 
 /**
- * Server-side auth API object that preserves the legacy app auth interface.
+ * Server-side auth API object that preserves the retired Better Auth interface
+ * while delegating all runtime authority to Clerk-backed API endpoints.
  *
  * Usage:
  * ```ts

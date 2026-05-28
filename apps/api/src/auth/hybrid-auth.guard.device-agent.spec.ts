@@ -112,7 +112,7 @@ describe('HybridAuthGuard device-agent sessions', () => {
       userId: 'usr_1',
       user: {
         email: 'employee@trycomp.ai',
-        role: 'user',
+        role: 'admin',
       },
     });
 
@@ -125,6 +125,7 @@ describe('HybridAuthGuard device-agent sessions', () => {
       userEmail: 'employee@trycomp.ai',
       sessionId: 'ses_agent',
       sessionDeviceAgent: true,
+      isPlatformAdmin: false,
       organizationId: '',
     });
   });
