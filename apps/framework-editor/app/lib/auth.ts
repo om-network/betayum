@@ -52,7 +52,7 @@ async function getSession(options: {
   headers: ReadonlyHeaders | Headers;
 }): Promise<Session | null> {
   try {
-    const response = await fetch(`${API_URL}/api/auth/get-session`, {
+    const response = await fetch(`${API_URL}/v1/auth/me`, {
       method: 'GET',
       headers: {
         ...headersToObject(options.headers),
@@ -65,7 +65,22 @@ async function getSession(options: {
       return null;
     }
 
-    return (await response.json()) as Session;
+    const data = (await response.json()) as { user: Session['user'] | null };
+    if (!data.user) {
+      return null;
+    }
+
+    return {
+      session: {
+        id: 'clerk-session',
+        userId: data.user.id,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        token: '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      user: data.user,
+    };
   } catch (error) {
     if (IS_DEVELOPMENT) {
       console.error('[auth] Failed to get session:', error);

@@ -1,4 +1,5 @@
 import { env } from '@/env.mjs';
+import { ACTIVE_ORGANIZATION_COOKIE } from '@/lib/active-organization';
 import { headers } from 'next/headers';
 
 export interface ApiResponse<T = unknown> {
@@ -35,8 +36,11 @@ async function call<T = unknown>(
   if (cookieHeader) {
     requestHeaders['Cookie'] = cookieHeader;
   }
-  if (organizationId) {
-    requestHeaders['X-Organization-Id'] = organizationId;
+  const activeOrganizationId =
+    organizationId || headerStore.get('x-organization-id') || getCookieValue(cookieHeader);
+
+  if (activeOrganizationId) {
+    requestHeaders['X-Organization-Id'] = activeOrganizationId;
   }
 
   try {
@@ -70,6 +74,25 @@ async function call<T = unknown>(
       status: 0,
     };
   }
+}
+
+function getCookieValue(cookieHeader: string | null, name = ACTIVE_ORGANIZATION_COOKIE) {
+  if (!cookieHeader) {
+    return undefined;
+  }
+
+  const prefix = `${name}=`;
+  const match = cookieHeader
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix));
+
+  if (!match) {
+    return undefined;
+  }
+
+  const value = match.slice(prefix.length);
+  return value ? decodeURIComponent(value) : undefined;
 }
 
 export const serverApi = {

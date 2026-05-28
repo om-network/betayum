@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { isTrustedOrigin } from './auth.server';
+import { isTrustedOrigin } from './trusted-origins';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -8,7 +8,6 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
  * These are called by external services that don't send browser Origin headers.
  */
 const EXEMPT_PATH_PREFIXES = [
-  '/api/auth', // better-auth handles its own CSRF
   '/v1/health', // health check
   '/api/docs', // swagger
   '/v1/trust-access', // public trust portal endpoints (no auth, no cookies)

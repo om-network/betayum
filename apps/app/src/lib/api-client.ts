@@ -1,6 +1,7 @@
 'use client';
 
 import { env } from '@/env.mjs';
+import { ACTIVE_ORGANIZATION_COOKIE } from './active-organization';
 
 interface ApiCallOptions extends Omit<RequestInit, 'headers'> {
   organizationId?: string;
@@ -24,6 +25,25 @@ export class ApiClient {
     this.baseUrl = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
   }
 
+  private getActiveOrganizationId(): string | undefined {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const prefix = `${ACTIVE_ORGANIZATION_COOKIE}=`;
+    const cookie = document.cookie
+      .split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(prefix));
+
+    if (!cookie) {
+      return undefined;
+    }
+
+    const value = cookie.slice(prefix.length);
+    return value ? decodeURIComponent(value) : undefined;
+  }
+
   async call<T = unknown>(
     endpoint: string,
     options: ApiCallOptions = {},
@@ -35,8 +55,10 @@ export class ApiClient {
       ...customHeaders,
     };
 
-    if (organizationId) {
-      headers['X-Organization-Id'] = organizationId;
+    const resolvedOrganizationId = organizationId || this.getActiveOrganizationId();
+
+    if (resolvedOrganizationId) {
+      headers['X-Organization-Id'] = resolvedOrganizationId;
     }
 
     try {
@@ -89,8 +111,10 @@ export class ApiClient {
       ...customHeaders,
     };
 
-    if (organizationId) {
-      headers['X-Organization-Id'] = organizationId;
+    const resolvedOrganizationId = organizationId || this.getActiveOrganizationId();
+
+    if (resolvedOrganizationId) {
+      headers['X-Organization-Id'] = resolvedOrganizationId;
     }
 
     return fetch(`${this.baseUrl}${endpoint}`, {
