@@ -23,24 +23,33 @@ interface ContextApiResponse {
   data: ContextEntry[];
 }
 
-export default async function KnowledgeBasePage() {
+export default async function KnowledgeBasePage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId: organizationId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session?.user?.id || !session?.session?.activeOrganizationId) {
+  if (!session?.user?.id) {
     return notFound();
   }
-
-  const organizationId = session.session.activeOrganizationId;
 
   // Fetch all data in parallel via API
   const [policiesResult, contextResult, manualAnswersResult, kbDocumentsResult] =
     await Promise.all([
-      serverApi.get<PolicyApiResponse>('/v1/policies'),
-      serverApi.get<ContextApiResponse>('/v1/context'),
-      serverApi.get<ManualAnswer[]>('/v1/knowledge-base/manual-answers'),
-      serverApi.get<KBDocument[]>('/v1/knowledge-base/documents'),
+      serverApi.get<PolicyApiResponse>('/v1/policies', organizationId),
+      serverApi.get<ContextApiResponse>('/v1/context', organizationId),
+      serverApi.get<ManualAnswer[]>(
+        '/v1/knowledge-base/manual-answers',
+        organizationId,
+      ),
+      serverApi.get<KBDocument[]>(
+        '/v1/knowledge-base/documents',
+        organizationId,
+      ),
     ]);
 
   const allPolicies = policiesResult.data?.data ?? [];

@@ -71,12 +71,17 @@ interface KBDocumentApiResponse {
   updatedAt: string;
 }
 
-export default async function SecurityQuestionnairePage() {
+export default async function SecurityQuestionnairePage({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}) {
+  const { orgId: organizationId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session?.user?.id || !session?.session?.activeOrganizationId) {
+  if (!session?.user?.id) {
     return notFound();
   }
 
@@ -87,8 +92,6 @@ export default async function SecurityQuestionnairePage() {
     return notFound();
   }
 
-  const organizationId = session.session.activeOrganizationId;
-
   // Fetch all data in parallel via API
   const [
     policiesResult,
@@ -97,11 +100,17 @@ export default async function SecurityQuestionnairePage() {
     manualAnswersResult,
     kbDocumentsResult,
   ] = await Promise.all([
-    serverApi.get<PolicyApiResponse>('/v1/policies'),
-    serverApi.get<QuestionnaireApiResponse>('/v1/questionnaire'),
-    serverApi.get<ContextApiResponse>('/v1/context'),
-    serverApi.get<ManualAnswerApiResponse[]>('/v1/knowledge-base/manual-answers'),
-    serverApi.get<KBDocumentApiResponse[]>('/v1/knowledge-base/documents'),
+    serverApi.get<PolicyApiResponse>('/v1/policies', organizationId),
+    serverApi.get<QuestionnaireApiResponse>('/v1/questionnaire', organizationId),
+    serverApi.get<ContextApiResponse>('/v1/context', organizationId),
+    serverApi.get<ManualAnswerApiResponse[]>(
+      '/v1/knowledge-base/manual-answers',
+      organizationId,
+    ),
+    serverApi.get<KBDocumentApiResponse[]>(
+      '/v1/knowledge-base/documents',
+      organizationId,
+    ),
   ]);
 
   // Derive hasPublishedPolicies

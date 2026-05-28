@@ -1,26 +1,22 @@
-import { auth } from '@/utils/auth';
-
 import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
-import {
-  type TrainingVideo,
-  trainingVideos as trainingVideosData,
-} from '@/lib/data/training-videos';
-import { getFleetInstance } from '@/lib/fleet';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
 import { serverApi } from '@/lib/server-api-client';
-import type { EmployeeTrainingVideoCompletion, Member, User } from '@db';
 import { db } from '@db/server';
-import { daysSinceCheckIn, getDeviceComplianceStatus } from '@trycompai/utils/devices';
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import type { CheckDetails, DeviceWithChecks } from '../devices/types';
 import type {
   BackgroundCheckBillingStatus,
   BackgroundCheckRecord,
 } from './components/backgroundCheckTypes';
 import { Employee } from './components/Employee';
-
-const MDM_POLICY_ID = -9999;
+import {
+  getEmployee,
+  getFleetPolicies,
+  getMemberDevice,
+  getPoliciesTasks,
+  getTrainingVideos,
+} from './employee-data';
 
 export default async function EmployeeDetailsPage({
   params,
@@ -29,19 +25,8 @@ export default async function EmployeeDetailsPage({
 }) {
   const { employeeId, orgId } = await params;
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const currentUserMember = await db.member.findFirst({
-    where: {
-      organizationId: orgId,
-      userId: session?.user?.id,
-    },
-  });
-
-  const canEditMembers =
-    currentUserMember?.role.includes('owner') || currentUserMember?.role.includes('admin') || false;
+  const permissions = await resolveCurrentUserPermissions(orgId);
+  const canEditMembers = permissions ? hasPermission(permissions, 'member', 'update') : false;
 
   if (!orgId) {
     redirect('/');
@@ -55,14 +40,20 @@ export default async function EmployeeDetailsPage({
     backgroundCheckRes,
     backgroundCheckBillingRes,
   ] = await Promise.all([
-    getPoliciesTasks(employeeId),
+    getPoliciesTasks({ organizationId: orgId }),
     getTrainingVideos(employeeId),
-    getEmployee(employeeId),
+    getEmployee({ employeeId, organizationId: orgId }),
     db.employeeTrainingVideoCompletion.findFirst({
       where: { memberId: employeeId, videoId: HIPAA_TRAINING_ID },
     }),
-    serverApi.get<BackgroundCheckRecord | null>(`/v1/people/${employeeId}/background-check`),
-    serverApi.get<BackgroundCheckBillingStatus>('/v1/background-check-billing/status'),
+    serverApi.get<BackgroundCheckRecord | null>(
+      `/v1/people/${employeeId}/background-check`,
+      { 'X-Organization-Id': orgId },
+    ),
+    serverApi.get<BackgroundCheckBillingStatus>(
+      '/v1/background-check-billing/status',
+      { 'X-Organization-Id': orgId },
+    ),
   ]);
 
   // If employee doesn't exist, show 404 page
@@ -83,7 +74,10 @@ export default async function EmployeeDetailsPage({
   }
 
   const { fleetPolicies, device } = await getFleetPolicies(employee);
-  const memberDevice = await getMemberDevice(employee.id, orgId);
+  const memberDevice = await getMemberDevice({
+    memberId: employee.id,
+    organizationId: orgId,
+  });
 
   return (
     <Employee
@@ -116,234 +110,3 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Employee Details',
   };
 }
-
-const getEmployee = async (employeeId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    redirect('/');
-  }
-
-  const employee = await db.member.findFirst({
-    where: {
-      id: employeeId,
-      organizationId,
-    },
-    include: {
-      user: true,
-    },
-  });
-
-  return employee;
-};
-
-const getPoliciesTasks = async (employeeId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    redirect('/');
-  }
-
-  const policies = await db.policy.findMany({
-    where: {
-      organizationId: organizationId,
-      status: 'published',
-      isRequiredToSign: true,
-      isArchived: false,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-  });
-
-  return policies;
-};
-
-const getTrainingVideos = async (employeeId: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const organizationId = session?.session.activeOrganizationId;
-
-  if (!organizationId) {
-    redirect('/');
-  }
-
-  const employeeTrainingVideos = await db.employeeTrainingVideoCompletion.findMany({
-    where: {
-      memberId: employeeId,
-    },
-    orderBy: {
-      videoId: 'asc',
-    },
-  });
-
-  // Map the db records to include the matching metadata from the training videos data
-  // Filter out any videos where metadata is not found to ensure type safety
-  return employeeTrainingVideos
-    .map((dbVideo) => {
-      // Find the training video metadata with the matching ID
-      const videoMetadata = trainingVideosData.find(
-        (metadataVideo) => metadataVideo.id === dbVideo.videoId,
-      );
-
-      // Only return videos that have matching metadata
-      if (videoMetadata) {
-        return {
-          ...dbVideo,
-          metadata: videoMetadata,
-        };
-      }
-      return null;
-    })
-    .filter(
-      (
-        video,
-      ): video is EmployeeTrainingVideoCompletion & {
-        metadata: TrainingVideo;
-      } => video !== null,
-    );
-};
-
-const getFleetPolicies = async (member: Member & { user: User }) => {
-  const fleet = await getFleetInstance();
-
-  // Only show device if the employee has their own specific fleetDmLabelId
-  if (!member.fleetDmLabelId) {
-    console.log(
-      `No individual fleetDmLabelId found for member: ${member.id}, member email: ${member.user?.email}. No device will be shown.`,
-    );
-    return { fleetPolicies: [], device: null };
-  }
-
-  try {
-    const deviceResponse = await fleet.get(`/labels/${member.fleetDmLabelId}/hosts`);
-    const device = deviceResponse.data.hosts?.[0];
-
-    if (!device) {
-      console.log(
-        `No device found for fleetDmLabelId: ${member.fleetDmLabelId} for member: ${member.id}`,
-      );
-      return { fleetPolicies: [], device: null };
-    }
-
-    const deviceWithPolicies = await fleet.get(`/hosts/${device.id}`);
-    const host = deviceWithPolicies.data.host;
-
-    const results = await db.fleetPolicyResult.findMany({
-      where: {
-        organizationId: member.organizationId,
-        userId: member.userId,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const platform = host.platform?.toLowerCase();
-    const osVersion = host.os_version?.toLowerCase();
-    const isMacOS =
-      platform === 'darwin' ||
-      platform === 'macos' ||
-      platform === 'osx' ||
-      osVersion?.includes('mac');
-
-    return {
-      fleetPolicies: [
-        ...(host.policies || []),
-        ...(isMacOS
-          ? [
-              {
-                id: MDM_POLICY_ID,
-                name: 'MDM Enabled',
-                response: host.mdm.connected_to_fleet ? 'pass' : 'fail',
-              },
-            ]
-          : []),
-      ].map((policy) => {
-        const policyResult = results.find((result) => result.fleetPolicyId === policy.id);
-        return {
-          ...policy,
-          response:
-            policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass'
-              ? 'pass'
-              : 'fail',
-          attachments: policyResult?.attachments || [],
-        };
-      }),
-      device: host,
-    };
-  } catch (error) {
-    console.error(
-      `Failed to get device using individual fleet label for member: ${member.id}`,
-      error,
-    );
-    return { fleetPolicies: [], device: null };
-  }
-};
-
-const getMemberDevice = async (
-  memberId: string,
-  organizationId: string,
-): Promise<DeviceWithChecks | null> => {
-  const device = await db.device.findFirst({
-    where: { memberId, organizationId },
-    include: {
-      member: {
-        include: {
-          user: {
-            select: { name: true, email: true },
-          },
-        },
-      },
-      agentSession: {
-        select: { expiresAt: true },
-      },
-    },
-    orderBy: { installedAt: 'desc' },
-  });
-
-  if (!device) {
-    return null;
-  }
-
-  const complianceStatus = getDeviceComplianceStatus({
-    isCompliant: device.isCompliant,
-    lastCheckIn: device.lastCheckIn,
-  });
-
-  return {
-    id: device.id,
-    name: device.name,
-    hostname: device.hostname,
-    platform: device.platform as 'macos' | 'windows' | 'linux',
-    osVersion: device.osVersion,
-    serialNumber: device.serialNumber,
-    hardwareModel: device.hardwareModel,
-    isCompliant: device.isCompliant,
-    diskEncryptionEnabled: device.diskEncryptionEnabled,
-    antivirusEnabled: device.antivirusEnabled,
-    passwordPolicySet: device.passwordPolicySet,
-    screenLockEnabled: device.screenLockEnabled,
-    checkDetails: (device.checkDetails as CheckDetails) ?? null,
-    lastCheckIn: device.lastCheckIn?.toISOString() ?? null,
-    agentVersion: device.agentVersion,
-    installedAt: device.installedAt.toISOString(),
-    user: {
-      name: device.member.user.name,
-      email: device.member.user.email,
-    },
-    source: 'device_agent' as const,
-    complianceStatus,
-    daysSinceLastCheckIn: daysSinceCheckIn(device.lastCheckIn),
-    hasActiveAgentSession:
-      !!device.agentSession && device.agentSession.expiresAt.getTime() > Date.now(),
-  };
-};

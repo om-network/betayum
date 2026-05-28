@@ -1,6 +1,8 @@
 'use server';
 
 import { authActionClient } from '@/actions/safe-action';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
 import { removeMemberFromOrgChart } from '@/lib/org-chart';
 import type { Departments } from '@db';
 import { db, Prisma } from '@db/server';
@@ -41,17 +43,8 @@ export const updateEmployee = authActionClient
       };
     }
 
-    const currentUserMember = await db.member.findFirst({
-      where: {
-        organizationId: organizationId,
-        userId: ctx.user!.id,
-      },
-    });
-
-    if (
-      !currentUserMember ||
-      (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
-    ) {
+    const permissions = await resolveCurrentUserPermissions(organizationId);
+    if (!permissions || !hasPermission(permissions, 'member', 'update')) {
       return {
         success: false,
         error: {

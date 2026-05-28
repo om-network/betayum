@@ -49,6 +49,8 @@ model EmployeeTrainingVideoCompletion {
   @@index([memberId])
 }
 
+// Historical Better Auth/browser session shape. Browser-session authority is
+// Clerk; these rows remain for compatibility and device-agent sessions only.
 model Session {
   id                   String   @id @default(dbgenerated("generate_prefixed_cuid('ses'::text)"))
   expiresAt            DateTime
@@ -115,7 +117,7 @@ model Member {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role           String // Stored as a string to support built-in and custom roles.
+  role           String // Local profile/migration value only; Clerk permissions authorize browser sessions.
   createdAt      DateTime     @default(now())
 
   department                      Departments                       @default(none)
@@ -167,7 +169,7 @@ model Invitation {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   email          String
-  role           String // Stored as a string to support built-in and custom roles.
+  role           String // Historical invitation/profile value only; Clerk invitations are authoritative.
   status         String
   expiresAt      DateTime
   inviterId      String
@@ -185,7 +187,8 @@ enum Role {
   contractor
 }
 
-// Custom roles for organization-specific access control.
+// Historical custom-role read model. Runtime browser authorization comes from
+// Clerk organization roles and custom permission claims.
 model OrganizationRole {
   id             String       @id @default(dbgenerated("generate_prefixed_cuid('rol'::text)"))
   name           String

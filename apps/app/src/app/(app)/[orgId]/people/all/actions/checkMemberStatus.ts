@@ -1,8 +1,8 @@
 'use server';
 
-import { auth } from '@/utils/auth';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
 
 export const checkMemberStatus = async ({
   email,
@@ -12,26 +12,8 @@ export const checkMemberStatus = async ({
   organizationId: string;
 }) => {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.session) {
-      throw new Error('Authentication required.');
-    }
-
-    const currentUserId = session.session.userId;
-    const currentUserMember = await db.member.findFirst({
-      where: {
-        organizationId: organizationId,
-        userId: currentUserId,
-        deactivated: false,
-      },
-    });
-
-    if (
-      !currentUserMember ||
-      (!currentUserMember.role.includes('admin') &&
-        !currentUserMember.role.includes('owner') &&
-        !currentUserMember.role.includes('auditor'))
-    ) {
+    const permissions = await resolveCurrentUserPermissions(organizationId);
+    if (!permissions || !hasPermission(permissions, 'member', 'create')) {
       throw new Error("You don't have permission to reactivate members.");
     }
 

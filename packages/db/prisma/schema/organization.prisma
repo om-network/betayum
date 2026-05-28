@@ -2,7 +2,7 @@ model Organization {
   id                          String      @id @default(dbgenerated("generate_prefixed_cuid('org'::text)"))
   name                        String
   slug                        String      @unique @default(dbgenerated("generate_prefixed_cuid('slug'::text)"))
-  clerkOrganizationId         String?     @unique
+  clerkOrganizationId         String?     @unique // Clerk org mapping; not a local auth fallback.
   logo                        String?
   createdAt                   DateTime    @default(now())
   metadata                    String?

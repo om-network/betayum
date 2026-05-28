@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canAccessApp,
   canAccessAuditorView,
+  canAccessAuditorViewFromClerk,
   canAccessCompliance,
   canAccessRoute,
   getDefaultRoute,
@@ -208,5 +209,43 @@ describe('canAccessAuditorView', () => {
     expect(canAccessAuditorView('', noCustom)).toBe(false);
     expect(canAccessAuditorView(null, noCustom)).toBe(false);
     expect(canAccessAuditorView(undefined, noCustom)).toBe(false);
+  });
+});
+
+describe('canAccessAuditorViewFromClerk', () => {
+  it('shows for the Clerk auditor role', () => {
+    expect(
+      canAccessAuditorViewFromClerk({
+        organizationRole: 'org:auditor',
+        permissions: {},
+      }),
+    ).toBe(true);
+  });
+
+  it('hides for Clerk admin even when audit read is granted implicitly', () => {
+    expect(
+      canAccessAuditorViewFromClerk({
+        organizationRole: 'org:admin',
+        permissions: { audit: ['read'] },
+      }),
+    ).toBe(false);
+  });
+
+  it('shows for a non-built-in Clerk role with explicit audit read', () => {
+    expect(
+      canAccessAuditorViewFromClerk({
+        organizationRole: 'org:compliance-reviewer',
+        permissions: { audit: ['read'] },
+      }),
+    ).toBe(true);
+  });
+
+  it('hides for a non-built-in Clerk role without audit read', () => {
+    expect(
+      canAccessAuditorViewFromClerk({
+        organizationRole: 'org:compliance-reviewer',
+        permissions: { evidence: ['read'] },
+      }),
+    ).toBe(false);
   });
 });

@@ -141,6 +141,19 @@ export function canAccessAuditorView(
   return hasPermission(customRolePermissions, 'audit', 'read');
 }
 
+export function canAccessAuditorViewFromClerk({
+  organizationRole,
+  permissions,
+}: {
+  organizationRole: string | null | undefined;
+  permissions: UserPermissions;
+}): boolean {
+  const role = organizationRole?.replace(/^org:/, '');
+  if (role === 'auditor') return true;
+  if (!role || role === 'admin' || role === 'member') return false;
+  return hasPermission(permissions, 'audit', 'read');
+}
+
 /**
  * Ordered list of main navigation routes used to find a user's default landing page.
  * Order matches sidebar priority — the first accessible route becomes the default.

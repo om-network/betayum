@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { authActionClient } from '@/actions/safe-action';
 import type { ActionResponse } from '@/actions/types';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserPermissions } from '@/lib/permissions.server';
 
 const reactivateMemberSchema = z.object({
   memberId: z.string(),
@@ -30,19 +32,8 @@ export const reactivateMember = authActionClient
     const { memberId } = parsedInput;
 
     try {
-      // Check if user has admin permissions
-      const currentUserMember = await db.member.findFirst({
-        where: {
-          organizationId: ctx.session.activeOrganizationId,
-          userId: ctx.user!.id,
-          deactivated: false,
-        },
-      });
-
-      if (
-        !currentUserMember ||
-        (!currentUserMember.role.includes('admin') && !currentUserMember.role.includes('owner'))
-      ) {
+      const permissions = await resolveCurrentUserPermissions(ctx.session.activeOrganizationId);
+      if (!permissions || !hasPermission(permissions, 'member', 'update')) {
         return {
           success: false,
           error: "You don't have permission to reactivate members",

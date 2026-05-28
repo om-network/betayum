@@ -1,10 +1,11 @@
 import { filterComplianceMembers } from '@/lib/compliance';
-import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos';
 import { HIPAA_TRAINING_ID } from '@/lib/data/hipaa-training-content';
-import { auth } from '@/utils/auth';
+import {
+  type TrainingVideo,
+  trainingVideos as trainingVideosData,
+} from '@/lib/data/training-videos';
 import type { EmployeeTrainingVideoCompletion, Member, Organization, Policy, User } from '@db';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
 import { EmployeeCompletionChart } from './EmployeeCompletionChart';
 
 // Define EmployeeWithUser type similar to EmployeesList
@@ -13,27 +14,15 @@ interface EmployeeWithUser extends Member {
 }
 
 // Define ProcessedTrainingVideo type
-interface ProcessedTrainingVideo {
-  id: string;
-  memberId: string;
-  videoId: string;
-  completedAt: Date | null;
-  metadata: {
-    id: string;
-    title: string;
-    description: string;
-    youtubeId: string;
-    url: string;
-  };
-}
+type ProcessedTrainingVideo = EmployeeTrainingVideoCompletion & {
+  metadata: TrainingVideo;
+};
 
-export async function EmployeesOverview() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  const organizationId = session?.session.activeOrganizationId;
-
+export async function EmployeesOverview({
+  organizationId,
+}: {
+  organizationId: string;
+}) {
   let employees: EmployeeWithUser[] = [];
   let policies: Policy[] = [];
   const processedTrainingVideos: ProcessedTrainingVideo[] = [];
@@ -96,7 +85,7 @@ export async function EmployeesOverview() {
             memberId: dbVideo.memberId,
             videoId: dbVideo.videoId,
             completedAt: dbVideo.completedAt,
-            metadata: videoMetadata as ProcessedTrainingVideo['metadata'],
+            metadata: videoMetadata,
           });
         }
       }
@@ -117,7 +106,7 @@ export async function EmployeesOverview() {
       <EmployeeCompletionChart
         employees={employees}
         policies={policies}
-        trainingVideos={processedTrainingVideos as any}
+        trainingVideos={processedTrainingVideos}
         showAll={true}
         securityTrainingStepEnabled={organization?.securityTrainingStepEnabled ?? true}
         hasHipaaFramework={hasHipaaFramework}
