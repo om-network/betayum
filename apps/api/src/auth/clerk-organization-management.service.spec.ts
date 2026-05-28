@@ -121,6 +121,42 @@ describe('ClerkOrganizationManagementService', () => {
     );
   });
 
+  it('lists organization memberships from Clerk', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            data: [
+              {
+                id: 'mem_clerk_1',
+                role: 'org:admin',
+                public_user_data: {
+                  user_id: 'user_clerk_1',
+                  identifier: 'admin@example.com',
+                },
+              },
+            ],
+          }),
+        ),
+    });
+
+    const memberships = await service.listMemberships('org_1');
+
+    expect(memberships).toEqual([
+      {
+        id: 'mem_clerk_1',
+        clerkUserId: 'user_clerk_1',
+        email: 'admin@example.com',
+        role: 'org:admin',
+      },
+    ]);
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.clerk.com/v1/organizations/org_clerk_1/memberships?limit=100',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
   it('revokes pending invitations in Clerk', async () => {
     mockFetch.mockResolvedValue({
       ok: true,

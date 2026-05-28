@@ -90,6 +90,8 @@ async function bootstrap(): Promise<void> {
     '/background-checks/webhook',
     '/v1/billing/webhook',
     '/billing/webhook',
+    '/v1/auth/clerk/webhook',
+    '/auth/clerk/webhook',
   ];
   const needsRawBody = (req: express.Request): boolean =>
     RAW_BODY_PATHS.some((p) => req.path.endsWith(p));

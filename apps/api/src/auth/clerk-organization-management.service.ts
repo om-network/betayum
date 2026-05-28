@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { z } from 'zod';
 import { db } from '@db';
-import { ROLE_HIERARCHY } from '@trycompai/auth';
 import { getClerkAuthConfig } from './clerk-auth.config';
+import { resolveClerkRoleKey } from './clerk-role-mapping';
 
 const CLERK_API_BASE_URL = 'https://api.clerk.com/v1';
 
@@ -19,6 +19,22 @@ const ClerkInvitationListSchema = z.object({
   data: z.array(ClerkInvitationSchema),
 });
 
+const ClerkMembershipSchema = z.object({
+  id: z.string(),
+  role: z.string().nullable().optional(),
+  public_user_data: z
+    .object({
+      user_id: z.string().nullable().optional(),
+      identifier: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+const ClerkMembershipListSchema = z.object({
+  data: z.array(ClerkMembershipSchema),
+});
+
 export interface ClerkInvitationView {
   id: string;
   email: string;
@@ -26,6 +42,13 @@ export interface ClerkInvitationView {
   status: string;
   expiresAt: Date | null;
   createdAt: Date;
+}
+
+export interface ClerkMembershipView {
+  id: string;
+  clerkUserId: string;
+  email: string | null;
+  role: string;
 }
 
 @Injectable()
@@ -77,6 +100,21 @@ export class ClerkOrganizationManagementService {
     });
 
     return response.data.map(toInvitationView);
+  }
+
+  async listMemberships(
+    organizationId: string,
+  ): Promise<ClerkMembershipView[]> {
+    const organization = await this.requireLinkedOrganization(organizationId);
+    const response = await this.request({
+      path: `/organizations/${organization.clerkOrganizationId}/memberships?limit=100`,
+      method: 'GET',
+      schema: ClerkMembershipListSchema,
+    });
+
+    return response.data
+      .map(toMembershipView)
+      .filter((membership): membership is ClerkMembershipView => !!membership);
   }
 
   async revokeInvitation(params: {
@@ -188,29 +226,6 @@ export class ClerkOrganizationManagementService {
   }
 }
 
-function resolveClerkRoleKey(roles: string[]): string {
-  const role = [...roles].sort(compareRolesByAuthority).at(-1);
-  if (!role) {
-    throw new BadRequestException('At least one role is required.');
-  }
-
-  if (role === 'owner') return 'org:admin';
-  if (role.startsWith('org:')) return role;
-  return `org:${role}`;
-}
-
-function compareRolesByAuthority(a: string, b: string): number {
-  return roleRank(a) - roleRank(b);
-}
-
-function roleRank(role: string): number {
-  const normalized = role.replace(/^org:/, '');
-  const rankedRoles: readonly string[] = ROLE_HIERARCHY;
-  const index = rankedRoles.indexOf(normalized);
-
-  return index === -1 ? ROLE_HIERARCHY.length : index;
-}
-
 function toInvitationView(
   invitation: z.output<typeof ClerkInvitationSchema>,
 ): ClerkInvitationView {
@@ -221,6 +236,20 @@ function toInvitationView(
     status: invitation.status,
     expiresAt: toDate(invitation.expires_at),
     createdAt: toDate(invitation.created_at) ?? new Date(0),
+  };
+}
+
+function toMembershipView(
+  membership: z.output<typeof ClerkMembershipSchema>,
+): ClerkMembershipView | null {
+  const clerkUserId = membership.public_user_data?.user_id;
+  if (!clerkUserId) return null;
+
+  return {
+    id: membership.id,
+    clerkUserId,
+    email: membership.public_user_data?.identifier ?? null,
+    role: membership.role ?? 'org:member',
   };
 }
 

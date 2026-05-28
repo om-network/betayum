@@ -11,6 +11,8 @@ const EXEMPT_PATH_PREFIXES = [
   '/v1/health', // health check
   '/api/docs', // swagger
   '/v1/trust-access', // public trust portal endpoints (no auth, no cookies)
+  '/v1/auth/clerk/webhook', // Clerk webhooks
+  '/auth/clerk/webhook',
 ];
 
 /**
