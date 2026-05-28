@@ -1,4 +1,4 @@
-import { auth as betterAuth } from '@/utils/auth';
+import { auth as authApi } from '@/utils/auth';
 import { auth } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -10,7 +10,7 @@ const ALLOWED_TASK_IDS = [
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await betterAuth.api.getSession({
+    const session = await authApi.api.getSession({
       headers: req.headers,
     });
 

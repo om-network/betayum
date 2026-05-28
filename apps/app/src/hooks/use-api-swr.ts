@@ -23,7 +23,7 @@ export function useApiSWR<T = unknown>(
   const params = useParams<{ orgId?: string }>();
   const { enabled = true, ...swrOptions } = options;
 
-  // Fall back to URL params org ID when better-auth client hasn't resolved yet
+  // Fall back to the route org ID while the active-organization client state hydrates.
   const organizationId = activeOrg.data?.id ?? params?.orgId;
 
   // Create stable key for SWR — include org ID for cache scoping
@@ -51,4 +51,3 @@ export function useApiSWR<T = unknown>(
 
   return swrResponse;
 }
-

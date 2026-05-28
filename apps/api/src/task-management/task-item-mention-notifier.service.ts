@@ -87,9 +87,7 @@ export class TaskItemMentionNotifierService {
 
       // Build task URL
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const taskUrlBase = `${appUrl}/${organizationId}/${entityRoutePath}/${entityId}`;
       const taskUrlObj = new URL(taskUrlBase);
       taskUrlObj.searchParams.set('taskItemId', taskItemId);

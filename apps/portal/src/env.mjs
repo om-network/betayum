@@ -3,8 +3,6 @@ import { z } from 'zod';
 
 export const env = createEnv({
   server: {
-    BETTER_AUTH_SECRET: z.string().optional(),
-    BETTER_AUTH_URL: z.string().optional(),
     RESEND_API_KEY: z.string(),
     UPSTASH_REDIS_REST_URL: z.string().optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
@@ -14,7 +12,6 @@ export const env = createEnv({
     AUTH_MICROSOFT_CLIENT_SECRET: z.string().optional(),
     AUTH_SECRET: z.string().optional(),
     INTERNAL_API_TOKEN: z.string().optional(),
-    APP_AUTH_URL: z.string().optional(),
     BACKEND_API_URL: z.string().optional(),
     SERVICE_TOKEN_PORTAL: z.string().optional(),
   },
@@ -22,7 +19,6 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
-    NEXT_PUBLIC_BETTER_AUTH_URL: z.string().optional(),
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
     NEXT_PUBLIC_API_URL: z.string().optional(),
   },
@@ -30,11 +26,8 @@ export const env = createEnv({
   runtimeEnv: {
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-    NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -44,7 +37,6 @@ export const env = createEnv({
     AUTH_MICROSOFT_CLIENT_SECRET: process.env.AUTH_MICROSOFT_CLIENT_SECRET,
     AUTH_SECRET: process.env.AUTH_SECRET,
     INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN,
-    APP_AUTH_URL: process.env.APP_AUTH_URL,
     BACKEND_API_URL: process.env.BACKEND_API_URL,
     SERVICE_TOKEN_PORTAL: process.env.SERVICE_TOKEN_PORTAL,
   },

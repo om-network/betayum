@@ -55,7 +55,6 @@ export const UnassignedItemsNotificationEmail = ({
   email,
 }: Props) => {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-    ?? process.env.BETTER_AUTH_URL
     ?? 'https://app.trycomp.ai';
   const link = `${baseUrl}/${organizationId}`;
 

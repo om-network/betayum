@@ -571,9 +571,7 @@ export class PeopleInviteService {
 
   private buildInviteLink(invitationId: string): string {
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ??
-      process.env.BETTER_AUTH_URL ??
-      'https://app.trycomp.ai';
+      process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
     return `${appUrl}/invite/${invitationId}`;
   }
 }

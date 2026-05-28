@@ -73,7 +73,7 @@ jobs:
         env:
           CI: true
           AUTH_SECRET: test-auth-secret-for-ci
-          BETTER_AUTH_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
 
       - name: Upload test results
         if: always()

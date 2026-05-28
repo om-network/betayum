@@ -6,7 +6,7 @@ This document provides guidelines for AI assistants (Claude, Cursor, etc.) when 
 
 ```
 apps/api/src/
-├── auth/           # Authentication (better-auth, guards, decorators)
+├── auth/           # Authentication (Clerk, guards, decorators)
 ├── roles/          # Custom roles CRUD API
 ├── stripe/         # Stripe billing (global module)
 ├── security-penetration-tests/  # Pen testing product (controller, service, billing)
@@ -17,7 +17,7 @@ apps/api/src/
 ## Authentication
 
 - **Session-based auth only.** No JWT tokens.
-- **HybridAuthGuard** checks in order: API Key (`x-api-key`), Service Token (`x-service-token`), Session (cookies via better-auth).
+- **HybridAuthGuard** checks in order: API Key (`x-api-key`), Service Token (`x-service-token`), Session (Clerk-backed cookies/bearer).
 - `@Public()` decorator skips auth entirely (use for webhooks).
 - Access auth context via `@AuthContext()` decorator.
 - Access organization ID via `@OrganizationId()` decorator.

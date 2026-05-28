@@ -355,9 +355,7 @@ export class AdminOrganizationsService {
 
     try {
       const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai';
       const inviteLink = `${appUrl}/invite/${invitation.id}`;
 
       await triggerEmail({

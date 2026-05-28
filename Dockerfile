@@ -72,13 +72,13 @@ RUN cd packages/db && node scripts/combine-schemas.js \
                    && node scripts/generate-prisma-client-js.js
 
 # Ensure Next build has required public env at build-time
-ARG NEXT_PUBLIC_BETTER_AUTH_URL
+ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_PORTAL_URL
 ARG NEXT_PUBLIC_POSTHOG_KEY
 ARG NEXT_PUBLIC_POSTHOG_HOST
 ARG NEXT_PUBLIC_IS_DUB_ENABLED
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
     NEXT_PUBLIC_PORTAL_URL=$NEXT_PUBLIC_PORTAL_URL \
     NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
     NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST \
@@ -125,8 +125,6 @@ RUN cd packages/db && node scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/portal/prisma/schema.prisma
 
 # Ensure Next build has required public env at build-time
-ARG NEXT_PUBLIC_BETTER_AUTH_URL
-ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
     NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production \
     NEXT_OUTPUT_STANDALONE=true \
     NODE_OPTIONS=--max_old_space_size=6144

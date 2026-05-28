@@ -11,7 +11,6 @@ describe('validateBackgroundCheckBillingRedirectUrl', () => {
   it('throws a controlled error when the configured app URL is malformed', () => {
     process.env.NEXT_PUBLIC_APP_URL = 'not a url';
     process.env.APP_URL = '';
-    process.env.BETTER_AUTH_URL = '';
 
     expect(() =>
       validateBackgroundCheckBillingRedirectUrl(
@@ -23,7 +22,6 @@ describe('validateBackgroundCheckBillingRedirectUrl', () => {
   it('rejects opaque configured app URLs', () => {
     process.env.NEXT_PUBLIC_APP_URL = 'file:///tmp/app.html';
     process.env.APP_URL = '';
-    process.env.BETTER_AUTH_URL = '';
 
     expect(() =>
       validateBackgroundCheckBillingRedirectUrl('file:///tmp/return.html'),
@@ -33,7 +31,6 @@ describe('validateBackgroundCheckBillingRedirectUrl', () => {
   it('rejects opaque redirect URLs', () => {
     process.env.NEXT_PUBLIC_APP_URL = 'https://app.trycomp.ai';
     process.env.APP_URL = '';
-    process.env.BETTER_AUTH_URL = '';
 
     expect(() =>
       validateBackgroundCheckBillingRedirectUrl('data:text/html,ok'),
