@@ -1,10 +1,9 @@
 'use server';
 
 import { maskEmailForLogs } from '@/lib/mask-email';
-import { auth } from '@/utils/auth';
-import { createSafeActionClient } from 'next-safe-action';
-import { headers } from 'next/headers';
+import { serverApi } from '@/lib/api-server';
 import { z } from 'zod';
+import { authActionClient } from '../safe-action';
 
 const emailSchema = z.string().email({ message: 'Invalid email format' });
 
@@ -19,15 +18,21 @@ interface InviteResult {
   error?: string;
 }
 
-export const bulkInviteEmployees = createSafeActionClient()
+export const bulkInviteEmployees = authActionClient
   .inputSchema(schema)
-  .action(async ({ parsedInput }) => {
+  .metadata({
+    name: 'bulk-invite-employees',
+    track: {
+      event: 'bulk_invite_employees',
+      channel: 'organization',
+    },
+  })
+  .action(async ({ parsedInput, ctx }) => {
     const { organizationId, emails } = parsedInput;
     const requestId = crypto.randomUUID();
     const startTime = Date.now();
 
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (session?.session.activeOrganizationId !== organizationId) {
+    if (ctx.organizationId !== organizationId) {
       console.warn('[bulkInviteEmployees] unauthorized', { requestId, organizationId });
       return {
         success: false,
@@ -46,14 +51,14 @@ export const bulkInviteEmployees = createSafeActionClient()
 
     for (const email of emails) {
       try {
-        await auth.api.createInvitation({
-          headers: await headers(),
-          body: {
-            email,
-            role: 'employee',
-            organizationId,
-          },
-        });
+        const inviteResult = await serverApi.post('/v1/people/invite', {
+          invites: [{ email, roles: ['employee'] }],
+        }, organizationId);
+
+        if (inviteResult.error) {
+          throw new Error(inviteResult.error);
+        }
+
         results.push({ email, success: true });
       } catch (error) {
         allSuccess = false;

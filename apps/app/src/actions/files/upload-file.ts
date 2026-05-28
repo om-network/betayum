@@ -1,13 +1,13 @@
 'use server';
 
 import { BUCKET_NAME, s3Client } from '@/app/s3';
-import { auth } from '@/utils/auth';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
+import { getRequestOrganizationId } from '@/lib/request-organization';
 import { logger } from '@/utils/logger';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@/lib/s3-presigner';
 import { AttachmentEntityType, AttachmentType, db } from '@db/server';
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { z } from 'zod';
 
 // This log will run as soon as the module is loaded.
@@ -62,10 +62,12 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
     const { fileName, fileType, fileData, entityId, entityType, pathToRevalidate } =
       uploadAttachmentSchema.parse(input);
 
-    const session = await auth.api.getSession({ headers: await headers() });
-    const organizationId = session?.session.activeOrganizationId;
+    const requestOrganizationId = await getRequestOrganizationId();
+    const context = requestOrganizationId
+      ? await resolveCurrentUserOrganizationContext(requestOrganizationId)
+      : null;
 
-    if (!organizationId) {
+    if (!context) {
       logger.error('[uploadFile] Not authorized - no organization found');
       return {
         success: false,
@@ -73,6 +75,7 @@ export const uploadFile = async (input: z.infer<typeof uploadAttachmentSchema>) 
       } as const;
     }
 
+    const { organizationId } = context;
     logger.info(`[uploadFile] Starting upload for ${fileName} in org ${organizationId}`);
 
     const fileBuffer = Buffer.from(fileData, 'base64');

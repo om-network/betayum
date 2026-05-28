@@ -15,14 +15,14 @@ export const revalidateUpload = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     const { riskId, taskId } = parsedInput;
-    const { session } = ctx;
+    const { organizationId } = ctx;
 
-    if (!session.activeOrganizationId) {
+    if (!organizationId) {
       throw new Error('Unauthorized');
     }
 
-    revalidatePath(`/${session.activeOrganizationId}/risk/${riskId}`);
-    revalidatePath(`/${session.activeOrganizationId}/risk/${riskId}/tasks/${taskId}`);
+    revalidatePath(`/${organizationId}/risk/${riskId}`);
+    revalidatePath(`/${organizationId}/risk/${riskId}/tasks/${taskId}`);
     revalidateTag('risk-cache', 'max');
 
     return {

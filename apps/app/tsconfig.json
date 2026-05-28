@@ -69,6 +69,15 @@
       "@trycompai/analytics/*": [
         "../../packages/analytics/src/*"
       ],
+      "@trycompai/billing": [
+        "../../packages/billing/src/index.ts"
+      ],
+      "@trycompai/company": [
+        "../../packages/company/src/index.ts"
+      ],
+      "@trycompai/company/*": [
+        "../../packages/company/src/*"
+      ],
       "@trycompai/ui": [
         "../../packages/ui/src/components/index.ts"
       ],

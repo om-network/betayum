@@ -1,6 +1,7 @@
-import { auth as authApi } from '@/utils/auth';
+import { requireApiOrganizationPermission } from '@/lib/permissions.server';
 import { auth } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const ALLOWED_TASK_IDS = [
   'parse-questionnaire',
@@ -8,27 +9,26 @@ const ALLOWED_TASK_IDS = [
   'answer-question',
 ] as const;
 
+const requestSchema = z.object({
+  taskId: z.enum(ALLOWED_TASK_IDS),
+});
+
 export async function POST(req: NextRequest) {
   try {
-    const session = await authApi.api.getSession({
-      headers: req.headers,
-    });
-
-    if (!session?.session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const permission = await requireApiOrganizationPermission(req, 'questionnaire', 'update');
+    if (permission instanceof NextResponse) {
+      return permission;
     }
 
-    const body = await req.json();
-    const taskId = body?.taskId;
-
-    if (!taskId || !ALLOWED_TASK_IDS.includes(taskId)) {
+    const parsed = requestSchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'Invalid taskId' },
         { status: 400 },
       );
     }
 
-    const token = await auth.createTriggerPublicToken(taskId, {
+    const token = await auth.createTriggerPublicToken(parsed.data.taskId, {
       multipleUse: true,
       expirationTime: '1hr',
     });

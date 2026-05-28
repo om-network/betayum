@@ -1,8 +1,7 @@
 'use server';
 
 import { db } from '@db/server';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { headers } from 'next/headers';
+import { revalidateTag } from 'next/cache';
 import { authActionClient } from '../safe-action';
 import { organizationAccessRequestFormSchema } from '../schema';
 
@@ -17,24 +16,19 @@ export const updateOrganizationAccessRequestFormAction = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     const { accessRequestFormEnabled } = parsedInput;
-    const { activeOrganizationId } = ctx.session;
+    const { organizationId } = ctx;
 
-    if (!activeOrganizationId) {
+    if (!organizationId) {
       throw new Error('No active organization');
     }
 
     try {
       await db.organization.update({
-        where: { id: activeOrganizationId },
+        where: { id: organizationId },
         data: { accessRequestFormEnabled },
       });
 
-      const headersList = await headers();
-      let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-      path = path.replace(/\/[a-z]{2}\//, '/');
-
-      revalidatePath(path);
-      revalidateTag(`organization_${activeOrganizationId}`, 'max');
+      revalidateTag(`organization_${organizationId}`, 'max');
 
       return {
         success: true,

@@ -1,22 +1,22 @@
+import { requireApiOrganizationPermission } from '@/lib/permissions.server';
 import { researchVendor } from '@/trigger/tasks/scrape/research';
-import { auth } from '@/utils/auth';
 import { tasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+const researchVendorSchema = z.object({
+  website: z.string().url(),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
-
-    if (!session?.session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const permission = await requireApiOrganizationPermission(req, 'vendor', 'create');
+    if (permission instanceof NextResponse) {
+      return permission;
     }
 
-    const body = await req.json();
-    const website = body?.website;
-
-    if (!website || typeof website !== 'string') {
+    const parsed = researchVendorSchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'A valid website URL is required' },
         { status: 400 },
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const handle = await tasks.trigger<typeof researchVendor>(
       'research-vendor',
-      { website },
+      { website: parsed.data.website },
     );
 
     return NextResponse.json({ success: true, handle });

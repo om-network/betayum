@@ -120,8 +120,7 @@ export function useOnboardingForm({
           flow_type: 'pre_payment',
         });
 
-        // Hard navigate to ensure updated auth cookies (active org) are applied immediately.
-        // This prevents flakiness where the app still uses the previous activeOrganizationId.
+        // Hard navigate to ensure updated route organization cookies are applied immediately.
         window.location.assign(buildUrlWithParams(`/upgrade/${data.organizationId}`));
 
         // Clear answers after successful creation

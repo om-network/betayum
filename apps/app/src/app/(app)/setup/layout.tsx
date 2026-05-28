@@ -1,3 +1,4 @@
+import { getActiveOrganizationCookie } from '@/lib/active-organization';
 import { serverApi } from '@/lib/api-server';
 import { auth } from '@/utils/auth';
 import { headers } from 'next/headers';
@@ -21,7 +22,7 @@ export default async function SetupLayout({ children }: { children: React.ReactN
     const meRes = await serverApi.get<AuthMeResponse>('/v1/auth/me');
     const orgs = meRes.data?.organizations ?? [];
 
-    const activeOrgId = session.session.activeOrganizationId;
+    const activeOrgId = await getActiveOrganizationCookie();
     const userOrg = orgs.find((o) => o.id === activeOrgId) ?? orgs[0];
     if (userOrg) {
       if (userOrg.onboardingCompleted === false) {

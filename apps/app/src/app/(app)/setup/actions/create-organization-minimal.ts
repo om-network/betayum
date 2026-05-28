@@ -4,7 +4,7 @@ import { initializeOrganization } from '@/actions/organization/lib/initialize-or
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { env } from '@/env.mjs';
 import { createTrainingVideoEntries } from '@/lib/db/employee';
-import { auth } from '@/utils/auth';
+import { setActiveOrganizationCookie } from '@/lib/active-organization';
 import { db } from '@db/server';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
@@ -28,13 +28,10 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
   })
   .action(async ({ parsedInput, ctx }) => {
     let createdOrgId: string | undefined;
+    const { user } = ctx;
 
     try {
-      const session = await auth.api.getSession({
-        headers: await headers(),
-      });
-
-      if (!session) {
+      if (!user) {
         return {
           success: false,
           error: 'Not authorized.',
@@ -42,7 +39,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       }
 
       // Check if user email domain is trycomp.ai
-      const userEmail = session.user.email;
+      const userEmail = user.email;
       const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
 
       // Check if self-hosted
@@ -57,7 +54,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           onboardingCompleted: false,
           members: {
             some: {
-              userId: session.user.id,
+              userId: user.id,
               role: 'owner',
             },
           },
@@ -96,12 +93,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         }
 
         // Ensure this org is set as the active one
-        await auth.api.setActiveOrganization({
-          headers: await headers(),
-          body: {
-            organizationId: existingOrg.id,
-          },
-        });
+        await setActiveOrganizationCookie(existingOrg.id);
 
         return {
           success: true,
@@ -130,7 +122,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
           }),
           members: {
             create: {
-              userId: session.user.id,
+              userId: user.id,
               role: 'owner',
             },
           },
@@ -160,7 +152,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       // Get the member that was created with the organization (the owner)
       const ownerMember = await db.member.findFirst({
         where: {
-          userId: session.user.id,
+          userId: user.id,
           organizationId: orgId,
         },
       });
@@ -188,12 +180,7 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
 
       // Set new org as active — after this point, the session references
       // the org so we must NOT delete it on cleanup.
-      await auth.api.setActiveOrganization({
-        headers: await headers(),
-        body: {
-          organizationId: orgId,
-        },
-      });
+      await setActiveOrganizationCookie(orgId);
       createdOrgId = undefined; // Org is fully initialized, disable cleanup
 
       // Revalidate paths (non-critical, don't let failures kill the flow)
@@ -219,8 +206,8 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
       console.error('Error during minimal organization creation:', error);
 
       // Clean up partially created org to prevent orphans on retry.
-      // Only runs if the org was created but setActiveOrganization hasn't
-      // succeeded yet (createdOrgId is cleared after activation).
+      // Only runs if the org was created but the route organization cookie
+      // was not set yet (createdOrgId is cleared after activation).
       if (createdOrgId) {
         try {
           await db.organization.delete({ where: { id: createdOrgId } });

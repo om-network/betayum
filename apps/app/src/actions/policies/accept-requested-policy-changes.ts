@@ -26,9 +26,9 @@ export const acceptRequestedPolicyChangesAction = authActionClient
   })
   .action(async ({ parsedInput, ctx }) => {
     const { id, approverId, comment } = parsedInput;
-    const { user, session } = ctx;
+    const { user, organizationId } = ctx;
 
-    if (!user?.id || !session.activeOrganizationId) {
+    if (!user?.id || !organizationId) {
       throw new Error('Unauthorized');
     }
 
@@ -40,7 +40,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       const policy = await db.policy.findUnique({
         where: {
           id,
-          organizationId: session.activeOrganizationId,
+          organizationId,
         },
         include: {
           organization: {
@@ -95,7 +95,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       await db.policy.update({
         where: {
           id,
-          organizationId: session.activeOrganizationId,
+          organizationId,
         },
         data: updateData,
       });
@@ -104,7 +104,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
       // handles role-based notification filtering via the org's notification matrix.
       const members = await db.member.findMany({
         where: {
-          organizationId: session.activeOrganizationId,
+          organizationId,
           isActive: true,
           deactivated: false,
           user: { role: { not: 'admin' } },
@@ -132,7 +132,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
             email: employee.user.email,
             userName: employee.user.name || employee.user.email || 'Employee',
             policyName: policy.name,
-            organizationId: session.activeOrganizationId || '',
+            organizationId,
             organizationName: policy.organization.name,
             notificationType,
           };
@@ -150,7 +150,7 @@ export const acceptRequestedPolicyChangesAction = authActionClient
         const member = await db.member.findFirst({
           where: {
             userId: user!.id,
-            organizationId: session.activeOrganizationId,
+            organizationId,
             deactivated: false,
           },
         });
@@ -161,15 +161,15 @@ export const acceptRequestedPolicyChangesAction = authActionClient
               content: `Policy changes accepted: ${comment}`,
               entityId: id,
               entityType: 'policy',
-              organizationId: session.activeOrganizationId,
+              organizationId,
               authorId: member.id,
             },
           });
         }
       }
 
-      revalidatePath(`/${session.activeOrganizationId}/policies`);
-      revalidatePath(`/${session.activeOrganizationId}/policies/${id}`);
+      revalidatePath(`/${organizationId}/policies`);
+      revalidatePath(`/${organizationId}/policies/${id}`);
       revalidateTag('policies', 'max');
 
       return {

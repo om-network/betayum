@@ -1,10 +1,15 @@
-import { auth } from '@/utils/auth';
+import { requireApiOrganizationPermission } from '@/lib/permissions.server';
 import { anthropic } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
-import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 export const maxDuration = 30;
+
+const editSectionSchema = z.object({
+  sectionText: z.string().min(1),
+  feedback: z.string().min(1),
+});
 
 /**
  * Standalone API for editing a specific section of a policy suggestion.
@@ -14,22 +19,16 @@ export const maxDuration = 30;
  */
 export async function POST(req: Request) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const permission = await requireApiOrganizationPermission(req, 'policy', 'update');
+    if (permission instanceof NextResponse) {
+      return permission;
     }
 
-    const { sectionText, feedback } = await req.json() as {
-      sectionText: string;
-      feedback: string;
-    };
-
-    if (!sectionText || !feedback) {
+    const parsed = editSectionSchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
       return NextResponse.json({ error: 'Missing sectionText or feedback' }, { status: 400 });
     }
+    const { sectionText, feedback } = parsed.data;
 
     const result = await generateText({
       model: anthropic('claude-sonnet-4-6'),

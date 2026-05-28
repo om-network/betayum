@@ -1,4 +1,9 @@
 import { render, screen } from '@testing-library/react';
+import type {
+  ButtonHTMLAttributes,
+  ReactNode,
+  TextareaHTMLAttributes,
+} from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setMockPermissions,
@@ -8,16 +13,12 @@ import {
   NO_PERMISSIONS,
 } from '@/test-utils/mocks/permissions';
 
-// ─── Mock usePermissions ─────────────────────────────────────
-
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
     permissions: {},
     hasPermission: mockHasPermission,
   }),
 }));
-
-// ─── Mock SWR ────────────────────────────────────────────────
 
 const mockMutate = vi.fn();
 let mockSwrData: unknown = undefined;
@@ -33,8 +34,6 @@ vi.mock('swr', () => ({
   })),
 }));
 
-// ─── Mock api client ─────────────────────────────────────────
-
 vi.mock('@/lib/api-client', () => ({
   api: {
     get: vi.fn().mockResolvedValue({ data: null, error: null }),
@@ -42,35 +41,34 @@ vi.mock('@/lib/api-client', () => ({
   },
 }));
 
-// ─── Mock design system ──────────────────────────────────────
-
 vi.mock('@trycompai/design-system', () => ({
-  Button: ({ children, ...props }: any) => (
+  Button: ({
+    children,
+    ...props
+  }: { children?: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button {...props}>{children}</button>
   ),
-  Empty: ({ children }: any) => <div>{children}</div>,
-  EmptyDescription: ({ children }: any) => <p>{children}</p>,
-  EmptyHeader: ({ children }: any) => <div>{children}</div>,
-  EmptyMedia: ({ children }: any) => <div>{children}</div>,
-  EmptyTitle: ({ children }: any) => <h3>{children}</h3>,
-  Field: ({ children }: any) => <div>{children}</div>,
-  FieldLabel: ({ children }: any) => <label>{children}</label>,
-  Section: ({ children }: any) => <section>{children}</section>,
-  Table: ({ children }: any) => <table>{children}</table>,
-  TableBody: ({ children }: any) => <tbody>{children}</tbody>,
-  TableCell: ({ children }: any) => <td>{children}</td>,
-  TableHead: ({ children }: any) => <th>{children}</th>,
-  TableHeader: ({ children }: any) => <thead>{children}</thead>,
-  TableRow: ({ children }: any) => <tr>{children}</tr>,
-  Text: ({ children }: any) => <span>{children}</span>,
-  Textarea: (props: any) => <textarea {...props} />,
+  Empty: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  EmptyDescription: ({ children }: { children?: ReactNode }) => <p>{children}</p>,
+  EmptyHeader: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  EmptyMedia: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  EmptyTitle: ({ children }: { children?: ReactNode }) => <h3>{children}</h3>,
+  Field: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  FieldLabel: ({ children }: { children?: ReactNode }) => <label>{children}</label>,
+  Section: ({ children }: { children?: ReactNode }) => <section>{children}</section>,
+  Table: ({ children }: { children?: ReactNode }) => <table>{children}</table>,
+  TableBody: ({ children }: { children?: ReactNode }) => <tbody>{children}</tbody>,
+  TableCell: ({ children }: { children?: ReactNode }) => <td>{children}</td>,
+  TableHead: ({ children }: { children?: ReactNode }) => <th>{children}</th>,
+  TableHeader: ({ children }: { children?: ReactNode }) => <thead>{children}</thead>,
+  TableRow: ({ children }: { children?: ReactNode }) => <tr>{children}</tr>,
+  Text: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
+  Textarea: (props: TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea {...props} />,
 }));
 
 vi.mock('@trycompai/design-system/icons', () => ({
   Document: () => <span data-testid="document-icon" />,
 }));
-
-// ─── Mock submission-utils ───────────────────────────────────
 
 vi.mock('./submission-utils', () => ({
   StatusBadge: ({ status }: { status: string }) => (
@@ -82,17 +80,13 @@ vi.mock('./submission-utils', () => ({
   renderSubmissionValue: (value: unknown) => String(value ?? '—'),
 }));
 
-// ─── Mock react-markdown ─────────────────────────────────────
-
 vi.mock('react-markdown', () => ({
-  default: ({ children }: any) => <div>{children}</div>,
+  default: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock('remark-gfm', () => ({
   default: () => {},
 }));
-
-// ─── Mock sonner ─────────────────────────────────────────────
 
 vi.mock('sonner', () => ({
   toast: {
@@ -102,8 +96,6 @@ vi.mock('sonner', () => ({
 }));
 
 import { CompanySubmissionDetailPageClient } from './CompanySubmissionDetailPageClient';
-
-// ─── Test data ───────────────────────────────────────────────
 
 function makeSubmissionData(
   overrides: {
@@ -142,7 +134,15 @@ function makeSubmissionData(
   };
 }
 
-// ─── Tests ───────────────────────────────────────────────────
+function renderSubmission(formType: 'access-request' | 'meeting' = 'access-request') {
+  return render(
+    <CompanySubmissionDetailPageClient
+      organizationId="org-1"
+      formType={formType}
+      submissionId="sub-1"
+    />,
+  );
+}
 
 describe('CompanySubmissionDetailPageClient', () => {
   beforeEach(() => {
@@ -159,13 +159,7 @@ describe('CompanySubmissionDetailPageClient', () => {
     });
 
     it('renders the review section with Approve and Reject buttons', () => {
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="access-request"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission();
 
       expect(
         screen.getByText('Review this submission'),
@@ -175,13 +169,7 @@ describe('CompanySubmissionDetailPageClient', () => {
     });
 
     it('renders the review reason textarea', () => {
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="access-request"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission();
 
       expect(
         screen.getByText('Reason (required for rejection)'),
@@ -189,13 +177,7 @@ describe('CompanySubmissionDetailPageClient', () => {
     });
 
     it('checks evidence:update permission', () => {
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="access-request"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission();
 
       expect(mockHasPermission).toHaveBeenCalledWith('evidence', 'update');
     });
@@ -208,13 +190,7 @@ describe('CompanySubmissionDetailPageClient', () => {
     });
 
     it('hides review section when auditor lacks evidence:update', () => {
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="access-request"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission();
 
       const canReview = mockHasPermission('evidence', 'update');
       if (!canReview) {
@@ -227,13 +203,7 @@ describe('CompanySubmissionDetailPageClient', () => {
     });
 
     it('still renders the submission details', () => {
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="access-request"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission();
 
       expect(screen.getByText('Submission Date')).toBeInTheDocument();
       expect(screen.getByText('Submitted By')).toBeInTheDocument();
@@ -247,13 +217,7 @@ describe('CompanySubmissionDetailPageClient', () => {
     });
 
     it('hides review section without evidence:update', () => {
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="access-request"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission();
 
       expect(
         screen.queryByText('Review this submission'),
@@ -270,13 +234,7 @@ describe('CompanySubmissionDetailPageClient', () => {
     });
 
     it('does NOT render review section for already-reviewed submission', () => {
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="access-request"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission();
 
       expect(
         screen.queryByText('Review this submission'),
@@ -288,18 +246,12 @@ describe('CompanySubmissionDetailPageClient', () => {
     beforeEach(() => {
       setMockPermissions(ADMIN_PERMISSIONS);
       mockSwrData = makeSubmissionData({
-        formType: 'security-awareness-training',
+        formType: 'meeting',
       });
     });
 
     it('does NOT render the review section', () => {
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="security-awareness-training"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission('meeting');
 
       expect(
         screen.queryByText('Review this submission'),
@@ -312,13 +264,7 @@ describe('CompanySubmissionDetailPageClient', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
       mockSwrLoading = true;
 
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="access-request"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission();
 
       expect(
         screen.getByText('Loading submission...'),
@@ -331,13 +277,7 @@ describe('CompanySubmissionDetailPageClient', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
       mockSwrError = new Error('Not found');
 
-      render(
-        <CompanySubmissionDetailPageClient
-          organizationId="org-1"
-          formType="access-request"
-          submissionId="sub-1"
-        />,
-      );
+      renderSubmission();
 
       expect(
         screen.getByText('Submission not found'),

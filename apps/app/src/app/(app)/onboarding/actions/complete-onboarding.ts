@@ -4,9 +4,11 @@ import { initializeOrganization } from '@/actions/organization/lib/initialize-or
 import { resolveFrameworkIds } from '@/actions/organization/lib/resolve-framework-ids';
 import { authActionClientWithoutOrg } from '@/actions/safe-action';
 import { steps } from '@/app/(app)/setup/lib/constants';
+import { setActiveOrganizationCookie } from '@/lib/active-organization';
+import { hasPermission } from '@/lib/permissions';
+import { resolveCurrentUserOrganizationContext } from '@/lib/permissions.server';
 import { createFleetLabelForOrg } from '@/trigger/tasks/device/create-fleet-label-for-org';
 import { onboardOrganization as onboardOrganizationTask } from '@/trigger/tasks/onboarding/onboard-organization';
-import { auth } from '@/utils/auth';
 import { db } from '@db/server';
 import { tasks } from '@trigger.dev/sdk';
 import { revalidatePath } from 'next/cache';
@@ -63,30 +65,15 @@ export const completeOnboarding = authActionClientWithoutOrg
   })
   .action(async ({ parsedInput, ctx }) => {
     try {
-      // Verify user has access to this organization
-      const member = await db.member.findFirst({
-        where: {
-          userId: ctx.user!.id,
-          organizationId: parsedInput.organizationId,
-          deactivated: false,
-        },
-      });
-
-      if (!member) {
+      const context = await resolveCurrentUserOrganizationContext(parsedInput.organizationId);
+      if (!context || !hasPermission(context.permissions, 'organization', 'update')) {
         return {
           success: false,
           error: 'Access denied',
         };
       }
 
-      // Ensure the newly onboarded org is the active org.
-      // This prevents the "Setting up your organization" flow from accidentally using a previous org session.
-      await auth.api.setActiveOrganization({
-        headers: await headers(),
-        body: {
-          organizationId: parsedInput.organizationId,
-        },
-      });
+      await setActiveOrganizationCookie(parsedInput.organizationId);
 
       // Save the remaining steps to context
       const postPaymentSteps = steps.slice(3); // Steps 4-12
@@ -247,4 +234,3 @@ export const completeOnboarding = authActionClientWithoutOrg
       };
     }
   });
-

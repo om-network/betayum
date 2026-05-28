@@ -1,9 +1,15 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Dialog } from '@trycompai/ui/dialog';
-import { ScrollArea } from '@trycompai/ui/scroll-area';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  ScrollArea,
+} from '@trycompai/design-system';
 import type { FrameworkEditorFramework } from '@db';
 import { Add } from '@trycompai/design-system/icons';
 import Image from 'next/image';
@@ -103,10 +109,12 @@ export function FrameworksOverview({
   );
 
   return (
-    <Card className="flex flex-col overflow-hidden border h-full">
-      <CardHeader className="pb-2">
+    <Card style={{ height: '100%' }}>
+      <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">{'Frameworks'}</CardTitle>
+          <CardTitle>
+            <div className="flex items-center gap-2">Frameworks</div>
+          </CardTitle>
         </div>
 
         <div className="bg-secondary/50 relative mt-2 h-1 w-full overflow-hidden rounded-full">
@@ -118,9 +126,9 @@ export function FrameworksOverview({
           />
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col">
+      <CardContent style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
         <div className="h-[300px]">
-          <ScrollArea className="h-full">
+          <ScrollArea>
             <div className="space-y-0 pr-4">
               {frameworksWithControls.map((framework, index) => {
                 const complianceScore = complianceMap.get(framework.id) ?? 0;
@@ -197,7 +205,7 @@ export function FrameworksOverview({
       </CardContent>
 
       {hasPermission('framework', 'create') && (
-        <CardFooter className="mt-auto">
+        <CardFooter style={{ marginTop: 'auto' }}>
           <div className="flex justify-center w-full">
             <Button variant="outline" onClick={() => setIsAddFrameworkModalOpen(true)}>
               <Add size={16} className="mr-2" />

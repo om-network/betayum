@@ -1,9 +1,8 @@
 'use server';
 
 import { maskEmailForLogs } from '@/lib/mask-email';
-import { auth } from '@/utils/auth';
+import { serverApi } from '@/lib/api-server';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { headers } from 'next/headers';
 import { z } from 'zod';
 import { authActionClient } from '../safe-action';
 import type { ActionResponse } from '../types';
@@ -23,7 +22,7 @@ export const inviteMember = authActionClient
   })
   .inputSchema(inviteMemberSchema)
   .action(async ({ parsedInput, ctx }): Promise<ActionResponse<{ invited: boolean }>> => {
-    const organizationId = ctx.session.activeOrganizationId;
+    const { organizationId } = ctx;
     const requestId = crypto.randomUUID();
 
     if (!organizationId) {
@@ -46,14 +45,17 @@ export const inviteMember = authActionClient
     });
 
     try {
-      const inviteResult = await auth.api.createInvitation({
-        headers: await headers(),
-        body: {
-          email,
-          role,
-          organizationId,
-        },
-      });
+      const inviteResult = await serverApi.post('/v1/people/invite', {
+        invites: [{ email, roles: [role] }],
+      }, organizationId);
+
+      if (inviteResult.error) {
+        throw new Error(inviteResult.error);
+      }
+
+      const resultKeys = inviteResult.data && typeof inviteResult.data === 'object'
+        ? Object.keys(inviteResult.data)
+        : [];
 
       revalidatePath(`/${organizationId}/settings/users`);
       revalidateTag(`user_${ctx.user!.id}`, 'max');
@@ -64,7 +66,7 @@ export const inviteMember = authActionClient
         invitedEmail: safeEmail,
         role,
         durationMs: Date.now() - startTime,
-        resultKeys: inviteResult && typeof inviteResult === 'object' ? Object.keys(inviteResult) : [],
+        resultKeys,
       });
 
       return {
