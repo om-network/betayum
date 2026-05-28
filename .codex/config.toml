@@ -1,0 +1,6 @@
+[mcp_servers.trigger]
+args = [
+    "trigger.dev@latest",
+    "mcp",
+]
+command = "bunx"
