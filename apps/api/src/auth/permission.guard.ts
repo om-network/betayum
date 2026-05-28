@@ -6,7 +6,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@trycompai/auth';
+import {
+  RESTRICTED_ROLES,
+  PRIVILEGED_ROLES,
+  toClerkOrganizationPermissionKeys,
+  type CompAiPermissionInput,
+} from '@trycompai/auth';
 import { PermissionEvaluatorService } from './permission-evaluator.service';
 import { resolveServiceByName } from './service-token.config';
 import { AuthenticatedRequest } from './types';
@@ -25,12 +30,13 @@ export interface RequiredPermission {
 export const PERMISSIONS_KEY = 'required_permissions';
 
 /**
- * PermissionGuard - Validates user permissions against Comp AI roles
+ * PermissionGuard - Validates request permissions
  *
  * This guard:
  * 1. Extracts required permissions from route metadata
- * 2. Evaluates built-in and organization custom roles locally
- * 3. For restricted roles (employee/contractor), supports assignment access
+ * 2. Preserves API key and service-token scoped permission checks
+ * 3. Enforces Clerk organization custom permissions for browser sessions
+ * 4. Keeps local role evaluation only for non-browser session fallbacks
  *
  * Usage:
  * ```typescript
@@ -118,11 +124,6 @@ export class PermissionGuard implements CanActivate {
       return true;
     }
 
-    // Platform admins bypass permission checks (full access)
-    if (request.isPlatformAdmin) {
-      return true;
-    }
-
     // Build required permissions map, merging actions for duplicate resources
     const permissionBody: Record<string, string[]> = {};
     for (const perm of requiredPermissions) {
@@ -130,6 +131,22 @@ export class PermissionGuard implements CanActivate {
       permissionBody[perm.resource] = existing
         ? [...new Set([...existing, ...perm.actions])]
         : perm.actions;
+    }
+
+    // Platform admins authenticated through a Clerk session bypass product RBAC.
+    if (request.isPlatformAdmin) {
+      if (request.authType !== 'session' || !request.clerkUserId) {
+        throw new ForbiddenException('Invalid platform admin context');
+      }
+
+      return true;
+    }
+
+    if (this.shouldUseClerkOrganizationPermissions(request)) {
+      return this.canAccessWithClerkOrganizationPermissions({
+        request,
+        permissionBody,
+      });
     }
 
     try {
@@ -156,6 +173,68 @@ export class PermissionGuard implements CanActivate {
         error,
       );
       throw new ForbiddenException('Unable to verify permissions');
+    }
+  }
+
+  private shouldUseClerkOrganizationPermissions(
+    request: AuthenticatedRequest,
+  ): boolean {
+    return (
+      request.authType === 'session' &&
+      !request.sessionDeviceAgent &&
+      !request.impersonatedBy
+    );
+  }
+
+  private canAccessWithClerkOrganizationPermissions({
+    request,
+    permissionBody,
+  }: {
+    request: AuthenticatedRequest;
+    permissionBody: Record<string, string[]>;
+  }): boolean {
+    if (
+      !request.clerkOrganizationId ||
+      !Array.isArray(request.clerkOrganizationPermissions)
+    ) {
+      throw new ForbiddenException(
+        'Missing Clerk organization permission context',
+      );
+    }
+
+    const grantedPermissions = request.clerkOrganizationPermissions;
+    const requiredKeys = this.toRequiredClerkPermissionKeys(permissionBody);
+    const hasAllPermissions = requiredKeys.every((key) =>
+      grantedPermissions.includes(key),
+    );
+
+    if (!hasAllPermissions) {
+      this.logger.warn(
+        `[PermissionGuard] Clerk org access denied for ${request.method} ${request.url}. Required: ${requiredKeys.join(', ')}`,
+      );
+      throw new ForbiddenException('Access denied');
+    }
+
+    return true;
+  }
+
+  private toRequiredClerkPermissionKeys(
+    permissionBody: Record<string, string[]>,
+  ): string[] {
+    const permissions: CompAiPermissionInput[] = [];
+    for (const [resource, actions] of Object.entries(permissionBody)) {
+      for (const action of actions) {
+        permissions.push({ resource, action });
+      }
+    }
+
+    try {
+      return toClerkOrganizationPermissionKeys(permissions);
+    } catch {
+      this.logger.warn(
+        `[PermissionGuard] Invalid permission metadata: ${JSON.stringify(permissionBody)}`,
+      );
+      throw new ForbiddenException('Invalid permission metadata');
     }
   }
 

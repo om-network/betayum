@@ -18,6 +18,10 @@ jest.mock('@trycompai/auth', () => ({
   parseRolePermissions: jest.fn(),
   RESTRICTED_ROLES: ['employee', 'contractor'],
   PRIVILEGED_ROLES: ['owner', 'admin', 'auditor'],
+  toClerkOrganizationPermissionKeys: jest.fn(
+    (permissions: Array<{ resource: string; action: string }>) =>
+      permissions.map(({ resource, action }) => `org:${resource}:${action}`),
+  ),
 }));
 
 describe('PermissionGuard', () => {
@@ -31,6 +35,7 @@ describe('PermissionGuard', () => {
       apiKeyScopes: string[] | undefined;
       userRoles: string[] | null;
       organizationId: string;
+      sessionDeviceAgent: boolean;
       method: string;
       url: string;
     }>,
@@ -42,6 +47,7 @@ describe('PermissionGuard', () => {
           apiKeyScopes: undefined,
           userRoles: null,
           organizationId: 'org_123',
+          sessionDeviceAgent: false,
           method: 'GET',
           url: '/v1/test',
           ...request,
@@ -184,7 +190,10 @@ describe('PermissionGuard', () => {
 
       mockHasPermissions.mockResolvedValue(false);
 
-      const context = createMockExecutionContext({ userRoles: ['auditor'] });
+      const context = createMockExecutionContext({
+        sessionDeviceAgent: true,
+        userRoles: ['auditor'],
+      });
 
       await expect(guard.canActivate(context)).rejects.toThrow(
         ForbiddenException,
@@ -202,7 +211,10 @@ describe('PermissionGuard', () => {
         .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
       mockHasPermissions.mockResolvedValue(true);
-      const context = createMockExecutionContext({ userRoles: ['admin'] });
+      const context = createMockExecutionContext({
+        sessionDeviceAgent: true,
+        userRoles: ['admin'],
+      });
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
@@ -220,7 +232,10 @@ describe('PermissionGuard', () => {
       ]);
 
       mockHasPermissions.mockResolvedValue(true);
-      const context = createMockExecutionContext({ userRoles: ['admin'] });
+      const context = createMockExecutionContext({
+        sessionDeviceAgent: true,
+        userRoles: ['admin'],
+      });
 
       await expect(guard.canActivate(context)).resolves.toBe(true);
       expect(mockHasPermissions).toHaveBeenCalledWith({
@@ -236,7 +251,10 @@ describe('PermissionGuard', () => {
         .mockReturnValue([{ resource: 'control', actions: ['delete'] }]);
 
       mockHasPermissions.mockRejectedValue(new Error('evaluator error'));
-      const context = createMockExecutionContext({ userRoles: ['admin'] });
+      const context = createMockExecutionContext({
+        sessionDeviceAgent: true,
+        userRoles: ['admin'],
+      });
 
       await expect(guard.canActivate(context)).rejects.toThrow(
         ForbiddenException,
