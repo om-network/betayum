@@ -129,6 +129,9 @@ model Member {
   offboardDate                    DateTime?
   externalUserId                  String?
   externalUserSource              String?
+  clerkUserId                     String?
+  clerkOrganizationId             String?
+  clerkMembershipId               String?                           @unique
   employeeTrainingVideoCompletion EmployeeTrainingVideoCompletion[]
   fleetDmLabelId                  Int?
 
@@ -155,6 +158,8 @@ model Member {
   backgroundCheckRequests          BackgroundCheckRequest[]
   offboardingChecklistCompletions  OffboardingChecklistCompletion[]
   offboardingAccessRevocations     OffboardingAccessRevocation[]
+
+  @@unique([clerkOrganizationId, clerkUserId])
 }
 
 model Invitation {
