@@ -1,6 +1,6 @@
 'use client';
 
-import { authClient } from '@/utils/auth-client';
+import { useClerk } from '@clerk/nextjs';
 import { Avatar, AvatarFallback, AvatarImageNext } from '@trycompai/ui/avatar';
 import {
   DropdownMenu,
@@ -20,17 +20,13 @@ interface OnboardingUserMenuProps {
 
 export function OnboardingUserMenu({ user }: OnboardingUserMenuProps) {
   const router = useRouter();
+  const { signOut } = useClerk();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push('/auth');
-        },
-      },
-    });
+    await signOut();
+    router.push('/auth');
   };
 
   return (

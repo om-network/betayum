@@ -8,6 +8,7 @@ import { OrganizationSwitcher } from '@/components/organization-switcher';
 import { SidebarProvider, useSidebar } from '@/context/sidebar-context';
 import { canAccessCompliance, canAccessRoute, hasAnyPermission, type UserPermissions } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
+import { useClerk } from '@clerk/nextjs';
 import { Badge, Globe, Locked, Logout, ManageProtection, Settings } from '@carbon/icons-react';
 import {
   DropdownMenu,
@@ -106,6 +107,7 @@ function AppShellWrapperContent({
   user,
   isAdmin,
 }: AppShellWrapperContentProps) {
+  const { signOut } = useClerk();
   const { theme, resolvedTheme, setTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -233,13 +235,8 @@ function AppShellWrapperContent({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={async () => {
-                      await authClient.signOut({
-                        fetchOptions: {
-                          onSuccess: () => {
-                            router.push('/auth');
-                          },
-                        },
-                      });
+                      await signOut();
+                      router.push('/auth');
                     }}
                   >
                     <Logout size={16} />

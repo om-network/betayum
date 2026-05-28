@@ -9,9 +9,7 @@ const API_BASE =
 
 /**
  * Backwards-compat alias for device-agent installs (pre-PR #2222) that call
- * `${portalUrl}/api/auth/get-session` to verify their session. Better-auth
- * lives on the NestJS API now; cross-subdomain cookies (.trycomp.ai) make
- * the same session token valid against api.trycomp.ai.
+ * `${portalUrl}/api/auth/get-session` to verify their session.
  *
  * TODO: Delete after the device-agent fleet has rolled past 1.0.5.
  */
@@ -22,7 +20,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   const authorization = req.headers.get('authorization');
   if (authorization) headers['Authorization'] = authorization;
 
-  const response = await fetch(`${API_BASE}/api/auth/get-session`, {
+  const response = await fetch(`${API_BASE}/v1/auth/me`, {
     method: 'GET',
     headers,
     redirect: 'manual',
