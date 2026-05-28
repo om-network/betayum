@@ -1,6 +1,7 @@
 'use client';
 
 import type { OrganizationFromMe } from '@/types';
+import { useOrganizationList } from '@clerk/nextjs';
 import { OrganizationSelector } from '@trycompai/design-system';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -45,17 +46,27 @@ export function OrganizationSwitcher({
   modal = true,
 }: OrganizationSwitcherProps) {
   const router = useRouter();
+  const { isLoaded, setActive } = useOrganizationList();
 
   const [isSwitching, setIsSwitching] = useState(false);
 
   const handleOrgChange = async (orgId: string) => {
-    if (orgId !== organization?.id) {
-      setIsSwitching(true);
-      try {
-        router.push(`/${orgId}/`);
-      } catch {
-        setIsSwitching(false);
-      }
+    if (orgId === organization?.id) {
+      return;
+    }
+
+    const selectedOrganization = organizations.find((org) => org.id === orgId);
+    if (!isLoaded || !setActive || !selectedOrganization?.clerkOrganizationId) {
+      return;
+    }
+
+    setIsSwitching(true);
+    try {
+      await setActive({ organization: selectedOrganization.clerkOrganizationId });
+      router.push(`/${orgId}/`);
+      router.refresh();
+    } catch {
+      setIsSwitching(false);
     }
   };
 
@@ -73,7 +84,7 @@ export function OrganizationSwitcher({
     createdAt: org.createdAt,
   }));
 
-  const isExecuting = isSwitching;
+  const isExecuting = isSwitching || !isLoaded;
 
   return (
     <OrganizationSelector

@@ -3,7 +3,10 @@ import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { serverApi } from '@/lib/api-server';
 import { canAccessApp, canAccessAuditorView, parseRolesString } from '@/lib/permissions';
-import { resolveCustomRolePermissions, resolveUserPermissions } from '@/lib/permissions.server';
+import {
+  resolveCurrentUserPermissions,
+  resolveCustomRolePermissions,
+} from '@/lib/permissions.server';
 import { getSignedUrl } from '@/lib/s3-presigner';
 import type { OrganizationFromMe } from '@/types';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
@@ -70,8 +73,10 @@ export default async function Layout({
     return redirect('/auth/unauthorized');
   }
 
-  // Resolve effective permissions from all roles (built-in + custom)
-  const permissions = await resolveUserPermissions(member.memberRole, requestedOrgId);
+  const permissions = await resolveCurrentUserPermissions(requestedOrgId);
+  if (!permissions) {
+    return redirect('/auth/unauthorized');
+  }
 
   // Check if user can access the main app (has app:read or any app route permission)
   const hasAppAccess = canAccessApp(permissions);

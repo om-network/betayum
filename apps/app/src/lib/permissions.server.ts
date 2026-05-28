@@ -1,10 +1,9 @@
 import 'server-only';
 
-import { auth } from '@/utils/auth';
+import { auth as clerkAuth } from '@clerk/nextjs/server';
 import { db } from '@db/server';
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
 import { redirect } from 'next/navigation';
+import { NextResponse } from 'next/server';
 import {
   type UserPermissions,
   canAccessAuditorView,
@@ -13,6 +12,7 @@ import {
   hasPermission,
   mergePermissions,
   resolveBuiltInPermissions,
+  resolveClerkOrganizationPermissions,
 } from './permissions';
 
 /**
@@ -23,8 +23,7 @@ export async function resolveUserPermissions(
   roleString: string | null | undefined,
   organizationId: string,
 ): Promise<UserPermissions> {
-  const { permissions, customRoleNames } =
-    resolveBuiltInPermissions(roleString);
+  const { permissions, customRoleNames } = resolveBuiltInPermissions(roleString);
 
   if (customRoleNames.length > 0) {
     const customRoles = await db.organizationRole.findMany({
@@ -37,12 +36,9 @@ export async function resolveUserPermissions(
 
     for (const role of customRoles) {
       if (!role.permissions) continue;
-      const parsed =
-        typeof role.permissions === 'string'
-          ? JSON.parse(role.permissions)
-          : role.permissions;
-      if (parsed && typeof parsed === 'object') {
-        mergePermissions(permissions, parsed as Record<string, string[]>);
+      const parsed = parsePermissionMap(role.permissions);
+      if (parsed) {
+        mergePermissions(permissions, parsed);
       }
     }
   }
@@ -52,29 +48,22 @@ export async function resolveUserPermissions(
 
 /**
  * Resolve permissions for the current user in the given org.
- * Self-contained: fetches session, finds member, resolves permissions.
+ * Self-contained: validates the active Clerk organization against the local
+ * route organization and resolves Clerk organization permission claims.
  */
 export async function resolveCurrentUserPermissions(
   orgId: string,
 ): Promise<UserPermissions | null> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
+  const authContext = await clerkAuth();
+  if (!authContext.userId || !authContext.orgId) return null;
+
+  const organization = await db.organization.findUnique({
+    where: { id: orgId },
+    select: { clerkOrganizationId: true },
   });
+  if (organization?.clerkOrganizationId !== authContext.orgId) return null;
 
-  if (!session?.user?.id) return null;
-
-  const member = await db.member.findFirst({
-    where: {
-      userId: session.user.id,
-      organizationId: orgId,
-      deactivated: false,
-    },
-    select: { role: true },
-  });
-
-  if (!member) return null;
-
-  return resolveUserPermissions(member.role, orgId);
+  return resolveClerkOrganizationPermissions(authContext.orgPermissions);
 }
 
 /**
@@ -82,16 +71,11 @@ export async function resolveCurrentUserPermissions(
  * Resolves permissions for the current user and redirects if they
  * don't have access to the given route segment.
  */
-export async function requireRoutePermission(
-  routeSegment: string,
-  orgId: string,
-): Promise<void> {
+export async function requireRoutePermission(routeSegment: string, orgId: string): Promise<void> {
   const permissions = await resolveCurrentUserPermissions(orgId);
 
   if (!permissions || !canAccessRoute(permissions, routeSegment)) {
-    const defaultRoute = permissions
-      ? getDefaultRoute(permissions, orgId)
-      : null;
+    const defaultRoute = permissions ? getDefaultRoute(permissions, orgId) : null;
     redirect(defaultRoute ?? '/no-access');
   }
 }
@@ -117,12 +101,9 @@ export async function resolveCustomRolePermissions(
 
   for (const role of customRoles) {
     if (!role.permissions) continue;
-    const parsed =
-      typeof role.permissions === 'string'
-        ? JSON.parse(role.permissions)
-        : role.permissions;
-    if (parsed && typeof parsed === 'object') {
-      mergePermissions(result, parsed as Record<string, string[]>);
+    const parsed = parsePermissionMap(role.permissions);
+    if (parsed) {
+      mergePermissions(result, parsed);
     }
   }
   return result;
@@ -136,15 +117,14 @@ export async function resolveCustomRolePermissions(
 export async function resolveAuditorViewAccess(
   orgId: string,
 ): Promise<{ canAccess: boolean; roleString: string | null } | null> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  if (!session?.user?.id) return null;
+  const authContext = await clerkAuth();
+  if (!authContext.userId || !authContext.orgId) return null;
 
   const member = await db.member.findFirst({
     where: {
-      userId: session.user.id,
+      user: { clerkUserId: authContext.userId },
       organizationId: orgId,
+      organization: { clerkOrganizationId: authContext.orgId },
       deactivated: false,
     },
     select: { role: true },
@@ -169,9 +149,7 @@ export async function requireAuditorViewAccess(orgId: string): Promise<void> {
   if (result?.canAccess) return;
 
   const permissions = await resolveCurrentUserPermissions(orgId);
-  const defaultRoute = permissions
-    ? getDefaultRoute(permissions, orgId)
-    : null;
+  const defaultRoute = permissions ? getDefaultRoute(permissions, orgId) : null;
   redirect(defaultRoute ?? '/no-access');
 }
 
@@ -197,29 +175,59 @@ export interface ApiPermissionContext {
  * same RBAC contract as the API — see Cubic finding #9 on PR #2671.
  */
 export async function requireApiPermission(
-  req: Request,
+  _req: Request,
   resource: string,
   action: string,
 ): Promise<ApiPermissionContext | NextResponse> {
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session?.user?.id || !session?.session?.activeOrganizationId) {
+  const authContext = await clerkAuth();
+  if (!authContext.userId || !authContext.orgId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const organizationId = session.session.activeOrganizationId;
-  const userId = session.user.id;
 
-  const member = await db.member.findFirst({
-    where: { userId, organizationId, deactivated: false },
-    select: { role: true },
-  });
-  if (!member) {
+  const [organization, user] = await Promise.all([
+    db.organization.findUnique({
+      where: { clerkOrganizationId: authContext.orgId },
+      select: { id: true },
+    }),
+    db.user.findUnique({
+      where: { clerkUserId: authContext.userId },
+      select: { id: true },
+    }),
+  ]);
+  if (!organization || !user) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const permissions = await resolveUserPermissions(member.role, organizationId);
+  const permissions = resolveClerkOrganizationPermissions(authContext.orgPermissions);
   if (!hasPermission(permissions, resource, action)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  return { organizationId, userId, permissions };
+  return { organizationId: organization.id, userId: user.id, permissions };
+}
+
+function parsePermissionMap(value: unknown): Record<string, string[]> | null {
+  const parsed = typeof value === 'string' ? safeParseJson(value) : value;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return null;
+  }
+
+  const permissions: Record<string, string[]> = {};
+  for (const [resource, actions] of Object.entries(parsed)) {
+    if (!Array.isArray(actions) || actions.some((action) => typeof action !== 'string')) {
+      return null;
+    }
+
+    permissions[resource] = actions;
+  }
+
+  return permissions;
+}
+
+function safeParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }

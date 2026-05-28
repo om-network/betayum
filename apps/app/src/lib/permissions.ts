@@ -1,4 +1,4 @@
-import { allRoles, type RoleName } from '@trycompai/auth';
+import { allRoles, parseCompAiPermission, type RoleName } from '@trycompai/auth';
 
 /**
  * Effective user permissions — flat map of resource -> actions[].
@@ -43,6 +43,25 @@ export function hasAnyPermission(
   checks: Array<{ resource: string; action: string }>,
 ): boolean {
   return checks.some((c) => hasPermission(permissions, c.resource, c.action));
+}
+
+export function resolveClerkOrganizationPermissions(
+  permissionKeys: readonly string[] | null | undefined,
+): UserPermissions {
+  const permissions: UserPermissions = {};
+  if (!permissionKeys) return permissions;
+
+  for (const key of permissionKeys) {
+    const [prefix, resource, action, extra] = key.split(':');
+    if (prefix !== 'org' || !resource || !action || extra) continue;
+
+    const permission = parseCompAiPermission({ resource, action });
+    if (!permission) continue;
+
+    mergePermissions(permissions, { [permission.resource]: [permission.action] });
+  }
+
+  return permissions;
 }
 
 // ─── Route-permission mapping ────────────────────────────────────────
@@ -155,8 +174,19 @@ export function getDefaultRoute(permissions: UserPermissions, orgId: string): st
 
 /** Compliance route segments — used to determine if the Compliance rail icon should show. */
 const COMPLIANCE_ROUTE_SEGMENTS = [
-  'overview', 'frameworks', 'controls', 'policies', 'tasks', 'documents', 'people',
-  'risk', 'vendors', 'questionnaire', 'integrations', 'cloud-tests', 'auditor',
+  'overview',
+  'frameworks',
+  'controls',
+  'policies',
+  'tasks',
+  'documents',
+  'people',
+  'risk',
+  'vendors',
+  'questionnaire',
+  'integrations',
+  'cloud-tests',
+  'auditor',
 ] as const;
 
 /**
