@@ -44,6 +44,8 @@ describe('ClerkSessionService', () => {
         sub: 'clerk_1',
         sid: 'sess_1',
         org_id: 'org_1',
+        org_role: 'org:admin',
+        org_permissions: ['org:policy:read', 123, ''],
         azp: 'http://localhost:3000',
       },
     });
@@ -54,6 +56,8 @@ describe('ClerkSessionService', () => {
       clerkUserId: 'clerk_1',
       sessionId: 'sess_1',
       organizationId: 'org_1',
+      organizationRole: 'org:admin',
+      organizationPermissions: ['org:policy:read'],
       impersonatedBy: undefined,
     });
 
@@ -87,6 +91,8 @@ describe('ClerkSessionService', () => {
         clerkUserId: 'clerk_e2e_1',
         sessionId: 'sess_e2e_1',
         organizationId: 'org_e2e_1',
+        organizationRole: 'org:member',
+        organizationPermissions: ['org:control:read', false, ''],
       }),
     ).toString('base64url');
 
@@ -96,6 +102,8 @@ describe('ClerkSessionService', () => {
       clerkUserId: 'clerk_e2e_1',
       sessionId: 'sess_e2e_1',
       organizationId: 'org_e2e_1',
+      organizationRole: 'org:member',
+      organizationPermissions: ['org:control:read'],
     });
 
     expect(mockJwtVerify).not.toHaveBeenCalled();

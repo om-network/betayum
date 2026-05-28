@@ -6,6 +6,8 @@ export type VerifiedClerkSession = {
   clerkUserId: string;
   sessionId: string;
   organizationId?: string;
+  organizationRole?: string;
+  organizationPermissions?: string[];
   impersonatedBy?: string;
 };
 
@@ -117,7 +119,9 @@ export class ClerkSessionService {
   }): void {
     const azp = this.getStringClaim({ payload, key: 'azp' });
     if (azp && !authorizedParties.includes(azp)) {
-      throw new UnauthorizedException('Clerk session is not from a trusted app.');
+      throw new UnauthorizedException(
+        'Clerk session is not from a trusted app.',
+      );
     }
   }
 
@@ -126,13 +130,22 @@ export class ClerkSessionService {
     const sessionId = this.getStringClaim({ payload, key: 'sid' });
 
     if (!clerkUserId || !sessionId) {
-      throw new UnauthorizedException('Clerk session is missing required claims.');
+      throw new UnauthorizedException(
+        'Clerk session is missing required claims.',
+      );
     }
 
     return {
       clerkUserId,
       sessionId,
-      organizationId: this.getStringClaim({ payload, key: 'org_id' }) ?? undefined,
+      organizationId:
+        this.getStringClaim({ payload, key: 'org_id' }) ?? undefined,
+      organizationRole:
+        this.getStringClaim({ payload, key: 'org_role' }) ?? undefined,
+      organizationPermissions: this.getStringArrayClaim({
+        payload,
+        key: 'org_permissions',
+      }),
       impersonatedBy: this.getActorUserId(payload),
     };
   }
@@ -158,6 +171,24 @@ export class ClerkSessionService {
     return typeof maybeActor.sub === 'string' ? maybeActor.sub : undefined;
   }
 
+  private getStringArrayClaim({
+    payload,
+    key,
+  }: {
+    payload: JWTPayload;
+    key: string;
+  }): string[] | undefined {
+    const value = payload[key];
+    if (!Array.isArray(value)) {
+      return undefined;
+    }
+
+    const strings = value.filter(
+      (item): item is string => typeof item === 'string' && Boolean(item),
+    );
+    return strings.length > 0 ? strings : undefined;
+  }
+
   private resolveE2ETestSession(token: string): VerifiedClerkSession | null {
     if (process.env.E2E_TEST_MODE !== 'true' || !token.startsWith('e2e.')) {
       return null;
@@ -175,6 +206,8 @@ export class ClerkSessionService {
         clerkUserId?: unknown;
         sessionId?: unknown;
         organizationId?: unknown;
+        organizationRole?: unknown;
+        organizationPermissions?: unknown;
       };
 
       if (
@@ -193,6 +226,17 @@ export class ClerkSessionService {
           typeof payload.organizationId === 'string' && payload.organizationId
             ? payload.organizationId
             : undefined,
+        organizationRole:
+          typeof payload.organizationRole === 'string' &&
+          payload.organizationRole
+            ? payload.organizationRole
+            : undefined,
+        organizationPermissions: Array.isArray(payload.organizationPermissions)
+          ? payload.organizationPermissions.filter(
+              (item): item is string =>
+                typeof item === 'string' && Boolean(item),
+            )
+          : undefined,
       };
     } catch {
       throw new UnauthorizedException('Invalid E2E test session token.');

@@ -1,7 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { db } from '@db';
 import { ClerkIdentityService } from './clerk-identity.service';
 import { ClerkSessionService } from './clerk-session.service';
+import { MemberProfileResolverService } from './member-profile-resolver.service';
+import { OrganizationProfileResolverService } from './organization-profile-resolver.service';
 import { SupportContextService } from './support-context.service';
 import { AuthenticatedRequest } from './types';
 
@@ -10,6 +11,8 @@ export class ClerkRequestAuthService {
   constructor(
     private readonly clerkIdentityService: ClerkIdentityService,
     private readonly clerkSessionService: ClerkSessionService,
+    private readonly organizationProfileResolver: OrganizationProfileResolverService,
+    private readonly memberProfileResolver: MemberProfileResolverService,
     private readonly supportContextService: SupportContextService,
   ) {}
 
@@ -17,7 +20,9 @@ export class ClerkRequestAuthService {
     request: AuthenticatedRequest,
     skipOrgCheck = false,
   ): Promise<boolean> {
-    const authorization = request.headers['authorization'] as string | undefined;
+    const authorization = request.headers['authorization'] as
+      | string
+      | undefined;
     const cookie = request.headers['cookie'] as string | undefined;
 
     const session = await this.clerkSessionService.verifyRequest({
@@ -28,23 +33,46 @@ export class ClerkRequestAuthService {
       session.clerkUserId,
     );
 
-    const requestedOrganizationId =
-      (request.headers['x-organization-id'] as string | undefined) ??
-      session.organizationId;
+    const requestedLocalOrganizationId = request.headers[
+      'x-organization-id'
+    ] as string | undefined;
+    const clerkOrganizationId = session.organizationId;
     const supportContext = await this.supportContextService.resolve({
       actor: {
         id: actorUser.id,
         role: actorUser.role,
       },
       cookieHeader: cookie,
-      requestedOrganizationId,
+      requestedOrganizationId: requestedLocalOrganizationId,
     });
 
-    const organizationId =
-      supportContext?.organizationId ?? requestedOrganizationId;
-    if (!organizationId && !skipOrgCheck) {
+    if (!supportContext && !clerkOrganizationId && !skipOrgCheck) {
       throw new UnauthorizedException(
         'No active organization. Please select an organization.',
+      );
+    }
+
+    if (!supportContext && !session.organizationRole && !skipOrgCheck) {
+      throw new UnauthorizedException(
+        'Clerk organization membership is required for the active organization.',
+      );
+    }
+
+    const organizationId = supportContext
+      ? supportContext.organizationId
+      : await this.resolveLocalOrganizationId({
+          clerkOrganizationId,
+          skipOrgCheck,
+        });
+
+    if (
+      !supportContext &&
+      organizationId &&
+      requestedLocalOrganizationId &&
+      requestedLocalOrganizationId !== organizationId
+    ) {
+      throw new UnauthorizedException(
+        'Requested organization does not match the active Clerk organization.',
       );
     }
 
@@ -62,31 +90,22 @@ export class ClerkRequestAuthService {
       request.memberDepartment = supportContext.memberDepartment;
       impersonatedBy = supportContext.impersonatedBy;
       isPlatformAdmin = false;
-    } else if (organizationId && !skipOrgCheck) {
-      const member = await db.member.findFirst({
-        where: {
-          userId: actorUser.id,
-          organizationId,
-          deactivated: false,
-        },
-        select: {
-          id: true,
-          role: true,
-          department: true,
-        },
-      });
+    } else if (organizationId && clerkOrganizationId && !skipOrgCheck) {
+      const profile =
+        await this.memberProfileResolver.resolveByClerkUserAndOrganization({
+          clerkUserId: session.clerkUserId,
+          clerkOrganizationId,
+        });
 
-      if (!member) {
-        throw new UnauthorizedException(
-          'User is not a member of the active organization',
-        );
-      }
-
-      userRoles = member.role ? member.role.split(',') : null;
-      request.memberId = member.id;
-      request.memberDepartment = member.department;
+      userRoles = profile?.role ? profile.role.split(',') : null;
+      request.memberId = profile?.id;
+      request.memberDepartment = profile?.department;
     }
 
+    request.clerkUserId = session.clerkUserId;
+    request.clerkOrganizationId = clerkOrganizationId;
+    request.clerkOrganizationRole = session.organizationRole;
+    request.clerkOrganizationPermissions = session.organizationPermissions;
     request.userId = resolvedUserId;
     request.userEmail = resolvedUserEmail;
     request.userRoles = userRoles;
@@ -100,5 +119,24 @@ export class ClerkRequestAuthService {
     request.impersonatedBy = impersonatedBy;
 
     return true;
+  }
+
+  private async resolveLocalOrganizationId({
+    clerkOrganizationId,
+    skipOrgCheck,
+  }: {
+    clerkOrganizationId?: string;
+    skipOrgCheck: boolean;
+  }): Promise<string> {
+    if (!clerkOrganizationId || skipOrgCheck) {
+      return '';
+    }
+
+    const organization =
+      await this.organizationProfileResolver.requireByClerkOrganizationId({
+        clerkOrganizationId,
+      });
+
+    return organization.id;
   }
 }

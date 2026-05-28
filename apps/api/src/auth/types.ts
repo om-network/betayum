@@ -9,6 +9,10 @@ export interface AuthenticatedRequest extends Request {
   isServiceToken?: boolean;
   serviceName?: string;
   isPlatformAdmin: boolean;
+  clerkUserId?: string;
+  clerkOrganizationId?: string;
+  clerkOrganizationRole?: string;
+  clerkOrganizationPermissions?: string[];
   userId?: string;
   userEmail?: string;
   userRoles: string[] | null;
@@ -29,6 +33,10 @@ export interface AuthContext {
   isServiceToken?: boolean;
   serviceName?: string;
   isPlatformAdmin: boolean;
+  clerkUserId?: string;
+  clerkOrganizationId?: string;
+  clerkOrganizationRole?: string;
+  clerkOrganizationPermissions?: string[];
   userId?: string; // Only available for session auth
   userEmail?: string; // Only available for session auth
   userRoles: string[] | null;

@@ -26,6 +26,8 @@ import { ClerkIdentityService } from './clerk-identity.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
+import { MemberProfileResolverService } from './member-profile-resolver.service';
+import { OrganizationProfileResolverService } from './organization-profile-resolver.service';
 import { SupportContextService } from './support-context.service';
 import type { AuthenticatedRequest } from './types';
 
@@ -60,12 +62,20 @@ describe('HybridAuthGuard device-agent sessions', () => {
   const clerkSessionService = {
     verifyRequest: jest.fn(),
   } as unknown as ClerkSessionService;
+  const organizationProfileResolver = {
+    requireByClerkOrganizationId: jest.fn(),
+  } as unknown as OrganizationProfileResolverService;
+  const memberProfileResolver = {
+    resolveByClerkUserAndOrganization: jest.fn(),
+  } as unknown as MemberProfileResolverService;
   const supportContextService = {
     resolve: jest.fn().mockResolvedValue(null),
   } as unknown as SupportContextService;
   const clerkRequestAuthService = new ClerkRequestAuthService(
     clerkIdentityService,
     clerkSessionService,
+    organizationProfileResolver,
+    memberProfileResolver,
     supportContextService,
   );
 
@@ -119,6 +129,8 @@ describe('HybridAuthGuard device-agent sessions', () => {
     jest.mocked(clerkSessionService.verifyRequest).mockResolvedValueOnce({
       clerkUserId: 'clerk_1',
       sessionId: 'sess_1',
+      organizationId: 'clerk_org_1',
+      organizationRole: 'org:admin',
     });
     jest.mocked(clerkIdentityService.resolveMappedUser).mockResolvedValueOnce({
       id: 'usr_1',
@@ -129,11 +141,28 @@ describe('HybridAuthGuard device-agent sessions', () => {
       role: 'user',
       clerkUserId: 'clerk_1',
     });
-    mockDb.member.findFirst.mockResolvedValueOnce({
-      id: 'mem_1',
-      role: 'owner',
-      department: 'none',
-    });
+    jest
+      .mocked(organizationProfileResolver.requireByClerkOrganizationId)
+      .mockResolvedValueOnce({
+        id: 'org_1',
+        clerkOrganizationId: 'clerk_org_1',
+        name: 'Acme',
+        slug: 'acme',
+      });
+    jest
+      .mocked(memberProfileResolver.resolveByClerkUserAndOrganization)
+      .mockResolvedValueOnce({
+        id: 'mem_1',
+        organizationId: 'org_1',
+        userId: 'usr_1',
+        clerkUserId: 'clerk_1',
+        clerkOrganizationId: 'clerk_org_1',
+        clerkMembershipId: 'clerk_mem_1',
+        role: 'owner',
+        department: 'none',
+        isActive: true,
+        deactivated: false,
+      });
 
     await expect(guard.canActivate(buildContext(request))).resolves.toBe(true);
 
