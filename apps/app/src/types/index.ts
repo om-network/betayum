@@ -9,6 +9,7 @@ export interface SearchParams {
  */
 export interface OrganizationFromMe {
   id: string;
+  clerkOrganizationId: string | null;
   name: string;
   logo: string | null;
   onboardingCompleted: boolean;

@@ -36,7 +36,7 @@ vi.mock('@/lib/api-server', () => ({
   },
 }));
 
-const mockResolveUserPermissions = vi.fn();
+const mockResolveCurrentUserPermissions = vi.fn();
 vi.mock('@/lib/permissions', () => ({
   canAccessApp: vi.fn().mockReturnValue(true),
   canAccessAuditorView: vi.fn().mockReturnValue(true),
@@ -44,7 +44,7 @@ vi.mock('@/lib/permissions', () => ({
 }));
 vi.mock('@/lib/permissions.server', () => ({
   resolveCustomRolePermissions: vi.fn().mockResolvedValue({}),
-  resolveUserPermissions: (...args: unknown[]) => mockResolveUserPermissions(...args),
+  resolveCurrentUserPermissions: (...args: unknown[]) => mockResolveCurrentUserPermissions(...args),
 }));
 vi.mock('./components/AppShellWrapper', () => ({
   AppShellWrapper: ({ children }: { children: React.ReactNode }) => children,
@@ -68,7 +68,7 @@ describe('organization layout Clerk auth path', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockClerkAuth.mockResolvedValue({ userId: 'clerk_user_1' });
-    mockResolveUserPermissions.mockResolvedValue({ app: ['read'] });
+    mockResolveCurrentUserPermissions.mockResolvedValue({ app: ['read'] });
     mockDb.organization.findUnique.mockResolvedValue({
       id: requestedOrgId,
       name: 'Requested Org',
@@ -89,6 +89,7 @@ describe('organization layout Clerk auth path', () => {
         organizations: [
           {
             id: requestedOrgId,
+            clerkOrganizationId: 'clerk_org_requested',
             name: 'Requested Org',
             logo: null,
             onboardingCompleted: true,
@@ -117,7 +118,7 @@ describe('organization layout Clerk auth path', () => {
     ).resolves.toBeDefined();
 
     expect(mockServerApiGet).toHaveBeenCalledWith('/v1/auth/me');
-    expect(mockResolveUserPermissions).toHaveBeenCalledWith('owner', requestedOrgId);
+    expect(mockResolveCurrentUserPermissions).toHaveBeenCalledWith(requestedOrgId);
     expect(mockDb.member.findFirst).not.toHaveBeenCalled();
   });
 
@@ -129,6 +130,14 @@ describe('organization layout Clerk auth path', () => {
       },
       status: 200,
     });
+
+    await expect(
+      Layout({ children: null, params: Promise.resolve({ orgId: requestedOrgId }) }),
+    ).rejects.toThrow('NEXT_REDIRECT:/auth/unauthorized');
+  });
+
+  it('rejects users whose active Clerk organization does not match the route', async () => {
+    mockResolveCurrentUserPermissions.mockResolvedValueOnce(null);
 
     await expect(
       Layout({ children: null, params: Promise.resolve({ orgId: requestedOrgId }) }),
@@ -148,6 +157,7 @@ describe('organization layout Clerk auth path', () => {
         organizations: [
           {
             id: requestedOrgId,
+            clerkOrganizationId: 'clerk_org_requested',
             name: 'Requested Org',
             logo: null,
             onboardingCompleted: true,
@@ -164,6 +174,6 @@ describe('organization layout Clerk auth path', () => {
     await expect(
       Layout({ children: null, params: Promise.resolve({ orgId: requestedOrgId }) }),
     ).resolves.toBeDefined();
-    expect(mockResolveUserPermissions).toHaveBeenCalledWith('auditor', requestedOrgId);
+    expect(mockResolveCurrentUserPermissions).toHaveBeenCalledWith(requestedOrgId);
   });
 });
