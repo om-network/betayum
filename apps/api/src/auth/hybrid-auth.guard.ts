@@ -8,7 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { db } from '@db';
 import { ApiKeyService } from './api-key.service';
-import { ClerkRequestAuthService } from './clerk-request-auth.service';
+import { ClerkAuthService } from './clerk-auth.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { SKIP_ORG_CHECK_KEY } from './skip-org-check.decorator';
 import { resolveServiceByToken } from './service-token.config';
@@ -21,7 +21,7 @@ export class HybridAuthGuard implements CanActivate {
   constructor(
     private readonly apiKeyService: ApiKeyService,
     private readonly reflector: Reflector,
-    private readonly clerkRequestAuthService: ClerkRequestAuthService,
+    private readonly clerkAuthService: ClerkAuthService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -146,109 +146,78 @@ export class HybridAuthGuard implements CanActivate {
     request: AuthenticatedRequest,
     skipOrgCheck = false,
   ): Promise<boolean> {
-    const deviceAgentSession = await this.tryDeviceAgentSessionAuth(
-      request,
-      skipOrgCheck,
-    );
-    if (deviceAgentSession) {
-      return true;
-    }
-
     try {
-      return this.clerkRequestAuthService.authenticate(request, skipOrgCheck);
+      const authHeader = request.headers['authorization'] as string;
+      const cookieHeader = request.headers['cookie'] as string;
+
+      if (!authHeader && !cookieHeader) {
+        throw new UnauthorizedException(
+          'Authentication required: Provide either X-API-Key, Bearer token, or session cookie',
+        );
+      }
+
+      const session = await this.clerkAuthService.resolveSession(request, {
+        skipOrgCheck,
+      });
+      const { user, activeOrganizationId: organizationId } = session;
+      if (!organizationId && !skipOrgCheck) {
+        throw new UnauthorizedException(
+          'No active organization. Please select an organization.',
+        );
+      }
+
+      // Fetch member data for role and department info
+      // Skip if no active org or if org check is skipped (e.g., during onboarding)
+      let userRoles: string[] | null = null;
+      if (organizationId && !skipOrgCheck) {
+        const member = await db.member.findFirst({
+          where: {
+            userId: user.id,
+            organizationId,
+            deactivated: false,
+          },
+          select: {
+            id: true,
+            role: true,
+            department: true,
+          },
+        });
+
+        if (!member) {
+          throw new UnauthorizedException(
+            `User is not a member of the active organization`,
+          );
+        }
+
+        userRoles = member.role ? member.role.split(',') : null;
+        request.memberId = member.id;
+        request.memberDepartment = member.department;
+      }
+
+      // Set request context for session auth
+      request.userId = user.id;
+      request.userEmail = user.email;
+      request.userRoles = userRoles;
+      request.organizationId = organizationId || '';
+      request.authType = 'session';
+      request.isApiKey = false;
+      request.isServiceToken = false;
+      request.sessionId = session.sessionId;
+      request.sessionDeviceAgent = false;
+      request.isPlatformAdmin = user.isPlatformAdmin;
+
+      if (session.impersonatedBy) {
+        request.impersonatedBy = session.impersonatedBy;
+      }
+
+      return true;
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
 
-      this.logger.error(
-        '[HybridAuthGuard] Clerk session verification failed:',
-        error,
-      );
+      console.error('[HybridAuthGuard] Session verification failed:', error);
       throw new UnauthorizedException('Invalid or expired session');
     }
-  }
-
-  private async tryDeviceAgentSessionAuth(
-    request: AuthenticatedRequest,
-    skipOrgCheck: boolean,
-  ): Promise<boolean> {
-    const authorization = request.headers['authorization'] as
-      | string
-      | undefined;
-    const token = authorization?.startsWith('Bearer ')
-      ? authorization.slice('Bearer '.length)
-      : undefined;
-    if (!token) {
-      return false;
-    }
-
-    const session = await db.session.findFirst({
-      where: {
-        token,
-        deviceAgent: true,
-        expiresAt: { gt: new Date() },
-      },
-      select: {
-        id: true,
-        userId: true,
-        user: {
-          select: {
-            email: true,
-            role: true,
-          },
-        },
-      },
-    });
-
-    if (!session) {
-      return false;
-    }
-
-    const organizationId = request.headers['x-organization-id'] as
-      | string
-      | undefined;
-    let userRoles: string[] | null = null;
-    if (organizationId && !skipOrgCheck) {
-      const member = await db.member.findFirst({
-        where: {
-          userId: session.userId,
-          organizationId,
-          deactivated: false,
-        },
-        select: {
-          id: true,
-          role: true,
-          department: true,
-        },
-      });
-
-      if (!member) {
-        throw new UnauthorizedException(
-          'User is not a member of the active organization',
-        );
-      }
-
-      request.memberId = member.id;
-      request.memberDepartment = member.department;
-      userRoles = member.role ? member.role.split(',') : null;
-    } else if (!organizationId && !skipOrgCheck) {
-      throw new UnauthorizedException(
-        'No active organization. Please select an organization.',
-      );
-    }
-
-    request.userId = session.userId;
-    request.userEmail = session.user.email;
-    request.userRoles = userRoles;
-    request.organizationId = organizationId || '';
-    request.authType = 'session';
-    request.isApiKey = false;
-    request.isServiceToken = false;
-    request.isPlatformAdmin = session.user.role === 'admin';
-    request.sessionId = session.id;
-    request.sessionDeviceAgent = true;
-
-    return true;
   }
 }
