@@ -46,7 +46,7 @@ export class BrowserbaseService {
   private get s3Client(): S3Client {
     if (!s3Client) {
       throw new Error(
-        'Object storage client not configured — set APP_GCP_* vars or APP_AWS_* fallback vars in apps/api/.env',
+        'S3 client not configured — set APP_AWS_ACCESS_KEY_ID, APP_AWS_SECRET_ACCESS_KEY, APP_AWS_REGION, APP_AWS_BUCKET_NAME in apps/api/.env',
       );
     }
     return s3Client;
@@ -55,7 +55,7 @@ export class BrowserbaseService {
   private get bucketName(): string {
     if (!BUCKET_NAME) {
       throw new Error(
-        'APP_GCP_BUCKET_NAME or APP_AWS_BUCKET_NAME is not set — configure object storage credentials in apps/api/.env',
+        'APP_AWS_BUCKET_NAME is not set — configure S3 credentials in apps/api/.env',
       );
     }
     return BUCKET_NAME;

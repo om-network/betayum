@@ -1,5 +1,5 @@
-import { auth } from '@/app/lib/auth';
-import { BUCKET_NAME, s3Client, getSignedUrl } from '@/utils/s3';
+import { getPortalAuthContext } from '@/app/lib/portal-auth';
+import { BUCKET_NAME, getSignedUrl, s3Client } from '@/utils/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -8,9 +8,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: req.headers });
+  const authContext = await getPortalAuthContext({ headers: req.headers });
 
-  if (!session?.user) {
+  if (!authContext) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
     const member = await db.member.findFirst({
       where: {
-        userId: session.user.id,
+        userId: authContext.user.id,
         organizationId: policy.organizationId,
         deactivated: false,
       },
@@ -68,10 +68,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'No PDF found.' });
     }
 
-    if (!s3Client || !BUCKET_NAME) {
-      return NextResponse.json({ success: false, error: 'File storage is unavailable.' });
-    }
-
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
       Key: pdfUrl,
@@ -80,9 +76,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, url: signedUrl });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Could not retrieve PDF.' },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: 'Could not retrieve PDF.' }, { status: 500 });
   }
 }

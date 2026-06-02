@@ -1,10 +1,5 @@
 import { SupportedOS } from '@/app/api/download-agent/types';
-import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-  type S3ClientConfig,
-} from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl as _getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /**
@@ -19,96 +14,31 @@ export const getSignedUrl = _getSignedUrl as unknown as (
   options?: { expiresIn?: number },
 ) => Promise<string>;
 
-const GCP_STORAGE_DEFAULT_ENDPOINT = 'https://storage.googleapis.com';
+const APP_AWS_REGION = process.env.APP_AWS_REGION;
+const APP_AWS_ACCESS_KEY_ID = process.env.APP_AWS_ACCESS_KEY_ID;
+const APP_AWS_SECRET_ACCESS_KEY = process.env.APP_AWS_SECRET_ACCESS_KEY;
+const APP_AWS_ENDPOINT = process.env.APP_AWS_ENDPOINT;
 
-function isNonEmptyString(value: string | undefined): value is string {
-  return typeof value === 'string' && value.length > 0;
-}
+export const BUCKET_NAME = process.env.APP_AWS_BUCKET_NAME;
+export const APP_AWS_ORG_ASSETS_BUCKET = process.env.APP_AWS_ORG_ASSETS_BUCKET;
 
-const hasGcpStorageEnv = [
-  process.env.APP_GCP_ACCESS_KEY_ID,
-  process.env.APP_GCP_SECRET_ACCESS_KEY,
-  process.env.APP_GCP_BUCKET_NAME,
-  process.env.APP_GCP_ENDPOINT,
-].some(isNonEmptyString);
-
-export const STORAGE_PROVIDER = hasGcpStorageEnv ? 'gcp' : 'aws';
-export const STORAGE_REGION =
-  process.env.APP_GCP_REGION ||
-  process.env.APP_AWS_REGION ||
-  (STORAGE_PROVIDER === 'gcp' ? 'auto' : 'us-east-1');
-export const STORAGE_ACCESS_KEY_ID =
-  process.env.APP_GCP_ACCESS_KEY_ID || process.env.APP_AWS_ACCESS_KEY_ID;
-export const STORAGE_SECRET_ACCESS_KEY =
-  process.env.APP_GCP_SECRET_ACCESS_KEY ||
-  process.env.APP_AWS_SECRET_ACCESS_KEY;
-export const STORAGE_ENDPOINT =
-  process.env.APP_GCP_ENDPOINT ||
-  process.env.APP_AWS_ENDPOINT ||
-  (STORAGE_PROVIDER === 'gcp' ? GCP_STORAGE_DEFAULT_ENDPOINT : undefined);
-
-export const BUCKET_NAME =
-  process.env.APP_GCP_BUCKET_NAME || process.env.APP_AWS_BUCKET_NAME;
-export const APP_AWS_ORG_ASSETS_BUCKET =
-  process.env.APP_GCP_ORG_ASSETS_BUCKET ||
-  process.env.APP_AWS_ORG_ASSETS_BUCKET;
-
-const configuredBuckets = [
-  BUCKET_NAME,
-  APP_AWS_ORG_ASSETS_BUCKET,
-  process.env.FLEET_AGENT_BUCKET_NAME,
-].filter(isNonEmptyString);
-
-if (
-  !STORAGE_ACCESS_KEY_ID ||
-  !STORAGE_SECRET_ACCESS_KEY ||
-  !BUCKET_NAME ||
-  !STORAGE_REGION
-) {
+if (!APP_AWS_ACCESS_KEY_ID || !APP_AWS_SECRET_ACCESS_KEY || !BUCKET_NAME || !APP_AWS_REGION) {
   console.warn(
-    'Object storage credentials or configuration missing in environment variables. File upload features will be unavailable.',
+    'AWS S3 credentials or configuration missing in environment variables. File upload features will be unavailable.',
   );
 }
 
-function getStorageClientConfig(): S3ClientConfig {
-  if (!STORAGE_ACCESS_KEY_ID || !STORAGE_SECRET_ACCESS_KEY || !STORAGE_REGION) {
-    throw new Error(
-      'Object storage credentials or configuration missing. Set APP_GCP_* vars or APP_AWS_* fallback vars.',
-    );
-  }
-
-  return {
-    endpoint: STORAGE_ENDPOINT,
-    region: STORAGE_REGION,
-    credentials: {
-      accessKeyId: STORAGE_ACCESS_KEY_ID,
-      secretAccessKey: STORAGE_SECRET_ACCESS_KEY,
-    },
-    forcePathStyle: Boolean(STORAGE_ENDPOINT),
-  };
-}
-
-let s3ClientInstance: S3Client | null = null;
-
-try {
-  if (
-    !STORAGE_ACCESS_KEY_ID ||
-    !STORAGE_SECRET_ACCESS_KEY ||
-    !BUCKET_NAME ||
-    !STORAGE_REGION
-  ) {
-    throw new Error(
-      'Object storage credentials or configuration missing. Set APP_GCP_* vars or APP_AWS_* fallback vars.',
-    );
-  }
-
-  s3ClientInstance = new S3Client(getStorageClientConfig());
-} catch (error) {
-  console.error('FAILED TO INITIALIZE PORTAL OBJECT STORAGE CLIENT', error);
-  s3ClientInstance = null;
-}
-
-export const s3Client = s3ClientInstance;
+// Create a single S3 client instance
+// Add null checks or assertions if the checks above don't guarantee non-null values
+export const s3Client = new S3Client({
+  endpoint: APP_AWS_ENDPOINT || undefined,
+  region: APP_AWS_REGION!,
+  credentials: {
+    accessKeyId: APP_AWS_ACCESS_KEY_ID!,
+    secretAccessKey: APP_AWS_SECRET_ACCESS_KEY!,
+  },
+  forcePathStyle: !!APP_AWS_ENDPOINT,
+});
 
 // Ensure BUCKET_NAME is exported and non-null checked if needed elsewhere explicitly
 if (!BUCKET_NAME && process.env.NODE_ENV === 'production') {
@@ -121,18 +51,12 @@ if (!BUCKET_NAME && process.env.NODE_ENV === 'production') {
 function isValidS3Host(host: string): boolean {
   const normalizedHost = host.toLowerCase();
 
-  if (
-    normalizedHost === 'storage.googleapis.com' ||
-    normalizedHost === 'storage.cloud.google.com' ||
-    normalizedHost.endsWith('.storage.googleapis.com')
-  ) {
-    return true;
-  }
-
+  // Must end with amazonaws.com
   if (!normalizedHost.endsWith('.amazonaws.com')) {
     return false;
   }
 
+  // Check against known S3 patterns
   return /^([\w.-]+\.)?(s3|s3-[\w-]+|s3-website[\w.-]+|s3-accesspoint|s3-control)(\.[\w-]+)?\.amazonaws\.com$/.test(
     normalizedHost,
   );
@@ -162,14 +86,7 @@ export function extractS3KeyFromUrl(url: string): string {
     }
 
     // Extract and validate the key
-    let key = decodeURIComponent(parsedUrl.pathname.substring(1));
-
-    for (const bucket of configuredBuckets) {
-      if (key.startsWith(`${bucket}/`)) {
-        key = key.slice(bucket.length + 1);
-        break;
-      }
-    }
+    const key = decodeURIComponent(parsedUrl.pathname.substring(1));
 
     // Security: Check for path traversal
     if (key.includes('../') || key.includes('..\\')) {
@@ -187,11 +104,7 @@ export function extractS3KeyFromUrl(url: string): string {
   // Not a URL - treat as S3 key
   // Security: Ensure it's not a malformed URL attempting to bypass validation
   const lowerInput = url.toLowerCase();
-  if (
-    lowerInput.includes('://') ||
-    lowerInput.includes('amazonaws.com') ||
-    lowerInput.includes('storage.googleapis.com')
-  ) {
+  if (lowerInput.includes('://') || lowerInput.includes('amazonaws.com')) {
     throw new Error('Invalid input: Malformed URL detected');
   }
 
@@ -212,10 +125,6 @@ export function extractS3KeyFromUrl(url: string): string {
 }
 
 export async function getFleetAgent({ os }: { os: SupportedOS }) {
-  if (!s3Client) {
-    throw new Error('Object storage client is not configured.');
-  }
-
   const fleetBucketName = process.env.FLEET_AGENT_BUCKET_NAME;
 
   if (!fleetBucketName) {
@@ -258,10 +167,6 @@ export async function getPresignedDownloadUrl({
   key: string;
   expiresIn?: number;
 }): Promise<string> {
-  if (!s3Client) {
-    throw new Error('Object storage client is not configured.');
-  }
-
   const command = new GetObjectCommand({
     Bucket: bucketName,
     Key: key,
@@ -284,10 +189,6 @@ export async function getPresignedUploadUrl({
   contentType?: string;
   expiresIn?: number;
 }): Promise<string> {
-  if (!s3Client) {
-    throw new Error('Object storage client is not configured.');
-  }
-
   const command = new PutObjectCommand({
     Bucket: bucketName,
     Key: key,
