@@ -1,12 +1,11 @@
 import {
   CanActivate,
   ExecutionContext,
-  Injectable,
   ForbiddenException,
-  UnauthorizedException,
+  Injectable,
 } from '@nestjs/common';
-import { ClerkIdentityService } from './clerk-identity.service';
-import { ClerkSessionService } from './clerk-session.service';
+import type { Request } from 'express';
+import { ClerkAuthService } from './clerk-auth.service';
 
 interface PlatformAdminRequest {
   userId?: string;
@@ -21,43 +20,23 @@ interface PlatformAdminRequest {
 
 @Injectable()
 export class PlatformAdminGuard implements CanActivate {
-  constructor(
-    private readonly clerkSessionService: ClerkSessionService,
-    private readonly clerkIdentityService: ClerkIdentityService,
-  ) {}
+  constructor(private readonly clerkAuthService: ClerkAuthService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<PlatformAdminRequest>();
-    const authHeader = request.headers['authorization'];
-    const cookieHeader = request.headers['cookie'];
-
-    if (!authHeader && !cookieHeader) {
-      throw new UnauthorizedException(
-        'Platform admin routes require authentication',
-      );
-    }
-
-    const session = await this.clerkSessionService.verifyRequest({
-      authorization: authHeader,
-      cookie: cookieHeader,
-    });
-    const user = await this.clerkIdentityService.resolveMappedUser(
-      session.clerkUserId,
+    const session = await this.clerkAuthService.resolveSession(
+      request as unknown as Request,
+      { skipOrgCheck: true },
     );
 
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    if (user.role !== 'admin') {
+    if (!session.actor.isPlatformAdmin) {
       throw new ForbiddenException(
         'Access denied: Platform admin privileges required',
       );
     }
 
-    // Set request context
-    request.userId = user.id;
-    request.userEmail = user.email;
+    request.userId = session.actor.id;
+    request.userEmail = session.actor.email;
     request.isPlatformAdmin = true;
 
     return true;
