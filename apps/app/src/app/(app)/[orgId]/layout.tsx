@@ -2,23 +2,16 @@ import { getFeatureFlags } from '@/app/posthog';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/app/s3';
 import { TriggerTokenProvider } from '@/components/trigger-token-provider';
 import { serverApi } from '@/lib/api-server';
-import {
-  canAccessApp,
-  canAccessAuditorView,
-  parseRolesString,
-} from '@/lib/permissions';
-import {
-  resolveCustomRolePermissions,
-  resolveUserPermissions,
-} from '@/lib/permissions.server';
-import type { OrganizationFromMe } from '@/types';
-import { auth } from '@/utils/auth';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { canAccessApp, canAccessAuditorView, parseRolesString } from '@/lib/permissions';
+import { resolveCustomRolePermissions, resolveUserPermissions } from '@/lib/permissions.server';
 import { getSignedUrl } from '@/lib/s3-presigner';
-import { OrganizationIdentifier } from '@trycompai/analytics';
+import type { OrganizationFromMe } from '@/types';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { auth as clerkAuth } from '@clerk/nextjs/server';
 import { db, Role } from '@db/server';
+import { OrganizationIdentifier } from '@trycompai/analytics';
 import dynamic from 'next/dynamic';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShellWrapper } from './components/AppShellWrapper';
 
@@ -39,15 +32,9 @@ export default async function Layout({
   const isCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true';
   const publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
 
-  // Get headers once to avoid multiple async calls
-  const requestHeaders = await headers();
+  const { userId } = await clerkAuth();
 
-  // Check if user has access to this organization
-  const session = await auth.api.getSession({
-    headers: requestHeaders,
-  });
-
-  if (!session) {
+  if (!userId) {
     console.log('no session');
     return redirect('/auth');
   }
@@ -62,35 +49,29 @@ export default async function Layout({
     return redirect('/auth/not-found');
   }
 
-  const member = await db.member.findFirst({
-    where: {
-      userId: session.user.id,
-      organizationId: requestedOrgId,
-      deactivated: false,
-    },
-  });
+  // Validate user/org access through the API so Clerk identity mapping and
+  // deactivated-member checks stay centralized in the API auth layer.
+  const meRes = await serverApi.get<{
+    user: {
+      id: string;
+      email: string;
+      name: string | null;
+      image: string | null;
+      role: string | null;
+    } | null;
+    organizations: OrganizationFromMe[];
+  }>('/v1/auth/me');
+  const apiUser = meRes.data?.user;
+  const organizations = meRes.data?.organizations ?? [];
+  const member = organizations.find((org) => org.id === requestedOrgId);
 
-  if (!member) {
+  if (!apiUser || !member) {
     // User doesn't have access to this organization
     return redirect('/auth/unauthorized');
   }
 
-  // Sync activeOrganizationId if it doesn't match the URL's orgId.
-  // Uses better-auth's API so both server and client-side session state stay in sync.
-  const currentActiveOrgId = session.session.activeOrganizationId;
-  if (!currentActiveOrgId || currentActiveOrgId !== requestedOrgId) {
-    try {
-      await auth.api.setActiveOrganization({
-        headers: requestHeaders,
-        body: { organizationId: requestedOrgId },
-      });
-    } catch (error) {
-      console.error('[Layout] Failed to sync activeOrganizationId:', error);
-    }
-  }
-
   // Resolve effective permissions from all roles (built-in + custom)
-  const permissions = await resolveUserPermissions(member.role, requestedOrgId);
+  const permissions = await resolveUserPermissions(member.memberRole, requestedOrgId);
 
   // Check if user can access the main app (has app:read or any app route permission)
   const hasAppAccess = canAccessApp(permissions);
@@ -99,9 +80,9 @@ export default async function Layout({
   }
 
   // Parse roles for UI display purposes (auditor-specific UI)
-  const roles = parseRolesString(member.role);
+  const roles = parseRolesString(member.memberRole);
 
-  const isUserAdmin = session.user.role === 'admin';
+  const isUserAdmin = apiUser.role === 'admin';
 
   if (!isUserAdmin) {
     if (!organization.hasAccess) {
@@ -119,25 +100,18 @@ export default async function Layout({
     },
   });
 
-  // Fetch organizations for sidebar via API
-  const meRes = await serverApi.get<{ organizations: OrganizationFromMe[] }>('/v1/auth/me');
-  const organizations = meRes.data?.organizations ?? [];
-
   // Generate logo URLs for all organizations
   const logoUrls: Record<string, string> = {};
   if (s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
-    const storageClient = s3Client;
-    const bucketName = APP_AWS_ORG_ASSETS_BUCKET;
-
     await Promise.all(
       organizations.map(async (org) => {
         if (org.logo) {
           try {
             const command = new GetObjectCommand({
-              Bucket: bucketName,
+              Bucket: APP_AWS_ORG_ASSETS_BUCKET,
               Key: org.logo,
             });
-            logoUrls[org.id] = await getSignedUrl(storageClient, command, { expiresIn: 3600 });
+            logoUrls[org.id] = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
           } catch {
             // Logo not available
           }
@@ -153,8 +127,8 @@ export default async function Layout({
   let isTrustNdaEnabled = false;
   let isWebAutomationsEnabled = false;
   const isSecurityEnabled = true;
-  if (session?.user?.id) {
-    const flags = await getFeatureFlags(session.user.id, {
+  if (apiUser.id) {
+    const flags = await getFeatureFlags(apiUser.id, {
       groups: { organization: organization.id },
     });
     isQuestionnaireEnabled = flags['ai-vendor-questionnaire'] === true;
@@ -174,19 +148,16 @@ export default async function Layout({
   // audit:read. Resolve the custom-role permissions once so we don't
   // second-guess the owner/admin's implicit all-permissions in the UI.
   const customRolePermissions = await resolveCustomRolePermissions(
-    member.role,
+    member.memberRole,
     requestedOrgId,
   );
-  const auditorViewVisible = canAccessAuditorView(
-    member.role,
-    customRolePermissions,
-  );
+  const auditorViewVisible = canAccessAuditorView(member.memberRole, customRolePermissions);
 
   // User data for navbar
   const user = {
-    name: session.user.name,
-    email: session.user.email,
-    image: session.user.image ?? null,
+    name: apiUser.name ?? apiUser.email,
+    email: apiUser.email,
+    image: apiUser.image ?? null,
   };
 
   return (

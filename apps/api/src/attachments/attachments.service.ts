@@ -5,7 +5,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
+import { getSignedUrl, s3Client } from '@/app/s3';
 import { AttachmentEntityType, AttachmentType, db } from '@db';
 import {
   BadRequestException,
@@ -25,19 +25,17 @@ export class AttachmentsService {
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
   constructor() {
-    this.bucketName = BUCKET_NAME || '';
+    // AWS configuration is validated at startup via ConfigModule
+    // Safe to access environment variables directly since they're validated
+    this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
 
     if (!s3Client) {
       console.error(
-        'Object storage client is not initialized. Check GCP or AWS fallback configuration.',
+        'S3 Client is not initialized. Check AWS S3 configuration.',
       );
       throw new Error(
-        'Object storage client is not initialized. Check GCP or AWS fallback configuration.',
+        'S3 Client is not initialized. Check AWS S3 configuration.',
       );
-    }
-
-    if (!this.bucketName) {
-      throw new Error('Object storage bucket name is not configured.');
     }
 
     this.s3Client = s3Client;

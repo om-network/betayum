@@ -1,29 +1,19 @@
 'use client';
 
-import { ClerkProvider } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import {
   defaultShouldDehydrateQuery,
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query';
 import { AnalyticsProvider } from '@trycompai/analytics';
-import { Toaster } from '@trycompai/ui/sooner';
+import { Toaster } from '@trycompai/design-system';
 import { ThemeProvider } from 'next-themes';
 import type { ReactNode } from 'react';
 import SuperJSON from 'superjson';
 
 type ProviderProps = {
   children: ReactNode;
-  session: {
-    session: {
-      id: string;
-      userId: string;
-    } | null;
-    user: {
-      id: string;
-      email: string;
-    } | null;
-  } | null;
 };
 
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
@@ -65,27 +55,24 @@ export const createQueryClient = () =>
     },
   });
 
-export function Providers({ children, session }: ProviderProps) {
+export function Providers({ children }: ProviderProps) {
   const queryClient = getQueryClient();
+  const { user } = useUser();
+  const primaryEmail = user?.primaryEmailAddress?.emailAddress;
 
   return (
-    <ClerkProvider signInUrl="/auth" signUpUrl="/auth">
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          disableTransitionOnChange
-          scriptProps={{ 'data-cfasync': 'false' }}
-        >
-          <AnalyticsProvider
-            userId={session?.user?.id ?? undefined}
-            userEmail={session?.user?.email ?? undefined}
-          >
-            {children}
-            <Toaster richColors />
-          </AnalyticsProvider>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </ClerkProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        disableTransitionOnChange
+        scriptProps={{ 'data-cfasync': 'false' }}
+      >
+        <AnalyticsProvider userId={user?.id} userEmail={primaryEmail}>
+          {children}
+          <Toaster richColors />
+        </AnalyticsProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

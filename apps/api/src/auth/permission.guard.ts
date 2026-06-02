@@ -6,13 +6,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import {
-  BUILT_IN_ROLE_PERMISSIONS,
-  PRIVILEGED_ROLES,
-  RESTRICTED_ROLES,
-  parseRolePermissions,
-} from '@trycompai/auth';
-import { db } from '@db';
+import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@trycompai/auth';
+import { PermissionEvaluatorService } from './permission-evaluator.service';
 import { resolveServiceByName } from './service-token.config';
 import { AuthenticatedRequest } from './types';
 
@@ -30,12 +25,12 @@ export interface RequiredPermission {
 export const PERMISSIONS_KEY = 'required_permissions';
 
 /**
- * PermissionGuard - Validates user permissions using better-auth's SDK
+ * PermissionGuard - Validates user permissions against Comp AI roles
  *
  * This guard:
  * 1. Extracts required permissions from route metadata
- * 2. Uses better-auth's hasPermission SDK to validate against role definitions
- * 3. For restricted roles (employee/contractor), also checks assignment access
+ * 2. Evaluates built-in and organization custom roles locally
+ * 3. For restricted roles (employee/contractor), supports assignment access
  *
  * Usage:
  * ```typescript
@@ -48,7 +43,10 @@ export const PERMISSIONS_KEY = 'required_permissions';
 export class PermissionGuard implements CanActivate {
   private readonly logger = new Logger(PermissionGuard.name);
 
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private permissionEvaluator: PermissionEvaluatorService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Get required permissions from route metadata
@@ -135,7 +133,11 @@ export class PermissionGuard implements CanActivate {
     }
 
     try {
-      const hasPermission = await this.checkPermission(request, permissionBody);
+      const hasPermission = await this.permissionEvaluator.hasPermissions({
+        organizationId: request.organizationId,
+        roles: request.userRoles,
+        permissions: permissionBody,
+      });
 
       if (!hasPermission) {
         this.logger.warn(
@@ -155,59 +157,6 @@ export class PermissionGuard implements CanActivate {
       );
       throw new ForbiddenException('Unable to verify permissions');
     }
-  }
-
-  /**
-   * Resolve built-in and custom-role permissions directly from the local
-   * organization membership instead of delegating to better-auth.
-   */
-  private async checkPermission(
-    request: AuthenticatedRequest,
-    permissions: Record<string, string[]>,
-  ): Promise<boolean> {
-    const roles = request.userRoles ?? [];
-    if (!request.organizationId || roles.length === 0) {
-      return false;
-    }
-
-    const customRoles = await db.organizationRole.findMany({
-      where: {
-        organizationId: request.organizationId,
-        name: { in: roles },
-      },
-      select: {
-        name: true,
-        permissions: true,
-      },
-    });
-
-    const effectivePermissions: Record<string, Set<string>> = {};
-    for (const role of roles) {
-      const builtIn = BUILT_IN_ROLE_PERMISSIONS[role];
-      if (builtIn) {
-        for (const [resource, actions] of Object.entries(builtIn)) {
-          effectivePermissions[resource] ??= new Set<string>();
-          for (const action of actions) {
-            effectivePermissions[resource].add(action);
-          }
-        }
-      }
-    }
-
-    for (const customRole of customRoles) {
-      const parsed = parseRolePermissions(customRole.permissions);
-      if (!parsed) continue;
-      for (const [resource, actions] of Object.entries(parsed)) {
-        effectivePermissions[resource] ??= new Set<string>();
-        for (const action of actions) {
-          effectivePermissions[resource].add(action);
-        }
-      }
-    }
-
-    return Object.entries(permissions).every(([resource, actions]) =>
-      actions.every((action) => effectivePermissions[resource]?.has(action)),
-    );
   }
 
   /**

@@ -1,9 +1,5 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { extractContentFromFile } from '@/trigger/vector-store/helpers/extract-content-from-file';
-import {
-  APP_AWS_KNOWLEDGE_BASE_BUCKET,
-  createStorageClient,
-} from '@/app/s3';
 import { vectorIndex } from '../core/client';
 import { batchUpsertEmbeddings } from '../core/upsert-embedding';
 import { chunkText } from '../utils/chunk-text';
@@ -43,13 +39,23 @@ export interface ChunkItem {
  * Creates an S3 client instance for Knowledge Base document processing
  */
 export function createKnowledgeBaseS3Client(): S3Client {
-  try {
-    return createStorageClient();
-  } catch {
+  const region = process.env.APP_AWS_REGION || 'us-east-1';
+  const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY;
+
+  if (!accessKeyId || !secretAccessKey) {
     throw new Error(
-      'Object storage credentials are missing. Please set APP_GCP_* vars or APP_AWS_* fallback vars.',
+      'AWS S3 credentials are missing. Please set APP_AWS_ACCESS_KEY_ID and APP_AWS_SECRET_ACCESS_KEY environment variables.',
     );
   }
+
+  return new S3Client({
+    region,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+  });
 }
 
 /**
@@ -59,11 +65,11 @@ export async function extractContentFromS3Document(
   s3Key: string,
   fileType: string,
 ): Promise<string> {
-  const knowledgeBaseBucket = APP_AWS_KNOWLEDGE_BASE_BUCKET;
+  const knowledgeBaseBucket = process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET;
 
   if (!knowledgeBaseBucket) {
     throw new Error(
-      'Knowledge base bucket is not configured. Please set APP_GCP_KNOWLEDGE_BASE_BUCKET or APP_AWS_KNOWLEDGE_BASE_BUCKET.',
+      'Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable.',
     );
   }
 
@@ -77,7 +83,7 @@ export async function extractContentFromS3Document(
   const response = await s3Client.send(getCommand);
 
   if (!response.Body) {
-    throw new Error('Failed to retrieve file from object storage');
+    throw new Error('Failed to retrieve file from S3');
   }
 
   // Convert stream to buffer

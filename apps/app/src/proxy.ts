@@ -1,5 +1,4 @@
 import { clerkMiddleware } from '@clerk/nextjs/server';
-import type { NextFetchEvent } from 'next/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
@@ -9,7 +8,7 @@ export const config = {
   ],
 };
 
-const clerkProxy = clerkMiddleware(async (auth, request: NextRequest) => {
+async function handleProxy(request: NextRequest) {
   try {
     // E2E Test Mode: Check for test auth header
     if (process.env.E2E_TEST_MODE === 'true') {
@@ -23,13 +22,16 @@ const clerkProxy = clerkMiddleware(async (auth, request: NextRequest) => {
             response.headers.set('x-pathname', request.nextUrl.pathname);
             return response;
           }
-        } catch {
+        } catch (e) {
           // Invalid test auth header, continue with normal auth flow
         }
       }
     }
 
-    const { userId } = await auth();
+    // Check for Clerk session cookies.
+    const sessionToken =
+      request.cookies.get('__session')?.value || request.cookies.get('__Secure-__session')?.value;
+    const hasToken = Boolean(sessionToken);
     const nextUrl = request.nextUrl;
     const requestHeaders = new Headers(request.headers);
 
@@ -59,7 +61,7 @@ const clerkProxy = clerkMiddleware(async (auth, request: NextRequest) => {
     }
 
     // 1. Not authenticated
-    if (!userId && nextUrl.pathname !== '/auth' && nextUrl.pathname !== '/sso-callback') {
+    if (!hasToken && nextUrl.pathname !== '/auth') {
       const url = new URL('/auth', request.url);
       // Preserve existing search params
       nextUrl.searchParams.forEach((value, key) => {
@@ -93,9 +95,6 @@ const clerkProxy = clerkMiddleware(async (auth, request: NextRequest) => {
     console.error('[Proxy] error', err);
     return NextResponse.next();
   }
-});
-
-export async function proxy(request: NextRequest, event?: NextFetchEvent): Promise<NextResponse> {
-  const response = await clerkProxy(request, event as NextFetchEvent);
-  return (response ?? NextResponse.next()) as NextResponse;
 }
+
+export const proxy = clerkMiddleware(async (_auth, request) => handleProxy(request));
