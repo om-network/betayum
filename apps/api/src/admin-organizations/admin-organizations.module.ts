@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
 import { FindingsModule } from '../findings/findings.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { VendorsModule } from '../vendors/vendors.module';
@@ -30,7 +29,6 @@ import { AdminFrameworksController } from './admin-frameworks.controller';
 
 @Module({
   imports: [
-    AuthModule,
     FindingsModule,
     TasksModule,
     VendorsModule,
