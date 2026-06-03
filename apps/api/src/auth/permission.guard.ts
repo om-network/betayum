@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RESTRICTED_ROLES, PRIVILEGED_ROLES } from '@trycompai/auth';
-import { PermissionEvaluatorService } from './permission-evaluator.service';
+import { auth } from './auth.server';
 import { resolveServiceByName } from './service-token.config';
 import { AuthenticatedRequest } from './types';
 
@@ -25,12 +25,12 @@ export interface RequiredPermission {
 export const PERMISSIONS_KEY = 'required_permissions';
 
 /**
- * PermissionGuard - Validates user permissions against Comp AI roles
+ * PermissionGuard - Validates user permissions using better-auth's SDK
  *
  * This guard:
  * 1. Extracts required permissions from route metadata
- * 2. Evaluates built-in and organization custom roles locally
- * 3. For restricted roles (employee/contractor), supports assignment access
+ * 2. Uses better-auth's hasPermission SDK to validate against role definitions
+ * 3. For restricted roles (employee/contractor), also checks assignment access
  *
  * Usage:
  * ```typescript
@@ -43,10 +43,7 @@ export const PERMISSIONS_KEY = 'required_permissions';
 export class PermissionGuard implements CanActivate {
   private readonly logger = new Logger(PermissionGuard.name);
 
-  constructor(
-    private reflector: Reflector,
-    private permissionEvaluator: PermissionEvaluatorService,
-  ) {}
+  constructor(private reflector: Reflector) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Get required permissions from route metadata
@@ -133,11 +130,7 @@ export class PermissionGuard implements CanActivate {
     }
 
     try {
-      const hasPermission = await this.permissionEvaluator.hasPermissions({
-        organizationId: request.organizationId,
-        roles: request.userRoles,
-        permissions: permissionBody,
-      });
+      const hasPermission = await this.checkPermission(request, permissionBody);
 
       if (!hasPermission) {
         this.logger.warn(
@@ -157,6 +150,52 @@ export class PermissionGuard implements CanActivate {
       );
       throw new ForbiddenException('Unable to verify permissions');
     }
+  }
+
+  /**
+   * Check permissions using better-auth's hasPermission SDK.
+   * Forwards both authorization and cookie headers so better-auth
+   * can resolve the user session (and activeOrganizationId), then
+   * checks the required permissions against the role definitions
+   * (including dynamic/custom roles stored in the DB).
+   */
+  private async checkPermission(
+    request: AuthenticatedRequest,
+    permissions: Record<string, string[]>,
+  ): Promise<boolean> {
+    const headers = new Headers();
+
+    const authHeader = request.headers['authorization'] as string;
+    if (authHeader) {
+      headers.set('authorization', authHeader);
+    }
+
+    const cookieHeader = request.headers['cookie'] as string;
+    if (cookieHeader) {
+      headers.set('cookie', cookieHeader);
+    }
+
+    if (!authHeader && !cookieHeader) {
+      return false;
+    }
+
+    // better-auth 1.4.x's `hasPermission` body schema is a discriminated
+    // union that requires BOTH keys present, with the unused side set to
+    // an explicit `undefined`. zod 4 (which better-auth's plugin uses
+    // internally) rejects "key is absent" — only "key is undefined" passes
+    // the `z.undefined()` branch. Without the explicit `permission: undefined`,
+    // the schema rejects every request with `[body] Invalid input`, the
+    // catch in canActivate turns that into a generic "Unable to verify
+    // permissions" 403, and EVERY cookie-authenticated request returns 403.
+    //
+    // Spell the body out via a separate variable so TypeScript's excess-
+    // property check (only applied to fresh object literals) doesn't
+    // reject the extra `permission` key — the runtime accepts the wider
+    // shape per the union schema.
+    const body = { permissions, permission: undefined };
+    const result = await auth.api.hasPermission({ headers, body });
+
+    return result.success === true;
   }
 
   /**

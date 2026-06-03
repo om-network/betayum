@@ -1,23 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockClerkAuth = vi.fn();
-const mockRedirect = vi.fn((path: string) => {
-  throw new Error(`NEXT_REDIRECT:${path}`);
+// Mock auth module
+vi.mock('@/utils/auth', async () => {
+  const { mockAuth } = await import('@/test-utils/mocks/auth');
+  return { auth: mockAuth };
 });
 
-vi.mock('@clerk/nextjs/server', () => ({
-  auth: () => mockClerkAuth(),
-}));
-
-vi.mock('next/navigation', () => ({
-  redirect: (path: string) => mockRedirect(path),
-}));
-
-vi.mock('@db/server', async () => {
+// Mock db module
+vi.mock('@db', async () => {
   const { mockDb } = await import('@/test-utils/mocks/db');
-  return { db: mockDb, Role: { auditor: 'auditor' } };
+  const actual = await vi.importActual<typeof import('@db')>('@db');
+  return { ...actual, db: mockDb };
 });
 
+// Mock dependencies that the layout imports but we don't need to test
 vi.mock('@/app/posthog', () => ({
   getFeatureFlags: vi.fn().mockResolvedValue({}),
 }));
@@ -28,23 +24,17 @@ vi.mock('@/app/s3', () => ({
 vi.mock('@/components/trigger-token-provider', () => ({
   TriggerTokenProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
-
-const mockServerApiGet = vi.fn();
 vi.mock('@/lib/api-server', () => ({
   serverApi: {
-    get: (...args: unknown[]) => mockServerApiGet(...args),
+    get: vi.fn().mockResolvedValue({ data: { organizations: [] }, status: 200 }),
   },
 }));
-
-const mockResolveUserPermissions = vi.fn();
 vi.mock('@/lib/permissions', () => ({
   canAccessApp: vi.fn().mockReturnValue(true),
-  canAccessAuditorView: vi.fn().mockReturnValue(true),
-  parseRolesString: (value: string) => value.split(',').map((role) => role.trim()),
+  parseRolesString: vi.fn().mockReturnValue(['owner']),
 }));
 vi.mock('@/lib/permissions.server', () => ({
-  resolveCustomRolePermissions: vi.fn().mockResolvedValue({}),
-  resolveUserPermissions: (...args: unknown[]) => mockResolveUserPermissions(...args),
+  resolveUserPermissions: vi.fn().mockResolvedValue([]),
 }));
 vi.mock('./components/AppShellWrapper', () => ({
   AppShellWrapper: ({ children }: { children: React.ReactNode }) => children,
@@ -53,117 +43,115 @@ vi.mock('next/dynamic', () => ({
   default: () => () => null,
 }));
 vi.mock('@aws-sdk/client-s3', () => ({ GetObjectCommand: vi.fn() }));
-vi.mock('@/lib/s3-presigner', () => ({ getSignedUrl: vi.fn() }));
-vi.mock('@trycompai/analytics', () => ({
-  OrganizationIdentifier: () => null,
-}));
+vi.mock('@aws-sdk/s3-request-presigner', () => ({ getSignedUrl: vi.fn() }));
 
+import { createMockSession, mockAuthApi, setupAuthMocks } from '@/test-utils/mocks/auth';
 import { mockDb } from '@/test-utils/mocks/db';
 
 const { default: Layout } = await import('./layout');
 
-describe('organization layout Clerk auth path', () => {
+describe('Layout activeOrganizationId sync', () => {
   const requestedOrgId = 'org_requested';
+  const sessionId = 'session_test123';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockClerkAuth.mockResolvedValue({ userId: 'clerk_user_1' });
-    mockResolveUserPermissions.mockResolvedValue({ app: ['read'] });
+
+    // Default: org exists, member exists, onboarding complete
     mockDb.organization.findUnique.mockResolvedValue({
       id: requestedOrgId,
-      name: 'Requested Org',
-      logo: null,
       hasAccess: true,
       onboardingCompleted: true,
     });
+    mockDb.member.findFirst.mockResolvedValue({
+      id: 'member_1',
+      userId: 'user_test123',
+      organizationId: requestedOrgId,
+      role: 'owner',
+      deactivated: false,
+    });
     mockDb.onboarding.findFirst.mockResolvedValue(null);
-    mockServerApiGet.mockResolvedValue({
-      data: {
-        user: {
-          id: 'usr_1',
-          email: 'owner@trycomp.ai',
-          name: 'Owner',
-          image: null,
-          role: 'user',
-        },
-        organizations: [
-          {
-            id: requestedOrgId,
-            name: 'Requested Org',
-            logo: null,
-            onboardingCompleted: true,
-            hasAccess: true,
-            createdAt: '2026-01-01T00:00:00.000Z',
-            memberRole: 'owner',
-            memberId: 'mem_1',
-          },
-        ],
-      },
-      status: 200,
+    mockAuthApi.setActiveOrganization.mockResolvedValue({});
+  });
+
+  it('should call setActiveOrganization via auth API when session org differs from URL org', async () => {
+    setupAuthMocks({
+      session: createMockSession({ id: sessionId, activeOrganizationId: 'org_other' }),
+    });
+
+    await Layout({
+      children: null,
+      params: Promise.resolve({ orgId: requestedOrgId }),
+    });
+
+    expect(mockAuthApi.setActiveOrganization).toHaveBeenCalledWith({
+      headers: expect.anything(),
+      body: { organizationId: requestedOrgId },
     });
   });
 
-  it('redirects signed-out users to Clerk sign-in', async () => {
-    mockClerkAuth.mockResolvedValueOnce({ userId: null });
-
-    await expect(
-      Layout({ children: null, params: Promise.resolve({ orgId: requestedOrgId }) }),
-    ).rejects.toThrow('NEXT_REDIRECT:/auth');
-  });
-
-  it('renders after API validates organization membership', async () => {
-    await expect(
-      Layout({ children: null, params: Promise.resolve({ orgId: requestedOrgId }) }),
-    ).resolves.toBeDefined();
-
-    expect(mockServerApiGet).toHaveBeenCalledWith('/v1/auth/me');
-    expect(mockResolveUserPermissions).toHaveBeenCalledWith('owner', requestedOrgId);
-    expect(mockDb.member.findFirst).not.toHaveBeenCalled();
-  });
-
-  it('rejects users who do not belong to the requested organization', async () => {
-    mockServerApiGet.mockResolvedValueOnce({
-      data: {
-        user: { id: 'usr_1', email: 'owner@trycomp.ai', name: 'Owner' },
-        organizations: [],
-      },
-      status: 200,
+  it('should call setActiveOrganization when activeOrganizationId is null', async () => {
+    setupAuthMocks({
+      session: createMockSession({ id: sessionId, activeOrganizationId: null }),
     });
 
-    await expect(
-      Layout({ children: null, params: Promise.resolve({ orgId: requestedOrgId }) }),
-    ).rejects.toThrow('NEXT_REDIRECT:/auth/unauthorized');
-  });
-
-  it('keeps read-only users on the API-authorized route path', async () => {
-    mockServerApiGet.mockResolvedValueOnce({
-      data: {
-        user: {
-          id: 'usr_1',
-          email: 'auditor@trycomp.ai',
-          name: 'Auditor',
-          image: null,
-          role: 'user',
-        },
-        organizations: [
-          {
-            id: requestedOrgId,
-            name: 'Requested Org',
-            logo: null,
-            onboardingCompleted: true,
-            hasAccess: true,
-            createdAt: '2026-01-01T00:00:00.000Z',
-            memberRole: 'auditor',
-            memberId: 'mem_1',
-          },
-        ],
-      },
-      status: 200,
+    await Layout({
+      children: null,
+      params: Promise.resolve({ orgId: requestedOrgId }),
     });
 
-    await expect(
-      Layout({ children: null, params: Promise.resolve({ orgId: requestedOrgId }) }),
-    ).resolves.toBeDefined();
-    expect(mockResolveUserPermissions).toHaveBeenCalledWith('auditor', requestedOrgId);
+    expect(mockAuthApi.setActiveOrganization).toHaveBeenCalledWith({
+      headers: expect.anything(),
+      body: { organizationId: requestedOrgId },
+    });
+  });
+
+  it('should NOT call setActiveOrganization when session org matches URL org', async () => {
+    setupAuthMocks({
+      session: createMockSession({ id: sessionId, activeOrganizationId: requestedOrgId }),
+    });
+
+    await Layout({
+      children: null,
+      params: Promise.resolve({ orgId: requestedOrgId }),
+    });
+
+    expect(mockAuthApi.setActiveOrganization).not.toHaveBeenCalled();
+  });
+
+  it('should not do a direct DB session update', async () => {
+    setupAuthMocks({
+      session: createMockSession({ id: sessionId, activeOrganizationId: 'org_other' }),
+    });
+
+    await Layout({
+      children: null,
+      params: Promise.resolve({ orgId: requestedOrgId }),
+    });
+
+    expect(mockDb.session.update).not.toHaveBeenCalled();
+  });
+
+  it('should continue rendering even if setActiveOrganization fails', async () => {
+    setupAuthMocks({
+      session: createMockSession({ id: sessionId, activeOrganizationId: 'org_other' }),
+    });
+    mockAuthApi.setActiveOrganization.mockRejectedValue(new Error('API call failed'));
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Should not throw
+    const result = await Layout({
+      children: null,
+      params: Promise.resolve({ orgId: requestedOrgId }),
+    });
+
+    expect(result).toBeDefined();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[Layout] Failed to sync activeOrganizationId:',
+      expect.any(Error),
+    );
+
+    consoleSpy.mockRestore();
   });
 });

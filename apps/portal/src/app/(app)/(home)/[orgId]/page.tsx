@@ -1,11 +1,11 @@
-import { getPortalAuthContext, getPortalOrganization } from '@/app/lib/portal-auth';
+import { auth } from '@/app/lib/auth';
 import { getFleetInstance } from '@/utils/fleet';
-import { hasPortalAccess } from '@/utils/portal-access';
 import type { FleetPolicyResult, Member } from '@db';
 import { db } from '@db/server';
 import { PageHeader, PageLayout } from '@trycompai/design-system';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { hasPortalAccess } from '@/utils/portal-access';
 import { NoAccessMessage } from '../components/NoAccessMessage';
 import { OrganizationDashboard } from './components/OrganizationDashboard';
 import type { FleetPolicy, Host } from './types';
@@ -16,17 +16,17 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
   const { orgId } = await params;
 
   // Auth check with error handling
-  const authContext = await getPortalAuthContext({ headers: await headers() }).catch((error) => {
-    console.error('Error getting session:', error);
-    redirect('/');
-  });
+  const session = await auth.api
+    .getSession({
+      headers: await headers(),
+    })
+    .catch((error) => {
+      console.error('Error getting session:', error);
+      redirect('/');
+    });
 
-  if (!authContext) {
+  if (!session?.user) {
     redirect('/auth');
-  }
-
-  if (!getPortalOrganization(authContext, orgId)) {
-    redirect('/');
   }
 
   // Fetch member with error handling
@@ -35,7 +35,7 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
   try {
     member = await db.member.findFirst({
       where: {
-        userId: authContext.user.id,
+        userId: session.user.id,
         organizationId: orgId,
         deactivated: false,
       },
@@ -132,10 +132,7 @@ const getFleetPolicies = async (
     ];
 
     // Get Policy Results from the database.
-    const fleetPolicyResults = await getFleetPolicyResults({
-      organizationId: member.organizationId,
-      userId: member.userId,
-    });
+    const fleetPolicyResults = await getFleetPolicyResults(member.organizationId);
     return {
       device,
       fleetPolicies: fleetPolicies.map((policy) => {
@@ -170,18 +167,31 @@ const getFleetPolicies = async (
   }
 };
 
-const getFleetPolicyResults = async ({
-  organizationId,
-  userId,
-}: {
-  organizationId: string;
-  userId: string;
-}): Promise<FleetPolicyResult[]> => {
+const getFleetPolicyResults = async (organizationId: string): Promise<FleetPolicyResult[]> => {
   try {
-    return await db.fleetPolicyResult.findMany({
-      where: { organizationId, userId },
-      orderBy: { createdAt: 'desc' },
+    const portalBase = process.env.NEXT_PUBLIC_BETTER_AUTH_URL?.replace(/\/$/, '');
+    const url = `${portalBase}/api/fleet-policy?organizationId=${organizationId}`;
+
+    // Convert ReadonlyHeaders to a plain object for fetch
+    const headersList = await headers();
+    const headersObject: Record<string, string> = {};
+    headersList.forEach((value, key) => {
+      headersObject[key] = value;
     });
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: headersObject,
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      console.error('Failed to fetch fleet policy results', res.status, await res.text());
+      return [];
+    }
+
+    const json = (await res.json()) as { success?: boolean; data?: FleetPolicyResult[] };
+    return json.data ?? [];
   } catch (error) {
     console.error('Error fetching fleet policy results', error);
     return [];

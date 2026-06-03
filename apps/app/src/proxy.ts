@@ -1,4 +1,3 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const config = {
@@ -8,7 +7,7 @@ export const config = {
   ],
 };
 
-async function handleProxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   try {
     // E2E Test Mode: Check for test auth header
     if (process.env.E2E_TEST_MODE === 'true') {
@@ -28,9 +27,13 @@ async function handleProxy(request: NextRequest) {
       }
     }
 
-    // Check for Clerk session cookies.
+    // Check for session cookies across all environment prefixes
     const sessionToken =
-      request.cookies.get('__session')?.value || request.cookies.get('__Secure-__session')?.value;
+      request.cookies.get('__Secure-better-auth.session_token')?.value ||
+      request.cookies.get('better-auth.session_token')?.value ||
+      request.cookies.get('__Secure-staging.session_token')?.value ||
+      request.cookies.get('staging.session_token')?.value ||
+      request.cookies.get('local.session_token')?.value;
     const hasToken = Boolean(sessionToken);
     const nextUrl = request.nextUrl;
     const requestHeaders = new Headers(request.headers);
@@ -96,5 +99,3 @@ async function handleProxy(request: NextRequest) {
     return NextResponse.next();
   }
 }
-
-export const proxy = clerkMiddleware(async (_auth, request) => handleProxy(request));

@@ -1,15 +1,16 @@
+import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
-import { ClerkProvider } from '@clerk/nextjs';
 import { initializeServer } from '@trycompai/analytics/server';
-import { cn } from '@trycompai/design-system';
+import { cn } from '@trycompai/ui/cn';
+import './globals.css';
 import '@trycompai/design-system/globals.css';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import { headers } from 'next/headers';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Suspense } from 'react';
 import { Toaster } from 'sonner';
-import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -81,25 +82,27 @@ if (env.NEXT_PUBLIC_POSTHOG_KEY && env.NEXT_PUBLIC_POSTHOG_HOST) {
 export default async function Layout(props: { children: React.ReactNode }) {
   const { children } = props;
 
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={cn(
-            `${GeistMono.variable} ${font.variable}`,
-            'overscroll-none whitespace-pre-line antialiased',
-          )}
-        >
-          <Suspense>
-            <NuqsAdapter>
-              <Providers>
-                <main>{children}</main>
-              </Providers>
-            </NuqsAdapter>
-          </Suspense>
-          <Toaster richColors />
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={cn(
+          `${GeistMono.variable} ${font.variable}`,
+          'overscroll-none whitespace-pre-line antialiased',
+        )}
+      >
+        <Suspense>
+          <NuqsAdapter>
+            <Providers session={session}>
+              <main>{children}</main>
+            </Providers>
+          </NuqsAdapter>
+        </Suspense>
+        <Toaster richColors />
+      </body>
+    </html>
   );
 }

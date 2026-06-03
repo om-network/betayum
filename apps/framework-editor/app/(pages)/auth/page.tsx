@@ -1,9 +1,10 @@
-import { canAccessFrameworkEditor, getFrameworkEditorUser } from '@/app/lib/framework-auth';
-import { SignIn } from '@clerk/nextjs';
+import { auth } from '@/app/lib/auth';
+import { isInternalUser } from '@/app/lib/utils';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Balancer from 'react-wrap-balancer';
+import { GoogleSignIn } from './google-sign-in';
 import { Unauthorized } from './Unauthorized';
 
 export const metadata: Metadata = {
@@ -11,9 +12,15 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const user = await getFrameworkEditorUser({ headers: await headers() });
-  const hasSession = !!user;
-  const isAllowed = canAccessFrameworkEditor(user);
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const hasSession = !!session?.user;
+  const isAllowed =
+    hasSession &&
+    session.user.role === 'admin' &&
+    isInternalUser(session.user.email);
 
   if (hasSession && !isAllowed) {
     return <Unauthorized />;
@@ -33,11 +40,7 @@ export default async function Page() {
           </Balancer>
 
           <div className="pointer-events-auto mt-6 mb-6 flex flex-col">
-            <SignIn
-              routing="hash"
-              fallbackRedirectUrl="/frameworks"
-              signUpFallbackRedirectUrl="/frameworks"
-            />
+            <GoogleSignIn />
           </div>
 
           <p className="text-muted-foreground text-xs">

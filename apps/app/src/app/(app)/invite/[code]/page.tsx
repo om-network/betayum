@@ -1,7 +1,7 @@
 import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout';
-import { serverApi } from '@/lib/api-server';
-import { auth as clerkAuth } from '@clerk/nextjs/server';
+import { auth } from '@/utils/auth';
 import { db } from '@db/server';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AcceptInvite } from '../../setup/components/accept-invite';
 import { InviteNotMatchCard } from './components/InviteNotMatchCard';
@@ -14,18 +14,11 @@ interface InvitePageProps {
 
 export default async function InvitePage({ params }: InvitePageProps) {
   const { code } = await params;
-  const { userId } = await clerkAuth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  if (!userId) {
-    return redirect(`/auth?inviteCode=${code}`);
-  }
-
-  const meRes = await serverApi.get<{
-    user: { id: string; email: string } | null;
-  }>('/v1/auth/me');
-  const user = meRes.data?.user;
-
-  if (!user) {
+  if (!session) {
     return redirect(`/auth?inviteCode=${code}`);
   }
 
@@ -63,7 +56,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
     // If so, this means they just accepted the invite and we should redirect them
     const membership = await db.member.findFirst({
       where: {
-        userId: user.id,
+        userId: session.user.id,
         organizationId: invitation.organizationId,
         deactivated: false,
       },
@@ -93,12 +86,12 @@ export default async function InvitePage({ params }: InvitePageProps) {
     );
   }
 
-  if (invitation.email.toLowerCase() !== user.email.toLowerCase()) {
+  if (invitation.email !== session.user.email) {
     return (
       <OnboardingLayout variant="setup" currentOrganization={null}>
         <div className="flex min-h-[calc(100dvh-80px)] w-full items-center justify-center p-4">
           <InviteNotMatchCard
-            currentEmail={user.email}
+            currentEmail={session.user.email}
             invitedEmail={maskEmail(invitation.email)}
           />
         </div>

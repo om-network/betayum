@@ -1,10 +1,10 @@
-import { validateMemberAndOrg } from '@/app/api/download-agent/utils';
-import { getPortalAuthContext } from '@/app/lib/portal-auth';
+import { auth } from '@/app/lib/auth';
 import { APP_AWS_ORG_ASSETS_BUCKET, s3Client } from '@/utils/s3';
+import { validateMemberAndOrg } from '@/app/api/download-agent/utils';
 import { DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db/server';
-import { type NextRequest, NextResponse } from 'next/server';
 import { Buffer } from 'node:buffer';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,9 +15,9 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB per image
 const sanitizeFileName = (name: string) => name.replace(/[^a-zA-Z0-9.-]/g, '_');
 
 export async function POST(req: NextRequest) {
-  const authContext = await getPortalAuthContext({ headers: req.headers });
+  const session = await auth.api.getSession({ headers: req.headers });
 
-  if (!authContext) {
+  if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const files = formData.getAll('files');
 
   const policyId = typeof policyIdValue === 'string' ? Number(policyIdValue) : null;
-  const userId = authContext.user.id;
+  const userId = session.user.id;
 
   if (!organizationId) {
     return NextResponse.json({ error: 'No active organization' }, { status: 400 });
@@ -73,10 +73,7 @@ export async function POST(req: NextRequest) {
 
     if (!fileEntry.type.startsWith('image/')) {
       await cleanupPartialUploads();
-      return NextResponse.json(
-        { error: `Only image files are allowed (${fileEntry.name})` },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: `Only image files are allowed (${fileEntry.name})` }, { status: 400 });
     }
 
     const arrayBuffer = await fileEntry.arrayBuffer();
@@ -84,10 +81,7 @@ export async function POST(req: NextRequest) {
 
     if (buffer.length > MAX_FILE_SIZE_BYTES) {
       await cleanupPartialUploads();
-      return NextResponse.json(
-        { error: `Image ${fileEntry.name} must be less than 5MB` },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: `Image ${fileEntry.name} must be less than 5MB` }, { status: 400 });
     }
 
     const timestamp = Date.now();
@@ -105,11 +99,7 @@ export async function POST(req: NextRequest) {
       await s3Client.send(putCommand);
     } catch (error) {
       await cleanupPartialUploads();
-      console.error('Failed to upload policy evidence to S3', {
-        error,
-        policyId,
-        fileName: fileEntry.name,
-      });
+      console.error('Failed to upload policy evidence to S3', { error, policyId, fileName: fileEntry.name });
       return NextResponse.json({ error: 'Failed to upload files' }, { status: 500 });
     }
     uploads.push({ fileName: fileEntry.name, key });
@@ -167,12 +157,7 @@ export async function POST(req: NextRequest) {
     }
   } catch (error) {
     await cleanupPartialUploads();
-    console.error('Failed to save fleet policy result', {
-      error,
-      policyId,
-      organizationId,
-      userId,
-    });
+    console.error('Failed to save fleet policy result', { error, policyId, organizationId, userId });
     return NextResponse.json({ error: 'Failed to save policy result' }, { status: 500 });
   }
 
