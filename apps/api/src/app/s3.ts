@@ -36,39 +36,36 @@ export const APP_AWS_ORG_ASSETS_BUCKET = process.env.APP_AWS_ORG_ASSETS_BUCKET;
 
 let s3ClientInstance: S3Client | null = null;
 
-try {
-  if (
-    !APP_AWS_ACCESS_KEY_ID ||
-    !APP_AWS_SECRET_ACCESS_KEY ||
-    !BUCKET_NAME ||
-    !APP_AWS_REGION
-  ) {
+if (
+  !APP_AWS_ACCESS_KEY_ID ||
+  !APP_AWS_SECRET_ACCESS_KEY ||
+  !BUCKET_NAME ||
+  !APP_AWS_REGION
+) {
+  logger.warn(
+    '[S3] AWS S3 credentials or configuration missing. S3-backed features are disabled.',
+  );
+} else {
+  try {
+    s3ClientInstance = new S3Client({
+      endpoint: APP_AWS_ENDPOINT || undefined,
+      region: APP_AWS_REGION,
+      credentials: {
+        accessKeyId: APP_AWS_ACCESS_KEY_ID,
+        secretAccessKey: APP_AWS_SECRET_ACCESS_KEY,
+      },
+      forcePathStyle: !!APP_AWS_ENDPOINT,
+    });
+  } catch (error) {
     logger.error(
-      '[S3] AWS S3 credentials or configuration missing. Check environment variables.',
+      'FAILED TO INITIALIZE S3 CLIENT',
+      error instanceof Error ? error.stack : error,
     );
-    throw new Error(
-      'AWS S3 credentials or configuration missing. Check environment variables.',
+    s3ClientInstance = null;
+    logger.warn(
+      '[S3] Continuing without an S3 client. File uploads will fail until storage is configured.',
     );
   }
-
-  s3ClientInstance = new S3Client({
-    endpoint: APP_AWS_ENDPOINT || undefined,
-    region: APP_AWS_REGION,
-    credentials: {
-      accessKeyId: APP_AWS_ACCESS_KEY_ID,
-      secretAccessKey: APP_AWS_SECRET_ACCESS_KEY,
-    },
-    forcePathStyle: !!APP_AWS_ENDPOINT,
-  });
-} catch (error) {
-  logger.error(
-    'FAILED TO INITIALIZE S3 CLIENT',
-    error instanceof Error ? error.stack : error,
-  );
-  s3ClientInstance = null;
-  logger.error(
-    '[S3] Creating dummy S3 client - file uploads will fail until credentials are fixed',
-  );
 }
 
 export const s3Client = s3ClientInstance;
