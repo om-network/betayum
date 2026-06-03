@@ -87,22 +87,3 @@ session token and then resolve Comp AI organization context from the database.
 4. Migrate invitation, platform-admin, and device-agent workflows.
 5. Remove Better Auth only after all Clerk-backed slices have landed and the
    retirement issue is ready.
-
-## Platform Admin Support Context
-
-Platform-admin debugging uses a Comp AI support-context model instead of
-switching the browser's primary Clerk identity.
-
-- Start: a platform admin selects a target user and organization in the admin
-  UI. The API verifies the target is an active member, then the app writes a
-  signed cross-subdomain cookie.
-- Enforcement: the API authenticates the real Clerk admin session first, then
-  applies support context only for ordinary customer routes. Request
-  authorization runs as the target member while audit attribution records the
-  admin actor in `impersonatedBy`.
-- Stop: clearing the support-context cookie immediately restores the original
-  admin behavior because the underlying Clerk session never changed.
-- Security limits: only database-backed platform admins may start support
-  context; the cookie is signed with `AUTH_SECRET`; target users must exist,
-  belong to the selected organization, remain active, and cannot cross
-  organization boundaries.

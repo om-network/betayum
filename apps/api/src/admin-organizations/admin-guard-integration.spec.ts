@@ -3,19 +3,25 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ClerkIdentityService } from '../auth/clerk-identity.service';
-import { ClerkSessionService } from '../auth/clerk-session.service';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 
-const mockVerifyRequest = jest.fn();
-const mockResolveMappedUser = jest.fn();
+const mockGetSession = jest.fn();
+const mockFindUnique = jest.fn();
 
-jest.mock('../auth/clerk-identity.service', () => ({
-  ClerkIdentityService: class ClerkIdentityService {},
+jest.mock('../auth/auth.server', () => ({
+  auth: {
+    api: {
+      getSession: (...args: unknown[]) => mockGetSession(...args),
+    },
+  },
 }));
 
-jest.mock('../auth/clerk-session.service', () => ({
-  ClerkSessionService: class ClerkSessionService {},
+jest.mock('@db', () => ({
+  db: {
+    user: {
+      findUnique: (...args: unknown[]) => mockFindUnique(...args),
+    },
+  },
 }));
 
 function buildContext(
@@ -36,18 +42,10 @@ function buildContext(
 
 describe('PlatformAdminGuard — runtime rejection scenarios', () => {
   let guard: PlatformAdminGuard;
-  let clerkSessionService: ClerkSessionService;
-  let clerkIdentityService: ClerkIdentityService;
 
   beforeEach(() => {
+    guard = new PlatformAdminGuard();
     jest.clearAllMocks();
-    clerkSessionService = {
-      verifyRequest: (...args: unknown[]) => mockVerifyRequest(...args),
-    } as unknown as ClerkSessionService;
-    clerkIdentityService = {
-      resolveMappedUser: (...args: unknown[]) => mockResolveMappedUser(...args),
-    } as unknown as ClerkIdentityService;
-    guard = new PlatformAdminGuard(clerkSessionService, clerkIdentityService);
   });
 
   describe('returns 401 for unauthenticated requests', () => {
@@ -63,7 +61,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       await expect(guard.canActivate(ctx)).rejects.toThrow(
         UnauthorizedException,
       );
-      expect(mockVerifyRequest).not.toHaveBeenCalled();
+      expect(mockGetSession).not.toHaveBeenCalled();
     });
 
     it('rejects requests with only x-service-token', async () => {
@@ -71,13 +69,11 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       await expect(guard.canActivate(ctx)).rejects.toThrow(
         UnauthorizedException,
       );
-      expect(mockVerifyRequest).not.toHaveBeenCalled();
+      expect(mockGetSession).not.toHaveBeenCalled();
     });
 
     it('rejects when session cookie is present but session is expired', async () => {
-      mockVerifyRequest.mockRejectedValue(
-        new UnauthorizedException('Invalid or expired Clerk session'),
-      );
+      mockGetSession.mockResolvedValue(null);
       const ctx = buildContext({ cookie: 'session=expired_token' });
       await expect(guard.canActivate(ctx)).rejects.toThrow(
         UnauthorizedException,
@@ -85,7 +81,7 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
     });
 
     it('rejects when bearer token is present but session is invalid', async () => {
-      mockVerifyRequest.mockRejectedValue(new UnauthorizedException('Invalid'));
+      mockGetSession.mockResolvedValue({ user: {} });
       const ctx = buildContext({ authorization: 'Bearer invalid' });
       await expect(guard.canActivate(ctx)).rejects.toThrow(
         UnauthorizedException,
@@ -95,8 +91,8 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
 
   describe('returns 403 for authenticated non-admin users', () => {
     it('rejects a user with role "user"', async () => {
-      mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
-      mockResolveMappedUser.mockResolvedValue({
+      mockGetSession.mockResolvedValue({ user: { id: 'usr_regular' } });
+      mockFindUnique.mockResolvedValue({
         id: 'usr_regular',
         email: 'regular@test.com',
         role: 'user',
@@ -110,8 +106,8 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
     });
 
     it('rejects a user with role null (no role set)', async () => {
-      mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
-      mockResolveMappedUser.mockResolvedValue({
+      mockGetSession.mockResolvedValue({ user: { id: 'usr_norole' } });
+      mockFindUnique.mockResolvedValue({
         id: 'usr_norole',
         email: 'norole@test.com',
         role: null,
@@ -122,8 +118,8 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
     });
 
     it('rejects a user with role "owner" (org role, not platform admin)', async () => {
-      mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
-      mockResolveMappedUser.mockResolvedValue({
+      mockGetSession.mockResolvedValue({ user: { id: 'usr_owner' } });
+      mockFindUnique.mockResolvedValue({
         id: 'usr_owner',
         email: 'owner@test.com',
         role: 'owner',
@@ -134,8 +130,10 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
     });
 
     it('rejects when session claims admin but DB says user', async () => {
-      mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
-      mockResolveMappedUser.mockResolvedValue({
+      mockGetSession.mockResolvedValue({
+        user: { id: 'usr_sneaky', role: 'admin' },
+      });
+      mockFindUnique.mockResolvedValue({
         id: 'usr_sneaky',
         email: 'sneaky@test.com',
         role: 'user',
@@ -143,26 +141,28 @@ describe('PlatformAdminGuard — runtime rejection scenarios', () => {
       const ctx = buildContext({ authorization: 'Bearer valid' });
 
       await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
-      expect(mockResolveMappedUser).toHaveBeenCalledWith('clerk_1');
+      expect(mockFindUnique).toHaveBeenCalledWith({
+        where: { id: 'usr_sneaky' },
+        select: { id: true, email: true, role: true },
+      });
     });
 
     it('rejects a user who was deleted between session check and DB lookup', async () => {
-      mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_1' });
-      mockResolveMappedUser.mockRejectedValue(
-        new UnauthorizedException('User not found'),
-      );
+      mockGetSession.mockResolvedValue({ user: { id: 'usr_deleted' } });
+      mockFindUnique.mockResolvedValue(null);
       const ctx = buildContext({ cookie: 'session=valid' });
 
       await expect(guard.canActivate(ctx)).rejects.toThrow(
         UnauthorizedException,
       );
+      await expect(guard.canActivate(ctx)).rejects.toThrow('User not found');
     });
   });
 
   describe('allows authenticated platform admin', () => {
     it('succeeds and sets request context for role=admin', async () => {
-      mockVerifyRequest.mockResolvedValue({ clerkUserId: 'clerk_admin' });
-      mockResolveMappedUser.mockResolvedValue({
+      mockGetSession.mockResolvedValue({ user: { id: 'usr_admin' } });
+      mockFindUnique.mockResolvedValue({
         id: 'usr_admin',
         email: 'admin@platform.com',
         role: 'admin',
