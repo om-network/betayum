@@ -2,11 +2,11 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  ForbiddenException,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
-import { ClerkIdentityService } from './clerk-identity.service';
-import { ClerkSessionService } from './clerk-session.service';
+import { db } from '@db';
+import { auth } from './auth.server';
 
 interface PlatformAdminRequest {
   userId?: string;
@@ -21,15 +21,19 @@ interface PlatformAdminRequest {
 
 @Injectable()
 export class PlatformAdminGuard implements CanActivate {
-  constructor(
-    private readonly clerkSessionService: ClerkSessionService,
-    private readonly clerkIdentityService: ClerkIdentityService,
-  ) {}
-
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<PlatformAdminRequest>();
+
+    // Build headers for better-auth SDK
+    const headers = new Headers();
     const authHeader = request.headers['authorization'];
+    if (authHeader) {
+      headers.set('authorization', authHeader);
+    }
     const cookieHeader = request.headers['cookie'];
+    if (cookieHeader) {
+      headers.set('cookie', cookieHeader);
+    }
 
     if (!authHeader && !cookieHeader) {
       throw new UnauthorizedException(
@@ -37,13 +41,22 @@ export class PlatformAdminGuard implements CanActivate {
       );
     }
 
-    const session = await this.clerkSessionService.verifyRequest({
-      authorization: authHeader,
-      cookie: cookieHeader,
+    // Resolve session via better-auth SDK
+    const session = await auth.api.getSession({ headers });
+
+    if (!session?.user?.id) {
+      throw new UnauthorizedException('Invalid or expired session');
+    }
+
+    // Verify admin role from the database (better-auth managed field)
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+      },
     });
-    const user = await this.clerkIdentityService.resolveMappedUser(
-      session.clerkUserId,
-    );
 
     if (!user) {
       throw new UnauthorizedException('User not found');

@@ -31,7 +31,6 @@ import { ClerkIdentityService } from './clerk-identity.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
-import { SupportContextService } from './support-context.service';
 import { resolveServiceByToken } from './service-token.config';
 import type { ApiKeyService } from './api-key.service';
 import type { AuthenticatedRequest } from './types';
@@ -77,13 +76,9 @@ describe('HybridAuthGuard with Clerk session auth', () => {
   const clerkSessionService = {
     verifyRequest: jest.fn(),
   } as unknown as ClerkSessionService;
-  const supportContextService = {
-    resolve: jest.fn().mockResolvedValue(null),
-  } as unknown as SupportContextService;
   const clerkRequestAuthService = new ClerkRequestAuthService(
     clerkIdentityService,
     clerkSessionService,
-    supportContextService,
   );
 
   let guard: HybridAuthGuard;
