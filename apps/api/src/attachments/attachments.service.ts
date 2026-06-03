@@ -19,26 +19,25 @@ import { validateFileContent } from '../utils/file-type-validation';
 
 @Injectable()
 export class AttachmentsService {
-  private s3Client: S3Client;
-  private bucketName: string;
+  private s3Client: S3Client | null;
+  private bucketName: string | null;
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
   constructor() {
-    // AWS configuration is validated at startup via ConfigModule
-    // Safe to access environment variables directly since they're validated
-    this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
+    this.bucketName = process.env.APP_AWS_BUCKET_NAME || null;
+    this.s3Client = s3Client;
+  }
 
-    if (!s3Client) {
-      console.error(
-        'S3 Client is not initialized. Check AWS S3 configuration.',
-      );
-      throw new Error(
-        'S3 Client is not initialized. Check AWS S3 configuration.',
+  private assertStorageAvailable(): asserts this is AttachmentsService & {
+    s3Client: S3Client;
+    bucketName: string;
+  } {
+    if (!this.s3Client || !this.bucketName) {
+      throw new InternalServerErrorException(
+        'File storage is not configured. Set APP_AWS_* variables or disable attachment uploads for this environment.',
       );
     }
-
-    this.s3Client = s3Client;
   }
 
   /**
@@ -52,6 +51,8 @@ export class AttachmentsService {
     userId?: string,
   ): Promise<AttachmentResponseDto> {
     try {
+      this.assertStorageAvailable();
+
       // Blocked file extensions for security
       const BLOCKED_EXTENSIONS = [
         'exe',
@@ -266,6 +267,8 @@ export class AttachmentsService {
     attachmentId: string,
   ): Promise<{ downloadUrl: string; expiresIn: number }> {
     try {
+      this.assertStorageAvailable();
+
       // Get attachment record
       const attachment = await db.attachment.findFirst({
         where: {
@@ -312,6 +315,8 @@ export class AttachmentsService {
     attachmentId: string,
   ): Promise<void> {
     try {
+      this.assertStorageAvailable();
+
       // Get attachment record
       const attachment = await db.attachment.findFirst({
         where: {
@@ -356,6 +361,8 @@ export class AttachmentsService {
     destinationKey: string,
   ): Promise<string | null> {
     try {
+      this.assertStorageAvailable();
+
       await this.s3Client.send(
         new CopyObjectCommand({
           Bucket: this.bucketName,
@@ -375,6 +382,8 @@ export class AttachmentsService {
    */
   async deletePolicyVersionPdf(s3Key: string): Promise<void> {
     try {
+      this.assertStorageAvailable();
+
       await this.s3Client.send(
         new DeleteObjectCommand({
           Bucket: this.bucketName,
@@ -390,6 +399,8 @@ export class AttachmentsService {
    * Generate signed URL for file download
    */
   private async generateSignedUrl(s3Key: string): Promise<string> {
+    this.assertStorageAvailable();
+
     const getCommand = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: s3Key,
@@ -408,6 +419,8 @@ export class AttachmentsService {
     entityType: string,
     entityId: string,
   ): Promise<string> {
+    this.assertStorageAvailable();
+
     const fileId = randomBytes(16).toString('hex');
     const sanitizedFileName = this.sanitizeFileName(fileName);
     const timestamp = Date.now();
@@ -431,6 +444,8 @@ export class AttachmentsService {
   }
 
   async getPresignedDownloadUrl(s3Key: string): Promise<string> {
+    this.assertStorageAvailable();
+
     return this.generateSignedUrl(s3Key);
   }
 
@@ -441,6 +456,8 @@ export class AttachmentsService {
     s3Key: string,
     downloadFilename: string,
   ): Promise<string> {
+    this.assertStorageAvailable();
+
     const sanitizedFilename = this.sanitizeHeaderValue(downloadFilename);
     const getCommand = new GetObjectCommand({
       Bucket: this.bucketName,
@@ -457,6 +474,8 @@ export class AttachmentsService {
    * Generate a presigned URL for viewing a PDF inline in the browser
    */
   async getPresignedInlinePdfUrl(s3Key: string): Promise<string> {
+    this.assertStorageAvailable();
+
     const getCommand = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: s3Key,
@@ -477,6 +496,8 @@ export class AttachmentsService {
     buffer: Buffer,
     contentType: string,
   ): Promise<void> {
+    this.assertStorageAvailable();
+
     const putCommand = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: s3Key,
@@ -488,6 +509,8 @@ export class AttachmentsService {
   }
 
   async getObjectBuffer(s3Key: string): Promise<Buffer> {
+    this.assertStorageAvailable();
+
     const getCommand = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: s3Key,

@@ -77,6 +77,14 @@ export class DynamicManifestLoaderService
     ) {
       return true;
     }
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'ECONNREFUSED'
+    ) {
+      return true;
+    }
     if (error instanceof Error) {
       return (
         error.message.includes("Can't reach database server") ||
