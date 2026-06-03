@@ -1,20 +1,23 @@
 'use client';
 
-import { useClerk } from '@clerk/nextjs';
-import { Button } from '@trycompai/design-system';
+import { authClient } from '@/app/lib/auth-client';
+import { Button } from '@trycompai/ui';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export const Unauthorized = () => {
-  const { signOut } = useClerk();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const handleSignOut = async () => {
     setLoading(true);
-    try {
-      await signOut({ redirectUrl: '/auth' });
-    } finally {
-      setLoading(false);
-    }
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          router.push('/auth');
+        },
+      },
+    });
   };
 
   return (

@@ -1,19 +1,23 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
 import { AnalyticsProvider } from '@trycompai/analytics';
+import { Session, User } from 'better-auth';
 import type { ReactNode } from 'react';
 
 type ProviderProps = {
   children: ReactNode;
+  session: {
+    session: Session | null;
+    user: User | null;
+  } | null;
 };
 
-export function Providers({ children }: ProviderProps) {
-  const { user } = useUser();
-  const primaryEmail = user?.primaryEmailAddress?.emailAddress;
-
+export function Providers({ children, session }: ProviderProps) {
   return (
-    <AnalyticsProvider userId={user?.id} userEmail={primaryEmail}>
+    <AnalyticsProvider
+      userId={session?.user?.id ?? undefined}
+      userEmail={session?.user?.email ?? undefined}
+    >
       {children}
     </AnalyticsProvider>
   );

@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { canAccessFrameworkEditor, getFrameworkEditorUser } from './framework-auth';
+import { auth } from './auth';
 
 export function formatEnumValue(value: string | null | undefined): string {
   if (!value) return '';
@@ -9,7 +9,19 @@ export function formatEnumValue(value: string | null | undefined): string {
     .join(' ');
 }
 
+const ALLOWED_DOMAIN = 'trycomp.ai';
+
+export function isInternalUser(email: string): boolean {
+  const parts = email.split('@');
+  return parts.length === 2 && parts[1] === ALLOWED_DOMAIN;
+}
+
 export async function isAuthorized(): Promise<boolean> {
-  const user = await getFrameworkEditorUser({ headers: await headers() });
-  return canAccessFrameworkEditor(user);
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) return false;
+
+  return session.user.role === 'admin' && isInternalUser(session.user.email);
 }

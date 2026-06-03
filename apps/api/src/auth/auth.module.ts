@@ -9,7 +9,6 @@ import { ClerkIdentityService } from './clerk-identity.service';
 import { ClerkRequestAuthService } from './clerk-request-auth.service';
 import { ClerkSessionService } from './clerk-session.service';
 import { HybridAuthGuard } from './hybrid-auth.guard';
-import { PermissionEvaluatorService } from './permission-evaluator.service';
 import { PermissionGuard } from './permission.guard';
 
 @Module({
@@ -36,7 +35,6 @@ import { PermissionGuard } from './permission.guard';
     ClerkRequestAuthService,
     ClerkSessionService,
     HybridAuthGuard,
-    PermissionEvaluatorService,
     PermissionGuard,
     ActingUserResolver,
   ],
@@ -47,7 +45,6 @@ import { PermissionGuard } from './permission.guard';
     ClerkRequestAuthService,
     ClerkSessionService,
     HybridAuthGuard,
-    PermissionEvaluatorService,
     PermissionGuard,
     ActingUserResolver,
     BetterAuthModule,

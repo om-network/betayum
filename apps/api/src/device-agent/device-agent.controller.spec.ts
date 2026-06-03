@@ -21,11 +21,6 @@ jest.mock('@trycompai/auth', () => ({
   BUILT_IN_ROLE_PERMISSIONS: {},
 }));
 
-jest.mock('jose', () => ({
-  createRemoteJWKSet: jest.fn(),
-  jwtVerify: jest.fn(),
-}));
-
 describe('DeviceAgentController', () => {
   let controller: DeviceAgentController;
   let service: jest.Mocked<DeviceAgentService>;

@@ -1,19 +1,23 @@
 'use client';
 
-import { useUser } from '@clerk/nextjs';
 import {
   defaultShouldDehydrateQuery,
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query';
 import { AnalyticsProvider } from '@trycompai/analytics';
-import { Toaster } from '@trycompai/design-system';
+import { Toaster } from '@trycompai/ui/sooner';
+import { Session, User } from 'better-auth';
 import { ThemeProvider } from 'next-themes';
 import type { ReactNode } from 'react';
 import SuperJSON from 'superjson';
 
 type ProviderProps = {
   children: ReactNode;
+  session: {
+    session: Session | null;
+    user: User | null;
+  } | null;
 };
 
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
@@ -55,10 +59,8 @@ export const createQueryClient = () =>
     },
   });
 
-export function Providers({ children }: ProviderProps) {
+export function Providers({ children, session }: ProviderProps) {
   const queryClient = getQueryClient();
-  const { user } = useUser();
-  const primaryEmail = user?.primaryEmailAddress?.emailAddress;
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -68,7 +70,10 @@ export function Providers({ children }: ProviderProps) {
         disableTransitionOnChange
         scriptProps={{ 'data-cfasync': 'false' }}
       >
-        <AnalyticsProvider userId={user?.id} userEmail={primaryEmail}>
+        <AnalyticsProvider
+          userId={session?.user?.id ?? undefined}
+          userEmail={session?.user?.email ?? undefined}
+        >
           {children}
           <Toaster richColors />
         </AnalyticsProvider>

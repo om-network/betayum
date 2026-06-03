@@ -1,4 +1,4 @@
-import { getPortalAuthContext, getPortalOrganization } from '@/app/lib/portal-auth';
+import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
 import { db } from '@db/server';
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
@@ -60,9 +60,9 @@ export default async function PortalSubmissionsPage({
   }
 
   const reqHeaders = await getHeaders();
-  const authContext = await getPortalAuthContext({ headers: reqHeaders });
+  const session = await auth.api.getSession({ headers: reqHeaders });
 
-  if (!authContext || !getPortalOrganization(authContext, orgId)) {
+  if (!session?.user?.id) {
     redirect('/auth');
   }
 
@@ -72,7 +72,6 @@ export default async function PortalSubmissionsPage({
   const apiHeaders = {
     'Content-Type': 'application/json',
     Cookie: cookie,
-    'X-Organization-Id': orgId,
   };
 
   let submissions: SubmissionRow[] = [];

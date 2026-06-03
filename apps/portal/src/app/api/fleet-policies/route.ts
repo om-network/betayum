@@ -1,11 +1,11 @@
-import { FleetPolicy, Host } from '@/app/(app)/(home)/[orgId]/types';
-import { getPortalAuthContext } from '@/app/lib/portal-auth';
-import { getFleetInstance } from '@/utils/fleet';
-import { APP_AWS_ORG_ASSETS_BUCKET, getSignedUrl, s3Client } from '@/utils/s3';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { db } from '@db/server';
-import { NextRequest, NextResponse } from 'next/server';
-import { validateMemberAndOrg } from '../download-agent/utils';
+import { auth } from "@/app/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@db/server";
+import { validateMemberAndOrg } from "../download-agent/utils";
+import { getFleetInstance } from "@/utils/fleet";
+import { FleetPolicy, Host } from "@/app/(app)/(home)/[orgId]/types";
+import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from "@/utils/s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 const MDM_POLICY_ID = -9999;
 
@@ -14,9 +14,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    const authContext = await getPortalAuthContext({ headers: req.headers });
+    const session = await auth.api.getSession({ headers: req.headers });
 
-    if (!authContext) {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
     }
 
-    const member = await validateMemberAndOrg(authContext.user.id, organizationId);
+    const member = await validateMemberAndOrg(session.user.id, organizationId);
     if (!member) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
 
     // Get Policy Results from the database.
     const results = await db.fleetPolicyResult.findMany({
-      where: { organizationId, userId: authContext.user.id },
+      where: { organizationId, userId: session.user.id },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -91,28 +91,23 @@ export async function GET(req: NextRequest) {
             }
           }),
         );
-
+  
         return {
           ...result,
           attachments: signedAttachments,
         };
       }),
     );
-
+    
     return NextResponse.json({
       device,
       fleetPolicies: fleetPolicies.map((policy) => {
-        const policyResult = fleetPolicyResults.find(
-          (result) => result.fleetPolicyId === policy.id,
-        );
+        const policyResult = fleetPolicyResults.find((result) => result.fleetPolicyId === policy.id);
         return {
           ...policy,
-          response:
-            policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass'
-              ? 'pass'
-              : 'fail',
+          response: policy.response === 'pass' || policyResult?.fleetPolicyResponse === 'pass' ? 'pass' : 'fail',
           attachments: policyResult?.attachments || [],
-        };
+        }
       }),
     });
   } catch (error) {

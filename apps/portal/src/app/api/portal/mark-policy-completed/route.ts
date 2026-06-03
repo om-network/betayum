@@ -1,4 +1,4 @@
-import { getPortalAuthContext } from '@/app/lib/portal-auth';
+import { auth } from '@/app/lib/auth';
 import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -11,9 +11,9 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const authContext = await getPortalAuthContext({ headers: req.headers });
+  const session = await auth.api.getSession({ headers: req.headers });
 
-  if (!authContext) {
+  if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   const member = await db.member.findFirst({
     where: {
-      userId: authContext.user.id,
+      userId: session.user.id,
       deactivated: false,
     },
   });

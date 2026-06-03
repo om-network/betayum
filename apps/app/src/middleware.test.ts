@@ -15,22 +15,8 @@ vi.mock('next/headers', () => ({
   ),
 }));
 
-vi.mock('@clerk/nextjs/server', () => ({
-  clerkMiddleware:
-    (handler: (auth: unknown, request: Request) => Promise<Response>) => (request: Request) =>
-      handler({}, request),
-}));
-
 // Import proxy after mocks are set up
 const { proxy } = await import('./proxy');
-
-async function runProxy(request: Parameters<typeof proxy>[0]): Promise<Response> {
-  const response = await proxy(request, {} as Parameters<typeof proxy>[1]);
-  if (!response) {
-    throw new Error('Proxy returned no response');
-  }
-  return response;
-}
 
 describe('Middleware', () => {
   beforeEach(() => {
@@ -43,7 +29,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(307);
@@ -61,20 +47,9 @@ describe('Middleware', () => {
       });
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert
-      expect(response.status).toBe(200);
-      expect(response.headers.get('x-pathname')).toBe('/org_123/dashboard');
-    });
-
-    it('should allow Clerk-authenticated users to access their org', async () => {
-      const request = await createMockRequest('/org_123/dashboard', {
-        headers: { cookie: '__session=mock_clerk_session' },
-      });
-
-      const response = await runProxy(request);
-
       expect(response.status).toBe(200);
       expect(response.headers.get('x-pathname')).toBe('/org_123/dashboard');
     });
@@ -88,7 +63,7 @@ describe('Middleware', () => {
       });
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200);
@@ -104,7 +79,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/', { authenticated: true });
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert - root path is not an org route, no membership check
       expect(response.status).toBe(200);
@@ -120,7 +95,7 @@ describe('Middleware', () => {
       });
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200);
@@ -138,7 +113,7 @@ describe('Middleware', () => {
         const request = await createMockRequest(route, { authenticated: true });
 
         // Act
-        const response = await runProxy(request);
+        const response = await proxy(request);
 
         // Assert
         expect(response.status).toBe(200);
@@ -150,7 +125,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/invite/abc123');
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200);
@@ -161,7 +136,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/unsubscribe/abc123');
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200);
@@ -178,7 +153,7 @@ describe('Middleware', () => {
       });
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200);
@@ -189,7 +164,7 @@ describe('Middleware', () => {
       const request = await createMockRequest('/org_123/dashboard');
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(307);
@@ -205,7 +180,7 @@ describe('Middleware', () => {
       });
 
       // Act
-      const response = await runProxy(request);
+      const response = await proxy(request);
 
       // Assert
       expect(response.status).toBe(200);
@@ -228,7 +203,7 @@ describe('Middleware', () => {
         const request = await createMockRequest(path, { authenticated: true });
 
         // Act
-        const response = await runProxy(request);
+        const response = await proxy(request);
 
         // Assert - should not crash
         expect(response.status).not.toBe(500);
