@@ -5,14 +5,14 @@
  * This is used to merge device-agent devices (priority) with FleetDM devices,
  * ensuring no duplicates appear when a device is tracked by both systems.
  */
-export function mergeDeviceLists<T>(
-  priorityDevices: T[],
-  secondaryDevices: T[],
+export function mergeDeviceLists(
+  priorityDevices: any,
+  secondaryDevices: any,
   accessors: {
-    getSerialNumber: (device: T) => string | null | undefined;
-    getHostname: (device: T) => string | null | undefined;
+    getSerialNumber: (device: any) => string | null | undefined;
+    getHostname: (device: any) => string | null | undefined;
   },
-): T[] {
+) {
   const knownSerials = new Set<string>();
   const knownHostnames = new Set<string>();
 
@@ -23,7 +23,7 @@ export function mergeDeviceLists<T>(
     if (hostname) knownHostnames.add(hostname.toLowerCase());
   }
 
-  const uniqueSecondaryDevices = secondaryDevices.filter((device) => {
+  const uniqueSecondaryDevices = secondaryDevices.filter((device: any) => {
     const serial = accessors.getSerialNumber(device);
     const hostname = accessors.getHostname(device);
     if (serial && knownSerials.has(serial.toLowerCase())) return false;

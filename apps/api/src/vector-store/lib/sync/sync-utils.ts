@@ -1,3 +1,4 @@
+import { APP_AWS_KNOWLEDGE_BASE_BUCKET, createStorageClient } from '@/app/s3';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { extractContentFromFile } from '@/trigger/vector-store/helpers/extract-content-from-file';
 import { vectorIndex } from '../core/client';
@@ -39,23 +40,7 @@ export interface ChunkItem {
  * Creates an S3 client instance for Knowledge Base document processing
  */
 export function createKnowledgeBaseS3Client(): S3Client {
-  const region = process.env.APP_AWS_REGION || 'us-east-1';
-  const accessKeyId = process.env.APP_AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.APP_AWS_SECRET_ACCESS_KEY;
-
-  if (!accessKeyId || !secretAccessKey) {
-    throw new Error(
-      'AWS S3 credentials are missing. Please set APP_AWS_ACCESS_KEY_ID and APP_AWS_SECRET_ACCESS_KEY environment variables.',
-    );
-  }
-
-  return new S3Client({
-    region,
-    credentials: {
-      accessKeyId,
-      secretAccessKey,
-    },
-  });
+  return createStorageClient();
 }
 
 /**
@@ -65,11 +50,11 @@ export async function extractContentFromS3Document(
   s3Key: string,
   fileType: string,
 ): Promise<string> {
-  const knowledgeBaseBucket = process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET;
+  const knowledgeBaseBucket = APP_AWS_KNOWLEDGE_BASE_BUCKET;
 
   if (!knowledgeBaseBucket) {
     throw new Error(
-      'Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable.',
+      'Knowledge base bucket is not configured. Set APP_GCP_KNOWLEDGE_BASE_BUCKET or APP_AWS_KNOWLEDGE_BASE_BUCKET.',
     );
   }
 

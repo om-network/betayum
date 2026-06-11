@@ -31,6 +31,14 @@ describe('DeviceAgentController', () => {
     getUpdateFile: jest.fn(),
     headUpdateFile: jest.fn(),
   };
+  const mockAuthService = {
+    consumeCodeForState: jest.fn(),
+    exchangeCode: jest.fn(),
+    generateAuthCode: jest.fn(),
+    getMyOrganizations: jest.fn(),
+    registerDevice: jest.fn(),
+    checkIn: jest.fn(),
+  };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
@@ -54,7 +62,7 @@ describe('DeviceAgentController', () => {
       controllers: [DeviceAgentController],
       providers: [
         { provide: DeviceAgentService, useValue: mockService },
-        { provide: DeviceAgentAuthService, useValue: {} },
+        { provide: DeviceAgentAuthService, useValue: mockAuthService },
       ],
     })
       .overrideGuard(HybridAuthGuard)
@@ -208,6 +216,19 @@ describe('DeviceAgentController', () => {
         }),
       );
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('pollAuthCode', () => {
+    it('returns the queued auth code for a state', async () => {
+      mockAuthService.consumeCodeForState.mockResolvedValue('code-abc');
+
+      await expect(controller.pollAuthCode('state-abc')).resolves.toEqual({
+        code: 'code-abc',
+      });
+      expect(mockAuthService.consumeCodeForState).toHaveBeenCalledWith({
+        state: 'state-abc',
+      });
     });
   });
 

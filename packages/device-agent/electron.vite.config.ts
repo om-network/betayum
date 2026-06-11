@@ -6,19 +6,24 @@ import { resolve } from 'node:path';
 
 const require = createRequire(import.meta.url);
 const pkg = require('./package.json');
+const { resolveBuildEnv } = require('./build-env.js');
+const buildEnv = resolveBuildEnv();
 
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin({ exclude: ['electron-store'] })],
     define: {
       __PORTAL_URL__: JSON.stringify(
-        process.env.PORTAL_URL || 'https://portal.trycomp.ai',
+        buildEnv.portalUrl,
       ),
       __API_URL__: JSON.stringify(
-        process.env.API_URL || 'https://api.trycomp.ai',
+        buildEnv.apiUrl,
       ),
       __AGENT_VERSION__: JSON.stringify(
-        process.env.AGENT_VERSION || pkg.version,
+        buildEnv.agentVersion || pkg.version,
+      ),
+      __AUTO_UPDATE_URL__: JSON.stringify(
+        buildEnv.autoUpdateUrl,
       ),
     },
     build: {

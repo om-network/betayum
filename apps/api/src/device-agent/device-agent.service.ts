@@ -5,11 +5,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import {
-  S3Client,
   GetObjectCommand,
   HeadObjectCommand,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@/app/s3';
+import { BUCKET_NAME, createStorageClient, getSignedUrl } from '@/app/s3';
 import { Readable } from 'stream';
 
 const S3_ENV = process.env.DEVICE_AGENT_S3_ENV || 'production';
@@ -67,19 +66,12 @@ function isValidFilename(filename: string): boolean {
 @Injectable()
 export class DeviceAgentService {
   private readonly logger = new Logger(DeviceAgentService.name);
-  private s3Client: S3Client;
+  private s3Client = createStorageClient();
   private fleetBucketName: string;
 
   constructor() {
     this.fleetBucketName =
-      process.env.FLEET_AGENT_BUCKET_NAME || process.env.APP_AWS_BUCKET_NAME!;
-    this.s3Client = new S3Client({
-      region: process.env.APP_AWS_REGION || 'us-east-1',
-      credentials: {
-        accessKeyId: process.env.APP_AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.APP_AWS_SECRET_ACCESS_KEY!,
-      },
-    });
+      process.env.FLEET_AGENT_BUCKET_NAME || BUCKET_NAME || '';
   }
 
   async downloadMacAgent(): Promise<{

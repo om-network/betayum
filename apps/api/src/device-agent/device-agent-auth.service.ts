@@ -58,8 +58,17 @@ export class DeviceAgentAuthService {
       },
       { ex: 120 },
     );
+    await deviceAgentRedisClient.set(`device-auth-state:${state}`, code, {
+      ex: 120,
+    });
 
     return { code };
+  }
+
+  async consumeCodeForState({ state }: { state: string }) {
+    return await deviceAgentRedisClient.getdel<string>(
+      `device-auth-state:${state}`,
+    );
   }
 
   async exchangeCode({ code }: { code: string }) {

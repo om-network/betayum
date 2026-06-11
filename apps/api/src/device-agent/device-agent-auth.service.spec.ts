@@ -86,12 +86,19 @@ describe('DeviceAgentAuthService', () => {
       });
 
       expect(result.code).toHaveLength(64); // 32 bytes hex
-      expect(mockKv.set).toHaveBeenCalledWith(
+      expect(mockKv.set).toHaveBeenNthCalledWith(
+        1,
         expect.stringMatching(/^device-auth:/),
         expect.objectContaining({
           userId: 'user-1',
           state: 'test-state',
         }),
+        { ex: 120 },
+      );
+      expect(mockKv.set).toHaveBeenNthCalledWith(
+        2,
+        'device-auth-state:test-state',
+        result.code,
         { ex: 120 },
       );
     });
@@ -158,6 +165,19 @@ describe('DeviceAgentAuthService', () => {
       await expect(
         service.exchangeCode({ code: 'code-xyz' }),
       ).rejects.toThrow(helperError);
+    });
+  });
+
+  describe('consumeCodeForState', () => {
+    it('returns and consumes the auth code keyed by state', async () => {
+      (mockKv.getdel as jest.Mock).mockResolvedValueOnce('code-abc');
+
+      const result = await service.consumeCodeForState({ state: 'state-abc' });
+
+      expect(result).toBe('code-abc');
+      expect(mockKv.getdel).toHaveBeenCalledWith(
+        'device-auth-state:state-abc',
+      );
     });
   });
 

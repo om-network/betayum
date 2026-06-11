@@ -50,12 +50,13 @@ export async function POST(req: NextRequest) {
   if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
     return NextResponse.json({ error: 'File upload service is not available' }, { status: 500 });
   }
+  const client = s3Client;
 
   const uploads: Array<{ fileName: string; key: string }> = [];
   const cleanupPartialUploads = async () => {
     if (uploads.length === 0) return;
     try {
-      await s3Client.send(
+      await client.send(
         new DeleteObjectsCommand({
           Bucket: APP_AWS_ORG_ASSETS_BUCKET,
           Delete: {
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
     });
 
     try {
-      await s3Client.send(putCommand);
+      await client.send(putCommand);
     } catch (error) {
       await cleanupPartialUploads();
       console.error('Failed to upload policy evidence to S3', { error, policyId, fileName: fileEntry.name });
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
 
       if (previousKeys.length > 0) {
         try {
-          await s3Client.send(
+          await client.send(
             new DeleteObjectsCommand({
               Bucket: APP_AWS_ORG_ASSETS_BUCKET,
               Delete: {

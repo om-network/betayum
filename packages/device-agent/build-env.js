@@ -1,0 +1,94 @@
+const { existsSync, readFileSync } = require('node:fs');
+const { resolve } = require('node:path');
+const dotenv = require('dotenv');
+
+const envFiles = [
+  resolve(__dirname, '.env.local'),
+  resolve(__dirname, '.env'),
+  resolve(__dirname, '../../.env.local'),
+  resolve(__dirname, '../../.env'),
+  resolve(__dirname, '../../apps/portal/.env.local'),
+  resolve(__dirname, '../../apps/portal/.env'),
+  resolve(__dirname, '../../apps/app/.env.local'),
+  resolve(__dirname, '../../apps/app/.env'),
+  resolve(__dirname, '../../apps/api/.env.local'),
+  resolve(__dirname, '../../apps/api/.env'),
+];
+
+function loadEnvFromFiles() {
+  const loaded = {};
+
+  for (const envFile of envFiles) {
+    if (!existsSync(envFile)) {
+      continue;
+    }
+
+    const parsed = dotenv.parse(readFileSync(envFile));
+    Object.assign(loaded, parsed);
+  }
+
+  return loaded;
+}
+
+const fileEnv = loadEnvFromFiles();
+
+function firstDefined(...values) {
+  for (const value of values) {
+    if (typeof value !== 'string') {
+      continue;
+    }
+
+    const trimmedValue = value.trim();
+    if (trimmedValue.length > 0) {
+      return trimmedValue;
+    }
+  }
+
+  return undefined;
+}
+
+function resolveBuildEnv() {
+  const portalUrl = firstDefined(
+    process.env.PORTAL_URL,
+    process.env.NEXT_PUBLIC_PORTAL_URL,
+    process.env.BETTER_AUTH_URL,
+    fileEnv.PORTAL_URL,
+    fileEnv.NEXT_PUBLIC_PORTAL_URL,
+    fileEnv.BETTER_AUTH_URL,
+    'https://portal.trycomp.ai',
+  );
+
+  const apiUrl = firstDefined(
+    process.env.API_URL,
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.BACKEND_API_URL,
+    process.env.BASE_URL,
+    fileEnv.API_URL,
+    fileEnv.NEXT_PUBLIC_API_URL,
+    fileEnv.BACKEND_API_URL,
+    fileEnv.BASE_URL,
+    'https://api.trycomp.ai',
+  );
+
+  const autoUpdateUrl = firstDefined(
+    process.env.AUTO_UPDATE_URL,
+    fileEnv.AUTO_UPDATE_URL,
+    `${portalUrl}/api/device-agent/updates`,
+  );
+
+  const agentVersion = firstDefined(
+    process.env.AGENT_VERSION,
+    fileEnv.AGENT_VERSION,
+  );
+
+  return {
+    portalUrl,
+    apiUrl,
+    autoUpdateUrl,
+    agentVersion,
+  };
+}
+
+module.exports = {
+  resolveBuildEnv,
+};
