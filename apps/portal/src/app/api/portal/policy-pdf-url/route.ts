@@ -68,6 +68,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'No PDF found.' });
     }
 
+    if (!s3Client || !BUCKET_NAME) {
+      return NextResponse.json(
+        { success: false, error: 'File storage is not configured.' },
+        { status: 500 },
+      );
+    }
+
     const command = new GetObjectCommand({
       Bucket: BUCKET_NAME,
       Key: pdfUrl,

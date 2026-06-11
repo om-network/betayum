@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -59,6 +60,21 @@ export class DeviceAgentController {
   @ApiOperation({ summary: 'Exchange an auth code for device credentials' })
   async exchangeCode(@Body() dto: ExchangeCodeDto) {
     return this.deviceAgentAuthService.exchangeCode({ code: dto.code });
+  }
+
+  @Get('poll-auth-code')
+  @Public()
+  @ApiOperation({ summary: 'Poll for a device-agent auth code by state' })
+  async pollAuthCode(@Query('state') state?: string) {
+    if (!state) {
+      throw new BadRequestException('state is required');
+    }
+
+    const code = await this.deviceAgentAuthService.consumeCodeForState({
+      state,
+    });
+
+    return { code };
   }
 
   @Get('updates/:filename')

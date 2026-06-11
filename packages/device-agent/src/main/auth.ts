@@ -14,6 +14,7 @@ import { clearAuth, getApiUrl, getPortalUrl, setAuth } from './store';
 
 /** How long to wait for the user to complete login in the browser */
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const POLL_INTERVAL_MS = 1000;
 
 /**
  * Opens the system browser for login, receives an auth code via localhost callback,
@@ -32,13 +33,17 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
     server = serverInstance;
 
     // Open the portal auth page in the system browser
-    const authUrl = `${portalUrl}/auth?device_auth=true&callback_port=${port}&state=${state}`;
+    const authUrl = `${portalUrl}/auth?device_auth=true&callback_port=${port}&state=${state}&transport=poll`;
     log(`Opening system browser for login: ${authUrl}`);
     await shell.openExternal(authUrl);
 
-    // Wait for the auth code from the browser redirect
-    log('Waiting for auth callback from browser...');
-    const code = await codePromise;
+    // Wait for the auth code from either the browser redirect callback
+    // or the state-based polling transport.
+    log('Waiting for auth callback from browser or polling transport...');
+    const code = await Promise.race([
+      codePromise,
+      pollForAuthCode({ apiUrl, state }),
+    ]);
 
     if (!code) {
       log('Login timed out or was cancelled', 'WARN');
@@ -95,6 +100,44 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
       log('Callback server shut down');
     }
   }
+}
+
+export async function pollForAuthCode({
+  apiUrl,
+  state,
+}: {
+  apiUrl: string;
+  state: string;
+}): Promise<string | null> {
+  const deadline = Date.now() + LOGIN_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(
+        `${apiUrl}/v1/device-agent/poll-auth-code?state=${encodeURIComponent(state)}`,
+        {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+
+      if (!response.ok) {
+        log(`Polling auth code failed: ${response.status}`, 'WARN');
+      } else {
+        const data = (await response.json()) as { code?: string | null };
+        if (typeof data.code === 'string' && data.code.length > 0) {
+          log('Received auth code via polling transport');
+          return data.code;
+        }
+      }
+    } catch (error) {
+      log(`Polling auth code transport failed: ${error}`, 'WARN');
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+
+  return null;
 }
 
 /**

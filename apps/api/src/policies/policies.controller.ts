@@ -33,6 +33,7 @@ import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 import { db } from '@db';
 import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
 import type { updatePolicy } from '../trigger/policies/update-policy';
+import { BUCKET_NAME, createStorageClient, getSignedUrl } from '../app/s3';
 import { AuditRead } from '../audit/skip-audit-log.decorator';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
@@ -487,15 +488,14 @@ export class PoliciesController {
     }
 
     // Generate signed URL
-    const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const { getSignedUrl } = await import('../app/s3.js');
-    const bucketName = process.env.APP_AWS_BUCKET_NAME;
+    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+    const bucketName = BUCKET_NAME;
 
     if (!bucketName) {
       return { url: null };
     }
 
-    const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+    const s3 = createStorageClient();
     const command = new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl });
     const url = await getSignedUrl(s3, command, { expiresIn: 900 });
 
@@ -527,13 +527,13 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const { S3Client, PutObjectCommand, DeleteObjectCommand } =
+    const { PutObjectCommand, DeleteObjectCommand } =
       await import('@aws-sdk/client-s3');
-    const bucketName = process.env.APP_AWS_BUCKET_NAME;
+    const bucketName = BUCKET_NAME;
     if (!bucketName)
       throw new BadRequestException('File storage is not configured');
 
-    const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+    const s3 = createStorageClient();
 
     const policy = await db.policy.findFirst({
       where: { id, organizationId, archivedAt: null },
@@ -635,13 +635,12 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
     @Query('versionId') versionId?: string,
   ) {
-    const { S3Client, DeleteObjectCommand } =
-      await import('@aws-sdk/client-s3');
-    const bucketName = process.env.APP_AWS_BUCKET_NAME;
+    const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
+    const bucketName = BUCKET_NAME;
     if (!bucketName)
       throw new BadRequestException('File storage is not configured');
 
-    const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+    const s3 = createStorageClient();
 
     if (versionId) {
       const version = await db.policyVersion.findFirst({
@@ -724,12 +723,11 @@ export class PoliciesController {
     }
     if (!pdfUrl) return { url: null };
 
-    const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const { getSignedUrl } = await import('../app/s3.js');
-    const bucketName = process.env.APP_AWS_BUCKET_NAME;
+    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+    const bucketName = BUCKET_NAME;
     if (!bucketName) return { url: null };
 
-    const s3 = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+    const s3 = createStorageClient();
     const url = await getSignedUrl(
       s3,
       new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl }),

@@ -25,6 +25,8 @@ import {
   updateTrayMenu,
 } from './tray';
 
+declare const __AUTO_UPDATE_URL__: string;
+
 // --- Linux Wayland/Ozone support ---
 if (process.platform === 'linux') {
   app.commandLine.appendSwitch('ozone-platform-auto');
@@ -256,7 +258,7 @@ function isNewerVersion(remote: string, local: string): boolean {
 async function checkForManualUpdate(): Promise<void> {
   try {
     const updateUrl =
-      process.env.AUTO_UPDATE_URL || 'https://portal.trycomp.ai/api/device-agent/updates';
+      process.env.AUTO_UPDATE_URL || __AUTO_UPDATE_URL__;
     const ymlUrl = `${updateUrl}/latest-linux.yml`;
 
     log(`Manual update check: fetching ${ymlUrl}`);

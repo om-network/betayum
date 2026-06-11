@@ -4,7 +4,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl, s3Client } from '@/app/s3';
+import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
 import { AttachmentEntityType, AttachmentType } from '@db';
 import {
   BadRequestException,
@@ -19,13 +19,13 @@ import { validateFileContent } from '../utils/file-type-validation';
 
 @Injectable()
 export class AttachmentsService {
-  private s3Client: S3Client | null;
-  private bucketName: string | null;
+  s3Client: S3Client | null;
+  bucketName: string | null;
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
   constructor() {
-    this.bucketName = process.env.APP_AWS_BUCKET_NAME || null;
+    this.bucketName = BUCKET_NAME || null;
     this.s3Client = s3Client;
   }
 
@@ -35,7 +35,7 @@ export class AttachmentsService {
   } {
     if (!this.s3Client || !this.bucketName) {
       throw new InternalServerErrorException(
-        'File storage is not configured. Set APP_AWS_* variables or disable attachment uploads for this environment.',
+        'File storage is not configured. Set APP_GCP_* variables (preferred) or APP_AWS_* legacy variables, or disable attachment uploads for this environment.',
       );
     }
   }
