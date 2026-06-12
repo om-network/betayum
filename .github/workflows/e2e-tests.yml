@@ -94,6 +94,7 @@ jobs:
         run: |
           cd packages/db
           bunx prisma migrate deploy
+          # Seed data is optional for these E2E specs; migrations are the blocking database check.
           bunx prisma db seed || true # Allow seed to fail
 
       - name: Generate Prisma client
@@ -163,10 +164,12 @@ jobs:
 
           # Check Playwright's own cache directory
           echo "Playwright cache home:"
+          # Diagnostic output only; cache-help availability should not affect E2E validation.
           cd apps/app && bunx playwright install --help | grep -i cache || true
 
           # Show disk usage
           echo "Disk usage of cache directories:"
+          # Diagnostic output only; missing cache directories are acceptable before browser install.
           du -sh ~/.cache/ms-playwright 2>/dev/null || true
           du -sh ~/Library/Caches/ms-playwright 2>/dev/null || true
 
@@ -331,6 +334,7 @@ jobs:
               echo "" >> $GITHUB_STEP_SUMMARY
               
               # List failed tests
+              # Reporting-only summary; preserve the actual Playwright exit status from the test step.
               jq -r '.suites[] | .specs[] | select(.ok == false) | "- **\(.title)** in `\(.file)`"' test-results/results.json 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
               echo "" >> $GITHUB_STEP_SUMMARY
             fi

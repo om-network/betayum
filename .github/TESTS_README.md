@@ -2,10 +2,9 @@
 
 ## Workflow Status
 
-[![Quick Tests](https://github.com/trycompai/comp/actions/workflows/test-quick.yml/badge.svg)](https://github.com/trycompai/comp/actions/workflows/test-quick.yml)
-[![Unit Tests](https://github.com/trycompai/comp/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/trycompai/comp/actions/workflows/unit-tests.yml)
-[![E2E Tests](https://github.com/trycompai/comp/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/trycompai/comp/actions/workflows/e2e-tests.yml)
-[![Release Tests](https://github.com/trycompai/comp/actions/workflows/release-tests.yml/badge.svg)](https://github.com/trycompai/comp/actions/workflows/release-tests.yml)
+[![Quick Tests](https://github.com/om-network/betayum/actions/workflows/quick-tests.yml/badge.svg)](https://github.com/om-network/betayum/actions/workflows/quick-tests.yml)
+[![Unit Tests](https://github.com/om-network/betayum/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/om-network/betayum/actions/workflows/unit-tests.yml)
+[![E2E Tests](https://github.com/om-network/betayum/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/om-network/betayum/actions/workflows/e2e-tests.yml)
 
 ## Workflow Overview
 
@@ -16,10 +15,9 @@
 
 | Workflow                                                              | Trigger          | When            | Purpose                  | Duration |
 | --------------------------------------------------------------------- | ---------------- | --------------- | ------------------------ | -------- |
-| [Quick Tests](workflows/test-quick.yml)                               | All PRs          | Before merge    | Fast smoke tests         | ~5 min   |
+| [Quick Tests](workflows/quick-tests.yml)                              | All PRs          | Before merge    | Fast smoke tests         | ~5 min   |
 | [Unit Tests](workflows/unit-tests.yml)                                | All PRs          | Before merge    | Component & logic tests  | ~10 min  |
 | [E2E Tests](workflows/e2e-tests.yml)                                  | All PRs          | Before merge    | Browser automation tests | ~20 min  |
-| [Release Tests](workflows/release-tests.yml)                          | main→release PRs | Before merge    | Production readiness     | ~45 min  |
 | [Database Migrations Dev](workflows/database-migrations-main.yml)     | Push to main     | **After merge** | Apply migrations to dev  | ~2 min   |
 | [Database Migrations Prod](workflows/database-migrations-release.yml) | Push to release  | **After merge** | Apply migrations to prod | ~2 min   |
 | [Release](workflows/release.yml)                                      | Push to release  | **After merge** | Semantic versioning      | ~5 min   |
@@ -62,10 +60,9 @@ See [BRANCH_PROTECTION.md](BRANCH_PROTECTION.md) for setup instructions.
 ## Workflow Files
 
 - **Testing**
-  - `test-quick.yml` - Type checking, linting, smoke tests
+  - `quick-tests.yml` - Quick smoke tests
   - `unit-tests.yml` - Vitest tests for all apps
   - `e2e-tests.yml` - Playwright tests (multi-browser)
-  - `release-tests.yml` - Production validation suite
 
 - **Deployment**
   - `database-migrations-main.yml` - Auto-migrate dev database

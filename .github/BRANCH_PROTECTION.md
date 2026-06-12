@@ -17,8 +17,7 @@ Go to **Settings → Branches** in your GitHub repository and add a branch prote
 
 1. **Quick Checks** (Quick Tests)
    - Fast smoke tests that run on every PR
-   - Includes type checking, linting, and critical middleware tests
-   - Should complete in < 5 minutes
+   - Runs critical middleware and core library tests
 
 2. **Unit Tests** (Unit Tests / app)
    - Vitest unit tests for the main app
@@ -122,10 +121,9 @@ Protect matching branches:
 
 The protection rules depend on these GitHub Actions workflows:
 
-- `.github/workflows/test-quick.yml` - Quick smoke tests (all PRs)
+- `.github/workflows/quick-tests.yml` - Quick smoke tests (all PRs)
 - `.github/workflows/unit-tests.yml` - Comprehensive unit tests (all PRs)
 - `.github/workflows/e2e-tests.yml` - End-to-end browser tests (all PRs)
-- `.github/workflows/release-tests.yml` - Additional production checks (main→release only)
 
 ## Bypassing Protection (Emergency Only)
 
