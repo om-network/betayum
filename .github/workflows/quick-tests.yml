@@ -14,10 +14,8 @@ env:
 
 jobs:
   quick-test:
+    name: Quick Checks
     runs-on: warp-ubuntu-latest-arm64-4x
-    strategy:
-      matrix:
-        app: [app]
 
     services:
       postgres:
