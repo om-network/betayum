@@ -63,13 +63,17 @@ const mockGetSignedUrl = getSignedUrl as jest.MockedFunction<
 >;
 
 describe('TrustAccessService favicon branding', () => {
+  const rolesService = {
+    filterMembersWithPermission: jest.fn(),
+  };
   const service = new TrustAccessService(
     {
       getSignedUrl: jest.fn(),
-    } as any,
-    {} as any,
-    {} as any,
-    {} as any,
+    } as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    rolesService,
   );
 
   beforeEach(() => {

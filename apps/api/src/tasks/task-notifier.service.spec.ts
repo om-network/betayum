@@ -58,7 +58,11 @@ interface UserFixture {
   email: string;
 }
 
-function makeUser(id: string, email: string, name: string | null = null): UserFixture {
+function makeUser(
+  id: string,
+  email: string,
+  name: string | null = null,
+): UserFixture {
   return { id, name, email };
 }
 
@@ -68,18 +72,37 @@ function recipientEmails(): string[] {
 
 describe('TaskNotifierService', () => {
   const novu = { trigger: jest.fn().mockResolvedValue(undefined) };
+  const rolesService = {
+    filterMembersWithPermission: jest.fn(),
+  };
   let service: TaskNotifierService;
 
   beforeEach(() => {
     jest.clearAllMocks();
     isUserUnsubscribedMock.mockResolvedValue(false);
-    service = new TaskNotifierService(novu as never);
+    rolesService.filterMembersWithPermission.mockImplementation(
+      async (
+        _organizationId: string,
+        members: Array<{ role: string | null }>,
+      ) =>
+        members.filter((member) =>
+          (member.role ?? '')
+            .split(',')
+            .map((role) => role.trim())
+            .some((role) => role === 'owner' || role === 'admin'),
+        ),
+    );
+    service = new TaskNotifierService(novu as never, rolesService);
   });
 
   describe('notifyStatusChange', () => {
     it('sends email only to the task assignee when the task has an assignee', async () => {
       const actor = makeUser('usr_actor', 'actor@acme.com', 'Actor');
-      const assignee = makeUser('usr_assignee', 'assignee@acme.com', 'Assignee');
+      const assignee = makeUser(
+        'usr_assignee',
+        'assignee@acme.com',
+        'Assignee',
+      );
 
       mockDb.organization.findUnique.mockResolvedValue({ name: 'Acme' });
       mockDb.user.findUnique.mockResolvedValue({
@@ -162,6 +185,36 @@ describe('TaskNotifierService', () => {
       );
     });
 
+    it('does not include substring-only roles in the unassigned task fallback', async () => {
+      const actor = makeUser('usr_actor', 'actor@acme.com', 'Actor');
+      const ownerLite = makeUser('usr_lite', 'lite@acme.com', 'Lite');
+      const domainAdmin = makeUser('usr_domain', 'domain@acme.com', 'Domain');
+      const owner = makeUser('usr_owner', 'owner@acme.com', 'Owner');
+
+      mockDb.organization.findUnique.mockResolvedValue({ name: 'Acme' });
+      mockDb.user.findUnique.mockResolvedValue({
+        name: actor.name,
+        email: actor.email,
+      });
+      mockDb.task.findUnique.mockResolvedValue({ assignee: null });
+      mockDb.member.findMany.mockResolvedValue([
+        { role: 'owner-lite', user: ownerLite },
+        { role: 'domain-admin-reviewer', user: domainAdmin },
+        { role: 'owner', user: owner },
+      ]);
+
+      await service.notifyStatusChange({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        taskTitle: '2FA',
+        oldStatus: 'done' as never,
+        newStatus: 'todo' as never,
+        changedByUserId: actor.id,
+      });
+
+      expect(recipientEmails()).toEqual(['owner@acme.com']);
+    });
+
     it('excludes the actor from the owner/admin fallback', async () => {
       const actor = makeUser('usr_admin', 'admin@acme.com', 'Admin');
       const owner = makeUser('usr_owner', 'owner@acme.com', 'Owner');
@@ -191,7 +244,11 @@ describe('TaskNotifierService', () => {
 
     it('honors isUserUnsubscribed for the assignee', async () => {
       const actor = makeUser('usr_actor', 'actor@acme.com', 'Actor');
-      const assignee = makeUser('usr_assignee', 'assignee@acme.com', 'Assignee');
+      const assignee = makeUser(
+        'usr_assignee',
+        'assignee@acme.com',
+        'Assignee',
+      );
 
       mockDb.organization.findUnique.mockResolvedValue({ name: 'Acme' });
       mockDb.user.findUnique.mockResolvedValue({

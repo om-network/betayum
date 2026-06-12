@@ -1,5 +1,5 @@
 import { db } from '@db';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TaskStatus } from '@db';
 import { isUserUnsubscribed } from '@trycompai/email';
 import { triggerEmail } from '../email/trigger-email';
@@ -18,6 +18,15 @@ const TASK_WORKFLOW_ID = 'evidence-updated';
 
 type StatusRecipient = { id: string; name: string; email: string };
 
+interface MemberPermissionFilter {
+  filterMembersWithPermission<M extends { role: string | null }>(
+    organizationId: string,
+    members: M[],
+    resource: string,
+    action: string,
+  ): Promise<M[]>;
+}
+
 function toStatusRecipient(user: {
   id: string;
   name: string | null;
@@ -34,7 +43,11 @@ function toStatusRecipient(user: {
 export class TaskNotifierService {
   private readonly logger = new Logger(TaskNotifierService.name);
 
-  constructor(private readonly novuService: NovuService) {}
+  constructor(
+    private readonly novuService: NovuService,
+    @Inject('RolesService')
+    private readonly rolesService: MemberPermissionFilter,
+  ) {}
 
   /**
    * Members with 'owner' or 'admin' in their comma-separated role string,
@@ -53,12 +66,18 @@ export class TaskNotifierService {
       },
     });
 
+    const membersWithTaskUpdate =
+      await this.rolesService.filterMembersWithPermission(
+        organizationId,
+        members,
+        'task',
+        'update',
+      );
+
     const recipients: StatusRecipient[] = [];
-    for (const member of members) {
+    for (const member of membersWithTaskUpdate) {
       if (!member.user?.id || !member.user.email) continue;
       if (member.user.id === actorUserId) continue;
-      const roles = (member.role ?? '').split(',').map((r) => r.trim());
-      if (!roles.includes('owner') && !roles.includes('admin')) continue;
       recipients.push(toStatusRecipient(member.user));
     }
     return recipients;
@@ -1129,11 +1148,11 @@ export class TaskNotifierService {
         }),
       ]);
 
-      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
-      const adminMembers = allMembers.filter(
-        (member) =>
-          member.role &&
-          (member.role.includes('admin') || member.role.includes('owner')),
+      const adminMembers = await this.rolesService.filterMembersWithPermission(
+        organizationId,
+        allMembers,
+        'task',
+        'update',
       );
 
       this.logger.debug(
@@ -1338,11 +1357,11 @@ export class TaskNotifierService {
         }),
       ]);
 
-      // Filter for admins/owners (roles can be comma-separated, e.g., "admin,auditor")
-      const adminMembers = allMembers.filter(
-        (member) =>
-          member.role &&
-          (member.role.includes('admin') || member.role.includes('owner')),
+      const adminMembers = await this.rolesService.filterMembersWithPermission(
+        organizationId,
+        allMembers,
+        'task',
+        'update',
       );
 
       this.logger.debug(

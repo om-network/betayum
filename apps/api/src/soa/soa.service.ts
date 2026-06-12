@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -46,9 +47,23 @@ import {
   type SOAStorageLogger,
 } from './utils/soa-storage';
 
+interface MemberPermissionFilter {
+  filterMembersWithPermission<M extends { role: string | null }>(
+    organizationId: string,
+    members: M[],
+    resource: string,
+    action: string,
+  ): Promise<M[]>;
+}
+
 @Injectable()
 export class SOAService {
   private readonly logger = new Logger(SOAService.name);
+
+  constructor(
+    @Inject('RolesService')
+    private readonly rolesService: MemberPermissionFilter,
+  ) {}
 
   private get storageLogger(): SOAStorageLogger {
     return {
@@ -412,11 +427,17 @@ export class SOAService {
       );
     }
 
-    const isOwnerOrAdmin =
-      approverMember.role.includes('owner') ||
-      approverMember.role.includes('admin');
-    if (!isOwnerOrAdmin) {
-      throw new ForbiddenException('Approver must be an owner or admin');
+    const [approverWithPermission] =
+      await this.rolesService.filterMembersWithPermission(
+        dto.organizationId,
+        [approverMember],
+        'audit',
+        'update',
+      );
+    if (!approverWithPermission) {
+      throw new ForbiddenException(
+        'Approver must have audit update permission',
+      );
     }
 
     const document = await db.sOADocument.findFirst({
@@ -513,9 +534,7 @@ export class SOAService {
       declinedAt: (document as { declinedAt?: Date | null }).declinedAt ?? null,
       status: document.status,
       approverName:
-        document.approver?.user?.name ||
-        document.approver?.user?.email ||
-        null,
+        document.approver?.user?.name || document.approver?.user?.email || null,
     };
 
     return generateSOAExportFile(
@@ -615,12 +634,17 @@ export class SOAService {
       throw new NotFoundException('Member not found');
     }
 
-    const isOwnerOrAdmin =
-      member.role.includes('owner') || member.role.includes('admin');
+    const [memberWithPermission] =
+      await this.rolesService.filterMembersWithPermission(
+        organizationId,
+        [member],
+        'audit',
+        'update',
+      );
 
-    if (!isOwnerOrAdmin) {
+    if (!memberWithPermission) {
       throw new ForbiddenException(
-        'Only owners and admins can perform this action',
+        'Only members with audit update permission can perform this action',
       );
     }
 

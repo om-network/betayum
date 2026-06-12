@@ -1,7 +1,10 @@
-import { Member, User } from '@db';
+interface MemberWithRole {
+  id: string;
+  role: string | null;
+}
 
-interface FilterMembersByOwnerOrAdminParams {
-  members: (Member & { user: User })[];
+interface FilterMembersByOwnerOrAdminParams<TMember extends MemberWithRole> {
+  members: TMember[];
   /**
    * Optional current assignee ID to always include (even if not owner/admin),
    * so existing assignments/active filters remain visible.
@@ -9,23 +12,27 @@ interface FilterMembersByOwnerOrAdminParams {
   currentAssigneeId?: string | null;
 }
 
+export function hasBuiltInOwnerOrAdminRole(role: string | null | undefined): boolean {
+  return (role ?? '')
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .some((item) => item === 'owner' || item === 'admin');
+}
+
 /**
- * Filters members to only include those with owner or admin roles
- * Roles are stored as comma-separated strings (e.g., "owner,admin" or "employee")
+ * Filters members to only include those with owner or admin roles.
+ * Roles are stored as comma-separated strings (e.g., "owner,admin" or "employee").
  */
-export function filterMembersByOwnerOrAdmin(
-  { members, currentAssigneeId }: FilterMembersByOwnerOrAdminParams,
-): (Member & { user: User })[] {
+export function filterMembersByOwnerOrAdmin<TMember extends MemberWithRole>({
+  members,
+  currentAssigneeId,
+}: FilterMembersByOwnerOrAdminParams<TMember>): TMember[] {
   return members.filter((member) => {
     // Always include current assignee to preserve existing assignments
     if (currentAssigneeId && member.id === currentAssigneeId) {
       return true;
     }
-    
-    if (!member.role) return false;
-    
-    // Roles can be comma-separated, so we need to check if any role is owner or admin
-    const roles = member.role.split(',').map((r) => r.trim().toLowerCase());
-    return roles.includes('owner') || roles.includes('admin');
+
+    return hasBuiltInOwnerOrAdminRole(member.role);
   });
 }

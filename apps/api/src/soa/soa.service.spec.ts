@@ -58,13 +58,28 @@ jest.mock('./utils/export-generator', () => ({
 
 const mockDb = jest.mocked(db);
 const mockGenerateSOAExportFile = jest.mocked(generateSOAExportFile);
+const mockRolesService = {
+  filterMembersWithPermission: jest.fn(),
+};
 
 describe('SOAService', () => {
   let service: SOAService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new SOAService();
+    mockRolesService.filterMembersWithPermission.mockImplementation(
+      async (
+        _organizationId: string,
+        members: Array<{ role: string | null }>,
+      ) =>
+        members.filter((member) =>
+          (member.role ?? '')
+            .split(',')
+            .map((role) => role.trim())
+            .some((role) => role === 'owner' || role === 'admin'),
+        ),
+    );
+    service = new SOAService(mockRolesService);
   });
 
   describe('ensureSetup', () => {
@@ -308,9 +323,10 @@ describe('SOAService', () => {
           status: 'completed',
         }),
       });
-      expect((mockDb.sOADocument.update as jest.Mock).mock.calls[0][0].data.declinedAt).toBeInstanceOf(
-        Date,
-      );
+      expect(
+        (mockDb.sOADocument.update as jest.Mock).mock.calls[0][0].data
+          .declinedAt,
+      ).toBeInstanceOf(Date);
     });
   });
 
@@ -338,6 +354,52 @@ describe('SOAService', () => {
       await expect(service.submitForApproval(dto)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+
+    it('rejects approver roles that only contain admin as a substring', async () => {
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue({
+        id: 'mem-1',
+        userId: 'user-1',
+        role: 'domain-admin-reviewer',
+      });
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ role: 'user' });
+
+      await expect(service.submitForApproval(dto)).rejects.toThrow(
+        ForbiddenException,
+      );
+
+      expect(mockRolesService.filterMembersWithPermission).toHaveBeenCalledWith(
+        dto.organizationId,
+        [expect.objectContaining({ role: 'domain-admin-reviewer' })],
+        'audit',
+        'update',
+      );
+      expect(mockDb.sOADocument.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('accepts a custom approver role when it has audit update permission', async () => {
+      const customApprover = {
+        id: 'mem-1',
+        userId: 'user-1',
+        role: 'compliance-approver',
+      };
+      mockRolesService.filterMembersWithPermission.mockResolvedValue([
+        customApprover,
+      ]);
+      (mockDb.member.findFirst as jest.Mock).mockResolvedValue(customApprover);
+      (mockDb.user.findUnique as jest.Mock).mockResolvedValue({ role: 'user' });
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue({
+        id: 'doc-1',
+        status: 'draft',
+      });
+      (mockDb.sOADocument.update as jest.Mock).mockResolvedValue({
+        id: 'doc-1',
+        status: 'needs_review',
+      });
+
+      const result = await service.submitForApproval(dto);
+
+      expect(result.success).toBe(true);
     });
 
     it('throws BadRequestException when approver is platform admin', async () => {
@@ -422,7 +484,9 @@ describe('SOAService', () => {
     it('throws NotFoundException when document not found', async () => {
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.exportDocument(dto)).rejects.toThrow(NotFoundException);
+      await expect(service.exportDocument(dto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('maps document data and delegates to generateSOAExportFile', async () => {
