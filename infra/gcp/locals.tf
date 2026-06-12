@@ -92,6 +92,7 @@ locals {
 
   deployer_project_roles = toset([
     "roles/artifactregistry.writer",
+    "roles/logging.logWriter",
     "roles/logging.viewer",
     "roles/run.admin",
     "roles/secretmanager.secretAccessor",
