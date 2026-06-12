@@ -52,6 +52,11 @@ These variables are required for a functional Docker deployment:
 | `AUTH_MICROSOFT_CLIENT_ID` | app | runtime | conditional | Microsoft/Entra OAuth client ID |
 | `AUTH_MICROSOFT_CLIENT_SECRET` | app | runtime | conditional | Microsoft/Entra OAuth client secret |
 | `AUTH_MICROSOFT_TENANT_ID` | app | runtime | optional | `common` (default), `organizations`, or tenant GUID to restrict login |
+| `AUTH_PRIMARY_DOMAIN` | api | runtime | optional | Root production domain for API-owned auth cookies and trusted subdomains, e.g. `betayum.com` |
+| `AUTH_STAGING_DOMAIN` | api | runtime | optional | Root staging domain for isolated staging cookies, e.g. `staging.betayum.com` |
+| `AUTH_COOKIE_DOMAIN` | api | runtime | optional | Explicit cross-subdomain cookie domain. If omitted, derived from `BASE_URL` for `app`, `api`, and `portal` hostnames |
+| `AUTH_TRUSTED_ROOT_DOMAINS` | api | runtime | optional | Comma-separated root domains whose exact host or subdomains can send trusted auth origins |
+| `AUTH_TRUSTED_ORIGINS` | api | runtime | optional | Comma-separated exact origin allowlist. When set, it replaces generated localhost/app/api/portal origins |
 
 ### Email
 
