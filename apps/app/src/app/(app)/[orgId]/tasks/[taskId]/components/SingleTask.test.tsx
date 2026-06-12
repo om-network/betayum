@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -21,6 +21,7 @@ vi.mock('next/navigation', async (importOriginal) => {
   return {
     ...actual,
     useParams: vi.fn(() => ({ orgId: 'org_123', taskId: 'task_123' })),
+    useSearchParams: vi.fn(() => new URLSearchParams()),
   };
 });
 
@@ -97,38 +98,53 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
-// Mock @trycompai/ui components
-vi.mock('@trycompai/ui/breadcrumb', () => ({
-  Breadcrumb: ({ children }: any) => <nav>{children}</nav>,
-  BreadcrumbItem: ({ children }: any) => <span>{children}</span>,
-  BreadcrumbLink: ({ children }: any) => <span>{children}</span>,
-  BreadcrumbList: ({ children }: any) => <ol>{children}</ol>,
-  BreadcrumbSeparator: ({ children }: any) => <span>{children}</span>,
-}));
-
-vi.mock('@trycompai/ui/button', () => ({
-  Button: ({ children, title, ...props }: any) => (
+// Mock design system
+vi.mock('@trycompai/design-system', () => ({
+  Breadcrumb: ({ items }: any) => (
+    <nav>
+      {items?.map((item: any) => (
+        <span key={item.label}>{item.label}</span>
+      ))}
+    </nav>
+  ),
+  Button: ({ children, iconLeft, title, ...props }: any) => (
     <button title={title} {...props}>
+      {iconLeft}
       {children}
     </button>
   ),
-}));
-
-vi.mock('@trycompai/ui/dialog', () => ({
   Dialog: ({ children, open }: any) => (open ? <div>{children}</div> : null),
   DialogContent: ({ children }: any) => <div>{children}</div>,
   DialogDescription: ({ children }: any) => <p>{children}</p>,
   DialogFooter: ({ children }: any) => <div>{children}</div>,
   DialogHeader: ({ children }: any) => <div>{children}</div>,
   DialogTitle: ({ children }: any) => <h2>{children}</h2>,
-}));
-
-// Mock design system
-vi.mock('@trycompai/design-system', () => ({
+  HStack: ({ children }: any) => <div>{children}</div>,
+  Label: ({ children }: any) => <label>{children}</label>,
+  PageLayout: ({ children }: any) => <main>{children}</main>,
+  Section: ({ children, title }: any) => (
+    <section>
+      {title}
+      {children}
+    </section>
+  ),
+  Stack: ({ children }: any) => <div>{children}</div>,
   Tabs: ({ children }: any) => <div>{children}</div>,
   TabsContent: ({ children }: any) => <div>{children}</div>,
   TabsList: ({ children }: any) => <div>{children}</div>,
   TabsTrigger: ({ children }: any) => <button>{children}</button>,
+  Text: ({ children }: any) => <span>{children}</span>,
+}));
+
+vi.mock('@trycompai/design-system/icons', () => ({
+  ArrowRight: () => <span data-testid="arrow-right-icon" />,
+  CheckmarkFilled: () => <span data-testid="checkmark-icon" />,
+  Close: () => <span data-testid="close-icon" />,
+  Download: () => <span data-testid="download-icon" />,
+  Renew: () => <span data-testid="renew-icon" />,
+  SubtractAlt: () => <span data-testid="subtract-icon" />,
+  Time: () => <span data-testid="time-icon" />,
+  TrashCan: () => <span data-testid="trash-icon" />,
 }));
 
 // Mock next/link
@@ -154,8 +170,7 @@ vi.mock('./TaskAutomationStatusBadge', () => ({
 }));
 
 vi.mock('./TaskDeleteDialog', () => ({
-  TaskDeleteDialog: ({ isOpen }: any) =>
-    isOpen ? <div data-testid="delete-dialog" /> : null,
+  TaskDeleteDialog: ({ isOpen }: any) => (isOpen ? <div data-testid="delete-dialog" /> : null),
 }));
 
 vi.mock('./TaskIntegrationChecks', () => ({
@@ -164,6 +179,10 @@ vi.mock('./TaskIntegrationChecks', () => ({
 
 vi.mock('./TaskMainContent', () => ({
   TaskMainContent: () => <div data-testid="task-main-content" />,
+}));
+
+vi.mock('./TaskPolicies', () => ({
+  TaskPolicies: () => <div data-testid="task-policies" />,
 }));
 
 vi.mock('./TaskActivity', () => ({
