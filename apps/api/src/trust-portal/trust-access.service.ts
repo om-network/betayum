@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -23,6 +24,15 @@ import { Prisma, TrustFramework } from '@db';
 import archiver from 'archiver';
 import { PassThrough, Readable } from 'stream';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+
+interface MemberPermissionFilter {
+  filterMembersWithPermission<M extends { role: string | null }>(
+    organizationId: string,
+    members: M[],
+    resource: string,
+    action: string,
+  ): Promise<M[]>;
+}
 
 @Injectable()
 export class TrustAccessService {
@@ -234,6 +244,8 @@ export class TrustAccessService {
     private readonly emailService: TrustEmailService,
     private readonly attachmentsService: AttachmentsService,
     private readonly pdfRendererService: PolicyPdfRendererService,
+    @Inject('RolesService')
+    private readonly rolesService: MemberPermissionFilter,
   ) {
     if (
       !process.env.TRUST_APP_URL &&
@@ -412,10 +424,13 @@ export class TrustAccessService {
       });
 
       // Filter for members with owner or admin role (handles comma-separated roles)
-      const ownerAdminMembers = members.filter((m) => {
-        const role = m.role.toLowerCase();
-        return role.includes('owner') || role.includes('admin');
-      });
+      const ownerAdminMembers =
+        await this.rolesService.filterMembersWithPermission(
+          organizationId,
+          members,
+          'trust',
+          'update',
+        );
 
       notificationEmails = ownerAdminMembers
         .map((m) => m.user.email)

@@ -11,7 +11,11 @@ const mockDb = {
 
 jest.mock('@db', () => ({
   db: mockDb,
-  FindingArea: { people: 'people', documents: 'documents', compliance: 'compliance' },
+  FindingArea: {
+    people: 'people',
+    documents: 'documents',
+    compliance: 'compliance',
+  },
   FindingStatus: {
     open: 'open',
     ready_for_review: 'ready_for_review',
@@ -57,10 +61,25 @@ function makeFinding(overrides: Record<string, unknown> = {}) {
 describe('FindingNotifierService', () => {
   let service: FindingNotifierService;
   const novu = { trigger: jest.fn().mockResolvedValue(undefined) };
+  const rolesService = {
+    filterMembersWithPermission: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new FindingNotifierService(novu as never);
+    rolesService.filterMembersWithPermission.mockImplementation(
+      async (
+        _organizationId: string,
+        members: Array<{ role: string | null }>,
+      ) =>
+        members.filter((member) =>
+          (member.role ?? '')
+            .split(',')
+            .map((role) => role.trim())
+            .some((role) => role === 'owner' || role === 'admin'),
+        ),
+    );
+    service = new FindingNotifierService(novu as never, rolesService);
   });
 
   it('notifies org owners+admins when a policy-scoped finding is created', async () => {
@@ -123,5 +142,33 @@ describe('FindingNotifierService', () => {
     });
 
     expect(novu.trigger).not.toHaveBeenCalled();
+  });
+
+  it('does not notify members with admin or owner only as a role substring', async () => {
+    mockDb.organization.findUnique.mockResolvedValue({ name: 'Acme' });
+    mockDb.member.findMany.mockResolvedValue([
+      {
+        role: 'domain-admin-reviewer',
+        user: { id: 'usr_domain', email: 'domain@acme.com', name: 'Domain' },
+      },
+      {
+        role: 'owner-lite',
+        user: { id: 'usr_lite', email: 'lite@acme.com', name: 'Lite' },
+      },
+      {
+        role: 'owner',
+        user: { id: 'usr_owner', email: 'owner@acme.com', name: 'Owner' },
+      },
+    ]);
+
+    await service.notifyFindingCreated({
+      organizationId: 'org_1',
+      finding: makeFinding({ area: 'compliance' }) as never,
+      actorUserId: 'usr_actor',
+      actorName: 'Actor',
+    });
+
+    expect(novu.trigger).toHaveBeenCalledTimes(1);
+    expect(novu.trigger.mock.calls[0][0].email).toBe('owner@acme.com');
   });
 });

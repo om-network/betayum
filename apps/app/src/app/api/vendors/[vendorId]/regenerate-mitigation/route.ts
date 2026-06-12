@@ -1,8 +1,9 @@
-import { generateVendorMitigation } from '@/trigger/tasks/onboarding/generate-vendor-mitigation';
-import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { serverApi } from '@/lib/api-server';
 import { requireApiPermission } from '@/lib/permissions.server';
-import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
+import { generateVendorMitigation } from '@/trigger/tasks/onboarding/generate-vendor-mitigation';
+import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
+import { hasBuiltInOwnerOrAdminRole } from '@/utils/filter-members-by-role';
+import { tasks, auth as triggerAuth } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface PeopleApiResponse {
@@ -22,6 +23,10 @@ interface PoliciesApiResponse {
   }>;
 }
 
+export function selectVendorMitigationAuthor(people: PeopleApiResponse['data']) {
+  return people.find((person) => !person.deactivated && hasBuiltInOwnerOrAdminRole(person.role));
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ vendorId: string }> },
@@ -33,10 +38,7 @@ export async function POST(
 
     const { vendorId } = await params;
     if (!vendorId) {
-      return NextResponse.json(
-        { error: 'Vendor ID is required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Vendor ID is required' }, { status: 400 });
     }
 
     const [peopleResult, policiesResult] = await Promise.all([
@@ -46,11 +48,7 @@ export async function POST(
 
     // Find first owner or admin as comment author
     const people = peopleResult.data?.data ?? [];
-    const author = people.find(
-      (p) =>
-        !p.deactivated &&
-        (p.role.includes('owner') || p.role.includes('admin')),
-    );
+    const author = selectVendorMitigationAuthor(people);
 
     if (!author) {
       return NextResponse.json(
