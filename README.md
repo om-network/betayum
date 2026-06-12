@@ -187,7 +187,7 @@ REVALIDATION_SECRET=""         # Use `openssl rand -base64 32` to generate
 > ✅ Make sure you have all of these variables in your `.env` file.
 > If you're copying from `.env.example`, it might be missing the last two (`NEXT_PUBLIC_PORTAL_URL` and `REVALIDATION_SECRET`), so be sure to add them manually.
 
-Some environment variables may not load correctly from `.env` — in such cases, **hard-code** the values directly in the relevant files (see Hardcoding section below).
+If an environment variable is not loading, keep the value in the appropriate ignored `.env` file and verify the app or package reads that file. Do not put credentials or tokens in source files.
 
 ---
 
@@ -222,20 +222,23 @@ Some environment variables may not load correctly from `.env` — in such cases,
 
 - After creating the app, copy the `GOOGLE_ID` and `GOOGLE_SECRET`
   - Add them to your `.env` files
-  - If that doesn’t work, hard-code them in:
-    ```
-    comp/apps/portal/src/app/lib/auth.ts
-    ```
+  - If the variables are not recognized:
+    - Confirm the variable names match the relevant `.env.example`
+    - Restart the dev server after editing env files
+    - Run the app or package from the directory documented by the repo
+    - For deployments, add the values through the deployment provider's secret settings
 
 #### 3. Redis (Upstash)
 
 - Go to [https://console.upstash.com](https://console.upstash.com)
 - Create a Redis database
 - Copy the **Redis URL** and **TOKEN**
-- Add them to your `.env` file, or hard-code them if the environment variables are not being recognized in:
-  ```
-  comp/packages/kv/src/index.ts
-  ```
+- Add them to your `.env` file
+- If the variables are not recognized:
+  - Confirm the variable names match the relevant `.env.example`
+  - Restart the dev server after editing env files
+  - Run the app or package from the directory documented by the repo
+  - For deployments, add the values through the deployment provider's secret settings
 
 ---
 
