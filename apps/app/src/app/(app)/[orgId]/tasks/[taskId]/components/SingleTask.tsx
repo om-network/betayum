@@ -1,22 +1,12 @@
 'use client';
 
-import { SelectAssignee } from '@/components/SelectAssignee';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
-import { MarkdownRenderer } from '../automation/[automationId]/components/markdown-renderer/markdown-renderer';
+import { SelectAssignee } from '@/components/SelectAssignee';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
 import { useOrganizationMembers } from '@/hooks/use-organization-members';
-import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
 import { usePermissions } from '@/hooks/use-permissions';
+import { downloadTaskEvidenceZip } from '@/lib/evidence-download';
 import { useActiveMember } from '@/utils/auth-client';
-import { Button } from '@trycompai/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@trycompai/ui/dialog';
 import {
   CommentEntityType,
   EvidenceAutomation,
@@ -25,11 +15,17 @@ import {
   type Member,
   type Task,
   type TaskFrequency,
-  type TaskStatus,
   type User,
 } from '@db';
 import {
   Breadcrumb,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   HStack,
   Label,
   PageLayout,
@@ -40,13 +36,22 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
-import { SubtractAlt } from '@trycompai/design-system/icons';
-import { CheckCircle2, Clock, Download, RefreshCw, SendHorizontal, Trash2, XCircle } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckmarkFilled,
+  Close,
+  Download,
+  Renew,
+  SubtractAlt,
+  Time,
+  TrashCan,
+} from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
+import { MarkdownRenderer } from '../automation/[automationId]/components/markdown-renderer/markdown-renderer';
 import { useTask } from '../hooks/use-task';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 import { BrowserAutomations } from './BrowserAutomations';
@@ -179,7 +184,9 @@ export function SingleTask({
   };
 
   const handleUpdateTask = async (
-    updates: Partial<Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'department' | 'reviewDate'>> & {
+    updates: Partial<
+      Pick<Task, 'status' | 'assigneeId' | 'approverId' | 'frequency' | 'department' | 'reviewDate'>
+    > & {
       notRelevantJustification?: string;
     },
   ) => {
@@ -344,7 +351,9 @@ export function SingleTask({
         <Stack gap="lg">
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            {task.automationStatus !== 'MANUAL' && <TabsTrigger value="automations">Automations</TabsTrigger>}
+            {task.automationStatus !== 'MANUAL' && (
+              <TabsTrigger value="automations">Automations</TabsTrigger>
+            )}
             {canReadPolicy && <TabsTrigger value="mappings">Mappings</TabsTrigger>}
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
@@ -385,9 +394,7 @@ export function SingleTask({
                 isManualTask={task.automationStatus === 'MANUAL'}
                 scheduleFrequency={task.integrationScheduleFrequency ?? undefined}
                 lastRunAt={task.integrationLastRunAt ?? null}
-                onScheduleChange={
-                  canUpdateTask ? handleUpdateIntegrationSchedule : undefined
-                }
+                onScheduleChange={canUpdateTask ? handleUpdateIntegrationSchedule : undefined}
               />
               <TaskAutomations
                 automations={automations || []}
@@ -419,7 +426,9 @@ export function SingleTask({
             <Stack gap="lg">
               <HStack justify="between" align="center">
                 <Stack gap="none">
-                  <Text size="sm" weight="medium">Download Evidence</Text>
+                  <Text size="sm" weight="medium">
+                    Download Evidence
+                  </Text>
                   <Text size="xs" variant="muted">
                     Download all evidence for this task as a ZIP file
                   </Text>
@@ -427,16 +436,21 @@ export function SingleTask({
                 <Button
                   variant="outline"
                   size="sm"
+                  title="Download task evidence"
+                  iconLeft={<Download size={16} />}
                   onClick={async () => {
                     try {
-                      await downloadTaskEvidenceZip({ taskId: task.id, taskTitle: task.title, includeJson: true });
+                      await downloadTaskEvidenceZip({
+                        taskId: task.id,
+                        taskTitle: task.title,
+                        includeJson: true,
+                      });
                       toast.success('Evidence downloaded');
                     } catch {
                       toast.error('Failed to download evidence');
                     }
                   }}
                 >
-                  <Download className="h-4 w-4 mr-2" />
                   Download
                 </Button>
               </HStack>
@@ -447,17 +461,21 @@ export function SingleTask({
                 <>
                   <HStack justify="between" align="center">
                     <Stack gap="none">
-                      <Text size="sm" weight="medium">Reset to Defaults</Text>
+                      <Text size="sm" weight="medium">
+                        Reset to Defaults
+                      </Text>
                       <Text size="xs" variant="muted">
-                        Regenerate this evidence task using AI. All manual changes will be overwritten.
+                        Regenerate this evidence task using AI. All manual changes will be
+                        overwritten.
                       </Text>
                     </Stack>
                     <Button
                       variant="outline"
                       size="sm"
+                      title="Regenerate task"
+                      iconLeft={<Renew size={16} />}
                       onClick={() => setRegenerateConfirmOpen(true)}
                     >
-                      <RefreshCw className="h-4 w-4 mr-2" />
                       Regenerate
                     </Button>
                   </HStack>
@@ -467,18 +485,20 @@ export function SingleTask({
               {canDeleteTask && (
                 <HStack justify="between" align="center">
                   <Stack gap="none">
-                    <Text size="sm" weight="medium">Delete Evidence</Text>
+                    <Text size="sm" weight="medium">
+                      Delete Evidence
+                    </Text>
                     <Text size="xs" variant="muted">
                       Permanently delete this evidence task and all associated data
                     </Text>
                   </Stack>
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
+                    title="Delete task"
+                    iconLeft={<TrashCan size={16} />}
                     onClick={() => setDeleteDialogOpen(true)}
-                    className="text-destructive hover:text-destructive"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
                     Delete
                   </Button>
                 </HStack>
@@ -500,7 +520,8 @@ export function SingleTask({
           <DialogHeader>
             <DialogTitle>Regenerate Task</DialogTitle>
             <DialogDescription>
-              This will regenerate the task content using AI. Any manual changes will be overwritten.
+              This will regenerate the task content using AI. Any manual changes will be
+              overwritten.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -528,9 +549,7 @@ export function SingleTask({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Request Approval</DialogTitle>
-            <DialogDescription>
-              Select an approver to review this task.
-            </DialogDescription>
+            <DialogDescription>Select an approver to review this task.</DialogDescription>
           </DialogHeader>
           <SelectAssignee
             assignees={members?.filter((m) => m.id !== activeMember?.id) ?? []}
@@ -542,8 +561,11 @@ export function SingleTask({
             <Button variant="outline" onClick={() => setRequestApprovalDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmitForReview} disabled={!selectedApproverId}>
-              <SendHorizontal className="h-4 w-4 mr-2" />
+            <Button
+              onClick={handleSubmitForReview}
+              disabled={!selectedApproverId}
+              iconLeft={<ArrowRight size={16} />}
+            >
               Submit for Review
             </Button>
           </DialogFooter>
@@ -564,8 +586,12 @@ function NotRelevantBanner({ justification }: { justification: string }) {
       <HStack gap="sm" align="start">
         <SubtractAlt size={20} className="text-muted-foreground mt-0.5 shrink-0" />
         <Stack gap="xs">
-          <Text size="sm" weight="medium">Marked as Not Relevant</Text>
-          <Text size="sm" variant="muted">{justification}</Text>
+          <Text size="sm" weight="medium">
+            Marked as Not Relevant
+          </Text>
+          <Text size="sm" variant="muted">
+            {justification}
+          </Text>
         </Stack>
       </HStack>
     </div>
@@ -590,19 +616,21 @@ function ApprovalBanner({
       <div className="rounded-lg border border-l-4 border-border border-l-orange-400 bg-orange-50 dark:bg-orange-950/20 p-4">
         <HStack justify="between" align="center">
           <HStack gap="sm" align="start">
-            <CheckCircle2 className="h-5 w-5 text-orange-500 mt-0.5 shrink-0" />
+            <CheckmarkFilled size={20} className="text-orange-500 mt-0.5 shrink-0" />
             <Stack gap="none">
-              <Text size="sm" weight="medium">Your approval is required</Text>
-              <Text size="xs" variant="muted">Review the evidence and approve or reject.</Text>
+              <Text size="sm" weight="medium">
+                Your approval is required
+              </Text>
+              <Text size="xs" variant="muted">
+                Review the evidence and approve or reject.
+              </Text>
             </Stack>
           </HStack>
           <HStack gap="sm">
-            <Button variant="outline" size="sm" onClick={onReject}>
-              <XCircle className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={onReject} iconLeft={<Close size={16} />}>
               Reject
             </Button>
-            <Button size="sm" onClick={onApprove}>
-              <CheckCircle2 className="h-4 w-4 mr-2" />
+            <Button size="sm" onClick={onApprove} iconLeft={<CheckmarkFilled size={16} />}>
               Approve
             </Button>
           </HStack>
@@ -619,15 +647,18 @@ function ApprovalBanner({
     <div className="rounded-lg border border-l-4 border-border border-l-muted-foreground/50 bg-background p-4">
       <HStack justify="between" align="center">
         <HStack gap="sm" align="start">
-          <Clock className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+          <Time size={20} className="text-muted-foreground mt-0.5 shrink-0" />
           <Stack gap="none">
-            <Text size="sm" weight="medium">Pending approval</Text>
-            <Text size="xs" variant="muted">Waiting for {approverName} to review.</Text>
+            <Text size="sm" weight="medium">
+              Pending approval
+            </Text>
+            <Text size="xs" variant="muted">
+              Waiting for {approverName} to review.
+            </Text>
           </Stack>
         </HStack>
         {canCancel && (
-          <Button variant="outline" size="sm" onClick={onReject}>
-            <XCircle className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={onReject} iconLeft={<Close size={16} />}>
             Cancel
           </Button>
         )}
