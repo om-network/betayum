@@ -22,7 +22,7 @@ jobs:
       api_url: ${{ steps.version.outputs.api_url }}
       release_name: ${{ steps.version.outputs.release_name }}
       auto_update_url: ${{ steps.version.outputs.auto_update_url }}
-      s3_env: ${{ steps.version.outputs.s3_env }}
+      storage_env: ${{ steps.version.outputs.storage_env }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,17 +54,17 @@ jobs:
             PORTAL_URL="https://portal.trycomp.ai"
             API_URL="https://api.trycomp.ai"
             RELEASE_NAME="Device Agent v${NEXT_VERSION}"
-            S3_ENV="production"
+            STORAGE_ENV="production"
           else
             TAG_NAME="device-agent-v${NEXT_VERSION}-staging.${GITHUB_RUN_NUMBER}"
             IS_PRERELEASE="true"
             PORTAL_URL="https://portal.staging.trycomp.ai"
             API_URL="https://api.staging.trycomp.ai"
             RELEASE_NAME="Device Agent v${NEXT_VERSION} (Staging #${GITHUB_RUN_NUMBER})"
-            S3_ENV="staging"
+            STORAGE_ENV="staging"
           fi
 
-          # Auto-update URL: proxied through the portal (no direct S3 access needed)
+          # Auto-update URL: proxied through the portal (no direct object storage access needed)
           AUTO_UPDATE_URL="${PORTAL_URL}/api/device-agent/updates"
 
           echo "version=$NEXT_VERSION" >> $GITHUB_OUTPUT
@@ -74,7 +74,7 @@ jobs:
           echo "api_url=$API_URL" >> $GITHUB_OUTPUT
           echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
           echo "auto_update_url=$AUTO_UPDATE_URL" >> $GITHUB_OUTPUT
-          echo "s3_env=$S3_ENV" >> $GITHUB_OUTPUT
+          echo "storage_env=$STORAGE_ENV" >> $GITHUB_OUTPUT
 
           echo "--- Version Info ---"
           echo "Latest tag: $LATEST_TAG"
@@ -84,7 +84,7 @@ jobs:
           echo "Portal URL: $PORTAL_URL"
           echo "API URL: $API_URL"
           echo "Auto-update URL: $AUTO_UPDATE_URL"
-          echo "S3 env: $S3_ENV"
+          echo "Storage env: $STORAGE_ENV"
 
   build-macos:
     name: Build macOS (.dmg + .zip)
@@ -431,16 +431,16 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.GCP_SERVICE_ACCOUNT_KEY || secrets.GCP_SERVICE_ACCOUNT_KEY_STAGING }}
+          credentials_json: ${{ needs.detect-version.outputs.storage_env == 'production' && secrets.GCP_SERVICE_ACCOUNT_KEY || secrets.GCP_SERVICE_ACCOUNT_KEY_STAGING }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Upload installers to Google Cloud Storage
         env:
-          GCS_BUCKET: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET || secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET_STAGING }}
+          GCS_BUCKET: ${{ needs.detect-version.outputs.storage_env == 'production' && secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET || secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET_STAGING }}
           VERSION: ${{ needs.detect-version.outputs.version }}
-          STORAGE_ENV: ${{ needs.detect-version.outputs.s3_env }}
+          STORAGE_ENV: ${{ needs.detect-version.outputs.storage_env }}
         run: |
           PREFIX="device-agent/${STORAGE_ENV}"
 
@@ -474,8 +474,8 @@ jobs:
 
       - name: Upload auto-update files to Google Cloud Storage
         env:
-          GCS_BUCKET: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET || secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET_STAGING }}
-          STORAGE_ENV: ${{ needs.detect-version.outputs.s3_env }}
+          GCS_BUCKET: ${{ needs.detect-version.outputs.storage_env == 'production' && secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET || secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET_STAGING }}
+          STORAGE_ENV: ${{ needs.detect-version.outputs.storage_env }}
         run: |
           UPDATE_DIR="device-agent/${STORAGE_ENV}/updates"
 
