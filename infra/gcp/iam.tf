@@ -1,0 +1,82 @@
+resource "google_service_account" "deployer" {
+  for_each = var.environments
+
+  project      = each.value.project_id
+  account_id   = "betayum-${each.key}-deployer"
+  display_name = "Betayum ${each.key} Cloud Build deployer"
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_service_account" "runtime" {
+  for_each = local.env_services
+
+  project      = each.value.project_id
+  account_id   = "betayum-${each.value.env_name}-${each.value.service_name}"
+  display_name = "Betayum ${each.value.env_name} ${each.value.service_name} runtime"
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_service_account" "migrator" {
+  for_each = var.environments
+
+  project      = each.value.project_id
+  account_id   = "betayum-${each.key}-migrator"
+  display_name = "Betayum ${each.key} migration job runtime"
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_project_iam_member" "deployer_project_roles" {
+  for_each = {
+    for item in flatten([
+      for env_name, env in var.environments : [
+        for role in local.deployer_project_roles : {
+          key        = "${env_name}.${role}"
+          env_name   = env_name
+          project_id = env.project_id
+          role       = role
+        }
+      ]
+    ]) : item.key => item
+  }
+
+  project = each.value.project_id
+  role    = each.value.role
+  member  = google_service_account.deployer[each.value.env_name].member
+}
+
+resource "google_service_account_iam_member" "deployer_can_run_services" {
+  for_each = local.env_services
+
+  service_account_id = google_service_account.runtime[each.key].name
+  role               = "roles/iam.serviceAccountUser"
+  member             = google_service_account.deployer[each.value.env_name].member
+}
+
+resource "google_service_account_iam_member" "deployer_can_run_migrator" {
+  for_each = var.environments
+
+  service_account_id = google_service_account.migrator[each.key].name
+  role               = "roles/iam.serviceAccountUser"
+  member             = google_service_account.deployer[each.key].member
+}
+
+resource "google_secret_manager_secret_iam_member" "runtime_secret_access" {
+  for_each = local.runtime_secret_bindings
+
+  project   = each.value.project_id
+  secret_id = google_secret_manager_secret.secrets[each.value.secret_key].secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = google_service_account.runtime[each.value.env_service_key].member
+}
+
+resource "google_secret_manager_secret_iam_member" "migrator_secret_access" {
+  for_each = local.migrator_secret_bindings
+
+  project   = each.value.project_id
+  secret_id = google_secret_manager_secret.secrets[each.value.secret_key].secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = google_service_account.migrator[each.value.env_name].member
+}
