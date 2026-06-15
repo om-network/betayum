@@ -61,7 +61,7 @@ const requiredRunbookSnippets = [
 const expectedStepDependencies = {
   'build-api': ['-'],
   'build-app': ['-'],
-  'build-portal': ['-'],
+  'build-portal': ['build-app'],
   'build-migrator': ['-'],
   'push-api': ['build-api'],
   'push-app': ['build-app'],
@@ -166,7 +166,9 @@ function assertGatedParallelGraph(source) {
     const deployDependencies = dependencies.get(stepId);
     for (const otherStepId of serviceDeploySteps) {
       if (stepId !== otherStepId && deployDependencies.includes(otherStepId)) {
-        throw new Error(`cloudbuild.yaml step "${stepId}" must not wait for sibling service deploy "${otherStepId}"`);
+        throw new Error(
+          `cloudbuild.yaml step "${stepId}" must not wait for sibling service deploy "${otherStepId}"`,
+        );
       }
     }
   }

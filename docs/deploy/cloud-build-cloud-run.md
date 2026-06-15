@@ -17,7 +17,9 @@ The production approval record is part of the ISO deployment evidence set.
 The pipeline uses one Cloud Build trigger per environment. API, app, portal,
 and migrator do not have separate Cloud Build triggers.
 
-1. Build API, app, portal, and migrator images in parallel.
+1. Build API, app, and migrator images in parallel. Build the portal image
+   after the app image so only one frontend `next build` runs at a time on the
+   Cloud Build worker.
 2. Tag every image with `$COMMIT_SHA`.
 3. Push each image to the environment Artifact Registry repository after its
    matching build finishes. Image pushes can run in parallel.
@@ -33,7 +35,9 @@ and migrator do not have separate Cloud Build triggers.
 
 The migration job is the single required gate before service rollout. This
 gated-parallel shape keeps deployment evidence in one Cloud Build run while
-avoiding unnecessary linear waits between independent service lanes.
+avoiding unnecessary linear waits between independent service lanes. Frontend
+image builds are intentionally throttled to avoid two memory-heavy Next.js
+builds competing on the same worker.
 
 Frontend public values are passed as explicit substitutions:
 
