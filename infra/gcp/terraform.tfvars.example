@@ -9,6 +9,7 @@ environments = {
     region            = "us-central1"
     branch_name       = "develop"
     approval_required = false
+    cloud_sql_instance_connection_name = "staging-project-id:us-central1:betayum-db"
 
     domains = {
       api    = "api.staging.betayum.com"
@@ -22,6 +23,7 @@ environments = {
     region            = "us-central1"
     branch_name       = "release"
     approval_required = true
+    cloud_sql_instance_connection_name = "prod-project-id:us-central1:betayum-db"
 
     domains = {
       api    = "api.betayum.com"

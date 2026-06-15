@@ -17,6 +17,7 @@ substitutions:
   _PORTAL_URL: https://portal.staging.betayum.com
   _AUTH_PRIMARY_DOMAIN: betayum.com
   _AUTH_STAGING_DOMAIN: staging.betayum.com
+  _CLOUD_SQL_INSTANCE: centered-kiln-498405-h8:us-central1:betayum-db
 
 steps:
   - id: build-api
@@ -103,6 +104,7 @@ steps:
       - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/migrator:$COMMIT_SHA
       - --region=${_REGION}
       - --project=$PROJECT_ID
+      - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
       - --update-env-vars=BASE_URL=${_API_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
       - --quiet
 
@@ -132,6 +134,7 @@ steps:
       - --platform=managed
       - --port=3333
       - --ingress=internal-and-cloud-load-balancing
+      - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
       - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
       - --quiet
 
@@ -148,6 +151,7 @@ steps:
       - --platform=managed
       - --port=3000
       - --ingress=internal-and-cloud-load-balancing
+      - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
       - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL}
       - --quiet
 
@@ -164,6 +168,7 @@ steps:
       - --platform=managed
       - --port=3000
       - --ingress=internal-and-cloud-load-balancing
+      - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
       - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL}
       - --quiet
 

@@ -37,6 +37,10 @@ locals {
           domain             = env.domains[service_name]
           env_vars           = local.runtime_env_vars[env_name][service_name]
           security_policy_id = try(env.security_policy_id, null)
+          cloud_sql_instance_connection_name = try(
+            env.cloud_sql_instance_connection_name,
+            null,
+          )
         }
       ]
     ]) : item.key => item
@@ -97,6 +101,10 @@ locals {
       project_id = env.project_id
       region     = env.region
       image      = var.initial_images.migrator
+      cloud_sql_instance_connection_name = try(
+        env.cloud_sql_instance_connection_name,
+        null,
+      )
       env_vars = {
         BASE_URL            = "https://${env.domains.api}"
         AUTH_PRIMARY_DOMAIN = var.auth_primary_domain
@@ -123,5 +131,6 @@ locals {
     "roles/logging.logWriter",
     "roles/logging.viewer",
     "roles/run.admin",
+    "roles/cloudsql.client",
   ])
 }

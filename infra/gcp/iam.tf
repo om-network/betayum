@@ -80,3 +80,25 @@ resource "google_secret_manager_secret_iam_member" "migrator_secret_access" {
   role      = "roles/secretmanager.secretAccessor"
   member    = google_service_account.migrator[each.value.env_name].member
 }
+
+resource "google_project_iam_member" "runtime_cloud_sql_client" {
+  for_each = {
+    for key, service in local.env_services : key => service
+    if service.cloud_sql_instance_connection_name != null
+  }
+
+  project = each.value.project_id
+  role    = "roles/cloudsql.client"
+  member  = google_service_account.runtime[each.key].member
+}
+
+resource "google_project_iam_member" "migrator_cloud_sql_client" {
+  for_each = {
+    for key, job in local.migrator_jobs : key => job
+    if job.cloud_sql_instance_connection_name != null
+  }
+
+  project = each.value.project_id
+  role    = "roles/cloudsql.client"
+  member  = google_service_account.migrator[each.key].member
+}

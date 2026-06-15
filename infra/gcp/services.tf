@@ -64,6 +64,18 @@ resource "google_cloud_run_v2_service" "services" {
   template {
     service_account = google_service_account.runtime[each.key].email
 
+    dynamic "volumes" {
+      for_each = each.value.cloud_sql_instance_connection_name == null ? [] : [each.value.cloud_sql_instance_connection_name]
+
+      content {
+        name = "cloudsql"
+
+        cloud_sql_instance {
+          instances = [volumes.value]
+        }
+      }
+    }
+
     containers {
       image = each.value.image
 
@@ -91,6 +103,15 @@ resource "google_cloud_run_v2_service" "services" {
               version = "latest"
             }
           }
+        }
+      }
+
+      dynamic "volume_mounts" {
+        for_each = each.value.cloud_sql_instance_connection_name == null ? [] : ["cloudsql"]
+
+        content {
+          name       = volume_mounts.value
+          mount_path = "/cloudsql"
         }
       }
     }
@@ -121,6 +142,18 @@ resource "google_cloud_run_v2_job" "migrator" {
     template {
       service_account = google_service_account.migrator[each.key].email
 
+      dynamic "volumes" {
+        for_each = each.value.cloud_sql_instance_connection_name == null ? [] : [each.value.cloud_sql_instance_connection_name]
+
+        content {
+          name = "cloudsql"
+
+          cloud_sql_instance {
+            instances = [volumes.value]
+          }
+        }
+      }
+
       containers {
         image = each.value.image
 
@@ -144,6 +177,15 @@ resource "google_cloud_run_v2_job" "migrator" {
                 version = "latest"
               }
             }
+          }
+        }
+
+        dynamic "volume_mounts" {
+          for_each = each.value.cloud_sql_instance_connection_name == null ? [] : ["cloudsql"]
+
+          content {
+            name       = volume_mounts.value
+            mount_path = "/cloudsql"
           }
         }
       }
