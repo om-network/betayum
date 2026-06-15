@@ -11788,6 +11788,600 @@
         }
       }
     },
+    "/v1/roles": {
+      "post": {
+        "description": "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+        "operationId": "RolesController_createRole_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Role created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "rol_abc123"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "compliance-lead"
+                    },
+                    "permissions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "isBuiltIn": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid role data or role already exists"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - cannot grant permissions you do not have"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Create a custom role",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Create a custom role | Comp AI API",
+            "sidebarTitle": "Create a custom role",
+            "description": "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+            "og:title": "Create a custom role | Comp AI API",
+            "og:description": "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          }
+        }
+      },
+      "get": {
+        "description": "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+        "operationId": "RolesController_listRoles_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of roles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "builtInRoles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "isBuiltIn": {
+                            "type": "boolean"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "customRoles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "permissions": {
+                            "type": "object"
+                          },
+                          "isBuiltIn": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "List all roles",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "List all roles | Comp AI API",
+            "sidebarTitle": "List all roles",
+            "description": "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+            "og:title": "List all roles | Comp AI API",
+            "og:description": "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          }
+        }
+      }
+    },
+    "/v1/roles/permissions": {
+      "get": {
+        "description": "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles.",
+        "operationId": "RolesController_getPermissionsForRoles_v1",
+        "parameters": [
+          {
+            "name": "roles",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Merged permissions for the requested roles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "permissions": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Resolve permissions for custom roles",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Resolve permissions for custom roles | Comp AI API",
+            "sidebarTitle": "Resolve permissions for custom roles",
+            "description": "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles.",
+            "og:title": "Resolve permissions for custom roles | Comp AI API",
+            "og:description": "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
+          }
+        }
+      }
+    },
+    "/v1/roles/built-in/{name}/obligations": {
+      "get": {
+        "description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.",
+        "operationId": "RolesController_getBuiltInObligations_v1",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Built-in role name",
+            "schema": {
+              "example": "owner",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective obligations for the built-in role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "obligations": {
+                      "type": "object",
+                      "properties": {
+                        "compliance": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get obligations for a built-in role",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get obligations for a built-in role | Comp AI API",
+            "sidebarTitle": "Get obligations for a built-in role",
+            "description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.",
+            "og:title": "Get obligations for a built-in role | Comp AI API",
+            "og:description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default."
+          }
+        }
+      },
+      "patch": {
+        "description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults.",
+        "operationId": "RolesController_updateBuiltInObligations_v1",
+        "parameters": [
+          {
+            "name": "name",
+            "required": true,
+            "in": "path",
+            "description": "Built-in role name",
+            "schema": {
+              "example": "owner",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBuiltInObligationsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Obligations updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "obligations": {
+                      "type": "object",
+                      "properties": {
+                        "compliance": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a built-in role"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update obligations for a built-in role",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Update obligations for a built-in role | Comp AI API",
+            "sidebarTitle": "Update obligations for a built-in role",
+            "description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults.",
+            "og:title": "Update obligations for a built-in role | Comp AI API",
+            "og:description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults."
+          }
+        }
+      }
+    },
+    "/v1/roles/{roleId}": {
+      "get": {
+        "description": "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+        "operationId": "RolesController_getRole_v1",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "description": "Role ID",
+            "schema": {
+              "example": "rol_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "permissions": {
+                      "type": "object"
+                    },
+                    "isBuiltIn": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Role not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get a role by ID",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get a role by ID | Comp AI API",
+            "sidebarTitle": "Get a role by ID",
+            "description": "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+            "og:title": "Get a role by ID | Comp AI API",
+            "og:description": "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          }
+        }
+      },
+      "patch": {
+        "description": "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+        "operationId": "RolesController_updateRole_v1",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "description": "Role ID",
+            "schema": {
+              "example": "rol_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Role updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "permissions": {
+                      "type": "object"
+                    },
+                    "isBuiltIn": {
+                      "type": "boolean"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid role data"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - cannot grant permissions you do not have"
+          },
+          "404": {
+            "description": "Role not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Update a custom role",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Update a custom role | Comp AI API",
+            "sidebarTitle": "Update a custom role",
+            "description": "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+            "og:title": "Update a custom role | Comp AI API",
+            "og:description": "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          }
+        }
+      },
+      "delete": {
+        "description": "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+        "operationId": "RolesController_deleteRole_v1",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "description": "Role ID",
+            "schema": {
+              "example": "rol_abc123",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot delete - members assigned to role"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Role not found"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Delete a custom role",
+        "tags": [
+          "Roles"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Delete a custom role | Comp AI API",
+            "sidebarTitle": "Delete a custom role",
+            "description": "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
+            "og:title": "Delete a custom role | Comp AI API",
+            "og:description": "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
+          }
+        }
+      }
+    },
     "/v1/tasks/{taskId}/evidence": {
       "get": {
         "description": "Get task evidence summary in Comp AI. Export task evidence, automation evidence, and reviewer-ready evidence bundles as PDF or ZIP files.",
@@ -18412,600 +19006,6 @@
         }
       }
     },
-    "/v1/roles": {
-      "post": {
-        "description": "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-        "operationId": "RolesController_createRole_v1",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateRoleDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Role created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string",
-                      "example": "rol_abc123"
-                    },
-                    "name": {
-                      "type": "string",
-                      "example": "compliance-lead"
-                    },
-                    "permissions": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      }
-                    },
-                    "isBuiltIn": {
-                      "type": "boolean",
-                      "example": false
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid role data or role already exists"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - cannot grant permissions you do not have"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Create a custom role",
-        "tags": [
-          "Roles"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Create a custom role | Comp AI API",
-            "sidebarTitle": "Create a custom role",
-            "description": "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-            "og:title": "Create a custom role | Comp AI API",
-            "og:description": "Create a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          }
-        }
-      },
-      "get": {
-        "description": "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-        "operationId": "RolesController_listRoles_v1",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "List of roles",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "builtInRoles": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "name": {
-                            "type": "string"
-                          },
-                          "isBuiltIn": {
-                            "type": "boolean"
-                          },
-                          "description": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    },
-                    "customRoles": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "permissions": {
-                            "type": "object"
-                          },
-                          "isBuiltIn": {
-                            "type": "boolean"
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "updatedAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "List all roles",
-        "tags": [
-          "Roles"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "List all roles | Comp AI API",
-            "sidebarTitle": "List all roles",
-            "description": "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-            "og:title": "List all roles | Comp AI API",
-            "og:description": "List all roles in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          }
-        }
-      }
-    },
-    "/v1/roles/permissions": {
-      "get": {
-        "description": "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles.",
-        "operationId": "RolesController_getPermissionsForRoles_v1",
-        "parameters": [
-          {
-            "name": "roles",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Merged permissions for the requested roles",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "permissions": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Resolve permissions for custom roles",
-        "tags": [
-          "Roles"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Resolve permissions for custom roles | Comp AI API",
-            "sidebarTitle": "Resolve permissions for custom roles",
-            "description": "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles.",
-            "og:title": "Resolve permissions for custom roles | Comp AI API",
-            "og:description": "Returns the merged permissions for the given custom role names. Used by the frontend to resolve effective permissions for users with custom roles."
-          }
-        }
-      }
-    },
-    "/v1/roles/built-in/{name}/obligations": {
-      "get": {
-        "description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.",
-        "operationId": "RolesController_getBuiltInObligations_v1",
-        "parameters": [
-          {
-            "name": "name",
-            "required": true,
-            "in": "path",
-            "description": "Built-in role name",
-            "schema": {
-              "example": "owner",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Effective obligations for the built-in role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string"
-                    },
-                    "obligations": {
-                      "type": "object",
-                      "properties": {
-                        "compliance": {
-                          "type": "boolean"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get obligations for a built-in role",
-        "tags": [
-          "Roles"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Get obligations for a built-in role | Comp AI API",
-            "sidebarTitle": "Get obligations for a built-in role",
-            "description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default.",
-            "og:title": "Get obligations for a built-in role | Comp AI API",
-            "og:description": "Returns the effective obligations for a built-in role (owner, admin, auditor, employee, contractor) — DB override if present, else the hardcoded default."
-          }
-        }
-      },
-      "patch": {
-        "description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults.",
-        "operationId": "RolesController_updateBuiltInObligations_v1",
-        "parameters": [
-          {
-            "name": "name",
-            "required": true,
-            "in": "path",
-            "description": "Built-in role name",
-            "schema": {
-              "example": "owner",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateBuiltInObligationsDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Obligations updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string"
-                    },
-                    "obligations": {
-                      "type": "object",
-                      "properties": {
-                        "compliance": {
-                          "type": "boolean"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Not a built-in role"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Update obligations for a built-in role",
-        "tags": [
-          "Roles"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Update obligations for a built-in role | Comp AI API",
-            "sidebarTitle": "Update obligations for a built-in role",
-            "description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults.",
-            "og:title": "Update obligations for a built-in role | Comp AI API",
-            "og:description": "Override the obligations for a built-in role (e.g., turn off the compliance obligation for owners). Permissions stay sourced from the hardcoded defaults."
-          }
-        }
-      }
-    },
-    "/v1/roles/{roleId}": {
-      "get": {
-        "description": "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-        "operationId": "RolesController_getRole_v1",
-        "parameters": [
-          {
-            "name": "roleId",
-            "required": true,
-            "in": "path",
-            "description": "Role ID",
-            "schema": {
-              "example": "rol_abc123",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Role details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "permissions": {
-                      "type": "object"
-                    },
-                    "isBuiltIn": {
-                      "type": "boolean"
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Role not found"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Get a role by ID",
-        "tags": [
-          "Roles"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Get a role by ID | Comp AI API",
-            "sidebarTitle": "Get a role by ID",
-            "description": "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-            "og:title": "Get a role by ID | Comp AI API",
-            "og:description": "Get a role by ID in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          }
-        }
-      },
-      "patch": {
-        "description": "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-        "operationId": "RolesController_updateRole_v1",
-        "parameters": [
-          {
-            "name": "roleId",
-            "required": true,
-            "in": "path",
-            "description": "Role ID",
-            "schema": {
-              "example": "rol_abc123",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateRoleDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Role updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "permissions": {
-                      "type": "object"
-                    },
-                    "isBuiltIn": {
-                      "type": "boolean"
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid role data"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden - cannot grant permissions you do not have"
-          },
-          "404": {
-            "description": "Role not found"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Update a custom role",
-        "tags": [
-          "Roles"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Update a custom role | Comp AI API",
-            "sidebarTitle": "Update a custom role",
-            "description": "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-            "og:title": "Update a custom role | Comp AI API",
-            "og:description": "Update a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          }
-        }
-      },
-      "delete": {
-        "description": "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-        "operationId": "RolesController_deleteRole_v1",
-        "parameters": [
-          {
-            "name": "roleId",
-            "required": true,
-            "in": "path",
-            "description": "Role ID",
-            "schema": {
-              "example": "rol_abc123",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Role deleted successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Cannot delete - members assigned to role"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "404": {
-            "description": "Role not found"
-          }
-        },
-        "security": [
-          {
-            "apikey": []
-          }
-        ],
-        "summary": "Delete a custom role",
-        "tags": [
-          "Roles"
-        ],
-        "x-mint": {
-          "metadata": {
-            "title": "Delete a custom role | Comp AI API",
-            "sidebarTitle": "Delete a custom role",
-            "description": "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control.",
-            "og:title": "Delete a custom role | Comp AI API",
-            "og:description": "Delete a custom role in Comp AI. Create custom roles and resolve permission sets for organization-level access control."
-          }
-        }
-      }
-    },
     "/v1/training/completions": {
       "get": {
         "description": "List security awareness and HIPAA training completion records for workforce compliance tracking and audit evidence.",
@@ -24791,6 +24791,114 @@
           }
         }
       },
+      "CreateRoleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the custom role",
+            "example": "Compliance Lead",
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "permissions": {
+            "type": "object",
+            "description": "Permissions for the role. Keys are resource names, values are arrays of allowed actions.",
+            "example": {
+              "control": [
+                "read",
+                "update"
+              ],
+              "policy": [
+                "read",
+                "update"
+              ],
+              "risk": [
+                "read"
+              ]
+            }
+          },
+          "obligations": {
+            "type": "object",
+            "description": "Obligations for the role. Boolean flags for requirements like compliance.",
+            "example": {
+              "compliance": true
+            }
+          }
+        },
+        "required": [
+          "name",
+          "permissions"
+        ]
+      },
+      "BuiltInObligationsBody": {
+        "type": "object",
+        "properties": {
+          "compliance": {
+            "type": "boolean",
+            "description": "Whether the role must complete compliance tasks.",
+            "example": false
+          }
+        }
+      },
+      "UpdateBuiltInObligationsDto": {
+        "type": "object",
+        "properties": {
+          "obligations": {
+            "description": "Obligations override for the built-in role.",
+            "example": {
+              "compliance": false
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BuiltInObligationsBody"
+              }
+            ]
+          }
+        },
+        "required": [
+          "obligations"
+        ]
+      },
+      "UpdateRoleDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "New name for the custom role",
+            "example": "Compliance Manager",
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "permissions": {
+            "type": "object",
+            "description": "Updated permissions for the role. Keys are resource names, values are arrays of allowed actions.",
+            "example": {
+              "control": [
+                "read",
+                "update",
+                "delete"
+              ],
+              "policy": [
+                "read",
+                "update",
+                "delete"
+              ],
+              "risk": [
+                "read",
+                "update"
+              ]
+            }
+          },
+          "obligations": {
+            "type": "object",
+            "description": "Updated obligations for the role.",
+            "example": {
+              "compliance": true
+            }
+          }
+        }
+      },
       "AuthorResponseDto": {
         "type": "object",
         "properties": {
@@ -25989,114 +26097,6 @@
           "entityType",
           "entityId"
         ]
-      },
-      "CreateRoleDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "Name of the custom role",
-            "example": "Compliance Lead",
-            "minLength": 2,
-            "maxLength": 50
-          },
-          "permissions": {
-            "type": "object",
-            "description": "Permissions for the role. Keys are resource names, values are arrays of allowed actions.",
-            "example": {
-              "control": [
-                "read",
-                "update"
-              ],
-              "policy": [
-                "read",
-                "update"
-              ],
-              "risk": [
-                "read"
-              ]
-            }
-          },
-          "obligations": {
-            "type": "object",
-            "description": "Obligations for the role. Boolean flags for requirements like compliance.",
-            "example": {
-              "compliance": true
-            }
-          }
-        },
-        "required": [
-          "name",
-          "permissions"
-        ]
-      },
-      "BuiltInObligationsBody": {
-        "type": "object",
-        "properties": {
-          "compliance": {
-            "type": "boolean",
-            "description": "Whether the role must complete compliance tasks.",
-            "example": false
-          }
-        }
-      },
-      "UpdateBuiltInObligationsDto": {
-        "type": "object",
-        "properties": {
-          "obligations": {
-            "description": "Obligations override for the built-in role.",
-            "example": {
-              "compliance": false
-            },
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/BuiltInObligationsBody"
-              }
-            ]
-          }
-        },
-        "required": [
-          "obligations"
-        ]
-      },
-      "UpdateRoleDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "description": "New name for the custom role",
-            "example": "Compliance Manager",
-            "minLength": 2,
-            "maxLength": 50
-          },
-          "permissions": {
-            "type": "object",
-            "description": "Updated permissions for the role. Keys are resource names, values are arrays of allowed actions.",
-            "example": {
-              "control": [
-                "read",
-                "update",
-                "delete"
-              ],
-              "policy": [
-                "read",
-                "update",
-                "delete"
-              ],
-              "risk": [
-                "read",
-                "update"
-              ]
-            }
-          },
-          "obligations": {
-            "type": "object",
-            "description": "Updated obligations for the role.",
-            "example": {
-              "compliance": true
-            }
-          }
-        }
       },
       "SendTrainingCompletionDto": {
         "type": "object",
