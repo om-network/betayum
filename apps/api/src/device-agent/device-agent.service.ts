@@ -7,8 +7,9 @@ import {
 import {
   GetObjectCommand,
   HeadObjectCommand,
+  type S3Client,
 } from '@aws-sdk/client-s3';
-import { BUCKET_NAME, createStorageClient, getSignedUrl } from '@/app/s3';
+import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
 import { Readable } from 'stream';
 
 const S3_ENV = process.env.DEVICE_AGENT_S3_ENV || 'production';
@@ -31,11 +32,6 @@ const CONTENT_TYPES: Record<string, string> = {
   '.AppImage': 'application/octet-stream',
   '.dmg': 'application/x-apple-diskimage',
 };
-
-/**
- * Binaries are presigned + redirected so the client downloads directly from
- * S3, bypassing proxy/function timeouts. Manifests are tiny enough to stream.
- */
 const REDIRECT_EXTENSIONS = new Set([
   '.zip',
   '.exe',
@@ -66,12 +62,21 @@ function isValidFilename(filename: string): boolean {
 @Injectable()
 export class DeviceAgentService {
   private readonly logger = new Logger(DeviceAgentService.name);
-  private s3Client = createStorageClient();
-  private fleetBucketName: string;
+  private readonly fleetBucketName =
+    process.env.FLEET_AGENT_BUCKET_NAME || BUCKET_NAME || '';
 
-  constructor() {
-    this.fleetBucketName =
-      process.env.FLEET_AGENT_BUCKET_NAME || BUCKET_NAME || '';
+  private get storageClient(): S3Client {
+    if (s3Client) return s3Client;
+    throw new InternalServerErrorException(
+      'Object storage is not configured for device agent downloads.',
+    );
+  }
+
+  private get bucketName(): string {
+    if (this.fleetBucketName) return this.fleetBucketName;
+    throw new InternalServerErrorException(
+      'Object storage bucket is not configured for device agent downloads.',
+    );
   }
 
   async downloadMacAgent(): Promise<{
@@ -86,17 +91,16 @@ export class DeviceAgentService {
       this.logger.log(`Downloading macOS agent from S3: ${packageKey}`);
 
       const getObjectCommand = new GetObjectCommand({
-        Bucket: this.fleetBucketName,
+        Bucket: this.bucketName,
         Key: packageKey,
       });
 
-      const s3Response = await this.s3Client.send(getObjectCommand);
+      const s3Response = await this.storageClient.send(getObjectCommand);
 
       if (!s3Response.Body) {
         throw new NotFoundException('macOS agent DMG file not found in S3');
       }
 
-      // Use S3 stream directly as Node.js Readable
       const s3Stream = s3Response.Body as Readable;
 
       this.logger.log(
@@ -135,11 +139,11 @@ export class DeviceAgentService {
       this.logger.log(`Downloading Windows agent from S3: ${packageKey}`);
 
       const getObjectCommand = new GetObjectCommand({
-        Bucket: this.fleetBucketName,
+        Bucket: this.bucketName,
         Key: packageKey,
       });
 
-      const s3Response = await this.s3Client.send(getObjectCommand);
+      const s3Response = await this.storageClient.send(getObjectCommand);
 
       if (!s3Response.Body) {
         throw new NotFoundException(
@@ -147,7 +151,6 @@ export class DeviceAgentService {
         );
       }
 
-      // Use S3 stream directly as Node.js Readable
       const s3Stream = s3Response.Body as Readable;
 
       this.logger.log(
@@ -194,10 +197,10 @@ export class DeviceAgentService {
 
     try {
       const command = new GetObjectCommand({
-        Bucket: this.fleetBucketName,
+        Bucket: this.bucketName,
         Key: key,
       });
-      const s3Response = await this.s3Client.send(command);
+      const s3Response = await this.storageClient.send(command);
 
       if (!s3Response.Body) {
         throw new NotFoundException('Not found');
@@ -245,10 +248,10 @@ export class DeviceAgentService {
 
     try {
       const command = new HeadObjectCommand({
-        Bucket: this.fleetBucketName,
+        Bucket: this.bucketName,
         Key: key,
       });
-      const s3Response = await this.s3Client.send(command);
+      const s3Response = await this.storageClient.send(command);
 
       return {
         kind: 'stream',
@@ -270,14 +273,14 @@ export class DeviceAgentService {
     const command =
       method === 'HEAD'
         ? new HeadObjectCommand({
-            Bucket: this.fleetBucketName,
+            Bucket: this.bucketName,
             Key: key,
           })
         : new GetObjectCommand({
-            Bucket: this.fleetBucketName,
+            Bucket: this.bucketName,
             Key: key,
           });
-    return getSignedUrl(this.s3Client, command, {
+    return getSignedUrl(this.storageClient, command, {
       expiresIn: PRESIGNED_URL_TTL_SECONDS,
     });
   }
