@@ -1,3 +1,4 @@
+import { OFFBOARDING_OPERATION_METADATA } from './offboarding-metadata';
 import { QUESTIONNAIRE_OPERATION_METADATA } from './questionnaire-metadata';
 import { TRUST_OPERATION_METADATA } from './trust-operation-metadata';
 import type { PublicOperationMetadata } from './types';
@@ -18,7 +19,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
         lang: 'bash',
         label: 'Get organization profile',
         source:
-          'curl --request GET --url "https://api.trycomp.ai/v1/organization" --header "X-API-Key: $COMP_AI_API_KEY"',
+          'curl --request GET --url "https://api.betayum.com/v1/organization" --header "X-API-Key: $COMP_AI_API_KEY"',
       },
     ],
   },
@@ -56,7 +57,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
         lang: 'bash',
         label: 'List policies',
         source:
-          'curl --request GET --url "https://api.trycomp.ai/v1/policies" --header "X-API-Key: $COMP_AI_API_KEY"',
+          'curl --request GET --url "https://api.betayum.com/v1/policies" --header "X-API-Key: $COMP_AI_API_KEY"',
       },
     ],
   },
@@ -78,7 +79,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
   PoliciesController_regeneratePolicy_v1: {
     summary: 'Regenerate policy with AI',
     description:
-      'Regenerate policy content using Comp AI while keeping the result reviewable before it is published or used as compliance evidence.',
+      'Regenerate policy content using Betayum while keeping the result reviewable before it is published or used as compliance evidence.',
   },
   PoliciesController_aiChatPolicy_v1: {
     summary: 'Chat with AI about a policy',
@@ -103,12 +104,12 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
   KnowledgeBaseController_listDocuments_v1: {
     summary: 'List knowledge base documents',
     description:
-      'List uploaded knowledge base documents that Comp AI can use as approved source material for answers, policies, and reviews.',
+      'List uploaded knowledge base documents that Betayum can use as approved source material for answers, policies, and reviews.',
   },
   KnowledgeBaseController_uploadDocument_v1: {
     summary: 'Upload knowledge base document',
     description:
-      'Upload supporting documentation so Comp AI can process approved source material for questionnaire answers and policy workflows.',
+      'Upload supporting documentation so Betayum can process approved source material for questionnaire answers and policy workflows.',
   },
   KnowledgeBaseController_processDocuments_v1: {
     summary: 'Process knowledge base documents',
@@ -129,7 +130,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
         lang: 'bash',
         label: 'List tasks',
         source:
-          'curl --request GET --url "https://api.trycomp.ai/v1/tasks" --header "X-API-Key: $COMP_AI_API_KEY"',
+          'curl --request GET --url "https://api.betayum.com/v1/tasks" --header "X-API-Key: $COMP_AI_API_KEY"',
       },
     ],
   },
@@ -156,7 +157,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
   AutomationsController_createAutomation_v1: {
     summary: 'Create evidence automation',
     description:
-      'Create an automated evidence workflow attached to a task so Comp AI can collect recurring proof from connected systems.',
+      'Create an automated evidence workflow attached to a task so Betayum can collect recurring proof from connected systems.',
   },
   ContextController_getAllContext_v1: {
     summary: 'List organization context',
@@ -181,7 +182,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
   ConnectionsController_createConnection_v1: {
     summary: 'Create integration connection',
     description:
-      'Create an integration connection so Comp AI can collect evidence, run checks, or sync data from a connected provider.',
+      'Create an integration connection so Betayum can collect evidence, run checks, or sync data from a connected provider.',
   },
   ChecksController_runConnectionChecks_v1: {
     summary: 'Run integration checks',
@@ -206,7 +207,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
   DeviceAgentController_registerDevice_v1: {
     summary: 'Register device agent',
     description:
-      'Register a Comp AI Device Agent installation so employee endpoint checks can report into compliance tasks and device inventory.',
+      'Register a Betayum Device Agent installation so employee endpoint checks can report into compliance tasks and device inventory.',
   },
   DeviceAgentController_checkIn_v1: {
     summary: 'Submit device compliance check-in',
@@ -231,7 +232,7 @@ const CORE_OPERATION_METADATA: Record<string, PublicOperationMetadata> = {
   VendorsController_triggerAssessment_v1: {
     summary: 'Trigger vendor risk assessment',
     description:
-      'Trigger a vendor risk assessment so Comp AI can update third-party risk evidence and vendor security review status.',
+      'Trigger a vendor risk assessment so Betayum can update third-party risk evidence and vendor security review status.',
   },
   VendorsController_getVendorById_v1: {
     summary: 'Get vendor details',
@@ -266,6 +267,7 @@ export const PUBLIC_OPERATION_METADATA: Record<
 > = {
   ...CORE_OPERATION_METADATA,
   ...WORKFLOW_OPERATION_METADATA,
+  ...OFFBOARDING_OPERATION_METADATA,
   ...TRUST_OPERATION_METADATA,
   ...QUESTIONNAIRE_OPERATION_METADATA,
 };

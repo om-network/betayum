@@ -149,7 +149,7 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
     const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const pages = pdfDoc.getPages();
 
-    const watermarkText = 'CompAI';
+    const watermarkText = 'Betayum';
     const requestedByText = `Requested by: ${email}`;
     const fontSize = 48;
     const subTextSize = 12;
@@ -176,7 +176,7 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
           // Alternate between -45 and -35 degrees for visual interest
           const angle = (row + col) % 2 === 0 ? -45 : -35;
 
-          // Main "CompAI" watermark
+          // Main "Betayum" watermark
           page.drawText(watermarkText, {
             x,
             y,
@@ -187,7 +187,7 @@ By signing below, the Receiving Party agrees to be bound by the terms of this Ag
             rotate: degrees(angle),
           });
 
-          // "Requested by: [email]" text below CompAI
+          // "Requested by: [email]" text below Betayum
           page.drawText(requestedByText, {
             x: x - 10,
             y: y - 18,

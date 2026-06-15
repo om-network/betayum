@@ -3,6 +3,8 @@ import { BadRequestException } from '@nestjs/common';
 const allowedHosts = new Set([
   'localhost',
   '127.0.0.1',
+  'app.betayum.com',
+  'app.staging.betayum.com',
   'app.trycomp.ai',
   'app.staging.trycomp.ai',
 ]);

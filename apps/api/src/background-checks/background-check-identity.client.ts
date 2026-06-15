@@ -82,7 +82,7 @@ export class BackgroundCheckIdentityClient {
 
   private callbackUrl(): string {
     const endpoint = process.env.BACKGROUND_WH_ENDPOINT?.trim();
-    return (endpoint || 'https://api.trycomp.ai/v1/background-checks/webhook').replace(
+    return (endpoint || 'https://api.betayum.com/v1/background-checks/webhook').replace(
       /\/+$/,
       '',
     );

@@ -107,7 +107,7 @@ export class AssistantChatController {
       const nowIso = new Date().toISOString();
 
       const systemPrompt = `
-You're an expert in GRC, and a helpful assistant in Comp AI,
+You're an expert in GRC, and a helpful assistant in Betayum,
 a platform that helps companies get compliant with frameworks
 like SOC 2, ISO 27001 and GDPR.
 

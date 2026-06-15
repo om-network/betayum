@@ -1,3 +1,5 @@
+import { brandConfig } from '@trycompai/utils/brand';
+
 const DEFAULT_LOCAL_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3002',
@@ -6,11 +8,11 @@ const DEFAULT_LOCAL_ORIGINS = [
   'http://localhost:3008',
 ];
 
-const DEFAULT_PRIMARY_DOMAIN = 'trycomp.ai';
-const DEFAULT_STAGING_DOMAIN = 'staging.trycomp.ai';
+const DEFAULT_PRIMARY_DOMAIN = brandConfig.domains.primary;
+const DEFAULT_STAGING_DOMAIN = brandConfig.domains.staging;
 const DEFAULT_EXTRA_ORIGINS = [
-  'https://dev.trycomp.ai',
-  'https://framework-editor.trycomp.ai',
+  `https://dev.${brandConfig.domains.primary}`,
+  `https://framework-editor.${brandConfig.domains.primary}`,
 ];
 const DEFAULT_EXTRA_TRUSTED_ROOT_DOMAINS = ['trust.inc'];
 const SERVICE_SUBDOMAINS = ['app', 'api', 'portal'];
