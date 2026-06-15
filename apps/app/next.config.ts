@@ -39,6 +39,9 @@ const config: NextConfig = {
       ? `${process.env.STATIC_ASSETS_URL}/app`
       : '',
   reactStrictMode: false,
+  typescript: {
+    ignoreBuildErrors: process.env.NEXT_SKIP_TYPECHECK === 'true',
+  },
   transpilePackages: [
     '@trycompai/auth',
     '@trycompai/db',

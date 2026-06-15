@@ -5,6 +5,9 @@ import './src/env.mjs';
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
 const config = {
+  typescript: {
+    ignoreBuildErrors: process.env.NEXT_SKIP_TYPECHECK === 'true',
+  },
   transpilePackages: [
     '@trycompai/auth',
     '@trycompai/db',
