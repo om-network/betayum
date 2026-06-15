@@ -1,6 +1,5 @@
-import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db';
-import { getSignedUrl } from '../app/s3';
+import { objectStorage } from '../app/object-storage';
 import { TrustAccessService } from './trust-access.service';
 
 jest.mock('@db', () => ({
@@ -39,10 +38,11 @@ jest.mock('@db', () => ({
   },
 }));
 
-jest.mock('../app/s3', () => ({
-  APP_AWS_ORG_ASSETS_BUCKET: 'org-assets',
-  s3Client: { send: jest.fn() },
-  getSignedUrl: jest.fn(),
+jest.mock('../app/object-storage', () => ({
+  getOrgAssetsBucketName: jest.fn(() => 'org-assets'),
+  objectStorage: {
+    getSignedObjectUrl: jest.fn(),
+  },
 }));
 
 const mockDb = db as unknown as {
@@ -58,9 +58,7 @@ const mockDb = db as unknown as {
   };
 };
 
-const mockGetSignedUrl = getSignedUrl as jest.MockedFunction<
-  typeof getSignedUrl
->;
+const mockObjectStorage = objectStorage as jest.Mocked<typeof objectStorage>;
 
 describe('TrustAccessService favicon branding', () => {
   const rolesService = {
@@ -84,7 +82,9 @@ describe('TrustAccessService favicon branding', () => {
     mockDb.trust.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
       favicon: 'org_123/trust/favicon/icon.png',
     });
-    mockGetSignedUrl.mockResolvedValue('https://cdn.example.com/favicon.png');
+    mockObjectStorage.getSignedObjectUrl.mockResolvedValue(
+      'https://cdn.example.com/favicon.png',
+    );
 
     const result = await service.getPublicFavicon('org_123');
 
@@ -97,8 +97,13 @@ describe('TrustAccessService favicon branding', () => {
       select: { favicon: true },
     });
     expect(result).toBe('https://cdn.example.com/favicon.png');
-    expect(mockGetSignedUrl).toHaveBeenCalledTimes(1);
-    expect(mockGetSignedUrl.mock.calls[0][1]).toBeInstanceOf(GetObjectCommand);
+    expect(mockObjectStorage.getSignedObjectUrl).toHaveBeenCalledWith({
+      organizationId: 'org_123',
+      key: 'org_123/trust/favicon/icon.png',
+      bucketName: 'org-assets',
+      action: 'read',
+      expiresInSeconds: 86400,
+    });
   });
 
   it('includes friendlyUrl and faviconUrl in getGrantByAccessToken response', async () => {
@@ -123,7 +128,9 @@ describe('TrustAccessService favicon branding', () => {
       friendlyUrl: 'acme-security',
       favicon: 'org_123/trust/favicon/icon.png',
     });
-    mockGetSignedUrl.mockResolvedValue('https://cdn.example.com/favicon.png');
+    mockObjectStorage.getSignedObjectUrl.mockResolvedValue(
+      'https://cdn.example.com/favicon.png',
+    );
 
     const result = await service.getGrantByAccessToken('grant-token');
 
@@ -162,7 +169,9 @@ describe('TrustAccessService favicon branding', () => {
         friendlyUrl: 'acme-security',
         favicon: 'org_123/trust/favicon/icon.png',
       });
-    mockGetSignedUrl.mockResolvedValue('https://cdn.example.com/favicon.png');
+    mockObjectStorage.getSignedObjectUrl.mockResolvedValue(
+      'https://cdn.example.com/favicon.png',
+    );
 
     const result = await service.getNdaByToken('nda-token');
 

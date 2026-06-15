@@ -7,11 +7,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  PutObjectCommand,
-} from '@aws-sdk/client-s3';
-import { db } from '@db';
+  db,
+} from '@db';
 import {
   DomainStatusResponseDto,
   DomainVerificationDto,
@@ -28,7 +25,10 @@ import {
   decideDomainVerification,
   deriveDnsVerified,
 } from './domain-verification';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
+import {
+  getOrgAssetsBucketName,
+  objectStorage,
+} from '../app/object-storage';
 import {
   DeleteTrustDocumentDto,
   TrustDocumentResponseDto,
@@ -306,7 +306,7 @@ export class TrustPortalService {
   async uploadComplianceResource(
     dto: UploadComplianceResourceDto,
   ): Promise<ComplianceResourceResponseDto> {
-    this.ensureS3Availability();
+    const bucketName = this.ensureS3Availability();
     await this.assertFrameworkIsCompliant(dto.organizationId, dto.framework);
 
     const { fileBuffer, sanitizedFileName } = this.preparePdfPayload(dto);
@@ -328,19 +328,18 @@ export class TrustPortalService {
       await this.safeDeleteObject(existingResource.s3Key);
     }
 
-    const putCommand = new PutObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: s3Key,
-      Body: fileBuffer,
-      ContentType: 'application/pdf',
-      Metadata: {
+    await objectStorage.uploadObject({
+      organizationId: dto.organizationId,
+      key: s3Key,
+      bucketName,
+      body: fileBuffer,
+      contentType: 'application/pdf',
+      metadata: {
         organizationId: dto.organizationId,
         framework: slug,
         originalFileName: dto.fileName,
       },
     });
-
-    await s3Client!.send(putCommand);
 
     const record = await db.trustResource.upsert({
       where: {
@@ -394,7 +393,7 @@ export class TrustPortalService {
   async getComplianceResourceUrl(
     dto: ComplianceResourceSignedUrlDto,
   ): Promise<ComplianceResourceUrlResponseDto> {
-    this.ensureS3Availability();
+    const bucketName = this.ensureS3Availability();
 
     const record = await db.trustResource.findUnique({
       where: {
@@ -411,13 +410,12 @@ export class TrustPortalService {
       );
     }
 
-    const getCommand = new GetObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: record.s3Key,
-    });
-
-    const signedUrl = await getSignedUrl(s3Client!, getCommand, {
-      expiresIn: this.SIGNED_URL_EXPIRY_SECONDS,
+    const signedUrl = await objectStorage.getSignedObjectUrl({
+      organizationId: dto.organizationId,
+      key: record.s3Key,
+      bucketName,
+      action: 'read',
+      expiresInSeconds: this.SIGNED_URL_EXPIRY_SECONDS,
     });
 
     return {
@@ -459,7 +457,7 @@ export class TrustPortalService {
   async uploadTrustDocument(
     dto: UploadTrustDocumentDto,
   ): Promise<TrustDocumentResponseDto> {
-    this.ensureS3Availability();
+    const bucketName = this.ensureS3Availability();
 
     const { fileBuffer, sanitizedFileName } = this.prepareGenericFilePayload({
       fileData: dto.fileData,
@@ -470,18 +468,17 @@ export class TrustPortalService {
     const s3Prefix = `${dto.organizationId}/trust-documents`;
     const s3Key = `${s3Prefix}/${timestamp}-${sanitizedFileName}`;
 
-    const putCommand = new PutObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: s3Key,
-      Body: fileBuffer,
-      ContentType: dto.fileType || 'application/octet-stream',
-      Metadata: {
+    await objectStorage.uploadObject({
+      organizationId: dto.organizationId,
+      key: s3Key,
+      bucketName,
+      body: fileBuffer,
+      contentType: dto.fileType || 'application/octet-stream',
+      metadata: {
         organizationId: dto.organizationId,
         originalFileName: dto.fileName,
       },
     });
-
-    await s3Client!.send(putCommand);
 
     const record = await db.trustDocument.create({
       data: {
@@ -513,7 +510,7 @@ export class TrustPortalService {
     documentId: string,
     dto: TrustDocumentSignedUrlDto,
   ): Promise<TrustDocumentUrlResponseDto> {
-    this.ensureS3Availability();
+    const bucketName = this.ensureS3Availability();
 
     const record = await db.trustDocument.findUnique({
       where: {
@@ -531,14 +528,13 @@ export class TrustPortalService {
       throw new NotFoundException('Document not found');
     }
 
-    const getCommand = new GetObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: record.s3Key,
-      ResponseContentDisposition: `attachment; filename="${record.name.replaceAll('"', '')}"`,
-    });
-
-    const signedUrl = await getSignedUrl(s3Client!, getCommand, {
-      expiresIn: this.SIGNED_URL_EXPIRY_SECONDS,
+    const signedUrl = await objectStorage.getSignedObjectUrl({
+      organizationId: dto.organizationId,
+      key: record.s3Key,
+      bucketName,
+      action: 'read',
+      expiresInSeconds: this.SIGNED_URL_EXPIRY_SECONDS,
+      responseContentDisposition: `attachment; filename="${record.name.replaceAll('"', '')}"`,
     });
 
     return {
@@ -594,7 +590,10 @@ export class TrustPortalService {
 
     await db.organization.update({
       where: { id: organizationId },
-      data: { trustPortalFaqs: normalizedFaqs as any },
+      data: {
+        trustPortalFaqs:
+          normalizedFaqs === null ? Prisma.JsonNull : normalizedFaqs,
+      },
     });
 
     return { success: true };
@@ -1306,27 +1305,39 @@ export class TrustPortalService {
     return { fileBuffer, sanitizedFileName };
   }
 
-  private ensureS3Availability(): void {
-    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+  private ensureS3Availability(): string {
+    const bucketName = getOrgAssetsBucketName();
+    if (!bucketName) {
       throw new InternalServerErrorException(
         'Organization assets bucket is not configured',
       );
     }
+
+    return bucketName;
   }
 
   private async safeDeleteObject(key: string): Promise<void> {
     try {
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-        Key: key,
+      await objectStorage.deleteObject({
+        organizationId: this.extractOrganizationId(key),
+        key,
+        bucketName: this.ensureS3Availability(),
       });
-      await s3Client!.send(deleteCommand);
     } catch (error) {
       this.logger.warn(
         `Failed to delete previous compliance resource with key ${key}`,
         error instanceof Error ? error.message : error,
       );
     }
+  }
+
+  private extractOrganizationId(objectKey: string): string {
+    const [organizationId] = objectKey.split('/');
+    if (!organizationId) {
+      throw new Error('Object key must include an organization prefix');
+    }
+
+    return organizationId;
   }
 
   async updateOverview(
@@ -1511,13 +1522,15 @@ export class TrustPortalService {
 
     // Get favicon signed URL if available
     let faviconUrl: string | null = null;
-    if (trust.favicon && s3Client && APP_AWS_ORG_ASSETS_BUCKET) {
+    if (trust.favicon) {
       try {
-        const command = new GetObjectCommand({
-          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-          Key: trust.favicon,
+        faviconUrl = await objectStorage.getSignedObjectUrl({
+          organizationId,
+          key: trust.favicon,
+          bucketName: getOrgAssetsBucketName(),
+          action: 'read',
+          expiresInSeconds: 3600,
         });
-        faviconUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
       } catch {
         // If favicon fetch fails, continue without it
       }
@@ -1590,7 +1603,7 @@ export class TrustPortalService {
     organizationId: string,
     dto: { fileName: string; fileType: string; fileData: string },
   ) {
-    this.ensureS3Availability();
+    const bucketName = this.ensureS3Availability();
 
     const { fileName, fileType, fileData } = dto;
 
@@ -1623,20 +1636,18 @@ export class TrustPortalService {
       throw new BadRequestException('Favicon must be less than 100KB');
     }
 
-    // Generate S3 key
     const timestamp = Date.now();
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `${organizationId}/trust/favicon/${timestamp}-${sanitizedFileName}`;
 
-    // Upload to S3
-    const putCommand = new PutObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: key,
-      Body: fileBuffer,
-      ContentType: fileType,
-      CacheControl: 'public, max-age=31536000, immutable',
+    await objectStorage.uploadObject({
+      organizationId,
+      key,
+      bucketName,
+      body: fileBuffer,
+      contentType: fileType,
+      cacheControl: 'public, max-age=31536000, immutable',
     });
-    await s3Client!.send(putCommand);
 
     // Update trust record
     const trust = await db.trust.findUnique({
@@ -1653,12 +1664,12 @@ export class TrustPortalService {
     });
 
     // Generate signed URL for immediate display
-    const getCommand = new GetObjectCommand({
-      Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-      Key: key,
-    });
-    const signedUrl = await getSignedUrl(s3Client!, getCommand, {
-      expiresIn: 3600,
+    const signedUrl = await objectStorage.getSignedObjectUrl({
+      organizationId,
+      key,
+      bucketName,
+      action: 'read',
+      expiresInSeconds: 3600,
     });
 
     return { success: true, faviconUrl: signedUrl };

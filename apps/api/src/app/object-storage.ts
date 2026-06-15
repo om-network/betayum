@@ -18,6 +18,7 @@ export type ResolveObjectLocationParams = {
 export type UploadObjectParams = ResolveObjectLocationParams & {
   body: Buffer | string | Uint8Array;
   contentType?: string;
+  cacheControl?: string;
   metadata?: Record<string, string>;
 };
 
@@ -84,6 +85,14 @@ export function getKnowledgeBaseBucketName(): string | undefined {
   return firstDefined(
     process.env.APP_GCP_KNOWLEDGE_BASE_BUCKET,
     process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET,
+    getDefaultBucketName(),
+  );
+}
+
+export function getOrgAssetsBucketName(): string | undefined {
+  return firstDefined(
+    process.env.APP_GCP_ORG_ASSETS_BUCKET,
+    process.env.APP_AWS_ORG_ASSETS_BUCKET,
     getDefaultBucketName(),
   );
 }
@@ -187,9 +196,10 @@ export class GcsObjectStorage implements ObjectStorage {
     await file.save(params.body, {
       resumable: false,
       metadata:
-        params.contentType || params.metadata
+        params.contentType || params.cacheControl || params.metadata
           ? {
               contentType: params.contentType,
+              cacheControl: params.cacheControl,
               metadata: params.metadata,
             }
           : undefined,

@@ -6,11 +6,9 @@ type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 import { db, TaskFrequency } from '@db';
 import { z } from 'zod';
 import {
-  GetObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
+  objectStorage,
+  type ObjectStorage,
+} from '@/app/object-storage';
 import { renderOverlay } from './screenshot-overlay';
 import { isNoPageError, toRunErrorMessage } from './run-error-formatter';
 
@@ -42,24 +40,7 @@ const isPrismaUniqueConstraintError = (error: unknown): boolean => {
 @Injectable()
 export class BrowserbaseService {
   private readonly logger = new Logger(BrowserbaseService.name);
-
-  private get s3Client(): S3Client {
-    if (!s3Client) {
-      throw new Error(
-        'S3 client not configured — set APP_AWS_ACCESS_KEY_ID, APP_AWS_SECRET_ACCESS_KEY, APP_AWS_REGION, APP_AWS_BUCKET_NAME in apps/api/.env',
-      );
-    }
-    return s3Client;
-  }
-
-  private get bucketName(): string {
-    if (!BUCKET_NAME) {
-      throw new Error(
-        'APP_AWS_BUCKET_NAME is not set — configure S3 credentials in apps/api/.env',
-      );
-    }
-    return BUCKET_NAME;
-  }
+  private readonly storage: ObjectStorage = objectStorage;
 
   private getBrowserbase() {
     return new Browserbase({
@@ -327,10 +308,14 @@ export class BrowserbaseService {
         username: z.string().optional().describe('The username if logged in'),
       });
 
-      const result = (await stagehand.extract(
+      const extractLoginStatus = stagehand.extract as (
+        instruction: string,
+        schema: typeof loginSchema,
+      ) => Promise<{ isLoggedIn: boolean; username?: string }>;
+      const result = await extractLoginStatus(
         'Check if the user is logged in to this website. Look for a user avatar, profile menu, or account dropdown in the header/navigation. If logged in, extract the username if visible.',
-        loginSchema as any,
-      )) as { isLoggedIn: boolean; username?: string };
+        loginSchema,
+      );
 
       return {
         isLoggedIn: result.isLoggedIn,
@@ -805,10 +790,14 @@ export class BrowserbaseService {
       const loginSchema = z.object({
         isLoggedIn: z.boolean(),
       });
-      const authCheck = (await stagehand.extract(
+      const extractAuthCheck = stagehand.extract as (
+        instruction: string,
+        schema: typeof loginSchema,
+      ) => Promise<{ isLoggedIn: boolean }>;
+      const authCheck = await extractAuthCheck(
         'Check if the user is logged in to this website. Look for a user avatar, profile menu, account dropdown, or login/sign-in buttons. Return true if logged in, false if you see login buttons or a login form.',
-        loginSchema as any,
-      )) as { isLoggedIn: boolean };
+        loginSchema,
+      );
 
       if (!authCheck.isLoggedIn) {
         return {
@@ -878,10 +867,14 @@ export class BrowserbaseService {
             pass: z.boolean(),
             reason: z.string(),
           });
-          const evaluation = (await stagehand.extract(
+          const extractEvaluation = stagehand.extract as (
+            instruction: string,
+            schema: typeof evalSchema,
+          ) => Promise<{ pass: boolean; reason: string }>;
+          const evaluation = await extractEvaluation(
             `You are an auditor reviewing the current page after an automation has finished navigating. Decide whether the page clearly satisfies this criteria. Only return pass=true if the evidence is unambiguously present and visible. If it is ambiguous, missing, or contradicted, return pass=false. Always provide a short reason (max 220 characters).\n\nCriteria: ${criteria}`,
-            evalSchema as any,
-          )) as { pass: boolean; reason: string };
+            evalSchema,
+          );
 
           evaluationStatus = evaluation.pass ? 'pass' : 'fail';
           evaluationReason = evaluation.reason;
@@ -922,18 +915,15 @@ export class BrowserbaseService {
     base64Screenshot: string,
   ): Promise<string> {
     const buffer = Buffer.from(base64Screenshot, 'base64');
-    const key = `browser-automations/${organizationId}/${automationId}/${runId}.jpg`;
+    const key = `${organizationId}/browser-automations/${automationId}/${runId}.jpg`;
 
-    await this.s3Client.send(
-      new PutObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
-        Body: buffer,
-        ContentType: 'image/jpeg',
-      }),
-    );
+    await this.storage.uploadObject({
+      organizationId,
+      key,
+      body: buffer,
+      contentType: 'image/jpeg',
+    });
 
-    // Return just the key - we'll generate presigned URLs when viewing
     return key;
   }
 
@@ -941,14 +931,22 @@ export class BrowserbaseService {
     key: string,
     options: { expiresIn?: number; responseContentDisposition?: string } = {},
   ): Promise<string> {
-    const command = new GetObjectCommand({
-      Bucket: this.bucketName,
-      Key: key,
-      ResponseContentDisposition: options.responseContentDisposition,
+    return this.storage.getSignedObjectUrl({
+      organizationId: this.extractOrganizationId(key),
+      key,
+      action: 'read',
+      expiresInSeconds: options.expiresIn ?? 3600,
+      responseContentDisposition: options.responseContentDisposition,
     });
-    return getSignedUrl(this.s3Client, command, {
-      expiresIn: options.expiresIn ?? 3600,
-    });
+  }
+
+  private extractOrganizationId(objectKey: string): string {
+    const [organizationId] = objectKey.split('/');
+    if (!organizationId) {
+      throw new Error('Object key must include an organization prefix');
+    }
+
+    return organizationId;
   }
 
   /**

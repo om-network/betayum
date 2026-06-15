@@ -1,15 +1,16 @@
 /**
  * Evidence Attachment Streamer
- * Fetches task attachments and streams them from S3 directly into a ZIP archive.
+ * Fetches task attachments and streams them from object storage into a ZIP archive.
  */
 
-import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { Logger } from '@nestjs/common';
 import type { Archiver } from 'archiver';
-import { Readable } from 'node:stream';
 import { db } from '@db';
 import { AttachmentEntityType, type Attachment } from '@db';
-import { BUCKET_NAME, s3Client } from '../../app/s3';
+import {
+  objectStorage,
+  readObjectStreamToBuffer,
+} from '../../app/object-storage';
 
 const logger = new Logger('EvidenceAttachmentStreamer');
 
@@ -70,9 +71,9 @@ export function createFilenameTracker(): (rawName: string) => string {
 }
 
 /**
- * Append a single attachment to the archive by streaming its S3 body.
+ * Append a single attachment to the archive from object storage.
  *
- * - Genuine missing-object errors (`NoSuchKey` / HTTP 404) → write a
+ * - Genuine missing-object errors (`NoSuchKey` / `NotFound`) → write a
  *   `_MISSING_<name>.txt` placeholder so the bundle stays auditable.
  * - All other failures (network, permissions, throttling, empty body) → rethrow
  *   so the archive aborts and the user sees a real failure instead of silently
@@ -91,36 +92,19 @@ export async function appendAttachmentToArchive(params: {
 }): Promise<void> {
   const { archive, attachment, folderPath, uniqueName } = params;
 
-  if (!s3Client || !BUCKET_NAME) {
-    // Misconfiguration at process level — fail the whole export, don't silently
-    // produce placeholders for every attachment.
-    throw new Error(
-      'S3 client or bucket not configured; cannot stream attachments',
-    );
-  }
-
   try {
-    const response = await s3Client.send(
-      new GetObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: attachment.url,
+    const body = await readObjectStreamToBuffer(
+      objectStorage.streamObject({
+        organizationId: extractOrganizationId(attachment.url),
+        key: attachment.url,
       }),
     );
 
-    if (!response.Body) {
-      throw new Error('S3 returned no body');
-    }
-
-    const bodyStream =
-      response.Body instanceof Readable
-        ? response.Body
-        : Readable.from(response.Body as AsyncIterable<Uint8Array>);
-
-    archive.append(bodyStream, {
+    archive.append(body, {
       name: `${folderPath}/${uniqueName(attachment.name)}`,
     });
   } catch (error) {
-    if (!isS3MissingObjectError(error)) {
+    if (!isMissingObjectError(error)) {
       logger.error(
         `Failed to fetch attachment ${attachment.id} (key=${attachment.url}): ${
           error instanceof Error ? error.message : String(error)
@@ -131,7 +115,7 @@ export async function appendAttachmentToArchive(params: {
 
     const message = error instanceof Error ? error.message : String(error);
     logger.warn(
-      `Missing S3 object for attachment ${attachment.id} (key=${attachment.url}): ${message}`,
+      `Missing object for attachment ${attachment.id} (key=${attachment.url}): ${message}`,
     );
     // Feed the FULL final name (including `_MISSING_` prefix and `.txt` suffix)
     // into the same collision tracker that success paths use, so a legitimate
@@ -152,11 +136,20 @@ export async function appendAttachmentToArchive(params: {
  * returning NoSuchBucket would otherwise produce an export full of placeholders
  * that looks "successful" but contains none of the customer's evidence.
  */
-function isS3MissingObjectError(error: unknown): boolean {
+function isMissingObjectError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
-  const err = error as { name?: string; Code?: string };
+  const err = error as { name?: string; Code?: string; code?: unknown };
   const code = err.name ?? err.Code;
-  return code === 'NoSuchKey' || code === 'NotFound';
+  return code === 'NoSuchKey' || code === 'NotFound' || err.code === 404;
+}
+
+function extractOrganizationId(objectKey: string): string {
+  const [organizationId] = objectKey.split('/');
+  if (!organizationId) {
+    throw new Error('Object key must include an organization prefix');
+  }
+
+  return organizationId;
 }
 
 function buildMissingPlaceholder(
@@ -167,7 +160,7 @@ function buildMissingPlaceholder(
     `Attachment missing from storage.`,
     `attachmentId: ${attachment.id}`,
     `originalName: ${attachment.name}`,
-    `s3Key: ${attachment.url}`,
+    `objectKey: ${attachment.url}`,
     `reason: ${reason}`,
   ].join('\n');
 }
