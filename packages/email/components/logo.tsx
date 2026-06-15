@@ -1,13 +1,14 @@
 import { Img, Section } from '@react-email/components';
+import { brandConfig } from '@trycompai/utils/brand';
 
 export function Logo() {
   return (
     <Section className="mt-[32px]">
       <Img
-        src={'https://assets.trycomp.ai/logo.png'}
+        src={brandConfig.assets.logoUrl}
         width="45"
         height="45"
-        alt="Comp AI"
+        alt={brandConfig.displayName}
         className="mx-auto my-0 block"
       />
     </Section>

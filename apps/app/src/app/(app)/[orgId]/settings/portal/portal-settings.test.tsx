@@ -104,6 +104,12 @@ describe('PortalSettings permission gating', () => {
     expect(screen.getByText('Show Security Training Step')).toBeInTheDocument();
     expect(screen.getByText('Show Whistleblower Report Form')).toBeInTheDocument();
     expect(screen.getByText('Show Access Request Form')).toBeInTheDocument();
+    expect(
+      screen.getByText("Employees will be asked to download and install Betayum's device agent on their device."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Employees will be required to complete Betayum's security awareness training videos."),
+    ).toBeInTheDocument();
   });
 
   it('reflects current toggle state in switches', () => {

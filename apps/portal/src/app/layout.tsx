@@ -2,6 +2,7 @@ import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
 import { initializeServer } from '@trycompai/analytics/server';
 import { cn } from '@trycompai/ui/cn';
+import { brandConfig } from '@trycompai/utils/brand';
 import './globals.css';
 import '@trycompai/design-system/globals.css';
 import { GeistMono } from 'geist/font/mono';
@@ -14,38 +15,38 @@ import { Toaster } from 'sonner';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://portal.trycomp.ai'),
-  title: 'Comp AI | Employee Portal',
+  metadataBase: new URL(brandConfig.domains.portal),
+  title: `${brandConfig.displayName} | Employee Portal`,
   description: 'Enter your email and one time password to continue',
   twitter: {
-    title: 'Comp AI | Employee Portal',
+    title: `${brandConfig.displayName} | Employee Portal`,
     description: 'Enter your email and one time password to continue',
     images: [
       {
-        url: 'https://cdn.trycomp.ai/opengraph-image.jpg',
+        url: brandConfig.assets.opengraphImageUrl,
         width: 800,
         height: 600,
       },
       {
-        url: 'https://cdn.trycomp.ai/opengraph-image.jpg',
+        url: brandConfig.assets.opengraphImageUrl,
         width: 1800,
         height: 1600,
       },
     ],
   },
   openGraph: {
-    title: 'Comp AI | Employee Portal',
+    title: `${brandConfig.displayName} | Employee Portal`,
     description: 'Enter your email and one time password to continue',
-    url: 'https://portal.trycomp.ai',
-    siteName: 'Comp AI',
+    url: brandConfig.domains.portal,
+    siteName: brandConfig.displayName,
     images: [
       {
-        url: 'https://cdn.trycomp.ai/opengraph-image.jpg',
+        url: brandConfig.assets.opengraphImageUrl,
         width: 800,
         height: 600,
       },
       {
-        url: 'https://cdn.trycomp.ai/opengraph-image.jpg',
+        url: brandConfig.assets.opengraphImageUrl,
         width: 1800,
         height: 1600,
       },

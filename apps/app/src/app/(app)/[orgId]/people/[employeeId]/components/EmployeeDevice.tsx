@@ -45,7 +45,7 @@ function staleLabel(daysSinceLastCheckIn: number | null): string {
 function staleTooltipCopy(daysSinceLastCheckIn: number | null): string {
   return daysSinceLastCheckIn === null
     ? "This device was registered but hasn't sent a compliance check yet. If it's not new, the agent may not be running or the device may be offline."
-    : "This device hasn't reported to CompAI in over 7 days, so we can't verify its current compliance. It may be offline, the agent may need to be updated, or the device may no longer be in use. Check with the employee.";
+    : "This device hasn't reported to Betayum in over 7 days, so we can't verify its current compliance. It may be offline, the agent may need to be updated, or the device may no longer be in use. Check with the employee.";
 }
 
 function DeviceComplianceBadge({ device }: { device: DeviceWithChecks }) {
@@ -87,7 +87,7 @@ export function EmployeeDevice({
             <InformationFilled size={20} />
           </span>
           <div>
-            <Text weight="medium">Device agent is managed outside of Comp AI</Text>
+            <Text weight="medium">Device agent is managed outside of Betayum</Text>
             <Text size="sm" variant="muted">
               Evidence for device compliance can be logged in the Secure Device and Device List
               evidence tasks.

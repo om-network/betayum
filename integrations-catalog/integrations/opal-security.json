@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "api_key",
     "config": {
-      "setupInstructions": "1. Log in to Opal Security at https://app.opal.dev\n2. Navigate to Settings > API Tokens\n3. Click 'Create Token'\n4. Give the token a descriptive name (e.g., 'CompAI Integration')\n5. Copy the generated API token\n6. Paste the token in the field below\n\nThe token needs read access to users, resources, groups, and access reviews."
+      "setupInstructions": "1. Log in to Opal Security at https://app.opal.dev\n2. Navigate to Settings > API Tokens\n3. Click 'Create Token'\n4. Give the token a descriptive name (e.g., 'Betayum Integration')\n5. Copy the generated API token\n6. Paste the token in the field below\n\nThe token needs read access to users, resources, groups, and access reviews."
     }
   },
   "capabilities": [

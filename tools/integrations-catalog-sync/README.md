@@ -1,12 +1,12 @@
 # integrations-catalog-sync
 
-Internal tooling to refresh the public `integrations-catalog/` folder from the CompAI production API.
+Internal tooling to refresh the public `integrations-catalog/` folder from the Betayum production API.
 
 Runs on demand — no cron, no GitHub Action.
 
 ## Scripts
 
-- **`sync.mjs`** — fetches every integration from the CompAI internal API, sanitizes the payload (strips check DSL, sync definition, internal IDs, logo URLs), runs a secret-pattern scan on the sanitized output, and writes one JSON per vendor to `integrations-catalog/integrations/<slug>.json`. Dedups by slug, content-hash idempotent, atomic writes, preserves files on fetch failure.
+- **`sync.mjs`** — fetches every integration from the Betayum internal API, sanitizes the payload (strips check DSL, sync definition, internal IDs, logo URLs), runs a secret-pattern scan on the sanitized output, and writes one JSON per vendor to `integrations-catalog/integrations/<slug>.json`. Dedups by slug, content-hash idempotent, atomic writes, preserves files on fetch failure.
 - **`generate-readme.mjs`** — regenerates `integrations-catalog/README.md` with a full category breakdown + alphabetical vendor tables.
 
 ## Usage

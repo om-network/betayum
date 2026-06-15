@@ -34,7 +34,7 @@ function getAppBaseUrl(): string {
   return (
     process.env.NEXT_PUBLIC_APP_URL ??
     process.env.BETTER_AUTH_URL ??
-    'https://app.trycomp.ai'
+    'https://app.betayum.com'
   );
 }
 
@@ -42,7 +42,7 @@ function getAllowedOrigins(): string[] {
   const candidates = [
     process.env.NEXT_PUBLIC_APP_URL,
     process.env.BETTER_AUTH_URL,
-    'https://app.trycomp.ai',
+    'https://app.betayum.com',
   ].filter(Boolean) as string[];
 
   const origins = new Set<string>();

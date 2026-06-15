@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Go to Azure Portal → Microsoft Entra ID → App registrations\n2. Click 'New registration', name it (e.g. 'CompAI Defender'), register\n3. Note the Application (client) ID and Directory (tenant) ID\n4. Go to 'Certificates & secrets' → 'New client secret', copy the value\n5. Go to 'API permissions' → 'Add a permission' → 'APIs my organization uses'\n6. Search for 'Microsoft Threat Protection' (or 'WindowsDefenderATP')\n7. Select 'Application permissions' and add: Machine.Read.All, Alert.Read.All, Vulnerability.Read.All\n8. Click 'Grant admin consent' for your organization\n9. Paste the Tenant ID, Client ID, and Client Secret below",
+      "setupInstructions": "1. Go to Azure Portal → Microsoft Entra ID → App registrations\n2. Click 'New registration', name it (e.g. 'Betayum Defender'), register\n3. Note the Application (client) ID and Directory (tenant) ID\n4. Go to 'Certificates & secrets' → 'New client secret', copy the value\n5. Go to 'API permissions' → 'Add a permission' → 'APIs my organization uses'\n6. Search for 'Microsoft Threat Protection' (or 'WindowsDefenderATP')\n7. Select 'Application permissions' and add: Machine.Read.All, Alert.Read.All, Vulnerability.Read.All\n8. Click 'Grant admin consent' for your organization\n9. Paste the Tenant ID, Client ID, and Client Secret below",
       "credentialFields": [
         {
           "label": "Tenant ID",

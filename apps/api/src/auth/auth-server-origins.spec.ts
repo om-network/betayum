@@ -17,13 +17,13 @@ function getTrustedOriginsLogic(
     'http://localhost:3000',
     'http://localhost:3002',
     'http://localhost:3333',
-    'https://app.trycomp.ai',
-    'https://portal.trycomp.ai',
-    'https://api.trycomp.ai',
-    'https://app.staging.trycomp.ai',
-    'https://portal.staging.trycomp.ai',
-    'https://api.staging.trycomp.ai',
-    'https://dev.trycomp.ai',
+    'https://app.betayum.com',
+    'https://portal.betayum.com',
+    'https://api.betayum.com',
+    'https://app.staging.betayum.com',
+    'https://portal.staging.betayum.com',
+    'https://api.staging.betayum.com',
+    'https://dev.betayum.com',
   ];
 }
 
@@ -43,8 +43,8 @@ function isStaticTrustedOriginLogic(
   try {
     const url = new URL(origin);
     return (
-      url.hostname.endsWith('.trycomp.ai') ||
-      url.hostname.endsWith('.staging.trycomp.ai') ||
+      url.hostname.endsWith('.betayum.com') ||
+      url.hostname.endsWith('.staging.betayum.com') ||
       url.hostname.endsWith('.trust.inc') ||
       url.hostname === 'trust.inc'
     );
@@ -61,7 +61,7 @@ describe('getTrustedOrigins', () => {
 
   it('should return hardcoded origins when AUTH_TRUSTED_ORIGINS is not set', () => {
     const origins = getTrustedOriginsLogic(undefined);
-    expect(origins).toContain('https://app.trycomp.ai');
+    expect(origins).toContain('https://app.betayum.com');
   });
 
   it('should never include wildcard origin', () => {
@@ -81,24 +81,24 @@ describe('isStaticTrustedOrigin', () => {
   const defaults = getTrustedOriginsLogic(undefined);
 
   it('should allow static trusted origins', () => {
-    expect(isStaticTrustedOriginLogic('https://app.trycomp.ai', defaults)).toBe(
+    expect(isStaticTrustedOriginLogic('https://app.betayum.com', defaults)).toBe(
       true,
     );
   });
 
-  it('should allow trust portal subdomains of trycomp.ai', () => {
+  it('should allow trust portal subdomains of betayum.com', () => {
     expect(
-      isStaticTrustedOriginLogic('https://security.trycomp.ai', defaults),
+      isStaticTrustedOriginLogic('https://security.betayum.com', defaults),
     ).toBe(true);
     expect(
-      isStaticTrustedOriginLogic('https://acme.trycomp.ai', defaults),
+      isStaticTrustedOriginLogic('https://acme.betayum.com', defaults),
     ).toBe(true);
   });
 
-  it('should allow trust portal subdomains of staging.trycomp.ai', () => {
+  it('should allow trust portal subdomains of staging.betayum.com', () => {
     expect(
       isStaticTrustedOriginLogic(
-        'https://security.staging.trycomp.ai',
+        'https://security.staging.betayum.com',
         defaults,
       ),
     ).toBe(true);
@@ -118,7 +118,7 @@ describe('isStaticTrustedOrigin', () => {
       false,
     );
     expect(
-      isStaticTrustedOriginLogic('https://trycomp.ai.evil.com', defaults),
+      isStaticTrustedOriginLogic('https://betayum.com.evil.com', defaults),
     ).toBe(false);
   });
 

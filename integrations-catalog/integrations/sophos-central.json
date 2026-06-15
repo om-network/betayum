@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Sign in to Sophos Central at https://central.sophos.com\n2. Go to Settings (gear icon) → API Credentials Management\n3. Click 'Add Credential'\n4. Enter a name (e.g. 'CompAI Integration')\n5. For Role, select 'Service Principal ReadOnly'\n6. Click Add — copy the Client ID and Client Secret immediately\n7. Paste both values below\n\nNote: You must copy the Client Secret right away — it cannot be retrieved later.",
+      "setupInstructions": "1. Sign in to Sophos Central at https://central.sophos.com\n2. Go to Settings (gear icon) → API Credentials Management\n3. Click 'Add Credential'\n4. Enter a name (e.g. 'Betayum Integration')\n5. For Role, select 'Service Principal ReadOnly'\n6. Click Add — copy the Client ID and Client Secret immediately\n7. Paste both values below\n\nNote: You must copy the Client Secret right away — it cannot be retrieved later.",
       "credentialFields": [
         {
           "label": "Client ID",

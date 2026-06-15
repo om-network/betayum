@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to your Octopus Deploy instance\n2. Click your profile image and select Profile\n3. Click My API Keys\n4. Click New API key, provide a purpose, and click Generate New\n5. Copy the API key and paste it in CompAI\n6. Enter your Octopus Deploy instance URL (e.g., https://your-instance.octopus.app)",
+      "setupInstructions": "1. Log in to your Octopus Deploy instance\n2. Click your profile image and select Profile\n3. Click My API Keys\n4. Click New API key, provide a purpose, and click Generate New\n5. Copy the API key and paste it in Betayum\n6. Enter your Octopus Deploy instance URL (e.g., https://your-instance.octopus.app)",
       "credentialFields": [
         {
           "label": "Octopus Deploy Instance URL",

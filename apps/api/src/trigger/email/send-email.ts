@@ -89,7 +89,7 @@ export const sendEmailTask = schemaTask({
     try {
       // Build List-Unsubscribe headers for Gmail/RFC 8058 one-click compliance
       const apiBaseUrl =
-        process.env.NEXT_PUBLIC_API_URL || 'https://api.trycomp.ai';
+        process.env.NEXT_PUBLIC_API_URL || 'https://api.betayum.com';
       const token = generateUnsubscribeToken(params.to);
       const oneClickUrl = `${apiBaseUrl}/v1/email/unsubscribe?email=${encodeURIComponent(params.to)}&token=${encodeURIComponent(token)}`;
       const headers: Record<string, string> = {

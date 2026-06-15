@@ -1,6 +1,6 @@
 {
     "name": "@trycompai/db",
-    "description": "Database package with Prisma client and schema for Comp AI",
+    "description": "Database package with Prisma client and schema for Betayum",
     "version": "2.3.0",
     "dependencies": {
         "@prisma/adapter-pg": "7.6.0",

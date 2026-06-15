@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to your Cornerstone portal\n2. Navigate to Admin > Tools > Edge > API Management\n3. Click 'Register New Application'\n4. Enter an application name (e.g. 'CompAI Integration')\n5. Enter the User ID of an active admin user (this acts as the service account)\n6. Under Scopes, select 'employee:read' and 'group:read'\n7. Click 'Register Application'\n8. Copy the Client ID and Client Secret immediately\n9. Enter your portal hostname (e.g. mycompany.csod.com), Client ID and Client Secret below",
+      "setupInstructions": "1. Log in to your Cornerstone portal\n2. Navigate to Admin > Tools > Edge > API Management\n3. Click 'Register New Application'\n4. Enter an application name (e.g. 'Betayum Integration')\n5. Enter the User ID of an active admin user (this acts as the service account)\n6. Under Scopes, select 'employee:read' and 'group:read'\n7. Click 'Register Application'\n8. Copy the Client ID and Client Secret immediately\n9. Enter your portal hostname (e.g. mycompany.csod.com), Client ID and Client Secret below",
       "credentialFields": [
         {
           "label": "Portal URL",

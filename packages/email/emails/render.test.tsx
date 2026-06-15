@@ -21,6 +21,14 @@ import { UnassignedItemsNotificationEmail } from './unassigned-items-notificatio
 // produces broken output, so the same mistake can't ship again.
 
 const SUSPENSE_ERROR_MARKER = '<!--$!-->';
+const brandedEmailCases = new Set([
+  'task-reminder',
+  'invite-portal',
+  'invite',
+  'welcome',
+  'magic-link',
+  'otp',
+]);
 
 const cases = [
   {
@@ -48,12 +56,9 @@ const cases = [
         email="user@example.com"
         userName="User"
         taskName="Task"
-        oldStatus="todo"
-        newStatus="done"
+        taskStatus="todo"
         organizationName="Acme"
-        organizationId="org_123"
-        taskId="t1"
-        changedByName="Admin"
+        taskUrl="https://app.betayum.com/org_123/tasks/t1"
       />
     ),
   },
@@ -62,7 +67,7 @@ const cases = [
     el: (
       <InvitePortalEmail
         email="user@example.com"
-        inviteLink="https://app.trycomp.ai/invite"
+        inviteLink="https://app.betayum.com/invite"
         organizationName="Acme"
       />
     ),
@@ -73,7 +78,7 @@ const cases = [
       <InviteEmail
         email="user@example.com"
         organizationName="Acme"
-        inviteLink="https://app.trycomp.ai/invite"
+        inviteLink="https://app.betayum.com/invite"
       />
     ),
   },
@@ -87,8 +92,7 @@ const cases = [
         organizationName="Acme"
         organizationId="org_123"
         policyName="Acceptable Use"
-        policyId="p1"
-        isUpdate={false}
+        notificationType="new"
       />
     ),
   },
@@ -97,7 +101,7 @@ const cases = [
     el: (
       <MagicLinkEmail
         email="user@example.com"
-        url="https://app.trycomp.ai/magic"
+        url="https://app.betayum.com/magic"
         inviteCode="abc"
       />
     ),
@@ -110,7 +114,6 @@ const cases = [
         userName="User"
         organizationName="Acme"
         organizationId="org_123"
-        isUpdate={false}
       />
     ),
   },
@@ -153,12 +156,12 @@ const cases = [
               {
                 id: 'p1',
                 name: 'Acceptable Use Policy',
-                url: 'https://portal.trycomp.ai/org_123/policy/p1',
+                url: 'https://portal.betayum.com/org_123/policy/p1',
               },
               {
                 id: 'p2',
                 name: 'Security Policy',
-                url: 'https://portal.trycomp.ai/org_123/policy/p2',
+                url: 'https://portal.betayum.com/org_123/policy/p2',
               },
             ],
           },
@@ -180,7 +183,7 @@ const cases = [
               {
                 id: 'p1',
                 name: 'Acceptable Use Policy',
-                url: 'https://portal.trycomp.ai/org_1/policy/p1',
+                url: 'https://portal.betayum.com/org_1/policy/p1',
               },
             ],
           },
@@ -191,12 +194,12 @@ const cases = [
               {
                 id: 'p2',
                 name: 'Security Policy',
-                url: 'https://portal.trycomp.ai/org_2/policy/p2',
+                url: 'https://portal.betayum.com/org_2/policy/p2',
               },
               {
                 id: 'p3',
                 name: 'Data Retention',
-                url: 'https://portal.trycomp.ai/org_2/policy/p3',
+                url: 'https://portal.betayum.com/org_2/policy/p3',
               },
             ],
           },
@@ -213,6 +216,11 @@ describe('email templates render to non-empty HTML', () => {
       expect(html).not.toContain(SUSPENSE_ERROR_MARKER);
       expect(html).toContain('<body');
       expect(html.length).toBeGreaterThan(2000);
+      expect(html).not.toContain('Comp AI');
+      expect(html).not.toContain('trycomp.ai');
+      if (brandedEmailCases.has(name)) {
+        expect(html).toContain('Betayum');
+      }
     });
   }
 });

@@ -4,8 +4,8 @@ This file is a brief overview for Docker-based self-hosting.
 
 **For the detailed, up-to-date guide, see:**
 
-- [Docker Self-Hosting Guide](https://trycomp.ai/docs/self-hosting/docker)
-- [Environment Reference](https://trycomp.ai/docs/self-hosting/env-reference)
+- [Docker Self-Hosting Guide](https://betayum.com/docs/self-hosting/docker)
+- [Environment Reference](https://betayum.com/docs/self-hosting/env-reference)
 
 ### Quick Summary
 
@@ -102,4 +102,4 @@ docker compose logs portal
 
 The Dockerfile sets `SKIP_ENV_VALIDATION=true` at build time, so missing variables only cause errors at runtime.
 
-See the [full troubleshooting guide](https://trycomp.ai/docs/self-hosting/docker#troubleshooting) for common issues.
+See the [full troubleshooting guide](https://betayum.com/docs/self-hosting/docker#troubleshooting) for common issues.
