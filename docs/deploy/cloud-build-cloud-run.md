@@ -14,14 +14,26 @@ The production approval record is part of the ISO deployment evidence set.
 
 ## Pipeline Order
 
-1. Build API, app, portal, and migrator images.
+The pipeline uses one Cloud Build trigger per environment. API, app, portal,
+and migrator do not have separate Cloud Build triggers.
+
+1. Build API, app, portal, and migrator images in parallel.
 2. Tag every image with `$COMMIT_SHA`.
-3. Push images to the environment Artifact Registry repository.
-4. Update the Cloud Run migration job to the new migrator image.
+3. Push each image to the environment Artifact Registry repository after its
+   matching build finishes. Image pushes can run in parallel.
+4. Update the Cloud Run migration job to the new migrator image after the
+   migrator image is pushed.
 5. Execute the migration job with `--wait`.
 6. Stop the deployment if the migration job exits non-zero.
-7. Deploy API, app, and portal Cloud Run revisions with the same immutable tag.
-8. Smoke check API `/v1/health`, app `/api/health`, and the portal root.
+7. Deploy API, app, and portal Cloud Run revisions after migrations pass and
+   each service image has been pushed. The three service deploys run in
+   parallel.
+8. Smoke check API `/v1/health`, app `/api/health`, and the portal root after
+   all three service deploys finish. The smoke checks can run in parallel.
+
+The migration job is the single required gate before service rollout. This
+gated-parallel shape keeps deployment evidence in one Cloud Build run while
+avoiding unnecessary linear waits between independent service lanes.
 
 Frontend public values are passed as explicit substitutions:
 
@@ -43,7 +55,8 @@ arguments.
 - Migration job logs: Cloud Run Job execution logs for `_MIGRATOR_JOB`.
 - Revision traceability: Cloud Run revisions reference images tagged by
   `$COMMIT_SHA`.
-- Smoke-check output: final Cloud Build curl steps.
+- Smoke-check output: final Cloud Build curl steps after the parallel service
+  rollout has completed.
 
 ## Older GitHub Migration Workflows
 
