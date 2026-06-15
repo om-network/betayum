@@ -1,6 +1,9 @@
 import { Storage, type GetSignedUrlConfig } from '@google-cloud/storage';
 import type { Readable } from 'node:stream';
 import '../config/load-env';
+import { validateObjectKey } from './object-storage-key';
+
+export { validateObjectKey } from './object-storage-key';
 
 type SignedUrlAction = 'read' | 'write' | 'delete' | 'resumable';
 
@@ -23,9 +26,7 @@ export type UploadObjectParams = ResolveObjectLocationParams & {
 };
 
 export type DeleteObjectParams = ResolveObjectLocationParams;
-
 export type StreamObjectParams = ResolveObjectLocationParams;
-
 export type ObjectMetadataParams = ResolveObjectLocationParams;
 
 export type ObjectMetadata = {
@@ -68,7 +69,7 @@ function normalizeEnvValue(value: string | undefined): string | undefined {
   return trimmedValue.length > 0 ? trimmedValue : undefined;
 }
 
-function firstDefined(...values: Array<string | undefined>): string | undefined {
+function firstDefined(...values: (string | undefined)[]): string | undefined {
   return values.map(normalizeEnvValue).find(Boolean);
 }
 
@@ -113,36 +114,13 @@ export function getDeviceAgentArtifactsBucketName(): string | undefined {
   );
 }
 
-export function validateObjectKey(key: string): string {
-  if (typeof key !== 'string' || key.trim().length === 0) {
-    throw new Error('Object key cannot be empty');
-  }
-
-  const normalizedKey = key.trim().replace(/^\/+/, '');
-  const lowerKey = normalizedKey.toLowerCase();
-
-  if (
-    lowerKey.includes('://') ||
-    lowerKey.includes('storage.googleapis.com') ||
-    lowerKey.includes('amazonaws.com')
-  ) {
-    throw new Error('Object key must not be a URL');
-  }
-
-  const segments = normalizedKey.split('/');
-  if (segments.some((segment) => segment === '..')) {
-    throw new Error('Path traversal detected in object key');
-  }
-
-  return normalizedKey;
-}
-
 export function resolveObjectLocation({
   organizationId,
   key,
   bucketName,
 }: ResolveObjectLocationParams): ObjectLocation {
-  const resolvedBucketName = normalizeEnvValue(bucketName) ?? getDefaultBucketName();
+  const resolvedBucketName =
+    normalizeEnvValue(bucketName) ?? getDefaultBucketName();
 
   if (!resolvedBucketName) {
     throw new Error('Object storage bucket is not configured');
@@ -156,8 +134,13 @@ export function resolveObjectLocation({
   const normalizedKey = validateObjectKey(key);
   const organizationPrefix = `${normalizedOrganizationId}/`;
 
-  if (normalizedKey.startsWith('org_') && !normalizedKey.startsWith(organizationPrefix)) {
-    throw new Error(`Object key must be scoped to organization ${normalizedOrganizationId}`);
+  if (
+    normalizedKey.startsWith('org_') &&
+    !normalizedKey.startsWith(organizationPrefix)
+  ) {
+    throw new Error(
+      `Object key must be scoped to organization ${normalizedOrganizationId}`,
+    );
   }
 
   return {
@@ -193,7 +176,9 @@ function toBufferChunk(chunk: unknown): Buffer {
   throw new Error('Unsupported object stream chunk type');
 }
 
-export async function readObjectStreamToBuffer(stream: Readable): Promise<Buffer> {
+export async function readObjectStreamToBuffer(
+  stream: Readable,
+): Promise<Buffer> {
   const chunks: Buffer[] = [];
 
   for await (const chunk of stream) {
@@ -232,7 +217,9 @@ export class GcsObjectStorage implements ObjectStorage {
       .createReadStream();
   }
 
-  async getObjectMetadata(params: ObjectMetadataParams): Promise<ObjectMetadata> {
+  async getObjectMetadata(
+    params: ObjectMetadataParams,
+  ): Promise<ObjectMetadata> {
     const location = resolveObjectLocation(params);
     const [metadata] = await this.storage
       .bucket(location.bucketName)
@@ -276,7 +263,10 @@ export class GcsObjectStorage implements ObjectStorage {
     const location = resolveObjectLocation(params);
 
     try {
-      await this.storage.bucket(location.bucketName).file(location.key).delete();
+      await this.storage
+        .bucket(location.bucketName)
+        .file(location.key)
+        .delete();
     } catch (error) {
       if (getDeleteErrorCode(error) === 404) {
         return;

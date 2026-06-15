@@ -19,7 +19,8 @@ describe('object storage configuration', () => {
   it('uses the shared app-data bucket and org prefix for object locations', () => {
     process.env.APP_OBJECT_STORAGE_BUCKET = 'betayum-app-data';
 
-    const { resolveObjectLocation } = require('./object-storage') as typeof import('./object-storage');
+    const { resolveObjectLocation } =
+      require('./object-storage') as typeof import('./object-storage');
 
     expect(
       resolveObjectLocation({
@@ -35,7 +36,8 @@ describe('object storage configuration', () => {
   it('rejects object keys outside the requested organization prefix', () => {
     process.env.APP_OBJECT_STORAGE_BUCKET = 'betayum-app-data';
 
-    const { resolveObjectLocation } = require('./object-storage') as typeof import('./object-storage');
+    const { resolveObjectLocation } =
+      require('./object-storage') as typeof import('./object-storage');
 
     expect(() =>
       resolveObjectLocation({
@@ -48,7 +50,8 @@ describe('object storage configuration', () => {
   it('rejects malformed object keys', () => {
     process.env.APP_OBJECT_STORAGE_BUCKET = 'betayum-app-data';
 
-    const { validateObjectKey } = require('./object-storage') as typeof import('./object-storage');
+    const { validateObjectKey } =
+      require('./object-storage') as typeof import('./object-storage');
 
     expect(() => validateObjectKey('../secret.pdf')).toThrow(
       'Path traversal detected',
@@ -59,10 +62,36 @@ describe('object storage configuration', () => {
     expect(() => validateObjectKey('')).toThrow('Object key cannot be empty');
   });
 
+  it('rejects URL-shaped object keys without substring matching hostnames', () => {
+    process.env.APP_OBJECT_STORAGE_BUCKET = 'betayum-app-data';
+
+    const { validateObjectKey } =
+      require('./object-storage') as typeof import('./object-storage');
+
+    expect(() =>
+      validateObjectKey(
+        'https://example.com/storage.googleapis.com/bucket/key.pdf',
+      ),
+    ).toThrow('Object key must not be a URL');
+    expect(() =>
+      validateObjectKey('storage.googleapis.com/bucket/key.pdf'),
+    ).toThrow('Object key must not be a URL');
+    expect(() => validateObjectKey('bucket.s3.amazonaws.com/key.pdf')).toThrow(
+      'Object key must not be a URL',
+    );
+    expect(
+      validateObjectKey('reports/storage.googleapis.com-reference.pdf'),
+    ).toBe('reports/storage.googleapis.com-reference.pdf');
+    expect(validateObjectKey('reports/amazonaws.com-reference.pdf')).toBe(
+      'reports/amazonaws.com-reference.pdf',
+    );
+  });
+
   it('uses the resolved GCS bucket and key for object operations', async () => {
     process.env.APP_OBJECT_STORAGE_BUCKET = 'betayum-app-data';
 
-    const { GcsObjectStorage } = require('./object-storage') as typeof import('./object-storage');
+    const { GcsObjectStorage } =
+      require('./object-storage') as typeof import('./object-storage');
     const fakeFile = new FakeStorageFile();
     const fakeStorage = new FakeStorage(fakeFile);
     const objectStorage = new GcsObjectStorage(
@@ -150,7 +179,8 @@ class FakeStorage {
       return existingFile;
     }
 
-    const file = this.files.size === 0 ? this.fakeFile : new FakeStorageFile(this);
+    const file =
+      this.files.size === 0 ? this.fakeFile : new FakeStorageFile(this);
     file.key = key;
     this.files.set(key, file);
     return file;
