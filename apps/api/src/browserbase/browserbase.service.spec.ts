@@ -22,14 +22,17 @@ jest.mock('@db', () => ({
   },
 }));
 
-jest.mock('@/app/s3', () => ({
-  getSignedUrl: jest.fn().mockResolvedValue('https://s3.example.com/signed'),
-  s3Client: { send: jest.fn() },
-  BUCKET_NAME: 'test-bucket',
+jest.mock('@/app/object-storage', () => ({
+  objectStorage: {
+    uploadObject: jest.fn(),
+    getSignedObjectUrl: jest.fn().mockResolvedValue('https://storage.example.com/signed'),
+  },
 }));
 
 import { db, TaskFrequency } from '@db';
-import { getSignedUrl } from '@/app/s3';
+import { objectStorage } from '@/app/object-storage';
+
+const mockObjectStorage = objectStorage as jest.Mocked<typeof objectStorage>;
 
 describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
   let service: BrowserbaseService;
@@ -45,7 +48,7 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
   it('returns a freshly minted presigned URL for an in-scope run', async () => {
     (db.browserAutomationRun.findUnique as jest.Mock).mockResolvedValue({
       id: 'bar_1',
-      screenshotUrl: 'browser-automations/org_1/bau_1/bar_1.jpg',
+      screenshotUrl: 'org_1/browser-automations/bau_1/bar_1.jpg',
       automation: { task: { organizationId: 'org_1' } },
     });
 
@@ -54,7 +57,7 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
       organizationId: 'org_1',
     });
 
-    expect(url).toBe('https://s3.example.com/signed');
+    expect(url).toBe('https://storage.example.com/signed');
     expect(db.browserAutomationRun.findUnique).toHaveBeenCalledWith({
       where: { id: 'bar_1' },
       include: { automation: { include: { task: true } } },
@@ -75,7 +78,7 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
   it('throws NotFoundException when the run belongs to a different org', async () => {
     (db.browserAutomationRun.findUnique as jest.Mock).mockResolvedValue({
       id: 'bar_1',
-      screenshotUrl: 'browser-automations/org_2/bau_1/bar_1.jpg',
+      screenshotUrl: 'org_2/browser-automations/bau_1/bar_1.jpg',
       automation: { task: { organizationId: 'org_2' } },
     });
 
@@ -105,7 +108,7 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
   it('signs the URL without Content-Disposition when download is falsy', async () => {
     (db.browserAutomationRun.findUnique as jest.Mock).mockResolvedValue({
       id: 'bar_1',
-      screenshotUrl: 'browser-automations/org_1/bau_1/bar_1.jpg',
+      screenshotUrl: 'org_1/browser-automations/bau_1/bar_1.jpg',
       automation: { task: { organizationId: 'org_1' } },
     });
 
@@ -114,14 +117,19 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
       organizationId: 'org_1',
     });
 
-    const command = (getSignedUrl as jest.Mock).mock.calls[0][1];
-    expect(command.input.ResponseContentDisposition).toBeUndefined();
+    expect(mockObjectStorage.getSignedObjectUrl).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      key: 'org_1/browser-automations/bau_1/bar_1.jpg',
+      action: 'read',
+      expiresInSeconds: 3600,
+      responseContentDisposition: undefined,
+    });
   });
 
   it('signs the URL with attachment Content-Disposition when download is true', async () => {
     (db.browserAutomationRun.findUnique as jest.Mock).mockResolvedValue({
       id: 'bar_1',
-      screenshotUrl: 'browser-automations/org_1/bau_1/bar_1.jpg',
+      screenshotUrl: 'org_1/browser-automations/bau_1/bar_1.jpg',
       automation: { task: { organizationId: 'org_1' } },
     });
 
@@ -131,10 +139,13 @@ describe('BrowserbaseService.getScreenshotRedirectUrl', () => {
       download: true,
     });
 
-    const command = (getSignedUrl as jest.Mock).mock.calls[0][1];
-    expect(command.input.ResponseContentDisposition).toBe(
-      'attachment; filename="screenshot-bar_1.jpg"',
-    );
+    expect(mockObjectStorage.getSignedObjectUrl).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      key: 'org_1/browser-automations/bau_1/bar_1.jpg',
+      action: 'read',
+      expiresInSeconds: 3600,
+      responseContentDisposition: 'attachment; filename="screenshot-bar_1.jpg"',
+    });
   });
 });
 

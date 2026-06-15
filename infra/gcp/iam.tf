@@ -63,6 +63,14 @@ resource "google_service_account_iam_member" "deployer_can_run_migrator" {
   member             = google_service_account.deployer[each.key].member
 }
 
+resource "google_service_account_iam_member" "runtime_can_sign_blobs" {
+  for_each = local.env_services
+
+  service_account_id = google_service_account.runtime[each.key].name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = google_service_account.runtime[each.key].member
+}
+
 resource "google_secret_manager_secret_iam_member" "runtime_secret_access" {
   for_each = local.runtime_secret_bindings
 
@@ -101,4 +109,28 @@ resource "google_project_iam_member" "migrator_cloud_sql_client" {
   project = each.value.project_id
   role    = "roles/cloudsql.client"
   member  = google_service_account.migrator[each.key].member
+}
+
+resource "google_storage_bucket_iam_member" "api_app_data_object_admin" {
+  for_each = var.environments
+
+  bucket = google_storage_bucket.app_data[each.key].name
+  role   = "roles/storage.objectAdmin"
+  member = google_service_account.runtime["${each.key}.api"].member
+}
+
+resource "google_storage_bucket_iam_member" "api_device_agent_object_viewer" {
+  for_each = var.environments
+
+  bucket = google_storage_bucket.device_agent_artifacts[each.key].name
+  role   = "roles/storage.objectViewer"
+  member = google_service_account.runtime["${each.key}.api"].member
+}
+
+resource "google_storage_bucket_iam_member" "portal_device_agent_object_viewer" {
+  for_each = var.environments
+
+  bucket = google_storage_bucket.device_agent_artifacts[each.key].name
+  role   = "roles/storage.objectViewer"
+  member = google_service_account.runtime["${each.key}.portal"].member
 }

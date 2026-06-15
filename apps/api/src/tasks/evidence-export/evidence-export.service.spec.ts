@@ -53,13 +53,14 @@ jest.mock('archiver', () => {
   });
 });
 
-// ------- Mock S3 -------
-jest.mock('../../app/s3', () => ({
-  BUCKET_NAME: 'test-bucket',
-  s3Client: {
-    send: jest.fn(),
+// ------- Mock object storage -------
+jest.mock('../../app/object-storage', () => ({
+  objectStorage: {
+    streamObject: jest.fn(),
   },
-  getSignedUrl: jest.fn(),
+  readObjectStreamToBuffer: jest.fn((stream: unknown) =>
+    Promise.resolve(Buffer.isBuffer(stream) ? stream : Buffer.from('PDF')),
+  ),
 }));
 
 // ------- Mock @db -------
@@ -95,10 +96,11 @@ jest.mock('./evidence-pdf-generator', () => ({
       .slice(0, 50) || 'export',
 }));
 
-import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { s3Client } from '../../app/s3';
+import { objectStorage } from '../../app/object-storage';
 import { EvidenceExportService } from './evidence-export.service';
 import { generateTaskSummaryPDF } from './evidence-pdf-generator';
+
+const mockObjectStorage = objectStorage as jest.Mocked<typeof objectStorage>;
 
 describe('EvidenceExportService — streaming ZIPs', () => {
   let service: EvidenceExportService;
@@ -165,10 +167,9 @@ describe('EvidenceExportService — streaming ZIPs', () => {
         },
       ];
 
-      // Mock S3 GetObject to return a small Buffer body
-      (s3Client!.send as jest.Mock).mockResolvedValue({
-        Body: Buffer.from('FAKE-PDF-BYTES'),
-      });
+      mockObjectStorage.streamObject.mockReturnValue(
+        Buffer.from('FAKE-PDF-BYTES') as never,
+      );
 
       primeTaskQueries({ attachments });
 
@@ -187,16 +188,15 @@ describe('EvidenceExportService — streaming ZIPs', () => {
         'acme-corp_soc-2-access-review_evidence/01-attachments/contract.pdf',
       );
 
-      // S3 hit with attachment's S3 key
-      expect(s3Client!.send).toHaveBeenCalledWith(
-        expect.any(GetObjectCommand),
-      );
+      expect(mockObjectStorage.streamObject).toHaveBeenCalledWith({
+        organizationId: 'org_1',
+        key: 'org_1/attachments/task/tsk_123/123-abc-contract.pdf',
+      });
 
       // Summary PDF rendered with attachment count
-      expect(generateTaskSummaryPDF).toHaveBeenCalledWith(
-        expect.any(Object),
-        { attachmentsCount: 1 },
-      );
+      expect(generateTaskSummaryPDF).toHaveBeenCalledWith(expect.any(Object), {
+        attachmentsCount: 1,
+      });
     });
 
     it('writes a placeholder when S3 object is truly missing (NoSuchKey)', async () => {
@@ -214,7 +214,9 @@ describe('EvidenceExportService — streaming ZIPs', () => {
         name: 'NoSuchKey',
         $metadata: { httpStatusCode: 404 },
       });
-      (s3Client!.send as jest.Mock).mockRejectedValue(noSuchKeyError);
+      mockObjectStorage.streamObject.mockImplementation(() => {
+        throw noSuchKeyError;
+      });
       primeTaskQueries({ attachments });
 
       const { archive } = await service.streamTaskEvidenceZip(
@@ -248,7 +250,9 @@ describe('EvidenceExportService — streaming ZIPs', () => {
         name: 'AccessDenied',
         $metadata: { httpStatusCode: 403 },
       });
-      (s3Client!.send as jest.Mock).mockRejectedValue(accessDeniedError);
+      mockObjectStorage.streamObject.mockImplementation(() => {
+        throw accessDeniedError;
+      });
       primeTaskQueries({ attachments });
 
       const { archive } = await service.streamTaskEvidenceZip(
@@ -278,14 +282,16 @@ describe('EvidenceExportService — streaming ZIPs', () => {
         },
       ];
 
-      // Bucket misconfiguration — returns HTTP 404 but must NOT be
+      // Bucket misconfiguration must NOT be
       // treated as a single missing attachment. Otherwise the export looks
       // "successful" while silently containing only placeholders.
       const noSuchBucketError = Object.assign(new Error('NoSuchBucket'), {
         name: 'NoSuchBucket',
         $metadata: { httpStatusCode: 404 },
       });
-      (s3Client!.send as jest.Mock).mockRejectedValue(noSuchBucketError);
+      mockObjectStorage.streamObject.mockImplementation(() => {
+        throw noSuchBucketError;
+      });
       primeTaskQueries({ attachments });
 
       const { archive } = await service.streamTaskEvidenceZip(
@@ -312,30 +318,28 @@ describe('EvidenceExportService — streaming ZIPs', () => {
         {
           id: 'att_real',
           name: '_MISSING_foo.txt',
-          url: 'key-real',
+          url: 'org_1/key-real',
           type: 'document',
           createdAt: new Date('2024-01-01'),
         },
         {
           id: 'att_miss',
           name: 'foo',
-          url: 'key-miss',
+          url: 'org_1/key-miss',
           type: 'document',
           createdAt: new Date('2024-01-02'),
         },
       ];
 
-      (s3Client!.send as jest.Mock).mockImplementation(
-        (cmd: { input: { Key: string } }) => {
-          if (cmd.input.Key === 'key-real') {
-            return Promise.resolve({ Body: Buffer.from('REAL') });
+      mockObjectStorage.streamObject.mockImplementation(
+        (params: { key: string }) => {
+          if (params.key === 'org_1/key-real') {
+            return Buffer.from('REAL') as never;
           }
-          return Promise.reject(
-            Object.assign(new Error('NoSuchKey'), {
-              name: 'NoSuchKey',
-              $metadata: { httpStatusCode: 404 },
-            }),
-          );
+          throw Object.assign(new Error('NoSuchKey'), {
+            name: 'NoSuchKey',
+            $metadata: { httpStatusCode: 404 },
+          });
         },
       );
       primeTaskQueries({ attachments });
@@ -371,22 +375,22 @@ describe('EvidenceExportService — streaming ZIPs', () => {
         {
           id: 'att_a',
           name: 'report.pdf',
-          url: 'key-a',
+          url: 'org_1/key-a',
           type: 'document',
           createdAt: new Date('2024-01-01'),
         },
         {
           id: 'att_b',
           name: 'report.pdf',
-          url: 'key-b',
+          url: 'org_1/key-b',
           type: 'document',
           createdAt: new Date('2024-01-02'),
         },
       ];
 
-      (s3Client!.send as jest.Mock).mockResolvedValue({
-        Body: Buffer.from('PDF'),
-      });
+      mockObjectStorage.streamObject.mockReturnValue(
+        Buffer.from('PDF') as never,
+      );
       primeTaskQueries({ attachments });
 
       const { archive } = await service.streamTaskEvidenceZip(
@@ -464,13 +468,12 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       expect(paths.some((p) => /\/app-.+\/evidence\.pdf$/.test(p))).toBe(true);
 
       // S3 GetObject should NOT have been called — no attachments to fetch.
-      expect(s3Client!.send).not.toHaveBeenCalled();
+      expect(mockObjectStorage.streamObject).not.toHaveBeenCalled();
 
       // Summary PDF renders with attachmentsCount=0 (line omitted in PDF).
-      expect(generateTaskSummaryPDF).toHaveBeenCalledWith(
-        expect.any(Object),
-        { attachmentsCount: 0 },
-      );
+      expect(generateTaskSummaryPDF).toHaveBeenCalledWith(expect.any(Object), {
+        attachmentsCount: 0,
+      });
     });
 
     it('loads each automation individually instead of all runs at once (OOM fix)', async () => {
@@ -582,7 +585,7 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       expect(paths).toEqual([
         'acme-corp_soc-2-access-review_evidence/00-summary.pdf',
       ]);
-      expect(s3Client!.send).not.toHaveBeenCalled();
+      expect(mockObjectStorage.streamObject).not.toHaveBeenCalled();
     });
   });
 
@@ -623,7 +626,7 @@ describe('EvidenceExportService — streaming ZIPs', () => {
           {
             id: 'att_1',
             name: 'audit.pdf',
-            url: 'key',
+            url: 'org_1/key',
             type: 'document',
             createdAt: new Date(),
           },
@@ -635,16 +638,18 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       });
       mockDb.integrationCheckRun.findMany.mockResolvedValue([]);
       mockDb.evidenceAutomationRun.findMany.mockResolvedValue([]);
-      (s3Client!.send as jest.Mock).mockResolvedValue({
-        Body: Buffer.from('PDF'),
-      });
+      mockObjectStorage.streamObject.mockReturnValue(
+        Buffer.from('PDF') as never,
+      );
 
       const { archive, filename } =
         await service.streamOrganizationEvidenceZip('org_1');
       const mock = archive as unknown as MockArchive;
       await mock.finalized;
 
-      expect(filename).toMatch(/^acme-corp_all-evidence_\d{4}-\d{2}-\d{2}\.zip$/);
+      expect(filename).toMatch(
+        /^acme-corp_all-evidence_\d{4}-\d{2}-\d{2}\.zip$/,
+      );
 
       const paths = mock.appendCalls.map((c) => c.options.name);
       expect(paths.some((p) => p.endsWith('/manifest.json'))).toBe(true);
@@ -693,8 +698,7 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       // Per-task attachment fetch inside loop
       mockDb.attachment.findMany.mockResolvedValue([]);
 
-      const { archive } =
-        await service.streamOrganizationEvidenceZip('org_1');
+      const { archive } = await service.streamOrganizationEvidenceZip('org_1');
       const mock = archive as unknown as MockArchive;
       await mock.finalized;
 
@@ -708,7 +712,7 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       expect(paths.some((p) => p.includes('/01-attachments/'))).toBe(false);
 
       // No S3 fetches triggered (no attachments to stream)
-      expect(s3Client!.send).not.toHaveBeenCalled();
+      expect(mockObjectStorage.streamObject).not.toHaveBeenCalled();
 
       // Manifest should record zero attachments
       const manifestCall = mock.appendCalls.find((c) =>
@@ -735,20 +739,22 @@ describe('EvidenceExportService — streaming ZIPs', () => {
       ]);
 
       // Per-task dispatch — depends on which task findFirst is called for.
-      mockDb.task.findFirst.mockImplementation((args: { where: { id: string } }) => {
-        if (args.where.id === 'tsk_auto') {
+      mockDb.task.findFirst.mockImplementation(
+        (args: { where: { id: string } }) => {
+          if (args.where.id === 'tsk_auto') {
+            return Promise.resolve({
+              id: 'tsk_auto',
+              title: 'Automated',
+              organization: { name: 'Acme Corp' },
+            });
+          }
           return Promise.resolve({
-            id: 'tsk_auto',
-            title: 'Automated',
+            id: 'tsk_att',
+            title: 'Attached',
             organization: { name: 'Acme Corp' },
           });
-        }
-        return Promise.resolve({
-          id: 'tsk_att',
-          title: 'Attached',
-          organization: { name: 'Acme Corp' },
-        });
-      });
+        },
+      );
       mockDb.integrationCheckRun.findMany.mockImplementation(
         (args: { where: { taskId: string } }) =>
           args.where.taskId === 'tsk_auto'
@@ -783,7 +789,7 @@ describe('EvidenceExportService — streaming ZIPs', () => {
                 {
                   id: 'att_1',
                   name: 'proof.pdf',
-                  url: 'key',
+                  url: 'org_1/key',
                   type: 'document',
                   createdAt: new Date(),
                 },
@@ -791,21 +797,20 @@ describe('EvidenceExportService — streaming ZIPs', () => {
             : Promise.resolve([]),
       );
 
-      (s3Client!.send as jest.Mock).mockResolvedValue({
-        Body: Buffer.from('PDF'),
-      });
+      mockObjectStorage.streamObject.mockReturnValue(
+        Buffer.from('PDF') as never,
+      );
 
-      const { archive } =
-        await service.streamOrganizationEvidenceZip('org_1');
+      const { archive } = await service.streamOrganizationEvidenceZip('org_1');
       const mock = archive as unknown as MockArchive;
       await mock.finalized;
 
       const paths = mock.appendCalls.map((c) => c.options.name);
       expect(paths.some((p) => p.includes('/automated-'))).toBe(true);
       expect(paths.some((p) => p.includes('/attached-'))).toBe(true);
-      expect(
-        paths.some((p) => p.includes('/01-attachments/proof.pdf')),
-      ).toBe(true);
+      expect(paths.some((p) => p.includes('/01-attachments/proof.pdf'))).toBe(
+        true,
+      );
 
       const manifestCall = mock.appendCalls.find((c) =>
         c.options.name.endsWith('/manifest.json'),

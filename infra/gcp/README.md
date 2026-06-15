@@ -25,6 +25,7 @@ migrator job can be created before Secret Manager versions exist.
 - Artifact Registry repositories for immutable service images.
 - Cloud Build deployer service accounts scoped per environment.
 - Runtime service accounts for API, app, portal, and migration jobs.
+- Private Google Cloud Storage buckets for app data and device-agent artifacts.
 - Secret Manager secret shells with environment-scoped names.
 - Cloud Run services for API, app, and portal.
 - A Cloud Run migration job that Cloud Build runs before service rollout.
@@ -35,6 +36,33 @@ migrator job can be created before Secret Manager versions exist.
 - Optional Cloud Armor attachment through `security_policy_id`.
 - Cloud Build triggers for `develop` and `release`, with production approval.
 - `_Default` log bucket retention for deployment evidence.
+
+## Object Storage
+
+Runtime object storage uses Google Cloud Storage and Application Default
+Credentials. Cloud Run services authenticate with their attached service
+accounts; do not seed long-lived GCS interoperability keys for production.
+
+Each environment creates:
+
+- One private app-data bucket exposed to services as
+  `APP_OBJECT_STORAGE_BUCKET`.
+- One private device-agent artifact bucket exposed as
+  `APP_DEVICE_AGENT_ARTIFACTS_BUCKET`.
+
+Customer-data objects must remain private and use organization-prefixed keys.
+The API runtime service account receives object-admin access to the app-data
+bucket. API and portal runtime service accounts receive read access to the
+device-agent artifact bucket for download/proxy behavior. Runtime service
+accounts are also granted `roles/iam.serviceAccountTokenCreator` on themselves
+so the GCS client can mint V4 signed URLs through Application Default
+Credentials.
+
+Some app, portal, and API callers still use the S3-compatible GCS
+interoperability helpers. Until those callers are migrated to the API object
+storage adapter, seed `APP_GCP_ACCESS_KEY_ID` and `APP_GCP_SECRET_ACCESS_KEY`
+secret values when `mount_runtime_secrets = true`; the baseline also wires the
+matching `APP_GCP_*` bucket, endpoint, and region environment variables.
 
 ## Operator Inputs
 
@@ -55,6 +83,8 @@ Required decisions before `plan`:
 - Existing Cloud SQL instance connection names, if the environment uses Cloud
   SQL. The database instance lifecycle is intentionally external to this
   baseline unless the team decides Terraform should own it later.
+- Optional custom GCS bucket names. If omitted, bucket names are derived from
+  project ID, environment, and bucket purpose.
 - Optional Cloud Armor security policy IDs.
 - Final Cloud Build GitHub App connection authorization.
 
@@ -86,6 +116,18 @@ for example:
 
 ```text
 postgresql://USER:PASSWORD@localhost:5432/DATABASE?host=/cloudsql/PROJECT:REGION:INSTANCE
+```
+
+For local object-storage development, use Application Default Credentials:
+
+```bash
+gcloud auth application-default login
+```
+
+When testing with a deployed service-account identity, prefer impersonation:
+
+```bash
+gcloud auth application-default login --impersonate-service-account SERVICE_ACCOUNT_EMAIL
 ```
 
 ## Evidence

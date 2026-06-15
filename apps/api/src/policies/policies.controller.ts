@@ -33,7 +33,7 @@ import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 import { db } from '@db';
 import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
 import type { updatePolicy } from '../trigger/policies/update-policy';
-import { BUCKET_NAME, createStorageClient, getSignedUrl } from '../app/s3';
+import { objectStorage } from '../app/object-storage';
 import { AuditRead } from '../audit/skip-audit-log.decorator';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
@@ -487,17 +487,12 @@ export class PoliciesController {
       };
     }
 
-    // Generate signed URL
-    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const bucketName = BUCKET_NAME;
-
-    if (!bucketName) {
-      return { url: null };
-    }
-
-    const s3 = createStorageClient();
-    const command = new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl });
-    const url = await getSignedUrl(s3, command, { expiresIn: 900 });
+    const url = await objectStorage.getSignedObjectUrl({
+      organizationId,
+      key: pdfUrl,
+      action: 'read',
+      expiresInSeconds: 900,
+    });
 
     return {
       url,
@@ -527,14 +522,6 @@ export class PoliciesController {
     @OrganizationId() organizationId: string,
     @AuthContext() authContext: AuthContextType,
   ) {
-    const { PutObjectCommand, DeleteObjectCommand } =
-      await import('@aws-sdk/client-s3');
-    const bucketName = BUCKET_NAME;
-    if (!bucketName)
-      throw new BadRequestException('File storage is not configured');
-
-    const s3 = createStorageClient();
-
     const policy = await db.policy.findFirst({
       where: { id, organizationId, archivedAt: null },
       select: {
@@ -568,14 +555,12 @@ export class PoliciesController {
       }
 
       const s3Key = `${organizationId}/policies/${id}/v${version.version}-${Date.now()}-${sanitizedFileName}`;
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: bucketName,
-          Key: s3Key,
-          Body: fileBuffer,
-          ContentType: body.fileType,
-        }),
-      );
+      await objectStorage.uploadObject({
+        organizationId,
+        key: s3Key,
+        body: fileBuffer,
+        contentType: body.fileType,
+      });
       const oldPdfUrl = version.pdfUrl;
       await db.policyVersion.update({
         where: { id: body.versionId },
@@ -584,9 +569,10 @@ export class PoliciesController {
 
       if (oldPdfUrl && oldPdfUrl !== s3Key) {
         try {
-          await s3.send(
-            new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
-          );
+          await objectStorage.deleteObject({
+            organizationId,
+            key: oldPdfUrl,
+          });
         } catch {
           /* ignore */
         }
@@ -597,14 +583,12 @@ export class PoliciesController {
 
     // Legacy: upload to policy level
     const s3Key = `${organizationId}/policies/${id}/${Date.now()}-${sanitizedFileName}`;
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: bucketName,
-        Key: s3Key,
-        Body: fileBuffer,
-        ContentType: body.fileType,
-      }),
-    );
+    await objectStorage.uploadObject({
+      organizationId,
+      key: s3Key,
+      body: fileBuffer,
+      contentType: body.fileType,
+    });
     const oldPdfUrl = policy.pdfUrl;
     await db.policy.update({
       where: { id },
@@ -613,9 +597,10 @@ export class PoliciesController {
 
     if (oldPdfUrl && oldPdfUrl !== s3Key) {
       try {
-        await s3.send(
-          new DeleteObjectCommand({ Bucket: bucketName, Key: oldPdfUrl }),
-        );
+        await objectStorage.deleteObject({
+          organizationId,
+          key: oldPdfUrl,
+        });
       } catch {
         /* ignore */
       }
@@ -635,13 +620,6 @@ export class PoliciesController {
     @AuthContext() authContext: AuthContextType,
     @Query('versionId') versionId?: string,
   ) {
-    const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
-    const bucketName = BUCKET_NAME;
-    if (!bucketName)
-      throw new BadRequestException('File storage is not configured');
-
-    const s3 = createStorageClient();
-
     if (versionId) {
       const version = await db.policyVersion.findFirst({
         where: { id: versionId, policy: { id, organizationId } },
@@ -650,12 +628,10 @@ export class PoliciesController {
       if (!version) throw new NotFoundException('Version not found');
       if (version.pdfUrl) {
         try {
-          await s3.send(
-            new DeleteObjectCommand({
-              Bucket: bucketName,
-              Key: version.pdfUrl,
-            }),
-          );
+          await objectStorage.deleteObject({
+            organizationId,
+            key: version.pdfUrl,
+          });
         } catch {
           /* ignore */
         }
@@ -672,9 +648,10 @@ export class PoliciesController {
       if (!policy) throw new NotFoundException('Policy not found');
       if (policy.pdfUrl) {
         try {
-          await s3.send(
-            new DeleteObjectCommand({ Bucket: bucketName, Key: policy.pdfUrl }),
-          );
+          await objectStorage.deleteObject({
+            organizationId,
+            key: policy.pdfUrl,
+          });
         } catch {
           /* ignore */
         }
@@ -723,16 +700,12 @@ export class PoliciesController {
     }
     if (!pdfUrl) return { url: null };
 
-    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const bucketName = BUCKET_NAME;
-    if (!bucketName) return { url: null };
-
-    const s3 = createStorageClient();
-    const url = await getSignedUrl(
-      s3,
-      new GetObjectCommand({ Bucket: bucketName, Key: pdfUrl }),
-      { expiresIn: 900 },
-    );
+    const url = await objectStorage.getSignedObjectUrl({
+      organizationId,
+      key: pdfUrl,
+      action: 'read',
+      expiresInSeconds: 900,
+    });
 
     return { url };
   }

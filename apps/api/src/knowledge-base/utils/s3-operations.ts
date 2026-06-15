@@ -1,14 +1,8 @@
-import {
-  PutObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-} from '@aws-sdk/client-s3';
 import { randomBytes } from 'crypto';
 import {
-  s3Client,
-  APP_AWS_KNOWLEDGE_BASE_BUCKET,
-  getSignedUrl,
-} from '@/app/s3';
+  getKnowledgeBaseBucketName,
+  objectStorage,
+} from '@/app/object-storage';
 import {
   MAX_FILE_SIZE_BYTES,
   SIGNED_URL_EXPIRATION_SECONDS,
@@ -27,22 +21,18 @@ export interface SignedUrlResult {
 }
 
 /**
- * Validates that S3 is configured
+ * Validates that Knowledge Base object storage is configured.
  */
 export function validateS3Config(): void {
-  if (!s3Client) {
-    throw new Error('S3 client not configured');
-  }
-
-  if (!APP_AWS_KNOWLEDGE_BASE_BUCKET) {
+  if (!getKnowledgeBaseBucketName()) {
     throw new Error(
-      'Knowledge base bucket is not configured. Please set APP_AWS_KNOWLEDGE_BASE_BUCKET environment variable.',
+      'Knowledge base bucket is not configured.',
     );
   }
 }
 
 /**
- * Uploads a document to S3
+ * Uploads a document to object storage.
  */
 export async function uploadToS3(
   organizationId: string,
@@ -67,19 +57,17 @@ export async function uploadToS3(
   const sanitized = sanitizeFileName(fileName);
   const s3Key = generateS3Key(organizationId, fileId, sanitized);
 
-  // Upload to S3
-  const putCommand = new PutObjectCommand({
-    Bucket: APP_AWS_KNOWLEDGE_BASE_BUCKET!,
-    Key: s3Key,
-    Body: fileBuffer,
-    ContentType: fileType,
-    Metadata: {
+  await objectStorage.uploadObject({
+    organizationId,
+    key: s3Key,
+    bucketName: getKnowledgeBaseBucketName(),
+    body: fileBuffer,
+    contentType: fileType,
+    metadata: {
       originalFileName: sanitizeMetadataFileName(fileName),
       organizationId,
     },
   });
-
-  await s3Client!.send(putCommand);
 
   return {
     s3Key,
@@ -96,14 +84,13 @@ export async function generateDownloadUrl(
 ): Promise<SignedUrlResult> {
   validateS3Config();
 
-  const command = new GetObjectCommand({
-    Bucket: APP_AWS_KNOWLEDGE_BASE_BUCKET!,
-    Key: s3Key,
-    ResponseContentDisposition: `attachment; filename="${encodeURIComponent(fileName)}"`,
-  });
-
-  const signedUrl = await getSignedUrl(s3Client!, command, {
-    expiresIn: SIGNED_URL_EXPIRATION_SECONDS,
+  const signedUrl = await objectStorage.getSignedObjectUrl({
+    organizationId: extractOrganizationId(s3Key),
+    key: s3Key,
+    bucketName: getKnowledgeBaseBucketName(),
+    action: 'read',
+    expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS,
+    responseContentDisposition: `attachment; filename="${encodeURIComponent(fileName)}"`,
   });
 
   return { signedUrl };
@@ -119,36 +106,44 @@ export async function generateViewUrl(
 ): Promise<SignedUrlResult> {
   validateS3Config();
 
-  const command = new GetObjectCommand({
-    Bucket: APP_AWS_KNOWLEDGE_BASE_BUCKET!,
-    Key: s3Key,
-    ResponseContentDisposition: `inline; filename="${encodeURIComponent(fileName)}"`,
-    ResponseContentType: fileType || 'application/octet-stream',
-  });
-
-  const signedUrl = await getSignedUrl(s3Client!, command, {
-    expiresIn: SIGNED_URL_EXPIRATION_SECONDS,
+  const signedUrl = await objectStorage.getSignedObjectUrl({
+    organizationId: extractOrganizationId(s3Key),
+    key: s3Key,
+    bucketName: getKnowledgeBaseBucketName(),
+    action: 'read',
+    expiresInSeconds: SIGNED_URL_EXPIRATION_SECONDS,
+    responseContentDisposition: `inline; filename="${encodeURIComponent(fileName)}"`,
+    responseContentType: fileType || 'application/octet-stream',
   });
 
   return { signedUrl };
 }
 
 /**
- * Deletes a document from S3
+ * Deletes a document from object storage.
  * Returns true if successful, false if error (non-throwing)
  */
 export async function deleteFromS3(s3Key: string): Promise<boolean> {
   try {
     validateS3Config();
 
-    const deleteCommand = new DeleteObjectCommand({
-      Bucket: APP_AWS_KNOWLEDGE_BASE_BUCKET!,
-      Key: s3Key,
+    await objectStorage.deleteObject({
+      organizationId: extractOrganizationId(s3Key),
+      key: s3Key,
+      bucketName: getKnowledgeBaseBucketName(),
     });
 
-    await s3Client!.send(deleteCommand);
     return true;
   } catch {
     return false;
   }
+}
+
+function extractOrganizationId(s3Key: string): string {
+  const [organizationId] = s3Key.split('/');
+  if (!organizationId) {
+    throw new Error('Object key must include an organization prefix');
+  }
+
+  return organizationId;
 }

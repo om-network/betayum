@@ -1,10 +1,8 @@
 import { db, Prisma } from '@db';
 import {
-  s3Client,
-  APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET,
-  BUCKET_NAME,
-} from '../../app/s3';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+  getQuestionnaireUploadBucketName,
+  objectStorage,
+} from '../../app/object-storage';
 import { randomBytes } from 'crypto';
 import { MAX_FILE_SIZE_BYTES } from './constants';
 
@@ -110,7 +108,7 @@ export async function persistQuestionnaireResult(
 }
 
 /**
- * Uploads a questionnaire file to S3
+ * Uploads a questionnaire file to object storage.
  */
 export async function uploadQuestionnaireFile(params: {
   organizationId: string;
@@ -119,14 +117,10 @@ export async function uploadQuestionnaireFile(params: {
   fileData: string;
   source: 'internal' | 'external';
 }): Promise<{ s3Key: string; fileSize: number } | null> {
-  if (!s3Client) {
-    throw new Error('S3 client not configured for questionnaire uploads');
-  }
-
-  const bucket = APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET || BUCKET_NAME;
+  const bucket = getQuestionnaireUploadBucketName();
   if (!bucket) {
     throw new Error(
-      'APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET or APP_AWS_BUCKET_NAME must be configured for questionnaire uploads',
+      'Questionnaire upload bucket is not configured',
     );
   }
 
@@ -143,19 +137,18 @@ export async function uploadQuestionnaireFile(params: {
   const timestamp = Date.now();
   const s3Key = `${params.organizationId}/questionnaire-uploads/${timestamp}-${fileId}-${sanitizedFileName}`;
 
-  const putCommand = new PutObjectCommand({
-    Bucket: bucket,
-    Key: s3Key,
-    Body: fileBuffer,
-    ContentType: params.fileType,
-    Metadata: {
+  await objectStorage.uploadObject({
+    organizationId: params.organizationId,
+    key: s3Key,
+    bucketName: bucket,
+    body: fileBuffer,
+    contentType: params.fileType,
+    metadata: {
       originalFileName: sanitizedFileName,
       organizationId: params.organizationId,
       source: params.source,
     },
   });
-
-  await s3Client.send(putCommand);
 
   return {
     s3Key,
