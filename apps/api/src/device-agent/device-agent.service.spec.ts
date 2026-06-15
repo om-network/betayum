@@ -6,6 +6,7 @@ import { Readable } from 'stream';
 
 const mockSend = jest.fn();
 const mockGetSignedUrl = jest.fn();
+let mockS3Client: { send: jest.Mock } | null = { send: mockSend };
 
 class MockGetObjectCommand {
   constructor(public readonly input: unknown) {
@@ -20,12 +21,15 @@ class MockHeadObjectCommand {
 }
 
 jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn().mockImplementation(() => ({ send: mockSend })),
   GetObjectCommand: MockGetObjectCommand,
   HeadObjectCommand: MockHeadObjectCommand,
 }));
 
-jest.mock('@aws-sdk/s3-request-presigner', () => ({
+jest.mock('@/app/s3', () => ({
+  BUCKET_NAME: 'test-bucket',
+  get s3Client() {
+    return mockS3Client;
+  },
   getSignedUrl: (...args: unknown[]) => mockGetSignedUrl(...args),
 }));
 
@@ -34,16 +38,19 @@ import { DeviceAgentService } from './device-agent.service';
 describe('DeviceAgentService', () => {
   let service: DeviceAgentService;
 
-  beforeAll(() => {
-    process.env.APP_AWS_BUCKET_NAME = 'test-bucket';
-    process.env.APP_AWS_REGION = 'us-east-1';
-    process.env.APP_AWS_ACCESS_KEY_ID = 'test-key';
-    process.env.APP_AWS_SECRET_ACCESS_KEY = 'test-secret';
-  });
-
   beforeEach(() => {
     jest.clearAllMocks();
+    mockS3Client = { send: mockSend };
     service = new DeviceAgentService();
+  });
+
+  it('does not fail dependency injection when storage is not configured', async () => {
+    mockS3Client = null;
+
+    expect(() => new DeviceAgentService()).not.toThrow();
+    await expect(service.downloadMacAgent()).rejects.toThrow(
+      InternalServerErrorException,
+    );
   });
 
   describe('downloadMacAgent', () => {

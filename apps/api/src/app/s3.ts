@@ -1,5 +1,6 @@
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
   type GetObjectCommandOutput,
@@ -16,7 +17,7 @@ import '../config/load-env';
  */
 export const getSignedUrl = _getSignedUrl as unknown as (
   client: S3Client,
-  command: GetObjectCommand | PutObjectCommand,
+  command: GetObjectCommand | HeadObjectCommand | PutObjectCommand,
   options?: { expiresIn?: number },
 ) => Promise<string>;
 
