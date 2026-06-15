@@ -15,6 +15,8 @@ function firstDefined(...values: Array<string | undefined>): string | undefined 
 
 const isGcpConfigured = Boolean(
   firstDefined(
+    process.env.APP_OBJECT_STORAGE_BUCKET,
+    process.env.APP_GCS_BUCKET_NAME,
     process.env.APP_GCP_ACCESS_KEY_ID,
     process.env.APP_GCP_BUCKET_NAME,
     process.env.APP_GCP_ENDPOINT,
@@ -40,6 +42,8 @@ const storageEndpoint =
   (isGcpConfigured ? 'https://storage.googleapis.com' : undefined);
 
 export const BUCKET_NAME = firstDefined(
+  process.env.APP_OBJECT_STORAGE_BUCKET,
+  process.env.APP_GCS_BUCKET_NAME,
   process.env.APP_GCP_BUCKET_NAME,
   process.env.APP_AWS_BUCKET_NAME,
 );
@@ -87,17 +91,17 @@ export function createStorageClient(): S3Client {
 
 let s3ClientInstance: S3Client | null = null;
 
-try {
-  if (!storageAccessKeyId || !storageSecretAccessKey) {
-    throw new Error(
-      `[Storage] ${storageProviderLabel} credentials or configuration missing.`,
-    );
+if (!storageAccessKeyId || !storageSecretAccessKey) {
+  console.warn(
+    `[Storage] ${storageProviderLabel} credentials are missing. Object storage features that still use S3-compatible helpers are disabled until APP_GCP_* variables (preferred) or APP_AWS_* legacy variables are configured.`,
+  );
+} else {
+  try {
+    s3ClientInstance = createStorageClient();
+  } catch (error) {
+    console.error('[Storage] Failed to initialize object storage client.', error);
+    s3ClientInstance = null;
   }
-
-  s3ClientInstance = createStorageClient();
-} catch (error) {
-  console.error('[Storage] Failed to initialize object storage client.', error);
-  s3ClientInstance = null;
 }
 
 export const s3Client = s3ClientInstance;

@@ -24,6 +24,12 @@ const requiredPipelineSnippets = [
   '--update-env-vars=BASE_URL=${_API_URL}',
   'NEXT_PUBLIC_API_URL=${_API_URL}',
   'NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL}',
+  'APP_OBJECT_STORAGE_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data',
+  'APP_DEVICE_AGENT_ARTIFACTS_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-device-agent-artifacts',
+  'APP_GCP_BUCKET_NAME=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data',
+  'APP_GCP_ENDPOINT=https://storage.googleapis.com',
+  'APP_GCP_REGION=auto',
+  'APP_GCP_ORG_ASSETS_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data',
 ];
 
 const requiredTriggerSnippets = [

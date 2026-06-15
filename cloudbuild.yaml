@@ -159,7 +159,7 @@ steps:
       - --port=3333
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},TRUST_APP_URL=${_PORTAL_URL},PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
+      - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},TRUST_APP_URL=${_PORTAL_URL},PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN},APP_OBJECT_STORAGE_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data,APP_DEVICE_AGENT_ARTIFACTS_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-device-agent-artifacts,APP_GCP_BUCKET_NAME=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data,APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_ORG_ASSETS_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,SECRET_KEY=betayum-${_ENVIRONMENT}-secret-key:latest,AUTH_SECRET=betayum-${_ENVIRONMENT}-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest,UPSTASH_REDIS_REST_URL=betayum-${_ENVIRONMENT}-upstash-redis-rest-url:latest,UPSTASH_REDIS_REST_TOKEN=betayum-${_ENVIRONMENT}-upstash-redis-rest-token:latest,BETTER_AUTH_API_KEY=betayum-${_ENVIRONMENT}-better-auth-api-key:latest
       - --quiet
 
@@ -180,7 +180,7 @@ steps:
       - --port=3000
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL}
+      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},APP_OBJECT_STORAGE_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data,APP_GCP_BUCKET_NAME=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data,APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_QUESTIONNAIRE_UPLOAD_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data,APP_GCP_KNOWLEDGE_BASE_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data,APP_GCP_ORG_ASSETS_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data
       - --remove-secrets=BETTER_AUTH_API_KEY
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,AUTH_SECRET=betayum-${_ENVIRONMENT}-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest,TRIGGER_SECRET_KEY=betayum-${_ENVIRONMENT}-trigger-secret-key:latest,REVALIDATION_SECRET=betayum-${_ENVIRONMENT}-revalidation-secret:latest
       - --quiet
@@ -202,7 +202,7 @@ steps:
       - --port=3000
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL}
+      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},APP_OBJECT_STORAGE_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data,APP_DEVICE_AGENT_ARTIFACTS_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-device-agent-artifacts,APP_GCP_BUCKET_NAME=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data,APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_ORG_ASSETS_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data,FLEET_AGENT_BUCKET_NAME=$PROJECT_ID-betayum-${_ENVIRONMENT}-device-agent-artifacts
       - --remove-secrets=BETTER_AUTH_API_KEY
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,BETTER_AUTH_SECRET=betayum-${_ENVIRONMENT}-better-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest
       - --quiet
