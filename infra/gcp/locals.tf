@@ -83,9 +83,9 @@ locals {
         for secret_name in lookup(var.runtime_secret_names, env_service.service_name, []) : {
           key             = "${env_service_key}.${secret_name}"
           env_service_key = env_service_key
-          env_name         = env_service.env_name
-          project_id       = env_service.project_id
-          secret_key       = "${env_service.env_name}.${secret_name}"
+          env_name        = env_service.env_name
+          project_id      = env_service.project_id
+          secret_key      = "${env_service.env_name}.${secret_name}"
         }
       ]
     ]) : item.key => item

@@ -14,14 +14,14 @@ variable "repository" {
 variable "environments" {
   description = "Staging and production deployment inputs. Project IDs must already exist."
   type = map(object({
-    project_id             = string
-    region                 = string
-    branch_name            = string
-    approval_required      = bool
-    artifact_location      = optional(string)
-    log_retention_days     = optional(number, 365)
-    security_policy_id     = optional(string)
-    edge_ip_address        = optional(string)
+    project_id         = string
+    region             = string
+    branch_name        = string
+    approval_required  = bool
+    artifact_location  = optional(string)
+    log_retention_days = optional(number, 365)
+    security_policy_id = optional(string)
+    edge_ip_address    = optional(string)
     cloudbuild_included_files = optional(list(string), [
       ".dockerignore",
       "apps/**",

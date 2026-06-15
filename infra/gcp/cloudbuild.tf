@@ -9,9 +9,8 @@ resource "google_cloudbuild_trigger" "deploy" {
   included_files  = try(each.value.cloudbuild_included_files, ["**"])
   service_account = google_service_account.deployer[each.key].id
 
-  github {
-    owner = var.repository.owner
-    name  = var.repository.name
+  repository_event_config {
+    repository = "projects/${each.value.project_id}/locations/${each.value.region}/connections/betayum-github/repositories/${var.repository.name}"
 
     push {
       branch = "^${each.value.branch_name}$"
