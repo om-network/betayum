@@ -13,6 +13,7 @@ import {
   multiSession,
   organization,
 } from 'better-auth/plugins';
+import { dash } from '@better-auth/infra';
 import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
@@ -467,6 +468,13 @@ export const auth = betterAuth({
     }),
     multiSession(),
     bearer(),
+    ...(process.env.BETTER_AUTH_API_KEY
+      ? [
+          dash({
+            apiKey: process.env.BETTER_AUTH_API_KEY,
+          }),
+        ]
+      : []),
     admin({
       defaultRole: 'user',
     }),

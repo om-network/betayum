@@ -27,6 +27,7 @@ const requiredSnippets = [
   'approval_required',
   'mount_runtime_secrets',
   'AUTH_PRIMARY_DOMAIN',
+  'better-auth-api-key',
   'NEXT_PUBLIC_API_URL',
   'roles/run.invoker',
   'google_compute_managed_ssl_certificate',

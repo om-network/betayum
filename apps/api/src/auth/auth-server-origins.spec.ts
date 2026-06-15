@@ -164,8 +164,13 @@ describe('getCustomDomains (structural)', () => {
     // Must NOT require domainVerified — that flag lags behind Vercel's own verification
     expect(fnBody).not.toContain('domainVerified');
 
-    // Must still filter by published status
-    expect(fnBody).toContain("status: 'published'");
+    const config = fs.readFileSync(
+      path.join(__dirname, 'auth-domain.config.ts'),
+      'utf-8',
+    ) as string;
+
+    // Must still filter by published status in the shared config helper.
+    expect(config).toContain("status: 'published'");
   });
 
   it('auth.server.ts getCustomDomains should have independent error handling for Redis and DB', () => {
@@ -199,5 +204,38 @@ describe('originCheckMiddleware (structural)', () => {
 
     // Trust-access endpoints are public (no auth, no cookies) — no CSRF risk
     expect(middleware).toContain('/v1/trust-access');
+  });
+});
+
+describe('Better Auth Infrastructure dashboard config (structural)', () => {
+  it('registers dash() on the API auth server behind BETTER_AUTH_API_KEY', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const authServer = fs.readFileSync(
+      path.join(__dirname, 'auth.server.ts'),
+      'utf-8',
+    ) as string;
+
+    expect(authServer).toContain("import { dash } from '@better-auth/infra'");
+    expect(authServer).toContain('process.env.BETTER_AUTH_API_KEY');
+    expect(authServer).toContain('dash({');
+  });
+
+  it('mounts BETTER_AUTH_API_KEY into the API Cloud Run service', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const cloudbuild = fs.readFileSync(
+      path.join(__dirname, '../../../../cloudbuild.yaml'),
+      'utf-8',
+    ) as string;
+    const variables = fs.readFileSync(
+      path.join(__dirname, '../../../../infra/gcp/variables.tf'),
+      'utf-8',
+    ) as string;
+
+    expect(cloudbuild).toContain(
+      'BETTER_AUTH_API_KEY=betayum-${_ENVIRONMENT}-better-auth-api-key:latest',
+    );
+    expect(variables).toContain('"better-auth-api-key"');
   });
 });
