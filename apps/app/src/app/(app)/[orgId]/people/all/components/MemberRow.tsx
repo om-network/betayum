@@ -317,7 +317,7 @@ export function MemberRow({
           <div className="w-[160px]">
             <div className="flex flex-wrap gap-1">
               {member.user.role === 'admin' && (
-                <Badge>Comp AI</Badge>
+                <Badge>Betayum</Badge>
               )}
               {currentRoles.map((role) => (
                 <Badge key={role} variant="outline">
@@ -474,7 +474,7 @@ export function MemberRow({
               <Label htmlFor={`role-${memberId}`}>Roles</Label>
               {isPlatformAdmin && (
                 <div className="flex items-center gap-2 rounded-md border px-3 py-2">
-                  <Badge>Comp AI</Badge>
+                  <Badge>Betayum</Badge>
                   <span className="text-muted-foreground text-xs">
                     This role is managed by the platform and cannot be removed.
                   </span>

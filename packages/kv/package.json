@@ -1,6 +1,6 @@
 {
   "name": "@trycompai/kv",
-  "description": "Key-value store utilities using Upstash Redis for Comp AI",
+  "description": "Key-value store utilities using Upstash Redis for Betayum",
   "version": "1.0.0",
   "dependencies": {
     "@upstash/redis": "^1.34.2",

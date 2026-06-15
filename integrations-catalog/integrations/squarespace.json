@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "Requires: a Squarespace Commerce plan (Basic or Advanced) with Developer API Keys access.\n\n1. Log in to your Squarespace site\n2. In the left nav, click Settings, then scroll down and click Advanced\n3. Click Developer API Keys\n4. Click the GENERATE KEY button\n5. Enter a key name (e.g. CompAI) and select permissions: Products (Read Only)\n6. Record the generated key - it will only be shown once\n7. Paste the API key below\n\nNote: Each API key is specific to a single Squarespace website.",
+      "setupInstructions": "Requires: a Squarespace Commerce plan (Basic or Advanced) with Developer API Keys access.\n\n1. Log in to your Squarespace site\n2. In the left nav, click Settings, then scroll down and click Advanced\n3. Click Developer API Keys\n4. Click the GENERATE KEY button\n5. Enter a key name (e.g. Betayum) and select permissions: Products (Read Only)\n6. Record the generated key - it will only be shown once\n7. Paste the API key below\n\nNote: Each API key is specific to a single Squarespace website.",
       "credentialFields": [
         {
           "label": "API Key",

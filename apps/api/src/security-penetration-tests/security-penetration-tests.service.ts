@@ -218,10 +218,10 @@ export class SecurityPenetrationTestsService {
 
   private readonly canonicalWebhookPath =
     '/v1/security-penetration-tests/webhook';
-  private readonly defaultWebhookBaseUrl = 'https://api.trycomp.ai';
+  private readonly defaultWebhookBaseUrl = 'https://api.betayum.com';
   private readonly defaultCompWebhookHosts = new Set([
-    'api.trycomp.ai',
-    'api.staging.trycomp.ai',
+    'api.betayum.com',
+    'api.staging.betayum.com',
     'localhost:3333',
   ]);
 

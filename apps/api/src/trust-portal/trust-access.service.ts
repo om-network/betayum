@@ -2009,7 +2009,7 @@ export class TrustAccessService {
         name: grant.accessRequest.name,
         email: grant.subjectEmail,
         docId,
-        watermarkText: 'Comp AI',
+        watermarkText: 'Betayum',
       },
     );
 

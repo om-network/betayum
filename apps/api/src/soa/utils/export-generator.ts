@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { brandConfig } from '@trycompai/utils/brand';
 
 export type SOAExportFormat = 'pdf';
 
@@ -103,7 +104,11 @@ function generateSOAPDF(
     y,
   );
   y += lineHeight;
-  pdf.text(`Prepared by: ${metadata.preparedBy || 'Comp AI'}`, margin, y);
+  pdf.text(
+    `Prepared by: ${metadata.preparedBy || brandConfig.displayName}`,
+    margin,
+    y,
+  );
   y += lineHeight;
   const approvalStatusText = metadata.approvedAt
     ? `Approved on ${new Date(metadata.approvedAt).toLocaleDateString()}`
@@ -121,7 +126,11 @@ function generateSOAPDF(
         : 'Approver';
   pdf.text(`Approval status: ${approvalStatusText}`, margin, y);
   y += lineHeight;
-  pdf.text(`${approvalActorLabel}: ${metadata.approverName || 'N/A'}`, margin, y);
+  pdf.text(
+    `${approvalActorLabel}: ${metadata.approverName || 'N/A'}`,
+    margin,
+    y,
+  );
   y += lineHeight;
   pdf.text(`Exported: ${new Date().toLocaleDateString()}`, margin, y);
   y += lineHeight * 2;
@@ -149,9 +158,7 @@ function generateSOAPDF(
         : question.answer || 'No justification provided';
 
     const title = `${i + 1}. ${mapped.title || question.text || 'Untitled Control'}`;
-    const closure = mapped.closure
-      ? `Closure: ${mapped.closure}`
-      : null;
+    const closure = mapped.closure ? `Closure: ${mapped.closure}` : null;
     const objective = mapped.control_objective
       ? `Objective: ${mapped.control_objective}`
       : null;
@@ -188,4 +195,3 @@ function sanitizeFrameworkName(frameworkName: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
 }
-

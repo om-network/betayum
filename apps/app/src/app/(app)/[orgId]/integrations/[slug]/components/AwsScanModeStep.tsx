@@ -1,6 +1,6 @@
 'use client';
 
-import { Cloud, ShieldCheck } from 'lucide-react';
+import { Cloud, Security } from '@trycompai/design-system/icons';
 
 /**
  * String constants for the two AWS scan-engine modes. Mirrors the
@@ -30,7 +30,7 @@ interface AwsScanModeStepProps {
  * performs their cloud security scans. Two radio cards, mutually
  * exclusive:
  *
- *   1. Comp AI Scanners (default) — our service adapters running
+ *   1. Betayum Scanners (default) — our service adapters running
  *      directly against AWS APIs, free.
  *   2. AWS Security Hub — read findings from the customer's existing
  *      Security Hub deployment, surface native NIST 800-53 / CIS / PCI
@@ -57,7 +57,7 @@ export function AwsScanModeStep({
         selected={value === 'comp_scanners'}
         onSelect={() => onChange('comp_scanners')}
         icon={<Cloud className="h-4 w-4" />}
-        title="Comp AI Scanners"
+        title="Betayum Scanners"
         subtitle="Recommended"
         description={
           'Run our security checks directly against your AWS account. ' +
@@ -70,7 +70,7 @@ export function AwsScanModeStep({
         modeValue="security_hub"
         selected={value === 'security_hub'}
         onSelect={() => onChange('security_hub')}
-        icon={<ShieldCheck className="h-4 w-4" />}
+        icon={<Security className="h-4 w-4" />}
         title="AWS Security Hub"
         subtitle="Read findings from your existing Security Hub"
         description={

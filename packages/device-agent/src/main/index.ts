@@ -40,7 +40,7 @@ process.on('unhandledRejection', (reason) => {
   log(`Unhandled rejection: ${reason}`, 'ERROR');
 });
 
-log('Comp AI Device Agent starting...');
+log('Betayum Device Agent starting...');
 log(`Platform: ${process.platform}, Arch: ${process.arch}, Electron: ${process.versions.electron}`);
 
 // Ensure single instance

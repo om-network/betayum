@@ -1,6 +1,6 @@
 {
   "name": "@trycompai/tsconfig",
-  "description": "Shared TypeScript configurations for Comp AI",
+  "description": "Shared TypeScript configurations for Betayum",
   "version": "1.0.0",
   "exports": {
     "./base": "./base.json",

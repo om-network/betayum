@@ -146,11 +146,11 @@ describe('OpenAPI document', () => {
 
   describe('public metadata', () => {
     it('uses production API servers in the generated Mintlify spec', () => {
-      expect(document.info.title).toBe(PUBLIC_OPENAPI_TITLE);
+      expect(document.info.title).toBe('Betayum API');
       expect(document.info.description).toBe(PUBLIC_OPENAPI_DESCRIPTION);
       expect(document.servers).toEqual([
         {
-          url: PUBLIC_SERVER_URL,
+          url: 'https://api.betayum.com',
           description: 'Production API Server',
         },
       ]);
@@ -197,7 +197,7 @@ describe('OpenAPI document', () => {
       expect(policies?.summary).toBe('List compliance policies');
       expect(policies?.description).toContain('SOC 2');
       expect(policies?.['x-mint']?.metadata?.title).toBe(
-        'List compliance policies | Comp AI API',
+        'List compliance policies | Betayum API',
       );
     });
   });

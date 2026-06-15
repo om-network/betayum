@@ -1,13 +1,13 @@
 ---
 name: billing
-description: Use when changing Comp AI billing, Stripe products/prices, subscription checkout, org payment methods, entitlements, usage ledgers, invoices, or billing webhooks.
+description: Use when changing Betayum billing, Stripe products/prices, subscription checkout, org payment methods, entitlements, usage ledgers, invoices, or billing webhooks.
 metadata:
-  short-description: Comp AI billing architecture
+  short-description: Betayum billing architecture
 ---
 
 # Billing
 
-Comp AI billing is SKU-first and subscription-ready. Stripe is the payment provider; Comp AI owns catalog definitions, entitlement state, usage gating, and audit history.
+Betayum billing is SKU-first and subscription-ready. Stripe is the payment provider; Betayum owns catalog definitions, entitlement state, usage gating, and audit history.
 
 ## Core Rules
 

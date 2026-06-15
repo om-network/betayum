@@ -119,7 +119,7 @@ async function getCustomDomains(): Promise<Set<string>> {
 /**
  * Check if an origin is trusted. Checks (in order):
  * 1. Static trusted origins list
- * 2. *.trycomp.ai / *.trust.inc subdomains
+ * 2. *.betayum.com / *.trust.inc subdomains
  * 3. Published custom domains from the DB (cached in Redis, TTL 5 min)
  */
 export async function isTrustedOrigin(origin: string): Promise<boolean> {
@@ -208,20 +208,20 @@ validateSecurityConfig();
 /**
  * The auth server instance - single source of truth for authentication.
  *
- * BASE_URL must point to the API (e.g., https://api.trycomp.ai).
+ * BASE_URL must point to the API (e.g., https://api.betayum.com).
  * OAuth callbacks go directly to the API. Clients send absolute callbackURLs
  * so better-auth redirects to the correct app after processing.
- * Cross-subdomain cookies (.trycomp.ai) ensure the session works on all apps.
+ * Cross-subdomain cookies (.betayum.com) ensure the session works on all apps.
  */
 export const auth = betterAuth({
   database: prismaAdapter(db, {
     provider: 'postgresql',
   }),
-  // baseURL must point to the API (e.g., https://api.trycomp.ai) so that
+  // baseURL must point to the API (e.g., https://api.betayum.com) so that
   // OAuth callbacks go directly to the API regardless of which frontend
   // initiated the flow. Clients must send absolute callbackURLs so that
   // after OAuth processing, better-auth redirects to the correct app.
-  // Cross-subdomain cookies (.trycomp.ai) ensure the session works everywhere.
+  // Cross-subdomain cookies (.betayum.com) ensure the session works everywhere.
   baseURL: process.env.BASE_URL || 'http://localhost:3333',
   trustedOrigins: getTrustedOrigins(),
   emailAndPassword: {
@@ -398,11 +398,11 @@ export const auth = betterAuth({
         const appUrl =
           process.env.NEXT_PUBLIC_APP_URL ??
           process.env.BETTER_AUTH_URL ??
-          'https://app.trycomp.ai';
+          'https://app.betayum.com';
         const inviteLink = `${appUrl}/invite/${data.invitation.id}`;
         await triggerEmail({
           to: data.email,
-          subject: `You've been invited to join ${data.organization.name} on Comp AI`,
+          subject: `You've been invited to join ${data.organization.name} on Betayum`,
           react: InviteEmail({
             organizationName: data.organization.name,
             inviteLink,
@@ -447,7 +447,7 @@ export const auth = betterAuth({
         }
         await triggerEmail({
           to: email,
-          subject: 'Login to Comp AI',
+          subject: 'Login to Betayum',
           react: MagicLinkEmail({ email, url }),
         });
       },
@@ -461,7 +461,7 @@ export const auth = betterAuth({
         }
         await triggerEmail({
           to: email,
-          subject: 'One-Time Password for Comp AI',
+          subject: 'One-Time Password for Betayum',
           react: OTPVerificationEmail({ email, otp }),
         });
       },
