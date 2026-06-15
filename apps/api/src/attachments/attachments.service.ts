@@ -1,11 +1,12 @@
 import {
   CopyObjectCommand,
-  DeleteObjectCommand,
-  GetObjectCommand,
-  PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
+import { BUCKET_NAME, s3Client } from '@/app/s3';
+import {
+  objectStorage,
+  type ObjectStorage,
+} from '@/app/object-storage';
 import { AttachmentEntityType, AttachmentType, db } from '@db';
 import {
   BadRequestException,
@@ -24,7 +25,7 @@ export class AttachmentsService {
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
-  constructor() {
+  constructor(private readonly storage: ObjectStorage = objectStorage) {
     this.bucketName = BUCKET_NAME || null;
     this.s3Client = s3Client;
   }
@@ -41,7 +42,7 @@ export class AttachmentsService {
   }
 
   /**
-   * Upload attachment to S3 and create database record
+   * Upload attachment to object storage and create database record.
    */
   async uploadAttachment(
     organizationId: string,
@@ -51,8 +52,6 @@ export class AttachmentsService {
     userId?: string,
   ): Promise<AttachmentResponseDto> {
     try {
-      this.assertStorageAvailable();
-
       // Blocked file extensions for security
       const BLOCKED_EXTENSIONS = [
         'exe',
@@ -132,8 +131,7 @@ export class AttachmentsService {
       const sanitizedFileName = this.sanitizeFileName(uploadDto.fileName);
       const timestamp = Date.now();
 
-      // Special S3 path structure for task items: org_{orgId}/attachments/task-item/{entityType}/{entityId}
-      let s3Key: string;
+      let objectKey: string;
       if (entityType === 'task_item') {
         // For task items, extract entityType and entityId from metadata
         // Metadata should contain taskItemEntityType and taskItemEntityId
@@ -141,34 +139,23 @@ export class AttachmentsService {
           uploadDto.description?.split('|')[0] || 'unknown';
         const taskItemEntityId =
           uploadDto.description?.split('|')[1] || entityId;
-        s3Key = `${organizationId}/attachments/task-item/${taskItemEntityType}/${taskItemEntityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+        objectKey = `${organizationId}/attachments/task-item/${taskItemEntityType}/${taskItemEntityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
       } else {
-        s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+        objectKey = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
       }
 
-      // Upload to S3
-      const putCommand = new PutObjectCommand({
-        Bucket: this.bucketName,
-        Key: s3Key,
-        Body: fileBuffer,
-        ContentType: uploadDto.fileType,
-        Metadata: {
-          // S3 metadata becomes HTTP headers (x-amz-meta-*) and must be ASCII without control chars
-          originalFileName: this.sanitizeHeaderValue(uploadDto.fileName),
-          organizationId,
-          entityId,
-          entityType,
-          ...(userId && { uploadedBy: userId }),
-        },
+      await this.storage.uploadObject({
+        organizationId,
+        key: objectKey,
+        body: fileBuffer,
+        contentType: uploadDto.fileType,
       });
-
-      await this.s3Client.send(putCommand);
 
       // Create database record
       const attachment = await db.attachment.create({
         data: {
           name: uploadDto.fileName,
-          url: s3Key,
+          url: objectKey,
           type: this.mapFileTypeToAttachmentType(uploadDto.fileType),
           entityId,
           entityType,
@@ -177,7 +164,10 @@ export class AttachmentsService {
       });
 
       // Generate signed URL for immediate access
-      const downloadUrl = await this.generateSignedUrl(s3Key);
+      const downloadUrl = await this.generateSignedUrl({
+        organizationId,
+        objectKey,
+      });
 
       return {
         id: attachment.id,
@@ -218,7 +208,10 @@ export class AttachmentsService {
     // Generate signed URLs for all attachments
     const attachmentsWithUrls = await Promise.all(
       attachments.map(async (attachment) => {
-        const downloadUrl = await this.generateSignedUrl(attachment.url);
+        const downloadUrl = await this.generateSignedUrl({
+          organizationId,
+          objectKey: attachment.url,
+        });
         return {
           id: attachment.id,
           name: attachment.name,
@@ -267,8 +260,6 @@ export class AttachmentsService {
     attachmentId: string,
   ): Promise<{ downloadUrl: string; expiresIn: number }> {
     try {
-      this.assertStorageAvailable();
-
       // Get attachment record
       const attachment = await db.attachment.findFirst({
         where: {
@@ -282,7 +273,10 @@ export class AttachmentsService {
       }
 
       // Generate signed URL
-      const downloadUrl = await this.generateSignedUrl(attachment.url);
+      const downloadUrl = await this.generateSignedUrl({
+        organizationId,
+        objectKey: attachment.url,
+      });
 
       return {
         downloadUrl,
@@ -308,15 +302,13 @@ export class AttachmentsService {
   }
 
   /**
-   * Delete attachment from S3 and database
+   * Delete attachment from object storage and database.
    */
   async deleteAttachment(
     organizationId: string,
     attachmentId: string,
   ): Promise<void> {
     try {
-      this.assertStorageAvailable();
-
       // Get attachment record
       const attachment = await db.attachment.findFirst({
         where: {
@@ -329,13 +321,10 @@ export class AttachmentsService {
         throw new BadRequestException('Attachment not found');
       }
 
-      // Delete from S3
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: this.bucketName,
-        Key: attachment.url,
+      await this.storage.deleteObject({
+        organizationId,
+        key: attachment.url,
       });
-
-      await this.s3Client.send(deleteCommand);
 
       // Delete from database
       await db.attachment.delete({
@@ -378,18 +367,14 @@ export class AttachmentsService {
   }
 
   /**
-   * Delete a policy version PDF from S3
+   * Delete a policy version PDF from object storage.
    */
-  async deletePolicyVersionPdf(s3Key: string): Promise<void> {
+  async deletePolicyVersionPdf(objectKey: string): Promise<void> {
     try {
-      this.assertStorageAvailable();
-
-      await this.s3Client.send(
-        new DeleteObjectCommand({
-          Bucket: this.bucketName,
-          Key: s3Key,
-        }),
-      );
+      await this.storage.deleteObject({
+        organizationId: this.extractOrganizationId(objectKey),
+        key: objectKey,
+      });
     } catch (error) {
       console.error('Error deleting policy PDF:', error);
     }
@@ -398,16 +383,18 @@ export class AttachmentsService {
   /**
    * Generate signed URL for file download
    */
-  private async generateSignedUrl(s3Key: string): Promise<string> {
-    this.assertStorageAvailable();
-
-    const getCommand = new GetObjectCommand({
-      Bucket: this.bucketName,
-      Key: s3Key,
-    });
-
-    return getSignedUrl(this.s3Client, getCommand, {
-      expiresIn: this.SIGNED_URL_EXPIRY,
+  private async generateSignedUrl({
+    organizationId,
+    objectKey,
+  }: {
+    organizationId: string;
+    objectKey: string;
+  }): Promise<string> {
+    return this.storage.getSignedObjectUrl({
+      organizationId,
+      key: objectKey,
+      action: 'read',
+      expiresInSeconds: this.SIGNED_URL_EXPIRY,
     });
   }
 
@@ -419,115 +406,113 @@ export class AttachmentsService {
     entityType: string,
     entityId: string,
   ): Promise<string> {
-    this.assertStorageAvailable();
-
     const fileId = randomBytes(16).toString('hex');
     const sanitizedFileName = this.sanitizeFileName(fileName);
     const timestamp = Date.now();
-    const s3Key = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
+    const objectKey = `${organizationId}/attachments/${entityType}/${entityId}/${timestamp}-${fileId}-${sanitizedFileName}`;
 
-    const putCommand = new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: s3Key,
-      Body: fileBuffer,
-      ContentType: contentType,
-      Metadata: {
-        originalFileName: this.sanitizeHeaderValue(fileName),
-        organizationId,
-        entityId,
-        entityType,
-      },
+    const location = await this.storage.uploadObject({
+      organizationId,
+      key: objectKey,
+      body: fileBuffer,
+      contentType,
     });
 
-    await this.s3Client.send(putCommand);
-    return s3Key;
+    return location.key;
   }
 
-  async getPresignedDownloadUrl(s3Key: string): Promise<string> {
-    this.assertStorageAvailable();
-
-    return this.generateSignedUrl(s3Key);
+  async getPresignedDownloadUrl(objectKey: string): Promise<string> {
+    return this.generateSignedUrl({
+      organizationId: this.extractOrganizationId(objectKey),
+      objectKey,
+    });
   }
 
   /**
    * Generate presigned download URL with a custom download filename
    */
   async getPresignedDownloadUrlWithFilename(
-    s3Key: string,
+    objectKey: string,
     downloadFilename: string,
   ): Promise<string> {
-    this.assertStorageAvailable();
-
     const sanitizedFilename = this.sanitizeHeaderValue(downloadFilename);
-    const getCommand = new GetObjectCommand({
-      Bucket: this.bucketName,
-      Key: s3Key,
-      ResponseContentDisposition: `attachment; filename="${sanitizedFilename}"`,
-    });
-
-    return getSignedUrl(this.s3Client, getCommand, {
-      expiresIn: this.SIGNED_URL_EXPIRY,
+    return this.storage.getSignedObjectUrl({
+      organizationId: this.extractOrganizationId(objectKey),
+      key: objectKey,
+      action: 'read',
+      expiresInSeconds: this.SIGNED_URL_EXPIRY,
+      responseContentDisposition: `attachment; filename="${sanitizedFilename}"`,
     });
   }
 
   /**
    * Generate a presigned URL for viewing a PDF inline in the browser
    */
-  async getPresignedInlinePdfUrl(s3Key: string): Promise<string> {
-    this.assertStorageAvailable();
-
-    const getCommand = new GetObjectCommand({
-      Bucket: this.bucketName,
-      Key: s3Key,
-      ResponseContentDisposition: 'inline',
-      ResponseContentType: 'application/pdf',
-    });
-
-    return getSignedUrl(this.s3Client, getCommand, {
-      expiresIn: this.SIGNED_URL_EXPIRY,
+  async getPresignedInlinePdfUrl(objectKey: string): Promise<string> {
+    return this.storage.getSignedObjectUrl({
+      organizationId: this.extractOrganizationId(objectKey),
+      key: objectKey,
+      action: 'read',
+      expiresInSeconds: this.SIGNED_URL_EXPIRY,
+      responseContentDisposition: 'inline',
+      responseContentType: 'application/pdf',
     });
   }
 
   /**
-   * Upload a buffer to S3 with a specific key (no auto-generated path)
+   * Upload a buffer to object storage with a specific key.
    */
   async uploadBuffer(
-    s3Key: string,
+    objectKey: string,
     buffer: Buffer,
     contentType: string,
   ): Promise<void> {
-    this.assertStorageAvailable();
-
-    const putCommand = new PutObjectCommand({
-      Bucket: this.bucketName,
-      Key: s3Key,
-      Body: buffer,
-      ContentType: contentType,
+    await this.storage.uploadObject({
+      organizationId: this.extractOrganizationId(objectKey),
+      key: objectKey,
+      body: buffer,
+      contentType,
     });
-
-    await this.s3Client.send(putCommand);
   }
 
-  async getObjectBuffer(s3Key: string): Promise<Buffer> {
-    this.assertStorageAvailable();
-
-    const getCommand = new GetObjectCommand({
-      Bucket: this.bucketName,
-      Key: s3Key,
+  async getObjectBuffer(objectKey: string): Promise<Buffer> {
+    const stream = this.storage.streamObject({
+      organizationId: this.extractOrganizationId(objectKey),
+      key: objectKey,
     });
-
-    const response = await this.s3Client.send(getCommand);
     const chunks: Uint8Array[] = [];
 
-    if (!response.Body) {
-      throw new InternalServerErrorException('No file data received from S3');
-    }
-
-    for await (const chunk of response.Body as any) {
-      chunks.push(chunk);
+    for await (const chunk of stream) {
+      chunks.push(this.toUint8Array(chunk));
     }
 
     return Buffer.concat(chunks);
+  }
+
+  private extractOrganizationId(objectKey: string): string {
+    const [organizationId] = objectKey.split('/');
+
+    if (!organizationId) {
+      throw new InternalServerErrorException(
+        'Object key is missing organization prefix',
+      );
+    }
+
+    return organizationId;
+  }
+
+  private toUint8Array(chunk: unknown): Uint8Array {
+    if (chunk instanceof Uint8Array) {
+      return chunk;
+    }
+
+    if (typeof chunk === 'string') {
+      return Buffer.from(chunk);
+    }
+
+    throw new InternalServerErrorException(
+      'Unsupported object storage stream chunk',
+    );
   }
 
   private sanitizeFileName(fileName: string): string {

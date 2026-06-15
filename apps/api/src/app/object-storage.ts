@@ -28,6 +28,8 @@ export type SignedObjectUrlParams = ResolveObjectLocationParams & {
   action: SignedUrlAction;
   expiresInSeconds?: number;
   contentType?: string;
+  responseContentDisposition?: string;
+  responseContentType?: string;
 };
 
 export interface ObjectStorage {
@@ -190,6 +192,8 @@ export class GcsObjectStorage implements ObjectStorage {
       action: params.action,
       expires: Date.now() + expiresInSeconds * 1000,
       contentType: params.contentType,
+      responseDisposition: params.responseContentDisposition,
+      responseType: params.responseContentType,
     };
     const [url] = await this.storage
       .bucket(location.bucketName)
