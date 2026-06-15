@@ -63,6 +63,7 @@
         "@better-auth/sso": "1.4.22",
         "@browserbasehq/sdk": "2.6.0",
         "@browserbasehq/stagehand": "^3.2.1",
+        "@google-cloud/storage": "7.21.0",
         "@maced/api-client": "^0.9.2",
         "@mendable/firecrawl-js": "^4.9.3",
         "@nestjs/common": "^11.0.1",
