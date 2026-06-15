@@ -28,6 +28,8 @@ migrator job can be created before Secret Manager versions exist.
 - Secret Manager secret shells with environment-scoped names.
 - Cloud Run services for API, app, and portal.
 - A Cloud Run migration job that Cloud Build runs before service rollout.
+- Cloud SQL attachments and IAM client grants when an environment provides a
+  `cloud_sql_instance_connection_name`.
 - External HTTPS load balancer resources with managed certificates.
 - Serverless NEGs and backend services with request logging enabled.
 - Optional Cloud Armor attachment through `security_policy_id`.
@@ -50,6 +52,9 @@ Required decisions before `plan`:
 - OpenTofu/Terraform state backend.
 - DNS zone owner for `betayum.com`.
 - Optional reserved global edge IP addresses.
+- Existing Cloud SQL instance connection names, if the environment uses Cloud
+  SQL. The database instance lifecycle is intentionally external to this
+  baseline unless the team decides Terraform should own it later.
 - Optional Cloud Armor security policy IDs.
 - Final Cloud Build GitHub App connection authorization.
 
@@ -75,6 +80,13 @@ Insert secret values after the Secret Manager shells exist, then set
 `mount_runtime_secrets = true` and apply again to wire runtime revisions to the
 `latest` secret versions. Cloud Run revisions will not be usable until required
 secrets and Cloud Build substitutions are in place.
+
+For Cloud SQL environments, set `DATABASE_URL` to use the mounted Unix socket,
+for example:
+
+```text
+postgresql://USER:PASSWORD@localhost:5432/DATABASE?host=/cloudsql/PROJECT:REGION:INSTANCE
+```
 
 ## Evidence
 
