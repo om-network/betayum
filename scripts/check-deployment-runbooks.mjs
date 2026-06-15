@@ -20,6 +20,9 @@ const edgeSnippets = [
 const evidenceSnippets = [
   'Cloud Build logs',
   'approval records',
+  'one Cloud Build run per environment deployment',
+  'same commit SHA',
+  'parallel service rollout',
   'migration job logs',
   'Cloud Run revision history',
   'secret rotation',

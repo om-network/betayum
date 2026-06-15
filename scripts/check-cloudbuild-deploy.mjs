@@ -50,10 +50,34 @@ const requiredRunbookSnippets = [
   'release',
   'approval',
   'migration job',
+  'gated-parallel',
+  'single required gate',
+  'run in parallel',
   'Cloud Build logs',
   'database-migrations-main.yml',
   'database-migrations-release.yml',
 ];
+
+const expectedStepDependencies = {
+  'build-api': ['-'],
+  'build-app': ['-'],
+  'build-portal': ['-'],
+  'build-migrator': ['-'],
+  'push-api': ['build-api'],
+  'push-app': ['build-app'],
+  'push-portal': ['build-portal'],
+  'push-migrator': ['build-migrator'],
+  'update-migrator-job': ['push-migrator'],
+  'run-migrations': ['update-migrator-job'],
+  'deploy-api': ['run-migrations', 'push-api'],
+  'deploy-app': ['run-migrations', 'push-app'],
+  'deploy-portal': ['run-migrations', 'push-portal'],
+  'smoke-api': ['deploy-api', 'deploy-app', 'deploy-portal'],
+  'smoke-app': ['deploy-api', 'deploy-app', 'deploy-portal'],
+  'smoke-portal': ['deploy-api', 'deploy-app', 'deploy-portal'],
+};
+
+const serviceDeploySteps = ['deploy-api', 'deploy-app', 'deploy-portal'];
 
 function assertIncludes({ source, snippets, label }) {
   for (const snippet of snippets) {
@@ -63,11 +87,97 @@ function assertIncludes({ source, snippets, label }) {
   }
 }
 
+function normalizeYamlValue(value) {
+  return value.trim().replace(/^['"]|['"]$/g, '');
+}
+
+function parseStepDependencies(source) {
+  const dependencies = new Map();
+  let currentStepId = null;
+  let readingWaitFor = false;
+
+  for (const line of source.split('\n')) {
+    const stepMatch = line.match(/^  - id: (.+)$/);
+    if (stepMatch) {
+      currentStepId = normalizeYamlValue(stepMatch[1]);
+      dependencies.set(currentStepId, []);
+      readingWaitFor = false;
+      continue;
+    }
+
+    if (!currentStepId) {
+      continue;
+    }
+
+    if (line.match(/^    waitFor:$/)) {
+      readingWaitFor = true;
+      continue;
+    }
+
+    if (readingWaitFor) {
+      const dependencyMatch = line.match(/^      - (.+)$/);
+      if (dependencyMatch) {
+        dependencies.get(currentStepId).push(normalizeYamlValue(dependencyMatch[1]));
+        continue;
+      }
+
+      readingWaitFor = false;
+    }
+  }
+
+  return dependencies;
+}
+
+function assertSameDependencies({ actual, expected, stepId }) {
+  const sortedActual = [...actual].sort();
+  const sortedExpected = [...expected].sort();
+
+  if (sortedActual.length !== sortedExpected.length) {
+    throw new Error(
+      `cloudbuild.yaml step "${stepId}" waitFor mismatch: expected ${sortedExpected.join(', ')}, received ${sortedActual.join(', ')}`,
+    );
+  }
+
+  for (const [index, dependency] of sortedExpected.entries()) {
+    if (sortedActual[index] !== dependency) {
+      throw new Error(
+        `cloudbuild.yaml step "${stepId}" waitFor mismatch: expected ${sortedExpected.join(', ')}, received ${sortedActual.join(', ')}`,
+      );
+    }
+  }
+}
+
+function assertGatedParallelGraph(source) {
+  const dependencies = parseStepDependencies(source);
+
+  for (const [stepId, expectedDependencies] of Object.entries(expectedStepDependencies)) {
+    if (!dependencies.has(stepId)) {
+      throw new Error(`cloudbuild.yaml is missing step "${stepId}"`);
+    }
+
+    assertSameDependencies({
+      actual: dependencies.get(stepId),
+      expected: expectedDependencies,
+      stepId,
+    });
+  }
+
+  for (const stepId of serviceDeploySteps) {
+    const deployDependencies = dependencies.get(stepId);
+    for (const otherStepId of serviceDeploySteps) {
+      if (stepId !== otherStepId && deployDependencies.includes(otherStepId)) {
+        throw new Error(`cloudbuild.yaml step "${stepId}" must not wait for sibling service deploy "${otherStepId}"`);
+      }
+    }
+  }
+}
+
 assertIncludes({
   source: cloudbuild,
   snippets: requiredPipelineSnippets,
   label: 'cloudbuild.yaml',
 });
+assertGatedParallelGraph(cloudbuild);
 assertIncludes({
   source: infraTrigger,
   snippets: requiredTriggerSnippets,
