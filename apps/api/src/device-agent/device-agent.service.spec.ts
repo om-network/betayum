@@ -4,48 +4,42 @@ import {
 } from '@nestjs/common';
 import { Readable } from 'stream';
 
-const mockSend = jest.fn();
-const mockGetSignedUrl = jest.fn();
-let mockS3Client: { send: jest.Mock } | null = { send: mockSend };
+const mockGetDeviceAgentArtifactsBucketName = jest.fn<string | undefined, []>(
+  () => 'device-bucket',
+);
 
-class MockGetObjectCommand {
-  constructor(public readonly input: unknown) {
-    Object.assign(this, input as object);
-  }
-}
-
-class MockHeadObjectCommand {
-  constructor(public readonly input: unknown) {
-    Object.assign(this, input as object);
-  }
-}
-
-jest.mock('@aws-sdk/client-s3', () => ({
-  GetObjectCommand: MockGetObjectCommand,
-  HeadObjectCommand: MockHeadObjectCommand,
-}));
-
-jest.mock('@/app/s3', () => ({
-  BUCKET_NAME: 'test-bucket',
-  get s3Client() {
-    return mockS3Client;
+jest.mock('@/app/object-storage', () => ({
+  getDeviceAgentArtifactsBucketName: () => mockGetDeviceAgentArtifactsBucketName(),
+  objectStorage: {
+    streamObject: jest.fn(),
+    getObjectMetadata: jest.fn(),
+    getSignedObjectUrl: jest.fn(),
   },
-  getSignedUrl: (...args: unknown[]) => mockGetSignedUrl(...args),
 }));
 
+import { objectStorage } from '@/app/object-storage';
 import { DeviceAgentService } from './device-agent.service';
+
+const mockObjectStorage = objectStorage as jest.Mocked<typeof objectStorage>;
 
 describe('DeviceAgentService', () => {
   let service: DeviceAgentService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockS3Client = { send: mockSend };
+    mockGetDeviceAgentArtifactsBucketName.mockReturnValue('device-bucket');
+    mockObjectStorage.streamObject.mockReturnValue(new Readable({ read() {} }));
+    mockObjectStorage.getObjectMetadata.mockResolvedValue({
+      contentLength: 859,
+    });
+    mockObjectStorage.getSignedObjectUrl.mockResolvedValue(
+      'https://storage.example.com/signed',
+    );
     service = new DeviceAgentService();
   });
 
   it('does not fail dependency injection when storage is not configured', async () => {
-    mockS3Client = null;
+    mockGetDeviceAgentArtifactsBucketName.mockReturnValue(undefined);
 
     expect(() => new DeviceAgentService()).not.toThrow();
     await expect(service.downloadMacAgent()).rejects.toThrow(
@@ -56,73 +50,49 @@ describe('DeviceAgentService', () => {
   describe('downloadMacAgent', () => {
     it('should return stream, filename, and contentType on success', async () => {
       const mockStream = new Readable({ read() {} });
-      mockSend.mockResolvedValue({ Body: mockStream });
+      mockObjectStorage.streamObject.mockReturnValue(mockStream);
 
       const result = await service.downloadMacAgent();
 
       expect(result.stream).toBe(mockStream);
       expect(result.filename).toBe('Comp AI Agent-1.0.0-arm64.dmg');
       expect(result.contentType).toBe('application/x-apple-diskimage');
-      expect(mockSend).toHaveBeenCalledWith(
-        expect.objectContaining({
-          Bucket: 'test-bucket',
-          Key: 'macos/Comp AI Agent-1.0.0-arm64.dmg',
-        }),
-      );
+      expect(mockObjectStorage.streamObject).toHaveBeenCalledWith({
+        organizationId: 'device-agent',
+        key: 'device-agent/production/macos/Comp AI Agent-1.0.0-arm64.dmg',
+        bucketName: 'device-bucket',
+      });
     });
 
-    it('should throw NotFoundException when S3 returns no body', async () => {
-      mockSend.mockResolvedValue({ Body: undefined });
-
-      await expect(service.downloadMacAgent()).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.downloadMacAgent()).rejects.toThrow(
-        'macOS agent DMG file not found in S3',
-      );
-    });
-
-    it('should throw NotFoundException when S3 throws NoSuchKey', async () => {
-      const error = new Error('Not found');
-      error.name = 'NoSuchKey';
-      mockSend.mockRejectedValue(error);
-
-      await expect(service.downloadMacAgent()).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.downloadMacAgent()).rejects.toThrow(
-        'macOS agent file not found',
-      );
-    });
-
-    it('should throw NotFoundException when S3 throws NotFound', async () => {
+    it('should throw NotFoundException when storage throws NotFound', async () => {
       const error = new Error('Not found');
       error.name = 'NotFound';
-      mockSend.mockRejectedValue(error);
+      mockObjectStorage.streamObject.mockImplementation(() => {
+        throw error;
+      });
 
       await expect(service.downloadMacAgent()).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should throw InternalServerErrorException on other S3 errors', async () => {
-      mockSend.mockRejectedValue(new Error('Network failure'));
+    it('should throw InternalServerErrorException on other storage errors', async () => {
+      mockObjectStorage.streamObject.mockImplementation(() => {
+        throw new Error('Network failure');
+      });
 
       await expect(service.downloadMacAgent()).rejects.toThrow(
         InternalServerErrorException,
-      );
-      await expect(service.downloadMacAgent()).rejects.toThrow(
-        'Failed to download macOS agent',
       );
     });
   });
 
   describe('getUpdateFile', () => {
-    it('streams .yml manifests directly from S3', async () => {
+    it('streams .yml manifests directly from object storage', async () => {
       const mockStream = new Readable({ read() {} });
-      mockSend.mockResolvedValue({
-        Body: mockStream,
-        ContentLength: 859,
+      mockObjectStorage.streamObject.mockReturnValue(mockStream);
+      mockObjectStorage.getObjectMetadata.mockResolvedValue({
+        contentLength: 859,
       });
 
       const result = await service.getUpdateFile({ filename: 'latest-mac.yml' });
@@ -133,27 +103,30 @@ describe('DeviceAgentService', () => {
         contentType: 'text/yaml',
         contentLength: 859,
       });
-      expect(mockGetSignedUrl).not.toHaveBeenCalled();
+      expect(mockObjectStorage.getSignedObjectUrl).not.toHaveBeenCalled();
+      expect(mockObjectStorage.getObjectMetadata).toHaveBeenCalledWith({
+        organizationId: 'device-agent',
+        key: 'device-agent/production/updates/latest-mac.yml',
+        bucketName: 'device-bucket',
+      });
     });
 
-    it('redirects binary downloads to a presigned S3 URL signed for GET', async () => {
-      mockGetSignedUrl.mockResolvedValue('https://s3.example.com/signed-zip-url');
-
+    it('redirects binary downloads to a signed object URL', async () => {
       const result = await service.getUpdateFile({
         filename: 'CompAI-Device-Agent-1.0.5-arm64.zip',
       });
 
       expect(result).toEqual({
         kind: 'redirect',
-        url: 'https://s3.example.com/signed-zip-url',
+        url: 'https://storage.example.com/signed',
       });
-      expect(mockSend).not.toHaveBeenCalled();
-      expect(mockGetSignedUrl).toHaveBeenCalledTimes(1);
-      const [, command] = mockGetSignedUrl.mock.calls[0];
-      expect(command).toBeInstanceOf(MockGetObjectCommand);
-      expect(command).toMatchObject({
-        Bucket: 'test-bucket',
-        Key: 'device-agent/production/updates/CompAI-Device-Agent-1.0.5-arm64.zip',
+      expect(mockObjectStorage.streamObject).not.toHaveBeenCalled();
+      expect(mockObjectStorage.getSignedObjectUrl).toHaveBeenCalledWith({
+        organizationId: 'device-agent',
+        key: 'device-agent/production/updates/CompAI-Device-Agent-1.0.5-arm64.zip',
+        bucketName: 'device-bucket',
+        action: 'read',
+        expiresInSeconds: 3600,
       });
     });
 
@@ -164,13 +137,11 @@ describe('DeviceAgentService', () => {
       'CompAI-Device-Agent-1.0.5-x86_64.AppImage',
       'CompAI-Device-Agent-1.0.5-arm64.zip.blockmap',
     ])('redirects binary file %s', async (filename) => {
-      mockGetSignedUrl.mockResolvedValue('https://s3.example.com/signed');
-
       const result = await service.getUpdateFile({ filename });
 
       expect(result).toEqual({
         kind: 'redirect',
-        url: 'https://s3.example.com/signed',
+        url: 'https://storage.example.com/signed',
       });
     });
 
@@ -183,10 +154,10 @@ describe('DeviceAgentService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException when S3 returns NoSuchKey for a yml manifest', async () => {
+    it('throws NotFoundException when storage returns missing for a yml manifest', async () => {
       const error = new Error('Not found');
       error.name = 'NoSuchKey';
-      mockSend.mockRejectedValue(error);
+      mockObjectStorage.getObjectMetadata.mockRejectedValue(error);
 
       await expect(
         service.getUpdateFile({ filename: 'latest-mac.yml' }),
@@ -196,7 +167,9 @@ describe('DeviceAgentService', () => {
 
   describe('headUpdateFile', () => {
     it('returns metadata for .yml manifests', async () => {
-      mockSend.mockResolvedValue({ ContentLength: 859 });
+      mockObjectStorage.getObjectMetadata.mockResolvedValue({
+        contentLength: 859,
+      });
 
       const result = await service.headUpdateFile({
         filename: 'latest-mac.yml',
@@ -207,29 +180,24 @@ describe('DeviceAgentService', () => {
         contentType: 'text/yaml',
         contentLength: 859,
       });
-      expect(mockGetSignedUrl).not.toHaveBeenCalled();
+      expect(mockObjectStorage.getSignedObjectUrl).not.toHaveBeenCalled();
     });
 
-    it('redirects binary HEAD requests to a URL signed with HeadObjectCommand', async () => {
-      mockGetSignedUrl.mockResolvedValue('https://s3.example.com/signed-head');
-
+    it('redirects binary HEAD requests to a signed object URL', async () => {
       const result = await service.headUpdateFile({
         filename: 'CompAI-Device-Agent-1.0.5-arm64.zip',
       });
 
       expect(result).toEqual({
         kind: 'redirect',
-        url: 'https://s3.example.com/signed-head',
+        url: 'https://storage.example.com/signed',
       });
-      expect(mockSend).not.toHaveBeenCalled();
-      expect(mockGetSignedUrl).toHaveBeenCalledTimes(1);
-      const [, command] = mockGetSignedUrl.mock.calls[0];
-      // S3 signs each HTTP method separately; a GET-signed URL would be
-      // rejected when used with a HEAD request.
-      expect(command).toBeInstanceOf(MockHeadObjectCommand);
-      expect(command).toMatchObject({
-        Bucket: 'test-bucket',
-        Key: 'device-agent/production/updates/CompAI-Device-Agent-1.0.5-arm64.zip',
+      expect(mockObjectStorage.getSignedObjectUrl).toHaveBeenCalledWith({
+        organizationId: 'device-agent',
+        key: 'device-agent/production/updates/CompAI-Device-Agent-1.0.5-arm64.zip',
+        bucketName: 'device-bucket',
+        action: 'read',
+        expiresInSeconds: 3600,
       });
     });
   });
@@ -237,63 +205,39 @@ describe('DeviceAgentService', () => {
   describe('downloadWindowsAgent', () => {
     it('should return stream, filename, and contentType on success', async () => {
       const mockStream = new Readable({ read() {} });
-      mockSend.mockResolvedValue({ Body: mockStream });
+      mockObjectStorage.streamObject.mockReturnValue(mockStream);
 
       const result = await service.downloadWindowsAgent();
 
       expect(result.stream).toBe(mockStream);
       expect(result.filename).toBe('Comp AI Agent 1.0.0.exe');
       expect(result.contentType).toBe('application/octet-stream');
-      expect(mockSend).toHaveBeenCalledWith(
-        expect.objectContaining({
-          Bucket: 'test-bucket',
-          Key: 'windows/Comp AI Agent 1.0.0.exe',
-        }),
-      );
+      expect(mockObjectStorage.streamObject).toHaveBeenCalledWith({
+        organizationId: 'device-agent',
+        key: 'device-agent/production/windows/Comp AI Agent 1.0.0.exe',
+        bucketName: 'device-bucket',
+      });
     });
 
-    it('should throw NotFoundException when S3 returns no body', async () => {
-      mockSend.mockResolvedValue({ Body: undefined });
-
-      await expect(service.downloadWindowsAgent()).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.downloadWindowsAgent()).rejects.toThrow(
-        'Windows agent executable file not found in S3',
-      );
-    });
-
-    it('should throw NotFoundException when S3 throws NoSuchKey', async () => {
+    it('should throw NotFoundException when storage throws missing', async () => {
       const error = new Error('Not found');
       error.name = 'NoSuchKey';
-      mockSend.mockRejectedValue(error);
-
-      await expect(service.downloadWindowsAgent()).rejects.toThrow(
-        NotFoundException,
-      );
-      await expect(service.downloadWindowsAgent()).rejects.toThrow(
-        'Windows agent file not found',
-      );
-    });
-
-    it('should throw NotFoundException when S3 throws NotFound', async () => {
-      const error = new Error('Not found');
-      error.name = 'NotFound';
-      mockSend.mockRejectedValue(error);
+      mockObjectStorage.streamObject.mockImplementation(() => {
+        throw error;
+      });
 
       await expect(service.downloadWindowsAgent()).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should throw InternalServerErrorException on other S3 errors', async () => {
-      mockSend.mockRejectedValue(new Error('Network failure'));
+    it('should throw InternalServerErrorException on other storage errors', async () => {
+      mockObjectStorage.streamObject.mockImplementation(() => {
+        throw new Error('Network failure');
+      });
 
       await expect(service.downloadWindowsAgent()).rejects.toThrow(
         InternalServerErrorException,
-      );
-      await expect(service.downloadWindowsAgent()).rejects.toThrow(
-        'Failed to download Windows agent',
       );
     });
   });

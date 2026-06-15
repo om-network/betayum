@@ -5,15 +5,17 @@ import {
   Logger,
 } from '@nestjs/common';
 import {
-  GetObjectCommand,
-  HeadObjectCommand,
-  type S3Client,
-} from '@aws-sdk/client-s3';
-import { BUCKET_NAME, getSignedUrl, s3Client } from '@/app/s3';
+  getDeviceAgentArtifactsBucketName,
+  objectStorage,
+} from '@/app/object-storage';
 import { Readable } from 'stream';
 
-const S3_ENV = process.env.DEVICE_AGENT_S3_ENV || 'production';
-const S3_UPDATES_PREFIX = `device-agent/${S3_ENV}/updates`;
+const DEVICE_AGENT_STORAGE_ENV =
+  process.env.DEVICE_AGENT_STORAGE_ENV ||
+  process.env.DEVICE_AGENT_S3_ENV ||
+  'production';
+const DEVICE_AGENT_PREFIX = `device-agent/${DEVICE_AGENT_STORAGE_ENV}`;
+const DEVICE_AGENT_UPDATES_PREFIX = `${DEVICE_AGENT_PREFIX}/updates`;
 
 const ALLOWED_EXTENSIONS = new Set([
   '.yml',
@@ -62,18 +64,10 @@ function isValidFilename(filename: string): boolean {
 @Injectable()
 export class DeviceAgentService {
   private readonly logger = new Logger(DeviceAgentService.name);
-  private readonly fleetBucketName =
-    process.env.FLEET_AGENT_BUCKET_NAME || BUCKET_NAME || '';
-
-  private get storageClient(): S3Client {
-    if (s3Client) return s3Client;
-    throw new InternalServerErrorException(
-      'Object storage is not configured for device agent downloads.',
-    );
-  }
 
   private get bucketName(): string {
-    if (this.fleetBucketName) return this.fleetBucketName;
+    const bucketName = getDeviceAgentArtifactsBucketName();
+    if (bucketName) return bucketName;
     throw new InternalServerErrorException(
       'Object storage bucket is not configured for device agent downloads.',
     );
@@ -86,29 +80,22 @@ export class DeviceAgentService {
   }> {
     try {
       const macosPackageFilename = 'Comp AI Agent-1.0.0-arm64.dmg';
-      const packageKey = `macos/${macosPackageFilename}`;
+      const packageKey = `${DEVICE_AGENT_PREFIX}/macos/${macosPackageFilename}`;
 
-      this.logger.log(`Downloading macOS agent from S3: ${packageKey}`);
+      this.logger.log(`Downloading macOS agent from object storage: ${packageKey}`);
 
-      const getObjectCommand = new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: packageKey,
+      const objectStream = objectStorage.streamObject({
+        organizationId: 'device-agent',
+        key: packageKey,
+        bucketName: this.bucketName,
       });
-
-      const s3Response = await this.storageClient.send(getObjectCommand);
-
-      if (!s3Response.Body) {
-        throw new NotFoundException('macOS agent DMG file not found in S3');
-      }
-
-      const s3Stream = s3Response.Body as Readable;
 
       this.logger.log(
         `Successfully retrieved macOS agent: ${macosPackageFilename}`,
       );
 
       return {
-        stream: s3Stream,
+        stream: objectStream,
         filename: macosPackageFilename,
         contentType: 'application/x-apple-diskimage',
       };
@@ -116,9 +103,8 @@ export class DeviceAgentService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to download macOS agent from S3:', error);
-      const s3Error = error as { name?: string };
-      if (s3Error.name === 'NoSuchKey' || s3Error.name === 'NotFound') {
+      this.logger.error('Failed to download macOS agent from object storage:', error);
+      if (isMissingObjectError(error)) {
         throw new NotFoundException('macOS agent file not found');
       }
       throw new InternalServerErrorException(
@@ -134,31 +120,22 @@ export class DeviceAgentService {
   }> {
     try {
       const windowsPackageFilename = 'Comp AI Agent 1.0.0.exe';
-      const packageKey = `windows/${windowsPackageFilename}`;
+      const packageKey = `${DEVICE_AGENT_PREFIX}/windows/${windowsPackageFilename}`;
 
-      this.logger.log(`Downloading Windows agent from S3: ${packageKey}`);
+      this.logger.log(`Downloading Windows agent from object storage: ${packageKey}`);
 
-      const getObjectCommand = new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: packageKey,
+      const objectStream = objectStorage.streamObject({
+        organizationId: 'device-agent',
+        key: packageKey,
+        bucketName: this.bucketName,
       });
-
-      const s3Response = await this.storageClient.send(getObjectCommand);
-
-      if (!s3Response.Body) {
-        throw new NotFoundException(
-          'Windows agent executable file not found in S3',
-        );
-      }
-
-      const s3Stream = s3Response.Body as Readable;
 
       this.logger.log(
         `Successfully retrieved Windows agent: ${windowsPackageFilename}`,
       );
 
       return {
-        stream: s3Stream,
+        stream: objectStream,
         filename: windowsPackageFilename,
         contentType: 'application/octet-stream',
       };
@@ -166,9 +143,8 @@ export class DeviceAgentService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to download Windows agent from S3:', error);
-      const s3Error = error as { name?: string };
-      if (s3Error.name === 'NoSuchKey' || s3Error.name === 'NotFound') {
+      this.logger.error('Failed to download Windows agent from object storage:', error);
+      if (isMissingObjectError(error)) {
         throw new NotFoundException('Windows agent file not found');
       }
       throw new InternalServerErrorException(
@@ -186,7 +162,7 @@ export class DeviceAgentService {
       throw new NotFoundException('Not found');
     }
 
-    const key = `${S3_UPDATES_PREFIX}/${filename}`;
+    const key = `${DEVICE_AGENT_UPDATES_PREFIX}/${filename}`;
     const ext = getExtension(filename);
 
     if (REDIRECT_EXTENSIONS.has(ext)) {
@@ -196,29 +172,25 @@ export class DeviceAgentService {
     const contentType = CONTENT_TYPES[ext] || 'application/octet-stream';
 
     try {
-      const command = new GetObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
+      const metadata = await objectStorage.getObjectMetadata({
+        organizationId: 'device-agent',
+        key,
+        bucketName: this.bucketName,
       });
-      const s3Response = await this.storageClient.send(command);
-
-      if (!s3Response.Body) {
-        throw new NotFoundException('Not found');
-      }
 
       return {
         kind: 'stream',
-        stream: s3Response.Body as Readable,
+        stream: objectStorage.streamObject({
+          organizationId: 'device-agent',
+          key,
+          bucketName: this.bucketName,
+        }),
         contentType,
-        contentLength:
-          typeof s3Response.ContentLength === 'number'
-            ? s3Response.ContentLength
-            : undefined,
+        contentLength: metadata.contentLength,
       };
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
-      const s3Error = error as { name?: string };
-      if (s3Error.name === 'NoSuchKey') {
+      if (isMissingObjectError(error)) {
         throw new NotFoundException('Not found');
       }
       this.logger.error('Error serving update file:', { key, error });
@@ -235,7 +207,7 @@ export class DeviceAgentService {
       throw new NotFoundException('Not found');
     }
 
-    const key = `${S3_UPDATES_PREFIX}/${filename}`;
+    const key = `${DEVICE_AGENT_UPDATES_PREFIX}/${filename}`;
     const ext = getExtension(filename);
 
     if (REDIRECT_EXTENSIONS.has(ext)) {
@@ -247,19 +219,16 @@ export class DeviceAgentService {
     const contentType = CONTENT_TYPES[ext] || 'application/octet-stream';
 
     try {
-      const command = new HeadObjectCommand({
-        Bucket: this.bucketName,
-        Key: key,
+      const metadata = await objectStorage.getObjectMetadata({
+        organizationId: 'device-agent',
+        key,
+        bucketName: this.bucketName,
       });
-      const s3Response = await this.storageClient.send(command);
 
       return {
         kind: 'stream',
         contentType,
-        contentLength:
-          typeof s3Response.ContentLength === 'number'
-            ? s3Response.ContentLength
-            : undefined,
+        contentLength: metadata.contentLength,
       };
     } catch {
       throw new NotFoundException('Not found');
@@ -270,20 +239,27 @@ export class DeviceAgentService {
     key: string,
     method: 'GET' | 'HEAD',
   ): Promise<string> {
-    const command =
-      method === 'HEAD'
-        ? new HeadObjectCommand({
-            Bucket: this.bucketName,
-            Key: key,
-          })
-        : new GetObjectCommand({
-            Bucket: this.bucketName,
-            Key: key,
-          });
-    return getSignedUrl(this.storageClient, command, {
-      expiresIn: PRESIGNED_URL_TTL_SECONDS,
+    return objectStorage.getSignedObjectUrl({
+      organizationId: 'device-agent',
+      key,
+      bucketName: this.bucketName,
+      action: 'read',
+      expiresInSeconds: PRESIGNED_URL_TTL_SECONDS,
     });
   }
+}
+
+function isMissingObjectError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const maybeError = error as { name?: string; code?: unknown };
+  return (
+    maybeError.name === 'NoSuchKey' ||
+    maybeError.name === 'NotFound' ||
+    maybeError.code === 404
+  );
 }
 
 export type UpdateFileResult =

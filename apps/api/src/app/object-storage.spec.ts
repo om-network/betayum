@@ -99,6 +99,16 @@ describe('object storage configuration', () => {
     expect(fakeFile.signedVersion).toBe('v4');
 
     await expect(
+      objectStorage.getObjectMetadata({
+        organizationId: 'org_123',
+        key: 'attachments/evidence.pdf',
+      }),
+    ).resolves.toEqual({
+      contentLength: 8,
+      contentType: 'application/pdf',
+    });
+
+    await expect(
       objectStorage.copyObject({
         organizationId: 'org_123',
         sourceKey: 'attachments/source.pdf',
@@ -192,5 +202,9 @@ class FakeStorageFile {
     this.signedAction = config.action;
     this.signedVersion = config.version ?? null;
     return ['https://signed.example.com/object'];
+  }
+
+  async getMetadata(): Promise<[{ size: string; contentType: string }]> {
+    return [{ size: '8', contentType: 'application/pdf' }];
   }
 }

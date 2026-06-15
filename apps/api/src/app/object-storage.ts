@@ -26,6 +26,13 @@ export type DeleteObjectParams = ResolveObjectLocationParams;
 
 export type StreamObjectParams = ResolveObjectLocationParams;
 
+export type ObjectMetadataParams = ResolveObjectLocationParams;
+
+export type ObjectMetadata = {
+  contentLength?: number;
+  contentType?: string;
+};
+
 export type CopyObjectParams = {
   organizationId: string;
   sourceKey: string;
@@ -44,6 +51,7 @@ export type SignedObjectUrlParams = ResolveObjectLocationParams & {
 export interface ObjectStorage {
   uploadObject(params: UploadObjectParams): Promise<ObjectLocation>;
   streamObject(params: StreamObjectParams): Readable;
+  getObjectMetadata(params: ObjectMetadataParams): Promise<ObjectMetadata>;
   copyObject(params: CopyObjectParams): Promise<ObjectLocation>;
   deleteObject(params: DeleteObjectParams): Promise<void>;
   getSignedObjectUrl(params: SignedObjectUrlParams): Promise<string>;
@@ -93,6 +101,14 @@ export function getOrgAssetsBucketName(): string | undefined {
   return firstDefined(
     process.env.APP_GCP_ORG_ASSETS_BUCKET,
     process.env.APP_AWS_ORG_ASSETS_BUCKET,
+    getDefaultBucketName(),
+  );
+}
+
+export function getDeviceAgentArtifactsBucketName(): string | undefined {
+  return firstDefined(
+    process.env.APP_DEVICE_AGENT_ARTIFACTS_BUCKET,
+    process.env.FLEET_AGENT_BUCKET_NAME,
     getDefaultBucketName(),
   );
 }
@@ -214,6 +230,26 @@ export class GcsObjectStorage implements ObjectStorage {
       .bucket(location.bucketName)
       .file(location.key)
       .createReadStream();
+  }
+
+  async getObjectMetadata(params: ObjectMetadataParams): Promise<ObjectMetadata> {
+    const location = resolveObjectLocation(params);
+    const [metadata] = await this.storage
+      .bucket(location.bucketName)
+      .file(location.key)
+      .getMetadata();
+    const size =
+      typeof metadata.size === 'number'
+        ? metadata.size
+        : Number.parseInt(String(metadata.size ?? ''), 10);
+
+    return {
+      contentLength: Number.isFinite(size) ? size : undefined,
+      contentType:
+        typeof metadata.contentType === 'string'
+          ? metadata.contentType
+          : undefined,
+    };
   }
 
   async copyObject(params: CopyObjectParams): Promise<ObjectLocation> {

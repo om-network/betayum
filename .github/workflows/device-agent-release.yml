@@ -414,8 +414,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  upload-s3:
-    name: Upload to S3
+  upload-gcs:
+    name: Upload to Google Cloud Storage
     needs: [detect-version, build-macos, build-windows, build-linux]
     runs-on: ubuntu-latest
     steps:
@@ -428,79 +428,81 @@ jobs:
       - name: List artifacts
         run: ls -la artifacts/
 
-      - name: Upload installers to S3
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.GCP_SERVICE_ACCOUNT_KEY || secrets.GCP_SERVICE_ACCOUNT_KEY_STAGING }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload installers to Google Cloud Storage
         env:
-          AWS_ACCESS_KEY_ID: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_AWS_ACCESS_KEY_ID || secrets.APP_AWS_ACCESS_KEY_ID_STAGING }}
-          AWS_SECRET_ACCESS_KEY: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_AWS_SECRET_ACCESS_KEY || secrets.APP_AWS_SECRET_ACCESS_KEY_STAGING }}
-          AWS_REGION: ${{ secrets.APP_AWS_REGION }}
-          S3_BUCKET: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.FLEET_AGENT_BUCKET_NAME || secrets.FLEET_AGENT_BUCKET_NAME_STAGING }}
+          GCS_BUCKET: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET || secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET_STAGING }}
           VERSION: ${{ needs.detect-version.outputs.version }}
-          S3_ENV: ${{ needs.detect-version.outputs.s3_env }}
+          STORAGE_ENV: ${{ needs.detect-version.outputs.s3_env }}
         run: |
-          PREFIX="device-agent/${S3_ENV}"
+          PREFIX="device-agent/${STORAGE_ENV}"
 
           # macOS (dmg for portal downloads)
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-arm64.dmg \
-            s3://${S3_BUCKET}/${PREFIX}/macos/CompAI-Device-Agent-${VERSION}-arm64.dmg
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-arm64.dmg \
-            s3://${S3_BUCKET}/${PREFIX}/macos/latest-arm64.dmg
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-arm64.dmg \
+            gs://${GCS_BUCKET}/${PREFIX}/macos/CompAI-Device-Agent-${VERSION}-arm64.dmg
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-arm64.dmg \
+            gs://${GCS_BUCKET}/${PREFIX}/macos/latest-arm64.dmg
 
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x64.dmg \
-            s3://${S3_BUCKET}/${PREFIX}/macos/CompAI-Device-Agent-${VERSION}-x64.dmg
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x64.dmg \
-            s3://${S3_BUCKET}/${PREFIX}/macos/latest-x64.dmg
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-x64.dmg \
+            gs://${GCS_BUCKET}/${PREFIX}/macos/CompAI-Device-Agent-${VERSION}-x64.dmg
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-x64.dmg \
+            gs://${GCS_BUCKET}/${PREFIX}/macos/latest-x64.dmg
 
           # Windows
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-setup.exe \
-            s3://${S3_BUCKET}/${PREFIX}/windows/CompAI-Device-Agent-${VERSION}-setup.exe
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-setup.exe \
-            s3://${S3_BUCKET}/${PREFIX}/windows/latest-setup.exe
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-setup.exe \
+            gs://${GCS_BUCKET}/${PREFIX}/windows/CompAI-Device-Agent-${VERSION}-setup.exe
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-setup.exe \
+            gs://${GCS_BUCKET}/${PREFIX}/windows/latest-setup.exe
 
           # Linux (.deb uses amd64, .AppImage uses x86_64 architecture naming)
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-amd64.deb \
-            s3://${S3_BUCKET}/${PREFIX}/linux/CompAI-Device-Agent-${VERSION}-amd64.deb
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-amd64.deb \
-            s3://${S3_BUCKET}/${PREFIX}/linux/latest-amd64.deb
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-amd64.deb \
+            gs://${GCS_BUCKET}/${PREFIX}/linux/CompAI-Device-Agent-${VERSION}-amd64.deb
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-amd64.deb \
+            gs://${GCS_BUCKET}/${PREFIX}/linux/latest-amd64.deb
 
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x86_64.AppImage \
-            s3://${S3_BUCKET}/${PREFIX}/linux/CompAI-Device-Agent-${VERSION}-x86_64.AppImage
-          aws s3 cp artifacts/CompAI-Device-Agent-${VERSION}-x86_64.AppImage \
-            s3://${S3_BUCKET}/${PREFIX}/linux/latest-x86_64.AppImage
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-x86_64.AppImage \
+            gs://${GCS_BUCKET}/${PREFIX}/linux/CompAI-Device-Agent-${VERSION}-x86_64.AppImage
+          gcloud storage cp artifacts/CompAI-Device-Agent-${VERSION}-x86_64.AppImage \
+            gs://${GCS_BUCKET}/${PREFIX}/linux/latest-x86_64.AppImage
 
-      - name: Upload auto-update files to S3
+      - name: Upload auto-update files to Google Cloud Storage
         env:
-          AWS_ACCESS_KEY_ID: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_AWS_ACCESS_KEY_ID || secrets.APP_AWS_ACCESS_KEY_ID_STAGING }}
-          AWS_SECRET_ACCESS_KEY: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_AWS_SECRET_ACCESS_KEY || secrets.APP_AWS_SECRET_ACCESS_KEY_STAGING }}
-          AWS_REGION: ${{ secrets.APP_AWS_REGION }}
-          S3_BUCKET: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.FLEET_AGENT_BUCKET_NAME || secrets.FLEET_AGENT_BUCKET_NAME_STAGING }}
-          S3_ENV: ${{ needs.detect-version.outputs.s3_env }}
+          GCS_BUCKET: ${{ needs.detect-version.outputs.s3_env == 'production' && secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET || secrets.APP_DEVICE_AGENT_ARTIFACTS_BUCKET_STAGING }}
+          STORAGE_ENV: ${{ needs.detect-version.outputs.s3_env }}
         run: |
-          UPDATE_DIR="device-agent/${S3_ENV}/updates"
+          UPDATE_DIR="device-agent/${STORAGE_ENV}/updates"
 
           # Upload all .yml files (latest-mac.yml, latest.yml, latest-linux.yml)
           for f in artifacts/*.yml; do
-            [ -f "$f" ] && aws s3 cp "$f" "s3://${S3_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
+            [ -f "$f" ] && gcloud storage cp "$f" "gs://${GCS_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
           done
 
           # Upload all .zip files (macOS auto-update archives)
           for f in artifacts/*.zip; do
-            [ -f "$f" ] && aws s3 cp "$f" "s3://${S3_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
+            [ -f "$f" ] && gcloud storage cp "$f" "gs://${GCS_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
           done
 
           # Upload all .blockmap files (delta update metadata)
           for f in artifacts/*.blockmap; do
-            [ -f "$f" ] && aws s3 cp "$f" "s3://${S3_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
+            [ -f "$f" ] && gcloud storage cp "$f" "gs://${GCS_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
           done
 
           # Upload .exe for Windows auto-update
           for f in artifacts/*.exe; do
-            [ -f "$f" ] && aws s3 cp "$f" "s3://${S3_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
+            [ -f "$f" ] && gcloud storage cp "$f" "gs://${GCS_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
           done
 
           # Upload .AppImage for Linux auto-update
           for f in artifacts/*.AppImage; do
-            [ -f "$f" ] && aws s3 cp "$f" "s3://${S3_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
+            [ -f "$f" ] && gcloud storage cp "$f" "gs://${GCS_BUCKET}/${UPDATE_DIR}/$(basename "$f")"
           done
 
-          echo "--- Auto-update files uploaded to s3://${S3_BUCKET}/${UPDATE_DIR}/ ---"
-          aws s3 ls "s3://${S3_BUCKET}/${UPDATE_DIR}/"
+          echo "--- Auto-update files uploaded to gs://${GCS_BUCKET}/${UPDATE_DIR}/ ---"
+          gcloud storage ls "gs://${GCS_BUCKET}/${UPDATE_DIR}/"
