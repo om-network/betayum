@@ -71,7 +71,7 @@
     "deps:lint": "syncpack lint",
     "deps:update": "syncpack update",
     "deps:upgrade": "syncpack update && bun install",
-    "dev": "turbo dev --parallel",
+    "dev": "turbo dev --ui=tui",
     "db:generate": "turbo run db:generate --filter=@trycompai/db --filter=@trycompai/app --filter=@trycompai/portal --filter=@trycompai/api --filter=@trycompai/framework-editor",
     "docker:clean": "bun run -F @trycompai/db docker:clean",
     "docker:down": "bun run -F @trycompai/db docker:down",
