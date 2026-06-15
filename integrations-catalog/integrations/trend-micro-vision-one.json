@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to your Trend Micro Vision One console.\n2. Go to Administration → API Keys.\n3. Click 'Add API Key' and configure:\n   - Name: CompAI Integration\n   - Role: Custom role with required permissions\n   - Permissions needed:\n     * Workbench: View, filter, and search\n     * Audit Logs: View, filter, and search, Export and Download\n     * Endpoint Inventory: View\n4. Copy the API token and select your region below.",
+      "setupInstructions": "1. Log in to your Trend Micro Vision One console.\n2. Go to Administration → API Keys.\n3. Click 'Add API Key' and configure:\n   - Name: Betayum Integration\n   - Role: Custom role with required permissions\n   - Permissions needed:\n     * Workbench: View, filter, and search\n     * Audit Logs: View, filter, and search, Export and Download\n     * Endpoint Inventory: View\n4. Copy the API token and select your region below.",
       "credentialFields": [
         {
           "label": "API Token",

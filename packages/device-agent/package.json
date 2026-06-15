@@ -1,9 +1,9 @@
 {
   "name": "@trycompai/device-agent",
   "version": "1.0.0",
-  "description": "Comp AI Device Agent - Endpoint Compliance",
-  "author": "Comp AI <hello@trycomp.ai>",
-  "homepage": "https://trycomp.ai/",
+  "description": "Betayum Device Agent - Endpoint Compliance",
+  "author": "Betayum <hello@betayum.com>",
+  "homepage": "https://betayum.com/",
   "private": true,
   "main": "dist/main/index.js",
   "scripts": {

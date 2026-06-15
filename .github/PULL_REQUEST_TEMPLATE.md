@@ -22,7 +22,7 @@ A visual demonstration is strongly recommended, for both the original and new ch
 ## Mandatory Tasks (DO NOT REMOVE)
 
 - [ ] I have self-reviewed the code (A decent size PR without self-review might be rejected).
-- [ ] I have updated the developer docs in /docs if this PR makes changes that would require a [documentation change](https://trycomp.ai/docs). If N/A, write N/A here and check the checkbox.
+- [ ] I have updated the developer docs in /docs if this PR makes changes that would require a [documentation change](https://betayum.com/docs). If N/A, write N/A here and check the checkbox.
 - [ ] I confirm automated tests are in place that prove my fix is effective or that my feature works.
 
 ## How should this be tested?

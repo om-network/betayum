@@ -55,7 +55,7 @@ function resolveBuildEnv() {
     fileEnv.PORTAL_URL,
     fileEnv.NEXT_PUBLIC_PORTAL_URL,
     fileEnv.BETTER_AUTH_URL,
-    'https://portal.trycomp.ai',
+    'https://portal.betayum.com',
   );
 
   const apiUrl = firstDefined(
@@ -67,7 +67,7 @@ function resolveBuildEnv() {
     fileEnv.NEXT_PUBLIC_API_URL,
     fileEnv.BACKEND_API_URL,
     fileEnv.BASE_URL,
-    'https://api.trycomp.ai',
+    'https://api.betayum.com',
   );
 
   const autoUpdateUrl = firstDefined(
