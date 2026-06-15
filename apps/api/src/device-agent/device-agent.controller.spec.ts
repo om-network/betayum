@@ -235,7 +235,7 @@ describe('DeviceAgentController', () => {
   describe('headUpdateFile', () => {
     it('returns metadata headers for a yml manifest', async () => {
       mockService.headUpdateFile.mockResolvedValue({
-        kind: 'stream',
+        kind: 'metadata',
         contentType: 'text/yaml',
         contentLength: 859,
       });
@@ -256,10 +256,11 @@ describe('DeviceAgentController', () => {
       expect(mockRes.redirect).not.toHaveBeenCalled();
     });
 
-    it('issues a 302 redirect for HEAD on binaries', async () => {
+    it('returns metadata headers for HEAD on binaries', async () => {
       mockService.headUpdateFile.mockResolvedValue({
-        kind: 'redirect',
-        url: 'https://s3.example.com/signed-head',
+        kind: 'metadata',
+        contentType: 'application/zip',
+        contentLength: 2048,
       });
 
       const result = await controller.headUpdateFile(
@@ -267,11 +268,15 @@ describe('DeviceAgentController', () => {
         mockRes as never,
       );
 
-      expect(mockRes.redirect).toHaveBeenCalledWith(
-        302,
-        'https://s3.example.com/signed-head',
+      expect(mockRes.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'Content-Type': 'application/zip',
+          'Cache-Control': 'public, max-age=300',
+          'Content-Length': '2048',
+        }),
       );
-      expect(result).toBeUndefined();
+      expect(result).toBe('');
+      expect(mockRes.redirect).not.toHaveBeenCalled();
     });
   });
 });

@@ -53,7 +53,16 @@ Each environment creates:
 Customer-data objects must remain private and use organization-prefixed keys.
 The API runtime service account receives object-admin access to the app-data
 bucket. API and portal runtime service accounts receive read access to the
-device-agent artifact bucket for download/proxy behavior.
+device-agent artifact bucket for download/proxy behavior. Runtime service
+accounts are also granted `roles/iam.serviceAccountTokenCreator` on themselves
+so the GCS client can mint V4 signed URLs through Application Default
+Credentials.
+
+Some app, portal, and API callers still use the S3-compatible GCS
+interoperability helpers. Until those callers are migrated to the API object
+storage adapter, seed `APP_GCP_ACCESS_KEY_ID` and `APP_GCP_SECRET_ACCESS_KEY`
+secret values when `mount_runtime_secrets = true`; the baseline also wires the
+matching `APP_GCP_*` bucket, endpoint, and region environment variables.
 
 ## Operator Inputs
 

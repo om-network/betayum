@@ -17,6 +17,7 @@ jest.mock('@trycompai/auth', () => ({
 }));
 
 jest.mock('../app/object-storage', () => ({
+  getOrgAssetsBucketName: jest.fn(() => 'org-assets-bucket'),
   objectStorage: {
     uploadObject: jest.fn(),
     getSignedObjectUrl: jest.fn(),
@@ -54,6 +55,7 @@ describe('OrganizationService object storage', () => {
     expect(mockObjectStorage.getSignedObjectUrl).toHaveBeenCalledWith({
       organizationId: 'org_123',
       key: 'org_123/logo/logo.png',
+      bucketName: 'org-assets-bucket',
       action: 'read',
       expiresInSeconds: 3600,
     });
@@ -69,9 +71,8 @@ describe('OrganizationService object storage', () => {
 
     expect(mockObjectStorage.uploadObject).toHaveBeenCalledWith({
       organizationId: 'org_123',
-      key: expect.stringMatching(
-        /^org_123\/logo\/\d+-Company_Logo\.png$/,
-      ),
+      key: expect.stringMatching(/^org_123\/logo\/\d+-Company_Logo\.png$/),
+      bucketName: 'org-assets-bucket',
       body: Buffer.from('fake-png'),
       contentType: 'image/png',
     });

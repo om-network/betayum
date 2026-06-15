@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { allRoles } from '@trycompai/auth';
 import { db, Role } from '@db';
-import { objectStorage } from '../app/object-storage';
+import { getOrgAssetsBucketName, objectStorage } from '../app/object-storage';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipResponseDto } from './dto/transfer-ownership.dto';
 
@@ -438,6 +438,7 @@ export class OrganizationService {
       return await objectStorage.getSignedObjectUrl({
         organizationId,
         key: logoKey,
+        bucketName: getOrgAssetsBucketName(),
         action: 'read',
         expiresInSeconds: 3600,
       });
@@ -559,6 +560,7 @@ export class OrganizationService {
     await objectStorage.uploadObject({
       organizationId,
       key,
+      bucketName: getOrgAssetsBucketName(),
       body: fileBuffer,
       contentType: fileType,
     });
@@ -571,6 +573,7 @@ export class OrganizationService {
     const signedUrl = await objectStorage.getSignedObjectUrl({
       organizationId,
       key,
+      bucketName: getOrgAssetsBucketName(),
       action: 'read',
       expiresInSeconds: 3600,
     });

@@ -101,6 +101,8 @@ variable "secret_names" {
     "revalidation-secret",
     "upstash-redis-rest-url",
     "upstash-redis-rest-token",
+    "app-gcp-access-key-id",
+    "app-gcp-secret-access-key",
   ]
 }
 
@@ -116,6 +118,8 @@ variable "runtime_secret_names" {
       "resend-api-key",
       "upstash-redis-rest-url",
       "upstash-redis-rest-token",
+      "app-gcp-access-key-id",
+      "app-gcp-secret-access-key",
     ]
     app = [
       "database-url",
@@ -123,11 +127,15 @@ variable "runtime_secret_names" {
       "resend-api-key",
       "trigger-secret-key",
       "revalidation-secret",
+      "app-gcp-access-key-id",
+      "app-gcp-secret-access-key",
     ]
     portal = [
       "database-url",
       "better-auth-secret",
       "resend-api-key",
+      "app-gcp-access-key-id",
+      "app-gcp-secret-access-key",
     ]
     migrator = [
       "database-url",

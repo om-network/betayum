@@ -47,6 +47,20 @@ describe('object storage configuration', () => {
     ).toThrow('Object key must be scoped to organization org_123');
   });
 
+  it('does not treat legacy AWS bucket variables as GCS configuration', () => {
+    process.env.APP_AWS_BUCKET_NAME = 'legacy-aws-bucket';
+
+    const { resolveObjectLocation } =
+      require('./object-storage') as typeof import('./object-storage');
+
+    expect(() =>
+      resolveObjectLocation({
+        organizationId: 'org_123',
+        key: 'attachments/evidence.pdf',
+      }),
+    ).toThrow('Object storage bucket is not configured');
+  });
+
   it('rejects malformed object keys', () => {
     process.env.APP_OBJECT_STORAGE_BUCKET = 'betayum-app-data';
 

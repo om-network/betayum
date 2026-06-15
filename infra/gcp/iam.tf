@@ -63,6 +63,14 @@ resource "google_service_account_iam_member" "deployer_can_run_migrator" {
   member             = google_service_account.deployer[each.key].member
 }
 
+resource "google_service_account_iam_member" "runtime_can_sign_blobs" {
+  for_each = local.env_services
+
+  service_account_id = google_service_account.runtime[each.key].name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = google_service_account.runtime[each.key].member
+}
+
 resource "google_secret_manager_secret_iam_member" "runtime_secret_access" {
   for_each = local.runtime_secret_bindings
 

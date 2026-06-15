@@ -5,6 +5,7 @@ locals {
     "cloudbuild.googleapis.com",
     "compute.googleapis.com",
     "iam.googleapis.com",
+    "iamcredentials.googleapis.com",
     "logging.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
@@ -58,18 +59,33 @@ locals {
         AUTH_STAGING_DOMAIN               = var.auth_staging_domain
         APP_OBJECT_STORAGE_BUCKET         = local.object_storage_buckets[env_name].app_data
         APP_DEVICE_AGENT_ARTIFACTS_BUCKET = local.object_storage_buckets[env_name].device_agent_artifacts
+        APP_GCP_BUCKET_NAME               = local.object_storage_buckets[env_name].app_data
+        APP_GCP_ENDPOINT                  = "https://storage.googleapis.com"
+        APP_GCP_REGION                    = "auto"
+        APP_GCP_ORG_ASSETS_BUCKET         = local.object_storage_buckets[env_name].app_data
       }
       app = {
-        NEXT_PUBLIC_API_URL         = "https://${env.domains.api}"
-        NEXT_PUBLIC_BETTER_AUTH_URL = "https://${env.domains.api}"
-        NEXT_PUBLIC_PORTAL_URL      = "https://${env.domains.portal}"
-        APP_OBJECT_STORAGE_BUCKET   = local.object_storage_buckets[env_name].app_data
+        NEXT_PUBLIC_API_URL                 = "https://${env.domains.api}"
+        NEXT_PUBLIC_BETTER_AUTH_URL         = "https://${env.domains.api}"
+        NEXT_PUBLIC_PORTAL_URL              = "https://${env.domains.portal}"
+        APP_OBJECT_STORAGE_BUCKET           = local.object_storage_buckets[env_name].app_data
+        APP_GCP_BUCKET_NAME                 = local.object_storage_buckets[env_name].app_data
+        APP_GCP_ENDPOINT                    = "https://storage.googleapis.com"
+        APP_GCP_REGION                      = "auto"
+        APP_GCP_QUESTIONNAIRE_UPLOAD_BUCKET = local.object_storage_buckets[env_name].app_data
+        APP_GCP_KNOWLEDGE_BASE_BUCKET       = local.object_storage_buckets[env_name].app_data
+        APP_GCP_ORG_ASSETS_BUCKET           = local.object_storage_buckets[env_name].app_data
       }
       portal = {
         NEXT_PUBLIC_API_URL               = "https://${env.domains.api}"
         NEXT_PUBLIC_BETTER_AUTH_URL       = "https://${env.domains.api}"
         APP_OBJECT_STORAGE_BUCKET         = local.object_storage_buckets[env_name].app_data
         APP_DEVICE_AGENT_ARTIFACTS_BUCKET = local.object_storage_buckets[env_name].device_agent_artifacts
+        APP_GCP_BUCKET_NAME               = local.object_storage_buckets[env_name].app_data
+        APP_GCP_ENDPOINT                  = "https://storage.googleapis.com"
+        APP_GCP_REGION                    = "auto"
+        APP_GCP_ORG_ASSETS_BUCKET         = local.object_storage_buckets[env_name].app_data
+        FLEET_AGENT_BUCKET_NAME           = local.object_storage_buckets[env_name].device_agent_artifacts
       }
     }
   }

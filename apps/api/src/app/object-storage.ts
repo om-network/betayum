@@ -78,14 +78,12 @@ function getDefaultBucketName(): string | undefined {
     process.env.APP_OBJECT_STORAGE_BUCKET,
     process.env.APP_GCS_BUCKET_NAME,
     process.env.APP_GCP_BUCKET_NAME,
-    process.env.APP_AWS_BUCKET_NAME,
   );
 }
 
 export function getQuestionnaireUploadBucketName(): string | undefined {
   return firstDefined(
     process.env.APP_GCP_QUESTIONNAIRE_UPLOAD_BUCKET,
-    process.env.APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET,
     getDefaultBucketName(),
   );
 }
@@ -93,7 +91,6 @@ export function getQuestionnaireUploadBucketName(): string | undefined {
 export function getKnowledgeBaseBucketName(): string | undefined {
   return firstDefined(
     process.env.APP_GCP_KNOWLEDGE_BASE_BUCKET,
-    process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET,
     getDefaultBucketName(),
   );
 }
@@ -101,7 +98,6 @@ export function getKnowledgeBaseBucketName(): string | undefined {
 export function getOrgAssetsBucketName(): string | undefined {
   return firstDefined(
     process.env.APP_GCP_ORG_ASSETS_BUCKET,
-    process.env.APP_AWS_ORG_ASSETS_BUCKET,
     getDefaultBucketName(),
   );
 }

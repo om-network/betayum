@@ -9,7 +9,8 @@ const mockGetDeviceAgentArtifactsBucketName = jest.fn<string | undefined, []>(
 );
 
 jest.mock('@/app/object-storage', () => ({
-  getDeviceAgentArtifactsBucketName: () => mockGetDeviceAgentArtifactsBucketName(),
+  getDeviceAgentArtifactsBucketName: () =>
+    mockGetDeviceAgentArtifactsBucketName(),
   objectStorage: {
     streamObject: jest.fn(),
     getObjectMetadata: jest.fn(),
@@ -55,11 +56,16 @@ describe('DeviceAgentService', () => {
       const result = await service.downloadMacAgent();
 
       expect(result.stream).toBe(mockStream);
-      expect(result.filename).toBe('Comp AI Agent-1.0.0-arm64.dmg');
+      expect(result.filename).toBe('CompAI-Device-Agent-arm64.dmg');
       expect(result.contentType).toBe('application/x-apple-diskimage');
+      expect(mockObjectStorage.getObjectMetadata).toHaveBeenCalledWith({
+        organizationId: 'device-agent',
+        key: 'device-agent/production/macos/latest-arm64.dmg',
+        bucketName: 'device-bucket',
+      });
       expect(mockObjectStorage.streamObject).toHaveBeenCalledWith({
         organizationId: 'device-agent',
-        key: 'device-agent/production/macos/Comp AI Agent-1.0.0-arm64.dmg',
+        key: 'device-agent/production/macos/latest-arm64.dmg',
         bucketName: 'device-bucket',
       });
     });
@@ -67,9 +73,7 @@ describe('DeviceAgentService', () => {
     it('should throw NotFoundException when storage throws NotFound', async () => {
       const error = new Error('Not found');
       error.name = 'NotFound';
-      mockObjectStorage.streamObject.mockImplementation(() => {
-        throw error;
-      });
+      mockObjectStorage.getObjectMetadata.mockRejectedValue(error);
 
       await expect(service.downloadMacAgent()).rejects.toThrow(
         NotFoundException,
@@ -77,9 +81,9 @@ describe('DeviceAgentService', () => {
     });
 
     it('should throw InternalServerErrorException on other storage errors', async () => {
-      mockObjectStorage.streamObject.mockImplementation(() => {
-        throw new Error('Network failure');
-      });
+      mockObjectStorage.getObjectMetadata.mockRejectedValue(
+        new Error('Network failure'),
+      );
 
       await expect(service.downloadMacAgent()).rejects.toThrow(
         InternalServerErrorException,
@@ -95,7 +99,9 @@ describe('DeviceAgentService', () => {
         contentLength: 859,
       });
 
-      const result = await service.getUpdateFile({ filename: 'latest-mac.yml' });
+      const result = await service.getUpdateFile({
+        filename: 'latest-mac.yml',
+      });
 
       expect(result).toEqual({
         kind: 'stream',
@@ -176,29 +182,29 @@ describe('DeviceAgentService', () => {
       });
 
       expect(result).toEqual({
-        kind: 'stream',
+        kind: 'metadata',
         contentType: 'text/yaml',
         contentLength: 859,
       });
       expect(mockObjectStorage.getSignedObjectUrl).not.toHaveBeenCalled();
     });
 
-    it('redirects binary HEAD requests to a signed object URL', async () => {
+    it('serves binary HEAD metadata without a signed GET redirect', async () => {
       const result = await service.headUpdateFile({
         filename: 'CompAI-Device-Agent-1.0.5-arm64.zip',
       });
 
       expect(result).toEqual({
-        kind: 'redirect',
-        url: 'https://storage.example.com/signed',
+        kind: 'metadata',
+        contentType: 'application/zip',
+        contentLength: 859,
       });
-      expect(mockObjectStorage.getSignedObjectUrl).toHaveBeenCalledWith({
+      expect(mockObjectStorage.getObjectMetadata).toHaveBeenCalledWith({
         organizationId: 'device-agent',
         key: 'device-agent/production/updates/CompAI-Device-Agent-1.0.5-arm64.zip',
         bucketName: 'device-bucket',
-        action: 'read',
-        expiresInSeconds: 3600,
       });
+      expect(mockObjectStorage.getSignedObjectUrl).not.toHaveBeenCalled();
     });
   });
 
@@ -210,11 +216,16 @@ describe('DeviceAgentService', () => {
       const result = await service.downloadWindowsAgent();
 
       expect(result.stream).toBe(mockStream);
-      expect(result.filename).toBe('Comp AI Agent 1.0.0.exe');
+      expect(result.filename).toBe('CompAI-Device-Agent-setup.exe');
       expect(result.contentType).toBe('application/octet-stream');
+      expect(mockObjectStorage.getObjectMetadata).toHaveBeenCalledWith({
+        organizationId: 'device-agent',
+        key: 'device-agent/production/windows/latest-setup.exe',
+        bucketName: 'device-bucket',
+      });
       expect(mockObjectStorage.streamObject).toHaveBeenCalledWith({
         organizationId: 'device-agent',
-        key: 'device-agent/production/windows/Comp AI Agent 1.0.0.exe',
+        key: 'device-agent/production/windows/latest-setup.exe',
         bucketName: 'device-bucket',
       });
     });
@@ -222,9 +233,7 @@ describe('DeviceAgentService', () => {
     it('should throw NotFoundException when storage throws missing', async () => {
       const error = new Error('Not found');
       error.name = 'NoSuchKey';
-      mockObjectStorage.streamObject.mockImplementation(() => {
-        throw error;
-      });
+      mockObjectStorage.getObjectMetadata.mockRejectedValue(error);
 
       await expect(service.downloadWindowsAgent()).rejects.toThrow(
         NotFoundException,
@@ -232,9 +241,9 @@ describe('DeviceAgentService', () => {
     });
 
     it('should throw InternalServerErrorException on other storage errors', async () => {
-      mockObjectStorage.streamObject.mockImplementation(() => {
-        throw new Error('Network failure');
-      });
+      mockObjectStorage.getObjectMetadata.mockRejectedValue(
+        new Error('Network failure'),
+      );
 
       await expect(service.downloadWindowsAgent()).rejects.toThrow(
         InternalServerErrorException,

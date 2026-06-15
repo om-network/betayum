@@ -11,6 +11,7 @@ import {
   objectStorage,
   readObjectStreamToBuffer,
 } from '../../app/object-storage';
+import { isMissingObjectError } from '../../app/object-storage-errors';
 
 const logger = new Logger('EvidenceAttachmentStreamer');
 
@@ -136,13 +137,6 @@ export async function appendAttachmentToArchive(params: {
  * returning NoSuchBucket would otherwise produce an export full of placeholders
  * that looks "successful" but contains none of the customer's evidence.
  */
-function isMissingObjectError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const err = error as { name?: string; Code?: string; code?: unknown };
-  const code = err.name ?? err.Code;
-  return code === 'NoSuchKey' || code === 'NotFound' || err.code === 404;
-}
-
 function extractOrganizationId(objectKey: string): string {
   const [organizationId] = objectKey.split('/');
   if (!organizationId) {

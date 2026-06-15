@@ -8,6 +8,7 @@ import {
   getDeviceAgentArtifactsBucketName,
   objectStorage,
 } from '@/app/object-storage';
+import { isMissingObjectError } from '@/app/object-storage-errors';
 import { Readable } from 'stream';
 
 const DEVICE_AGENT_STORAGE_ENV =
@@ -43,6 +44,18 @@ const REDIRECT_EXTENSIONS = new Set([
 ]);
 
 const PRESIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour
+const DIRECT_DOWNLOAD_TARGETS = {
+  macos: {
+    key: `${DEVICE_AGENT_PREFIX}/macos/latest-arm64.dmg`,
+    filename: 'CompAI-Device-Agent-arm64.dmg',
+    contentType: 'application/x-apple-diskimage',
+  },
+  windows: {
+    key: `${DEVICE_AGENT_PREFIX}/windows/latest-setup.exe`,
+    filename: 'CompAI-Device-Agent-setup.exe',
+    contentType: 'application/octet-stream',
+  },
+} as const;
 
 function getExtension(filename: string): string {
   if (filename.endsWith('.AppImage')) return '.AppImage';
@@ -78,39 +91,13 @@ export class DeviceAgentService {
     filename: string;
     contentType: string;
   }> {
-    try {
-      const macosPackageFilename = 'Comp AI Agent-1.0.0-arm64.dmg';
-      const packageKey = `${DEVICE_AGENT_PREFIX}/macos/${macosPackageFilename}`;
-
-      this.logger.log(`Downloading macOS agent from object storage: ${packageKey}`);
-
-      const objectStream = objectStorage.streamObject({
-        organizationId: 'device-agent',
-        key: packageKey,
-        bucketName: this.bucketName,
-      });
-
-      this.logger.log(
-        `Successfully retrieved macOS agent: ${macosPackageFilename}`,
-      );
-
-      return {
-        stream: objectStream,
-        filename: macosPackageFilename,
-        contentType: 'application/x-apple-diskimage',
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error('Failed to download macOS agent from object storage:', error);
-      if (isMissingObjectError(error)) {
-        throw new NotFoundException('macOS agent file not found');
-      }
-      throw new InternalServerErrorException(
+    return this.downloadDirectInstaller({
+      label: 'macOS',
+      target: DIRECT_DOWNLOAD_TARGETS.macos,
+      notFoundMessage: 'macOS agent file not found',
+      failureMessage:
         'Failed to download macOS agent. The agent file may not be available in this environment.',
-      );
-    }
+    });
   }
 
   async downloadWindowsAgent(): Promise<{
@@ -118,38 +105,68 @@ export class DeviceAgentService {
     filename: string;
     contentType: string;
   }> {
-    try {
-      const windowsPackageFilename = 'Comp AI Agent 1.0.0.exe';
-      const packageKey = `${DEVICE_AGENT_PREFIX}/windows/${windowsPackageFilename}`;
+    return this.downloadDirectInstaller({
+      label: 'Windows',
+      target: DIRECT_DOWNLOAD_TARGETS.windows,
+      notFoundMessage: 'Windows agent file not found',
+      failureMessage:
+        'Failed to download Windows agent. The agent file may not be available in this environment.',
+    });
+  }
 
-      this.logger.log(`Downloading Windows agent from object storage: ${packageKey}`);
+  private async downloadDirectInstaller({
+    label,
+    target,
+    notFoundMessage,
+    failureMessage,
+  }: {
+    label: string;
+    target: (typeof DIRECT_DOWNLOAD_TARGETS)[keyof typeof DIRECT_DOWNLOAD_TARGETS];
+    notFoundMessage: string;
+    failureMessage: string;
+  }): Promise<{
+    stream: Readable;
+    filename: string;
+    contentType: string;
+  }> {
+    try {
+      this.logger.log(
+        `Downloading ${label} agent from object storage: ${target.key}`,
+      );
+
+      await objectStorage.getObjectMetadata({
+        organizationId: 'device-agent',
+        key: target.key,
+        bucketName: this.bucketName,
+      });
 
       const objectStream = objectStorage.streamObject({
         organizationId: 'device-agent',
-        key: packageKey,
+        key: target.key,
         bucketName: this.bucketName,
       });
 
       this.logger.log(
-        `Successfully retrieved Windows agent: ${windowsPackageFilename}`,
+        `Successfully retrieved ${label} agent: ${target.filename}`,
       );
 
       return {
         stream: objectStream,
-        filename: windowsPackageFilename,
-        contentType: 'application/octet-stream',
+        filename: target.filename,
+        contentType: target.contentType,
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error('Failed to download Windows agent from object storage:', error);
-      if (isMissingObjectError(error)) {
-        throw new NotFoundException('Windows agent file not found');
-      }
-      throw new InternalServerErrorException(
-        'Failed to download Windows agent. The agent file may not be available in this environment.',
+      this.logger.error(
+        `Failed to download ${label} agent from object storage:`,
+        error,
       );
+      if (isMissingObjectError(error)) {
+        throw new NotFoundException(notFoundMessage);
+      }
+      throw new InternalServerErrorException(failureMessage);
     }
   }
 
@@ -166,7 +183,7 @@ export class DeviceAgentService {
     const ext = getExtension(filename);
 
     if (REDIRECT_EXTENSIONS.has(ext)) {
-      return { kind: 'redirect', url: await this.signUpdateUrl(key, 'GET') };
+      return { kind: 'redirect', url: await this.signUpdateUrl(key) };
     }
 
     const contentType = CONTENT_TYPES[ext] || 'application/octet-stream';
@@ -209,13 +226,6 @@ export class DeviceAgentService {
 
     const key = `${DEVICE_AGENT_UPDATES_PREFIX}/${filename}`;
     const ext = getExtension(filename);
-
-    if (REDIRECT_EXTENSIONS.has(ext)) {
-      // S3 signs each HTTP method separately — a GET-signed URL is rejected
-      // for HEAD with SignatureDoesNotMatch.
-      return { kind: 'redirect', url: await this.signUpdateUrl(key, 'HEAD') };
-    }
-
     const contentType = CONTENT_TYPES[ext] || 'application/octet-stream';
 
     try {
@@ -226,7 +236,7 @@ export class DeviceAgentService {
       });
 
       return {
-        kind: 'stream',
+        kind: 'metadata',
         contentType,
         contentLength: metadata.contentLength,
       };
@@ -235,10 +245,7 @@ export class DeviceAgentService {
     }
   }
 
-  private async signUpdateUrl(
-    key: string,
-    method: 'GET' | 'HEAD',
-  ): Promise<string> {
+  private async signUpdateUrl(key: string): Promise<string> {
     return objectStorage.getSignedObjectUrl({
       organizationId: 'device-agent',
       key,
@@ -247,19 +254,6 @@ export class DeviceAgentService {
       expiresInSeconds: PRESIGNED_URL_TTL_SECONDS,
     });
   }
-}
-
-function isMissingObjectError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-
-  const maybeError = error as { name?: string; code?: unknown };
-  return (
-    maybeError.name === 'NoSuchKey' ||
-    maybeError.name === 'NotFound' ||
-    maybeError.code === 404
-  );
 }
 
 export type UpdateFileResult =
@@ -272,5 +266,5 @@ export type UpdateFileResult =
   | { kind: 'redirect'; url: string };
 
 export type HeadUpdateFileResult =
-  | { kind: 'stream'; contentType: string; contentLength?: number }
+  | { kind: 'metadata'; contentType: string; contentLength?: number }
   | { kind: 'redirect'; url: string };
