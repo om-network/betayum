@@ -113,6 +113,21 @@ resource "google_compute_url_map" "http_redirect" {
     redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
     strip_query            = false
   }
+
+  host_rule {
+    hosts        = ["*"]
+    path_matcher = "redirect"
+  }
+
+  path_matcher {
+    name = "redirect"
+
+    default_url_redirect {
+      https_redirect         = true
+      redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+      strip_query            = false
+    }
+  }
 }
 
 resource "google_compute_target_http_proxy" "http_redirect" {
