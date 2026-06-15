@@ -15,6 +15,7 @@ const edgeSnippets = [
   'OAuth callback',
   'rollback',
   'prior DNS',
+  'seed job logs',
 ];
 
 const evidenceSnippets = [
@@ -24,6 +25,7 @@ const evidenceSnippets = [
   'same commit SHA',
   'parallel service rollout',
   'migration job logs',
+  'seed job logs',
   'Cloud Run revision history',
   'secret rotation',
   'DNS cutover',
@@ -33,11 +35,7 @@ const evidenceSnippets = [
   'database-migrations-release.yml',
 ];
 
-function assertIncludes({
-  source,
-  snippets,
-  label,
-}) {
+function assertIncludes({ source, snippets, label }) {
   const normalizedSource = source.toLowerCase();
   for (const snippet of snippets) {
     if (!normalizedSource.includes(snippet.toLowerCase())) {

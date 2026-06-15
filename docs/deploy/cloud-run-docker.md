@@ -1,13 +1,14 @@
 # Cloud Run Docker Contracts
 
-Betayum ships four Cloud Run artifacts:
+Betayum ships five Cloud Run artifacts:
 
-| Artifact | Dockerfile | Target | Cloud Run port | Smoke check |
-|----------|------------|--------|----------------|-------------|
-| API | `apps/api/Dockerfile.multistage` | `production` | `3333` | `/v1/health` |
-| App | `Dockerfile` | `app` | `3000` | `/api/health` |
-| Portal | `Dockerfile` | `portal` | `3000` | `/` |
-| Migrator | `Dockerfile` | `migrator` | n/a | job exit code |
+| Artifact | Dockerfile                       | Target       | Cloud Run port | Smoke check   |
+| -------- | -------------------------------- | ------------ | -------------- | ------------- |
+| API      | `apps/api/Dockerfile.multistage` | `production` | `3333`         | `/v1/health`  |
+| App      | `Dockerfile`                     | `app`        | `3000`         | `/api/health` |
+| Portal   | `Dockerfile`                     | `portal`     | `3000`         | `/`           |
+| Migrator | `Dockerfile`                     | `migrator`   | n/a            | job exit code |
+| Seeder   | `Dockerfile`                     | `seeder`     | n/a            | job exit code |
 
 Cloud Run services in `infra/gcp/services.tf` are configured to match these
 ports, so the images do not need to listen on the default Cloud Run `8080`.
@@ -58,6 +59,13 @@ docker build -f Dockerfile --target migrator \
   -t "$REGISTRY/migrator:$COMMIT_SHA" .
 ```
 
+Build the seeder image:
+
+```bash
+docker build -f Dockerfile --target seeder \
+  -t "$REGISTRY/seeder:$COMMIT_SHA" .
+```
+
 ## Runtime Configuration
 
 Runtime secrets are injected from Secret Manager by Cloud Run. Do not bake env
@@ -70,7 +78,8 @@ Required public build values:
 - `NEXT_PUBLIC_PORTAL_URL`: portal URL used by the app.
 
 Required runtime values are declared as Secret Manager shells in
-`infra/gcp/variables.tf`. The migration job only needs `DATABASE_URL` at runtime.
+`infra/gcp/variables.tf`. The migration and seed jobs only need `DATABASE_URL`
+at runtime.
 
 ## Smoke Checks
 
@@ -82,4 +91,5 @@ curl --fail "$APP_URL/api/health"
 curl --fail "$PORTAL_URL/"
 ```
 
-For the migrator, treat a non-zero Cloud Run Job execution as a failed deploy.
+For the migrator and seeder, treat a non-zero Cloud Run Job execution as a
+failed deploy.

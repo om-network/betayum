@@ -15,26 +15,29 @@ The production approval record is part of the ISO deployment evidence set.
 ## Pipeline Order
 
 The pipeline uses one Cloud Build trigger per environment. API, app, portal,
-and migrator do not have separate Cloud Build triggers.
+migrator, and seeder do not have separate Cloud Build triggers.
 
-1. Build API, app, and migrator images in parallel. Build the portal image
+1. Build API, app, migrator, and seeder images in parallel. Build the portal image
    after the app image so only one frontend `next build` runs at a time on the
    Cloud Build worker.
 2. Tag every image with `$COMMIT_SHA`.
 3. Push each image to the environment Artifact Registry repository after its
    matching build finishes. Image pushes can run in parallel.
 4. Update the Cloud Run migration job to the new migrator image after the
-   migrator image is pushed.
+   migrator image is pushed, and update the seed job after the seeder image is
+   pushed.
 5. Execute the migration job with `--wait`.
 6. Stop the deployment if the migration job exits non-zero.
-7. Deploy API, app, and portal Cloud Run revisions after migrations pass and
-   each service image has been pushed. The three service deploys run in
+7. Execute the seed job with `--wait` after migrations pass.
+8. Stop the deployment if the seed job exits non-zero.
+9. Deploy API, app, and portal Cloud Run revisions after migrations and seed
+   pass and each service image has been pushed. The three service deploys run in
    parallel.
-8. Smoke check API `/v1/health`, app `/api/health`, and the portal root after
-   all three service deploys finish. The smoke checks can run in parallel.
+10. Smoke check API `/v1/health`, app `/api/health`, and the portal root after
+    all three service deploys finish. The smoke checks can run in parallel.
 
-The migration job is the single required gate before service rollout. This
-gated-parallel shape keeps deployment evidence in one Cloud Build run while
+The migration job and seed job are the required gates before service rollout.
+This gated-parallel shape keeps deployment evidence in one Cloud Build run while
 avoiding unnecessary linear waits between independent service lanes. Frontend
 image builds are intentionally throttled to avoid two memory-heavy Next.js
 builds competing on the same worker.
@@ -57,6 +60,7 @@ arguments.
 - Cloud Build logs: Cloud Build build details for the trigger run.
 - Approval records: Cloud Build approval tab for production runs.
 - Migration job logs: Cloud Run Job execution logs for `_MIGRATOR_JOB`.
+- Seed job logs: Cloud Run Job execution logs for `_SEEDER_JOB`.
 - Revision traceability: Cloud Run revisions reference images tagged by
   `$COMMIT_SHA`.
 - Smoke-check output: final Cloud Build curl steps after the parallel service

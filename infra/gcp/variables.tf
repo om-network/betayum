@@ -78,12 +78,14 @@ variable "initial_images" {
     app      = string
     portal   = string
     migrator = string
+    seeder   = optional(string)
   })
   default = {
     api      = "us-docker.pkg.dev/cloudrun/container/hello"
     app      = "us-docker.pkg.dev/cloudrun/container/hello"
     portal   = "us-docker.pkg.dev/cloudrun/container/hello"
     migrator = "us-docker.pkg.dev/cloudrun/container/hello"
+    seeder   = "us-docker.pkg.dev/cloudrun/container/hello"
   }
 }
 
@@ -111,7 +113,7 @@ variable "secret_names" {
 }
 
 variable "runtime_secret_names" {
-  description = "Secret shells mounted into each runtime service and migration job."
+  description = "Secret shells mounted into each runtime service, migration job, and seed job."
   type        = map(list(string))
   default = {
     api = [
@@ -146,6 +148,9 @@ variable "runtime_secret_names" {
       "app-gcp-secret-access-key",
     ]
     migrator = [
+      "database-url",
+    ]
+    seeder = [
       "database-url",
     ]
   }
