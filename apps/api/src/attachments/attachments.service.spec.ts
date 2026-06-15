@@ -47,6 +47,12 @@ describe('AttachmentsService object storage behavior', () => {
     objectStorage.streamObject.mockReturnValue(Readable.from(['file']));
   });
 
+  function createService(): AttachmentsService {
+    const service = new AttachmentsService();
+    service.setObjectStorage(objectStorage);
+    return service;
+  }
+
   it('uploads task attachments through API-owned object storage', async () => {
     mockDb.attachment.create.mockResolvedValue({
       id: 'att_123',
@@ -59,7 +65,7 @@ describe('AttachmentsService object storage behavior', () => {
       key: 'org_123/attachments/task/tsk_123/evidence.pdf',
     });
 
-    const service = new AttachmentsService(objectStorage);
+    const service = createService();
     const result = await service.uploadAttachment(
       'org_123',
       'tsk_123',
@@ -102,7 +108,7 @@ describe('AttachmentsService object storage behavior', () => {
     });
     mockDb.attachment.delete.mockResolvedValue({ id: 'att_123' });
 
-    const service = new AttachmentsService(objectStorage);
+    const service = createService();
     await expect(
       service.getAttachmentDownloadUrl('org_123', 'att_123'),
     ).resolves.toEqual({
@@ -135,7 +141,7 @@ describe('AttachmentsService object storage behavior', () => {
       key: 'org_123/policies/pol_123/versions/ver_123.pdf',
     });
 
-    const service = new AttachmentsService(objectStorage);
+    const service = createService();
 
     await expect(
       service.copyPolicyVersionPdf(

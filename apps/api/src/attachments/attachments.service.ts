@@ -1,7 +1,4 @@
-import {
-  objectStorage,
-  type ObjectStorage,
-} from '@/app/object-storage';
+import { objectStorage, type ObjectStorage } from '@/app/object-storage';
 import { AttachmentEntityType, AttachmentType, db } from '@db';
 import {
   BadRequestException,
@@ -17,8 +14,11 @@ import { validateFileContent } from '../utils/file-type-validation';
 export class AttachmentsService {
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
+  private storage: ObjectStorage = objectStorage;
 
-  constructor(private readonly storage: ObjectStorage = objectStorage) {}
+  setObjectStorage(storage: ObjectStorage): void {
+    this.storage = storage;
+  }
 
   /**
    * Upload attachment to object storage and create database record.
