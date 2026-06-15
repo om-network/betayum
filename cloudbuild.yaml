@@ -181,6 +181,7 @@ steps:
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
       - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL}
+      - --remove-secrets=BETTER_AUTH_API_KEY
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,AUTH_SECRET=betayum-${_ENVIRONMENT}-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest,TRIGGER_SECRET_KEY=betayum-${_ENVIRONMENT}-trigger-secret-key:latest,REVALIDATION_SECRET=betayum-${_ENVIRONMENT}-revalidation-secret:latest
       - --quiet
 
@@ -202,6 +203,7 @@ steps:
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
       - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL}
+      - --remove-secrets=BETTER_AUTH_API_KEY
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,BETTER_AUTH_SECRET=betayum-${_ENVIRONMENT}-better-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest
       - --quiet
 
