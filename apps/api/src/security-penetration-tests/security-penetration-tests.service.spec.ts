@@ -197,6 +197,21 @@ describe('SecurityPenetrationTestsService', () => {
     ]);
   });
 
+  it('does not fail service construction when Maced is not configured', async () => {
+    delete process.env.MACED_API_KEY;
+
+    const unconfiguredService = new SecurityPenetrationTestsService(
+      mockPentestCreditsService as unknown as PentestCreditsService,
+      mockBillingEntitlementsService as unknown as BillingEntitlementsService,
+    );
+
+    await expect(
+      unconfiguredService.getReport('org_123', 'run_123'),
+    ).rejects.toMatchObject({
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+    });
+  });
+
   it('creates report payload with resolved webhook URL', async () => {
     process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL =
       'https://api.trycomp.ai/webhook';
@@ -665,8 +680,6 @@ describe('SecurityPenetrationTestsService', () => {
   // TODO(phase-5): webhook tests removed — handleWebhook now verifies HMAC
   // via @maced/api-client verifyMacedWebhook. Rewrite: valid signature → ok,
   // invalid/missing signature → ForbiddenException, unknown run → warn+ok.
-  // Also rewrite the MACED_API_KEY missing test — new behavior throws at
-  // service construction, not on first request.
 
   it('fetches report output as binary payload', async () => {
     const fixtureContent = 'markdown report body';

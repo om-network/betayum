@@ -129,18 +129,26 @@ type CreatePentestBodyWithScanProfile = CreatePentestBody & {
 @Injectable()
 export class SecurityPenetrationTestsService {
   private readonly logger = new Logger(SecurityPenetrationTestsService.name);
-  private readonly macedClient: MacedClient;
+  private macedClientInstance: MacedClient | null = null;
 
   constructor(
     private readonly credits: PentestCreditsService,
     private readonly billingEntitlements: BillingEntitlementsService,
-  ) {
-    const apiKey = process.env.MACED_API_KEY;
+  ) {}
+
+  private get macedClient(): MacedClient {
+    if (this.macedClientInstance) return this.macedClientInstance;
+    const apiKey = process.env.MACED_API_KEY?.trim();
     if (!apiKey) {
-      // Throw at construction so the app fails loudly on boot, not on first request.
-      throw new Error('MACED_API_KEY is required to start the pentest module');
+      throw new HttpException(
+        {
+          error: 'Penetration test provider is not configured',
+          code: 'pentest_provider_unavailable',
+        },
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
     }
-    this.macedClient = createMacedClient({
+    this.macedClientInstance = createMacedClient({
       apiKey,
       baseUrl: process.env.MACED_API_BASE_URL,
       userAgent: 'comp-api',
@@ -153,6 +161,7 @@ export class SecurityPenetrationTestsService {
       // persistence in createReport).
       retry: { maxAttempts: 1 },
     });
+    return this.macedClientInstance;
   }
 
   /**
@@ -168,6 +177,9 @@ export class SecurityPenetrationTestsService {
     try {
       return await fn();
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       if (error instanceof MacedApiError) {
         const body =
           typeof error.body === 'object' && error.body !== null
