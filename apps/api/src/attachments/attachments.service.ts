@@ -1,9 +1,4 @@
 import {
-  CopyObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
-import { BUCKET_NAME, s3Client } from '@/app/s3';
-import {
   objectStorage,
   type ObjectStorage,
 } from '@/app/object-storage';
@@ -20,26 +15,10 @@ import { validateFileContent } from '../utils/file-type-validation';
 
 @Injectable()
 export class AttachmentsService {
-  s3Client: S3Client | null;
-  bucketName: string | null;
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
-  constructor(private readonly storage: ObjectStorage = objectStorage) {
-    this.bucketName = BUCKET_NAME || null;
-    this.s3Client = s3Client;
-  }
-
-  private assertStorageAvailable(): asserts this is AttachmentsService & {
-    s3Client: S3Client;
-    bucketName: string;
-  } {
-    if (!this.s3Client || !this.bucketName) {
-      throw new InternalServerErrorException(
-        'File storage is not configured. Set APP_GCP_* variables (preferred) or APP_AWS_* legacy variables, or disable attachment uploads for this environment.',
-      );
-    }
-  }
+  constructor(private readonly storage: ObjectStorage = objectStorage) {}
 
   /**
    * Upload attachment to object storage and create database record.
@@ -343,22 +322,19 @@ export class AttachmentsService {
   }
 
   /**
-   * Copy a policy PDF to a new S3 key for versioning
+   * Copy a policy PDF to a new object key for versioning.
    */
   async copyPolicyVersionPdf(
     sourceKey: string,
     destinationKey: string,
   ): Promise<string | null> {
     try {
-      this.assertStorageAvailable();
+      await this.storage.copyObject({
+        organizationId: this.extractOrganizationId(sourceKey),
+        sourceKey,
+        destinationKey,
+      });
 
-      await this.s3Client.send(
-        new CopyObjectCommand({
-          Bucket: this.bucketName,
-          CopySource: `${this.bucketName}/${sourceKey}`,
-          Key: destinationKey,
-        }),
-      );
       return destinationKey;
     } catch (error) {
       console.error('Error copying policy PDF:', error);

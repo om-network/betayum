@@ -34,6 +34,7 @@ describe('AttachmentsService object storage behavior', () => {
   const objectStorage: jest.Mocked<ObjectStorage> = {
     uploadObject: jest.fn(),
     streamObject: jest.fn(),
+    copyObject: jest.fn(),
     deleteObject: jest.fn(),
     getSignedObjectUrl: jest.fn(),
   };
@@ -125,6 +126,28 @@ describe('AttachmentsService object storage behavior', () => {
     });
     expect(mockDb.attachment.delete).toHaveBeenCalledWith({
       where: { id: 'att_123', organizationId: 'org_123' },
+    });
+  });
+
+  it('copies policy version PDFs through object storage', async () => {
+    objectStorage.copyObject.mockResolvedValue({
+      bucketName: 'betayum-app-data',
+      key: 'org_123/policies/pol_123/versions/ver_123.pdf',
+    });
+
+    const service = new AttachmentsService(objectStorage);
+
+    await expect(
+      service.copyPolicyVersionPdf(
+        'org_123/policies/pol_123/current.pdf',
+        'org_123/policies/pol_123/versions/ver_123.pdf',
+      ),
+    ).resolves.toBe('org_123/policies/pol_123/versions/ver_123.pdf');
+
+    expect(objectStorage.copyObject).toHaveBeenCalledWith({
+      organizationId: 'org_123',
+      sourceKey: 'org_123/policies/pol_123/current.pdf',
+      destinationKey: 'org_123/policies/pol_123/versions/ver_123.pdf',
     });
   });
 });

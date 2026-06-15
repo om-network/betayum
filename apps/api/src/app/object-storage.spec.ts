@@ -1,4 +1,4 @@
-import type { GetSignedUrlConfig } from '@google-cloud/storage';
+import type { GetSignedUrlConfig, Storage } from '@google-cloud/storage';
 import { Readable } from 'node:stream';
 
 describe('object storage configuration', () => {
@@ -65,7 +65,9 @@ describe('object storage configuration', () => {
     const { GcsObjectStorage } = require('./object-storage') as typeof import('./object-storage');
     const fakeFile = new FakeStorageFile();
     const fakeStorage = new FakeStorage(fakeFile);
-    const objectStorage = new GcsObjectStorage(fakeStorage);
+    const objectStorage = new GcsObjectStorage(
+      fakeStorage as unknown as Pick<Storage, 'bucket'>,
+    );
 
     await expect(
       objectStorage.uploadObject({
@@ -97,6 +99,20 @@ describe('object storage configuration', () => {
     expect(fakeFile.signedVersion).toBe('v4');
 
     await expect(
+      objectStorage.copyObject({
+        organizationId: 'org_123',
+        sourceKey: 'attachments/source.pdf',
+        destinationKey: 'policies/destination.pdf',
+      }),
+    ).resolves.toEqual({
+      bucketName: 'betayum-app-data',
+      key: 'org_123/policies/destination.pdf',
+    });
+
+    expect(fakeStorage.copiedFromKey).toBe('org_123/attachments/source.pdf');
+    expect(fakeStorage.copiedToKey).toBe('org_123/policies/destination.pdf');
+
+    await expect(
       objectStorage.deleteObject({
         organizationId: 'org_123',
         key: 'attachments/missing.pdf',
@@ -107,21 +123,35 @@ describe('object storage configuration', () => {
 
 class FakeStorage {
   bucketName: string | null = null;
+  copiedFromKey: string | null = null;
+  copiedToKey: string | null = null;
+  private readonly files = new Map<string, FakeStorageFile>();
 
   constructor(private readonly fakeFile: FakeStorageFile) {}
 
   bucket(name: string): FakeBucket {
     this.bucketName = name;
-    return new FakeBucket(this.fakeFile);
+    return new FakeBucket(this);
+  }
+
+  getFile(key: string): FakeStorageFile {
+    const existingFile = this.files.get(key);
+    if (existingFile) {
+      return existingFile;
+    }
+
+    const file = this.files.size === 0 ? this.fakeFile : new FakeStorageFile(this);
+    file.key = key;
+    this.files.set(key, file);
+    return file;
   }
 }
 
 class FakeBucket {
-  constructor(private readonly fakeFile: FakeStorageFile) {}
+  constructor(private readonly fakeStorage: FakeStorage) {}
 
   file(key: string): FakeStorageFile {
-    this.fakeFile.key = key;
-    return this.fakeFile;
+    return this.fakeStorage.getFile(key);
   }
 }
 
@@ -131,6 +161,7 @@ class FakeStorageFile {
   savedContentType: string | null = null;
   signedAction: string | null = null;
   signedVersion: string | null = null;
+  constructor(private readonly fakeStorage?: FakeStorage) {}
 
   async save(
     body: Buffer | string | Uint8Array,
@@ -142,6 +173,13 @@ class FakeStorageFile {
 
   createReadStream(): Readable {
     return Readable.from(['object']);
+  }
+
+  async copy(destination: FakeStorageFile): Promise<void> {
+    if (this.fakeStorage) {
+      this.fakeStorage.copiedFromKey = this.key;
+      this.fakeStorage.copiedToKey = destination.key;
+    }
   }
 
   async delete(): Promise<void> {

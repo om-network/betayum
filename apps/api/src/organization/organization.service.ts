@@ -4,12 +4,10 @@ import {
   Logger,
   BadRequestException,
   ForbiddenException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { allRoles } from '@trycompai/auth';
-import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { db, Role } from '@db';
-import { APP_AWS_ORG_ASSETS_BUCKET, s3Client, getSignedUrl } from '../app/s3';
+import { objectStorage } from '../app/object-storage';
 import type { UpdateOrganizationDto } from './dto/update-organization.dto';
 import type { TransferOwnershipResponseDto } from './dto/transfer-ownership.dto';
 
@@ -431,19 +429,18 @@ export class OrganizationService {
   async getLogoSignedUrl(
     logoKey: string | null | undefined,
   ): Promise<string | null> {
-    if (!logoKey || !s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
+    if (!logoKey) {
       return null;
     }
 
     try {
-      return await getSignedUrl(
-        s3Client,
-        new GetObjectCommand({
-          Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-          Key: logoKey,
-        }),
-        { expiresIn: 3600 },
-      );
+      const [organizationId] = logoKey.split('/');
+      return await objectStorage.getSignedObjectUrl({
+        organizationId,
+        key: logoKey,
+        action: 'read',
+        expiresInSeconds: 3600,
+      });
     } catch {
       return null;
     }
@@ -549,12 +546,6 @@ export class OrganizationService {
       throw new BadRequestException('Only image files are allowed');
     }
 
-    if (!s3Client || !APP_AWS_ORG_ASSETS_BUCKET) {
-      throw new InternalServerErrorException(
-        'File upload service is not available',
-      );
-    }
-
     const fileBuffer = Buffer.from(fileData, 'base64');
     const MAX_LOGO_SIZE = 2 * 1024 * 1024;
     if (fileBuffer.length > MAX_LOGO_SIZE) {
@@ -565,28 +556,24 @@ export class OrganizationService {
     const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const key = `${organizationId}/logo/${timestamp}-${sanitizedFileName}`;
 
-    await s3Client.send(
-      new PutObjectCommand({
-        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-        Key: key,
-        Body: fileBuffer,
-        ContentType: fileType,
-      }),
-    );
+    await objectStorage.uploadObject({
+      organizationId,
+      key,
+      body: fileBuffer,
+      contentType: fileType,
+    });
 
     await db.organization.update({
       where: { id: organizationId },
       data: { logo: key },
     });
 
-    const signedUrl = await getSignedUrl(
-      s3Client,
-      new GetObjectCommand({
-        Bucket: APP_AWS_ORG_ASSETS_BUCKET,
-        Key: key,
-      }),
-      { expiresIn: 3600 },
-    );
+    const signedUrl = await objectStorage.getSignedObjectUrl({
+      organizationId,
+      key,
+      action: 'read',
+      expiresInSeconds: 3600,
+    });
 
     return { logoUrl: signedUrl };
   }

@@ -24,6 +24,13 @@ export type DeleteObjectParams = ResolveObjectLocationParams;
 
 export type StreamObjectParams = ResolveObjectLocationParams;
 
+export type CopyObjectParams = {
+  organizationId: string;
+  sourceKey: string;
+  destinationKey: string;
+  bucketName?: string;
+};
+
 export type SignedObjectUrlParams = ResolveObjectLocationParams & {
   action: SignedUrlAction;
   expiresInSeconds?: number;
@@ -35,30 +42,12 @@ export type SignedObjectUrlParams = ResolveObjectLocationParams & {
 export interface ObjectStorage {
   uploadObject(params: UploadObjectParams): Promise<ObjectLocation>;
   streamObject(params: StreamObjectParams): Readable;
+  copyObject(params: CopyObjectParams): Promise<ObjectLocation>;
   deleteObject(params: DeleteObjectParams): Promise<void>;
   getSignedObjectUrl(params: SignedObjectUrlParams): Promise<string>;
 }
 
-type StorageClient = {
-  bucket(name: string): StorageBucket;
-};
-
-type StorageBucket = {
-  file(key: string): StorageFile;
-};
-
-type StorageFile = {
-  save(
-    body: Buffer | string | Uint8Array,
-    options: {
-      resumable: false;
-      metadata?: { contentType?: string };
-    },
-  ): Promise<void>;
-  createReadStream(): Readable;
-  delete(): Promise<unknown>;
-  getSignedUrl(config: GetSignedUrlConfig): Promise<[string]>;
-};
+type StorageClient = Pick<Storage, 'bucket'>;
 
 function normalizeEnvValue(value: string | undefined): string | undefined {
   if (typeof value !== 'string') {
@@ -168,6 +157,26 @@ export class GcsObjectStorage implements ObjectStorage {
       .bucket(location.bucketName)
       .file(location.key)
       .createReadStream();
+  }
+
+  async copyObject(params: CopyObjectParams): Promise<ObjectLocation> {
+    const sourceLocation = resolveObjectLocation({
+      organizationId: params.organizationId,
+      key: params.sourceKey,
+      bucketName: params.bucketName,
+    });
+    const destinationLocation = resolveObjectLocation({
+      organizationId: params.organizationId,
+      key: params.destinationKey,
+      bucketName: params.bucketName,
+    });
+    const bucket = this.storage.bucket(destinationLocation.bucketName);
+
+    await bucket
+      .file(sourceLocation.key)
+      .copy(bucket.file(destinationLocation.key));
+
+    return destinationLocation;
   }
 
   async deleteObject(params: DeleteObjectParams): Promise<void> {
