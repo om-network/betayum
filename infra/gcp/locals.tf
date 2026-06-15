@@ -162,6 +162,37 @@ locals {
     ]) : item.key => item
   }
 
+  seeder_jobs = {
+    for env_name, env in var.environments : env_name => {
+      name       = "betayum-${env_name}-seeder"
+      project_id = env.project_id
+      region     = env.region
+      image      = coalesce(try(var.initial_images.seeder, null), var.initial_images.migrator)
+      cloud_sql_instance_connection_name = try(
+        env.cloud_sql_instance_connection_name,
+        null,
+      )
+      env_vars = {
+        BASE_URL            = "https://${env.domains.api}"
+        AUTH_PRIMARY_DOMAIN = var.auth_primary_domain
+        AUTH_STAGING_DOMAIN = var.auth_staging_domain
+      }
+    }
+  }
+
+  seeder_secret_bindings = {
+    for item in flatten([
+      for env_name, env in var.environments : [
+        for secret_name in lookup(var.runtime_secret_names, "seeder", []) : {
+          key        = "${env_name}.${secret_name}"
+          env_name   = env_name
+          project_id = env.project_id
+          secret_key = "${env_name}.${secret_name}"
+        }
+      ]
+    ]) : item.key => item
+  }
+
   deployer_project_roles = toset([
     "roles/artifactregistry.writer",
     "roles/logging.logWriter",

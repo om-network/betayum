@@ -11,9 +11,11 @@ Capture these for each production deployment:
 - Cloud Build logs for the production trigger.
 - Cloud Build approval records.
 - One Cloud Build run per environment deployment, including throttled image
-  builds, the migration gate, parallel service rollout, and final smoke checks.
+  builds, the migration and seed gates, parallel service rollout, and final
+  smoke checks.
 - Artifact Registry image tags using the same commit SHA.
 - Cloud Run migration job logs.
+- Cloud Run seed job logs.
 - Cloud Run revision history for API, app, and portal.
 - Smoke-check output for API `/v1/health`, app `/api/health`, and portal `/`.
 - Managed certificate status for `betayum.com` hostnames.
@@ -21,22 +23,22 @@ Capture these for each production deployment:
 
 ## Control Mapping
 
-| Control need           | Evidence                                               |
-| ---------------------- | ------------------------------------------------------ |
-| Change approval        | PR approval plus Cloud Build approval records          |
-| Least privilege        | `infra/gcp/iam.tf` service accounts and IAM bindings   |
-| Environment separation | separate staging and production GCP projects           |
-| Secret management      | Secret Manager shells and rotation records             |
-| Audit logs             | Cloud Build logs, Cloud Run logs, load balancer logs   |
-| Traceability           | commit SHA image tags and Cloud Run revision history   |
-| Migration ordering     | migration job logs before the parallel service rollout |
+| Control need           | Evidence                                             |
+| ---------------------- | ---------------------------------------------------- |
+| Change approval        | PR approval plus Cloud Build approval records        |
+| Least privilege        | `infra/gcp/iam.tf` service accounts and IAM bindings |
+| Environment separation | separate staging and production GCP projects         |
+| Secret management      | Secret Manager shells and rotation records           |
+| Audit logs             | Cloud Build logs, Cloud Run logs, load balancer logs |
+| Traceability           | commit SHA image tags and Cloud Run revision history |
+| Migration/seed order   | migration and seed job logs before service rollout   |
 
 ## Rollback Evidence
 
 Attach:
 
 - failed deployment build URL;
-- failed migration job logs when applicable;
+- failed migration or seed job logs when applicable;
 - prior and restored Cloud Run revision names;
 - prior and restored DNS or load balancer settings;
 - smoke-check output after rollback.
@@ -70,11 +72,11 @@ Use this secret rotation procedure for any Cloud Run runtime secret.
 
 `database-migrations-main.yml` and `database-migrations-release.yml` remain
 documented as superseded by Cloud Build only after staging proves parity. The
-Cloud Build migration job becomes authoritative when evidence shows:
+Cloud Build migration and seed jobs become authoritative when evidence shows:
 
-- the job runs before service deployment;
-- failed migrations block rollout;
-- migration job logs are retained;
+- the jobs run before service deployment;
+- failed migrations or seed runs block rollout;
+- migration and seed job logs are retained;
 - production approval records exist for `release` deployments.
 
 Leave unrelated workflows active unless a separate reviewed change retires them.

@@ -29,6 +29,8 @@ resource "google_cloudbuild_trigger" "deploy" {
     _APP_SERVICE         = google_cloud_run_v2_service.services["${each.key}.app"].name
     _PORTAL_SERVICE      = google_cloud_run_v2_service.services["${each.key}.portal"].name
     _MIGRATOR_JOB        = google_cloud_run_v2_job.migrator[each.key].name
+    _SEEDER_JOB          = google_cloud_run_v2_job.seeder[each.key].name
+    _CLOUD_SQL_INSTANCE  = coalesce(try(each.value.cloud_sql_instance_connection_name, null), "")
     _API_URL             = "https://${each.value.domains.api}"
     _APP_URL             = "https://${each.value.domains.app}"
     _PORTAL_URL          = "https://${each.value.domains.portal}"

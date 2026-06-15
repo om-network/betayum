@@ -36,6 +36,7 @@ Before changing public DNS:
 
 - Confirm the production Cloud Build run was approved.
 - Confirm migration job logs show a successful production migration.
+- Confirm seed job logs show successful production reference-data seeding.
 - Confirm Cloud Run revisions for API, app, and portal use the same commit SHA.
 - Confirm the managed certificate is active for:
   - `api.betayum.com`
