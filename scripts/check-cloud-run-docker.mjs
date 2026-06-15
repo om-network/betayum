@@ -4,6 +4,7 @@ const rootDockerfile = readFileSync('Dockerfile', 'utf8');
 const apiDockerfile = readFileSync('apps/api/Dockerfile.multistage', 'utf8');
 const servicesTf = readFileSync('infra/gcp/services.tf', 'utf8');
 const localsTf = readFileSync('infra/gcp/locals.tf', 'utf8');
+const variablesTf = readFileSync('infra/gcp/variables.tf', 'utf8');
 const dockerDocs = readFileSync('docs/deploy/cloud-run-docker.md', 'utf8');
 
 const requiredRootSnippets = [
@@ -15,11 +16,7 @@ const requiredRootSnippets = [
   'ARG NEXT_PUBLIC_API_URL',
 ];
 
-const requiredApiSnippets = [
-  'ENV PORT=3333',
-  'USER nestjs',
-  'http://localhost:3333/v1/health',
-];
+const requiredApiSnippets = ['ENV PORT=3333', 'USER nestjs', 'http://localhost:3333/v1/health'];
 
 const requiredInfraSnippets = [
   'api = {',
@@ -27,6 +24,13 @@ const requiredInfraSnippets = [
   'app = {',
   'portal = {',
   'port = 3000',
+  'BASE_URL',
+  'AUTH_PRIMARY_DOMAIN',
+  'NEXT_PUBLIC_API_URL',
+  'NEXT_PUBLIC_PORTAL_URL',
+  'google_cloud_run_v2_service_iam_member',
+  'roles/run.invoker',
+  'mount_runtime_secrets',
 ];
 
 const requiredDocSnippets = [
@@ -38,11 +42,7 @@ const requiredDocSnippets = [
   '/api/health',
 ];
 
-function assertIncludes({
-  source,
-  snippets,
-  label,
-}) {
+function assertIncludes({ source, snippets, label }) {
   for (const snippet of snippets) {
     if (!source.includes(snippet)) {
       throw new Error(`${label} is missing: ${snippet}`);
@@ -61,7 +61,7 @@ assertIncludes({
   label: 'API Dockerfile',
 });
 assertIncludes({
-  source: `${localsTf}\n${servicesTf}`,
+  source: `${localsTf}\n${servicesTf}\n${variablesTf}`,
   snippets: requiredInfraSnippets,
   label: 'Cloud Run service contract',
 });

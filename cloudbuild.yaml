@@ -15,6 +15,8 @@ substitutions:
   _API_URL: https://api.staging.betayum.com
   _APP_URL: https://app.staging.betayum.com
   _PORTAL_URL: https://portal.staging.betayum.com
+  _AUTH_PRIMARY_DOMAIN: betayum.com
+  _AUTH_STAGING_DOMAIN: staging.betayum.com
 
 steps:
   - id: build-api
@@ -101,6 +103,7 @@ steps:
       - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/migrator:$COMMIT_SHA
       - --region=${_REGION}
       - --project=$PROJECT_ID
+      - --update-env-vars=BASE_URL=${_API_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
       - --quiet
 
   - id: run-migrations
@@ -129,6 +132,7 @@ steps:
       - --platform=managed
       - --port=3333
       - --ingress=internal-and-cloud-load-balancing
+      - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
       - --quiet
 
   - id: deploy-app
@@ -144,6 +148,7 @@ steps:
       - --platform=managed
       - --port=3000
       - --ingress=internal-and-cloud-load-balancing
+      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL}
       - --quiet
 
   - id: deploy-portal
@@ -159,6 +164,7 @@ steps:
       - --platform=managed
       - --port=3000
       - --ingress=internal-and-cloud-load-balancing
+      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL}
       - --quiet
 
   - id: smoke-api

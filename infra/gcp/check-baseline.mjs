@@ -20,10 +20,15 @@ const requiredSnippets = [
   'google_project_service',
   'google_artifact_registry_repository',
   'google_cloud_run_v2_service',
+  'google_cloud_run_v2_service_iam_member',
   'google_cloud_run_v2_job',
   'google_secret_manager_secret',
   'google_cloudbuild_trigger',
   'approval_required',
+  'mount_runtime_secrets',
+  'AUTH_PRIMARY_DOMAIN',
+  'NEXT_PUBLIC_API_URL',
+  'roles/run.invoker',
   'google_compute_managed_ssl_certificate',
   'google_compute_region_network_endpoint_group',
   'google_compute_backend_service',
@@ -48,6 +53,10 @@ for (const snippet of requiredSnippets) {
 const example = readFileSync(join(root, 'terraform.tfvars.example'), 'utf8');
 if (/password|secret-value|private-key/i.test(example)) {
   throw new Error('Example variables must not include secret values');
+}
+
+if (terraformSource.includes('roles/secretmanager.secretAccessor",\n  ])')) {
+  throw new Error('Cloud Build deployer must not have project-wide secret access');
 }
 
 console.log('GCP IaC baseline files are present and cover required resources.');

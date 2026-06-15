@@ -72,7 +72,16 @@ resource "google_cloud_run_v2_service" "services" {
       }
 
       dynamic "env" {
-        for_each = toset(lookup(var.runtime_secret_names, each.value.service_name, []))
+        for_each = each.value.env_vars
+
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.mount_runtime_secrets ? toset(lookup(var.runtime_secret_names, each.value.service_name, [])) : toset([])
 
         content {
           name = upper(replace(env.value, "-", "_"))
@@ -88,6 +97,16 @@ resource "google_cloud_run_v2_service" "services" {
   }
 
   depends_on = [google_project_service.required]
+}
+
+resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
+  for_each = local.env_services
+
+  project  = each.value.project_id
+  location = each.value.region
+  name     = google_cloud_run_v2_service.services[each.key].name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
 }
 
 resource "google_cloud_run_v2_job" "migrator" {
@@ -106,7 +125,16 @@ resource "google_cloud_run_v2_job" "migrator" {
         image = each.value.image
 
         dynamic "env" {
-          for_each = toset(lookup(var.runtime_secret_names, "migrator", []))
+          for_each = each.value.env_vars
+
+          content {
+            name  = env.key
+            value = env.value
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.mount_runtime_secrets ? toset(lookup(var.runtime_secret_names, "migrator", [])) : toset([])
 
           content {
             name = upper(replace(env.value, "-", "_"))

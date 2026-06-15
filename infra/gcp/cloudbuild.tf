@@ -33,5 +33,7 @@ resource "google_cloudbuild_trigger" "deploy" {
     _API_URL             = "https://${each.value.domains.api}"
     _APP_URL             = "https://${each.value.domains.app}"
     _PORTAL_URL          = "https://${each.value.domains.portal}"
+    _AUTH_PRIMARY_DOMAIN = var.auth_primary_domain
+    _AUTH_STAGING_DOMAIN = var.auth_staging_domain
   }
 }

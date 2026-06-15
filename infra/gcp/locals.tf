@@ -35,10 +35,33 @@ locals {
           port               = service.port
           image              = var.initial_images[service_name]
           domain             = env.domains[service_name]
+          env_vars           = local.runtime_env_vars[env_name][service_name]
           security_policy_id = try(env.security_policy_id, null)
         }
       ]
     ]) : item.key => item
+  }
+
+  runtime_env_vars = {
+    for env_name, env in var.environments : env_name => {
+      api = {
+        BASE_URL                    = "https://${env.domains.api}"
+        NEXT_PUBLIC_API_URL         = "https://${env.domains.api}"
+        NEXT_PUBLIC_BETTER_AUTH_URL = "https://${env.domains.api}"
+        NEXT_PUBLIC_PORTAL_URL      = "https://${env.domains.portal}"
+        AUTH_PRIMARY_DOMAIN         = var.auth_primary_domain
+        AUTH_STAGING_DOMAIN         = var.auth_staging_domain
+      }
+      app = {
+        NEXT_PUBLIC_API_URL         = "https://${env.domains.api}"
+        NEXT_PUBLIC_BETTER_AUTH_URL = "https://${env.domains.api}"
+        NEXT_PUBLIC_PORTAL_URL      = "https://${env.domains.portal}"
+      }
+      portal = {
+        NEXT_PUBLIC_API_URL         = "https://${env.domains.api}"
+        NEXT_PUBLIC_BETTER_AUTH_URL = "https://${env.domains.api}"
+      }
+    }
   }
 
   secret_shells = {
@@ -74,6 +97,11 @@ locals {
       project_id = env.project_id
       region     = env.region
       image      = var.initial_images.migrator
+      env_vars = {
+        BASE_URL            = "https://${env.domains.api}"
+        AUTH_PRIMARY_DOMAIN = var.auth_primary_domain
+        AUTH_STAGING_DOMAIN = var.auth_staging_domain
+      }
     }
   }
 
@@ -95,6 +123,5 @@ locals {
     "roles/logging.logWriter",
     "roles/logging.viewer",
     "roles/run.admin",
-    "roles/secretmanager.secretAccessor",
   ])
 }

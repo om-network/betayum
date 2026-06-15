@@ -23,12 +23,18 @@ variable "environments" {
     security_policy_id     = optional(string)
     edge_ip_address        = optional(string)
     cloudbuild_included_files = optional(list(string), [
+      ".dockerignore",
       "apps/**",
+      "bun.lock",
+      "bunfig.toml",
+      "package.json",
       "packages/**",
       "Dockerfile",
       "apps/api/Dockerfile.multistage",
       "cloudbuild.yaml",
       "infra/gcp/**",
+      "tsconfig.json",
+      "turbo.json",
     ])
     domains = object({
       api    = string
@@ -36,6 +42,24 @@ variable "environments" {
       portal = string
     })
   }))
+}
+
+variable "auth_primary_domain" {
+  description = "Primary cookie/CORS root domain used by the API auth server."
+  type        = string
+  default     = "betayum.com"
+}
+
+variable "auth_staging_domain" {
+  description = "Staging cookie/CORS root domain used by the API auth server."
+  type        = string
+  default     = "staging.betayum.com"
+}
+
+variable "mount_runtime_secrets" {
+  description = "Mount Secret Manager latest versions after operators seed initial secret values."
+  type        = bool
+  default     = false
 }
 
 variable "initial_images" {

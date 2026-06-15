@@ -9,13 +9,15 @@ confirmed by an operator before any plan is applied.
 
 ## Environment Model
 
-| Environment | Branch | Approval | Domain root |
-|-------------|--------|----------|-------------|
-| staging | `develop` | automatic | `staging.betayum.com` |
-| production | `release` | required | `betayum.com` |
+| Environment | Branch    | Approval  | Domain root           |
+| ----------- | --------- | --------- | --------------------- |
+| staging     | `develop` | automatic | `staging.betayum.com` |
+| production  | `release` | required  | `betayum.com`         |
 
 Staging and production should use separate GCP projects. Secret values are not
-managed in Terraform; this baseline creates Secret Manager shells only.
+managed in Terraform; this baseline creates Secret Manager shells only. The
+first apply keeps `mount_runtime_secrets = false` so Cloud Run services and the
+migrator job can be created before Secret Manager versions exist.
 
 ## What This Declares
 
@@ -69,9 +71,10 @@ After review and approval:
 tofu apply staging-prod.plan
 ```
 
-Insert secret values after the Secret Manager shells exist. Cloud Run revisions
-will not be usable until required secrets and Cloud Build substitutions are in
-place.
+Insert secret values after the Secret Manager shells exist, then set
+`mount_runtime_secrets = true` and apply again to wire runtime revisions to the
+`latest` secret versions. Cloud Run revisions will not be usable until required
+secrets and Cloud Build substitutions are in place.
 
 ## Evidence
 

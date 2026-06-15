@@ -45,6 +45,12 @@ interface StagingCookiePrefixOptions {
   stagingDomain?: string;
 }
 
+interface TrustedCustomDomainWhere {
+  domain: { not: null };
+  domainVerified: true;
+  status: 'published';
+}
+
 function parseCommaSeparated(value: string | undefined): string[] {
   if (!value) {
     return [];
@@ -65,7 +71,9 @@ function withLeadingDot(domain: string): string {
 }
 
 function isLocalHostname(hostname: string): boolean {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  return (
+    hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+  );
 }
 
 function hostnameMatchesDomain(hostname: string, domain: string): boolean {
@@ -140,7 +148,11 @@ export function getConfiguredTrustedOrigins({
     `https://${service}.${normalizeDomain(stagingDomain)}`,
   ]);
 
-  return [...DEFAULT_LOCAL_ORIGINS, ...serviceOrigins, ...DEFAULT_EXTRA_ORIGINS];
+  return [
+    ...DEFAULT_LOCAL_ORIGINS,
+    ...serviceOrigins,
+    ...DEFAULT_EXTRA_ORIGINS,
+  ];
 }
 
 export function getConfiguredTrustedRootDomains({
@@ -188,4 +200,12 @@ export function shouldUseStagingCookiePrefix({
   }
 
   return normalizeDomain(cookieDomain) === normalizeDomain(stagingDomain);
+}
+
+export function getTrustedCustomDomainWhere(): TrustedCustomDomainWhere {
+  return {
+    domain: { not: null },
+    domainVerified: true,
+    status: 'published',
+  };
 }

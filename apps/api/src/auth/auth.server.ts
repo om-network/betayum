@@ -21,6 +21,7 @@ import {
   deriveCookieDomain,
   getConfiguredTrustedOrigins,
   getConfiguredTrustedRootDomains,
+  getTrustedCustomDomainWhere,
   isTrustedStaticOrigin,
   shouldUseStagingCookiePrefix,
 } from './auth-domain.config';
@@ -90,10 +91,7 @@ async function getCustomDomains(): Promise<Set<string>> {
   // Cache miss or Redis unavailable — query DB
   try {
     const trusts = await db.trust.findMany({
-      where: {
-        domain: { not: null },
-        status: 'published',
-      },
+      where: getTrustedCustomDomainWhere(),
       select: { domain: true },
     });
 

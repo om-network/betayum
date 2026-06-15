@@ -1,6 +1,7 @@
 import {
   deriveCookieDomain,
   getConfiguredTrustedOrigins,
+  getTrustedCustomDomainWhere,
   isTrustedStaticOrigin,
   shouldUseStagingCookiePrefix,
 } from './auth-domain.config';
@@ -90,5 +91,13 @@ describe('auth domain configuration', () => {
         trustedRootDomains,
       }),
     ).toBe(false);
+  });
+
+  it('requires custom trust domains to be verified before auth trusts them', () => {
+    expect(getTrustedCustomDomainWhere()).toEqual({
+      domain: { not: null },
+      domainVerified: true,
+      status: 'published',
+    });
   });
 });

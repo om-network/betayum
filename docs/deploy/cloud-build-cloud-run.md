@@ -5,10 +5,10 @@ This runbook covers the repository-owned Cloud Build pipeline in
 
 ## Flow
 
-| Environment | Branch | Trigger | Approval |
-|-------------|--------|---------|----------|
-| staging | `develop` | automatic Cloud Build trigger | none |
-| production | `release` | Cloud Build trigger | required approval |
+| Environment | Branch    | Trigger                       | Approval          |
+| ----------- | --------- | ----------------------------- | ----------------- |
+| staging     | `develop` | automatic Cloud Build trigger | none              |
+| production  | `release` | Cloud Build trigger           | required approval |
 
 The production approval record is part of the ISO deployment evidence set.
 
@@ -28,9 +28,13 @@ Frontend public values are passed as explicit substitutions:
 - `_API_URL`
 - `_APP_URL`
 - `_PORTAL_URL`
+- `_AUTH_PRIMARY_DOMAIN`
+- `_AUTH_STAGING_DOMAIN`
 
-Runtime secrets remain in Secret Manager. The pipeline does not read committed
-env files and does not inject secret values into build arguments.
+Cloud Build sets the same non-secret runtime URLs and auth domains on updated
+Cloud Run revisions. Runtime secrets remain in Secret Manager. The pipeline does
+not read committed env files and does not inject secret values into build
+arguments.
 
 ## Evidence Locations
 
