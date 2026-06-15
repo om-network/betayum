@@ -10,8 +10,8 @@ Capture these for each production deployment:
 - Reviewed pull request and commit SHA.
 - Cloud Build logs for the production trigger.
 - Cloud Build approval records.
-- One Cloud Build run per environment deployment, including the migration gate,
-  parallel service rollout, and final smoke checks.
+- One Cloud Build run per environment deployment, including throttled image
+  builds, the migration gate, parallel service rollout, and final smoke checks.
 - Artifact Registry image tags using the same commit SHA.
 - Cloud Run migration job logs.
 - Cloud Run revision history for API, app, and portal.
@@ -21,15 +21,15 @@ Capture these for each production deployment:
 
 ## Control Mapping
 
-| Control need | Evidence |
-|--------------|----------|
-| Change approval | PR approval plus Cloud Build approval records |
-| Least privilege | `infra/gcp/iam.tf` service accounts and IAM bindings |
-| Environment separation | separate staging and production GCP projects |
-| Secret management | Secret Manager shells and rotation records |
-| Audit logs | Cloud Build logs, Cloud Run logs, load balancer logs |
-| Traceability | commit SHA image tags and Cloud Run revision history |
-| Migration ordering | migration job logs before the parallel service rollout |
+| Control need           | Evidence                                               |
+| ---------------------- | ------------------------------------------------------ |
+| Change approval        | PR approval plus Cloud Build approval records          |
+| Least privilege        | `infra/gcp/iam.tf` service accounts and IAM bindings   |
+| Environment separation | separate staging and production GCP projects           |
+| Secret management      | Secret Manager shells and rotation records             |
+| Audit logs             | Cloud Build logs, Cloud Run logs, load balancer logs   |
+| Traceability           | commit SHA image tags and Cloud Run revision history   |
+| Migration ordering     | migration job logs before the parallel service rollout |
 
 ## Rollback Evidence
 

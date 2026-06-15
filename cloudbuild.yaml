@@ -2,7 +2,7 @@ timeout: 3600s
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: E2_HIGHCPU_32
+  machineType: E2_HIGHCPU_8
 
 substitutions:
   _ENVIRONMENT: staging
@@ -52,7 +52,7 @@ steps:
   - id: build-portal
     name: gcr.io/cloud-builders/docker
     waitFor:
-      - '-'
+      - build-app
     args:
       - build
       - -f
