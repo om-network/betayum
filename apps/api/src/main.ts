@@ -13,6 +13,7 @@ import {
   PUBLIC_OPENAPI_DESCRIPTION,
   PUBLIC_OPENAPI_TITLE,
 } from './openapi/public-docs-metadata';
+import { describeServer } from './openapi/server-description';
 import { isTrustedOrigin } from './auth/auth.server';
 import { adminAuthRateLimiter } from './auth/admin-rate-limit.middleware';
 import { originCheckMiddleware } from './auth/origin-check.middleware';
@@ -25,13 +26,6 @@ declare module 'express-serve-static-core' {
 }
 
 let app: INestApplication | null = null;
-
-function describeServer(baseUrl: string): string {
-  if (baseUrl.includes('api.staging.betayum.com')) return 'Staging API Server';
-  if (baseUrl.includes('api.betayum.com')) return 'Production API Server';
-  if (baseUrl.startsWith('http://localhost')) return 'Local API Server';
-  return 'API Server';
-}
 
 async function bootstrap(): Promise<void> {
   // Disable body parser - required for better-auth NestJS integration
