@@ -136,7 +136,7 @@ steps:
       - --port=3333
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
+      - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},TRUST_APP_URL=${_PORTAL_URL},PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,SECRET_KEY=betayum-${_ENVIRONMENT}-secret-key:latest,AUTH_SECRET=betayum-${_ENVIRONMENT}-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest,UPSTASH_REDIS_REST_URL=betayum-${_ENVIRONMENT}-upstash-redis-rest-url:latest,UPSTASH_REDIS_REST_TOKEN=betayum-${_ENVIRONMENT}-upstash-redis-rest-token:latest
       - --quiet
 
