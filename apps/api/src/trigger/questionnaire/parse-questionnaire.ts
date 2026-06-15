@@ -1,10 +1,9 @@
 import {
-  APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET,
-  BUCKET_NAME,
-  createStorageClient,
-  extractS3KeyFromUrl,
-} from '@/app/s3';
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+  getQuestionnaireUploadBucketName,
+  objectStorage,
+  readObjectStreamToBuffer,
+  validateObjectKey,
+} from '@/app/object-storage';
 import { db } from '@db';
 import { logger, metadata, tags, task } from '@trigger.dev/sdk';
 
@@ -112,7 +111,7 @@ async function extractContentFromUrl(url: string): Promise<string> {
 }
 
 /**
- * Extracts content from an attachment stored in S3
+ * Extracts content from an attachment stored in object storage.
  */
 async function extractContentFromAttachment(
   attachmentId: string,
@@ -129,36 +128,16 @@ async function extractContentFromAttachment(
     throw new Error('Attachment not found');
   }
 
-  const bucketName = BUCKET_NAME;
-  if (!bucketName) {
-    throw new Error(
-      'Object storage bucket is not configured. Set APP_GCP_BUCKET_NAME or APP_AWS_BUCKET_NAME in Trigger.dev.',
-    );
-  }
-
-  const key = extractS3KeyFromUrl(attachment.url);
-  const s3Client = createStorageClient();
-  const getCommand = new GetObjectCommand({
-    Bucket: bucketName,
-    Key: key,
-  });
-
-  const response = await s3Client.send(getCommand);
-
-  if (!response.Body) {
-    throw new Error('Failed to retrieve attachment from S3');
-  }
-
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
-    chunks.push(chunk);
-  }
-  const buffer = Buffer.concat(chunks);
+  const key = validateObjectKey(attachment.url);
+  const buffer = await readObjectStreamToBuffer(
+    objectStorage.streamObject({
+      organizationId,
+      key,
+    }),
+  );
   const base64Data = buffer.toString('base64');
 
-  const fileType =
-    response.ContentType ||
-    (attachment.type === 'image' ? 'image/png' : 'application/pdf');
+  const fileType = attachment.type === 'image' ? 'image/png' : 'application/pdf';
 
   const content = await extractContentFromFile(
     base64Data,
@@ -170,42 +149,30 @@ async function extractContentFromAttachment(
 }
 
 /**
- * Extracts content from an S3 key (for temporary questionnaire files)
+ * Extracts content from an object key (for temporary questionnaire files).
  */
 async function extractContentFromS3Key(
   s3Key: string,
   fileType: string,
 ): Promise<{ content: string; fileType: string }> {
-  const questionnaireBucket = APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET;
+  const questionnaireBucket = getQuestionnaireUploadBucketName();
 
   if (!questionnaireBucket) {
     throw new Error(
-      'Questionnaire upload bucket is not configured. Set APP_GCP_QUESTIONNAIRE_UPLOAD_BUCKET or APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET in Trigger.dev.',
+      'Questionnaire upload bucket is not configured.',
     );
   }
 
-  const s3Client = createStorageClient();
-
-  const getCommand = new GetObjectCommand({
-    Bucket: questionnaireBucket,
-    Key: s3Key,
-  });
-
-  const response = await s3Client.send(getCommand);
-
-  if (!response.Body) {
-    throw new Error('Failed to retrieve file from S3');
-  }
-
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
-    chunks.push(chunk);
-  }
-  const buffer = Buffer.concat(chunks);
+  const buffer = await readObjectStreamToBuffer(
+    objectStorage.streamObject({
+      organizationId: extractOrganizationId(s3Key),
+      key: s3Key,
+      bucketName: questionnaireBucket,
+    }),
+  );
   const base64Data = buffer.toString('base64');
 
-  const detectedFileType =
-    response.ContentType || fileType || 'application/octet-stream';
+  const detectedFileType = fileType || 'application/octet-stream';
 
   const content = await extractContentFromFile(
     base64Data,
@@ -214,6 +181,15 @@ async function extractContentFromS3Key(
   );
 
   return { content, fileType: detectedFileType };
+}
+
+function extractOrganizationId(objectKey: string): string {
+  const [organizationId] = objectKey.split('/');
+  if (!organizationId) {
+    throw new Error('Object key must include an organization prefix');
+  }
+
+  return organizationId;
 }
 
 export const parseQuestionnaireTask = task({

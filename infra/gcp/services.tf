@@ -52,6 +52,40 @@ resource "google_logging_project_bucket_config" "default" {
   depends_on = [google_project_service.required]
 }
 
+resource "google_storage_bucket" "app_data" {
+  for_each = var.environments
+
+  project                     = each.value.project_id
+  name                        = local.object_storage_buckets[each.key].app_data
+  location                    = upper(each.value.region)
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = var.object_storage_force_destroy
+
+  versioning {
+    enabled = true
+  }
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_storage_bucket" "device_agent_artifacts" {
+  for_each = var.environments
+
+  project                     = each.value.project_id
+  name                        = local.object_storage_buckets[each.key].device_agent_artifacts
+  location                    = upper(each.value.region)
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = var.object_storage_force_destroy
+
+  versioning {
+    enabled = true
+  }
+
+  depends_on = [google_project_service.required]
+}
+
 resource "google_cloud_run_v2_service" "services" {
   for_each = local.env_services
 

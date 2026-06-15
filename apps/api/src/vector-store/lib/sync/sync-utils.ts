@@ -1,5 +1,8 @@
-import { APP_AWS_KNOWLEDGE_BASE_BUCKET, createStorageClient } from '@/app/s3';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  getKnowledgeBaseBucketName,
+  objectStorage,
+  readObjectStreamToBuffer,
+} from '@/app/object-storage';
 import { extractContentFromFile } from '@/trigger/vector-store/helpers/extract-content-from-file';
 import { vectorIndex } from '../core/client';
 import { batchUpsertEmbeddings } from '../core/upsert-embedding';
@@ -37,51 +40,40 @@ export interface ChunkItem {
 }
 
 /**
- * Creates an S3 client instance for Knowledge Base document processing
- */
-export function createKnowledgeBaseS3Client(): S3Client {
-  return createStorageClient();
-}
-
-/**
- * Extracts content from a Knowledge Base document stored in S3
+ * Extracts content from a Knowledge Base document stored in object storage.
  */
 export async function extractContentFromS3Document(
   s3Key: string,
   fileType: string,
 ): Promise<string> {
-  const knowledgeBaseBucket = APP_AWS_KNOWLEDGE_BASE_BUCKET;
+  const knowledgeBaseBucket = getKnowledgeBaseBucketName();
 
   if (!knowledgeBaseBucket) {
     throw new Error(
-      'Knowledge base bucket is not configured. Set APP_GCP_KNOWLEDGE_BASE_BUCKET or APP_AWS_KNOWLEDGE_BASE_BUCKET.',
+      'Knowledge base bucket is not configured.',
     );
   }
 
-  const s3Client = createKnowledgeBaseS3Client();
-
-  const getCommand = new GetObjectCommand({
-    Bucket: knowledgeBaseBucket,
-    Key: s3Key,
-  });
-
-  const response = await s3Client.send(getCommand);
-
-  if (!response.Body) {
-    throw new Error('Failed to retrieve file from S3');
-  }
-
-  // Convert stream to buffer
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
-    chunks.push(chunk);
-  }
-  const buffer = Buffer.concat(chunks);
+  const buffer = await readObjectStreamToBuffer(
+    objectStorage.streamObject({
+      organizationId: extractOrganizationId(s3Key),
+      key: s3Key,
+      bucketName: knowledgeBaseBucket,
+    }),
+  );
   const base64Data = buffer.toString('base64');
 
-  const detectedFileType =
-    response.ContentType || fileType || 'application/octet-stream';
+  const detectedFileType = fileType || 'application/octet-stream';
   return extractContentFromFile(base64Data, detectedFileType);
+}
+
+function extractOrganizationId(objectKey: string): string {
+  const [organizationId] = objectKey.split('/');
+  if (!organizationId) {
+    throw new Error('Object key must include an organization prefix');
+  }
+
+  return organizationId;
 }
 
 /**

@@ -56,3 +56,13 @@ output "cloudbuild_triggers" {
     }
   }
 }
+
+output "object_storage_buckets" {
+  description = "GCS buckets used by first-party object storage."
+  value = {
+    for env_name in keys(var.environments) : env_name => {
+      app_data_bucket               = google_storage_bucket.app_data[env_name].name
+      device_agent_artifacts_bucket = google_storage_bucket.device_agent_artifacts[env_name].name
+    }
+  }
+}

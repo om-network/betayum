@@ -64,9 +64,21 @@ jest.mock('@db', () => ({
     open: 'open',
     closed: 'closed',
   },
+  BackgroundCheckStatus: {
+    completed: 'completed',
+    completed_with_flags: 'completed_with_flags',
+  },
   PhaseCompletionType: {},
   TimelinePhaseStatus: {},
   TimelineStatus: {},
+}));
+
+jest.mock('../app/object-storage', () => ({
+  objectStorage: {
+    uploadObject: jest.fn(),
+    deleteObject: jest.fn(),
+    getSignedObjectUrl: jest.fn(),
+  },
 }));
 
 jest.mock('@trigger.dev/sdk', () => ({
@@ -86,6 +98,16 @@ jest.mock('ai', () => ({
 describe('PoliciesController', () => {
   let controller: PoliciesController;
   let policiesService: jest.Mocked<PoliciesService>;
+  const mockDb = jest.requireMock('@db').db as {
+    policy: { findFirst: jest.Mock; update: jest.Mock };
+    policyVersion: { findFirst: jest.Mock; update: jest.Mock };
+  };
+  const mockObjectStorage = jest.requireMock('../app/object-storage')
+    .objectStorage as {
+    uploadObject: jest.Mock;
+    deleteObject: jest.Mock;
+    getSignedObjectUrl: jest.Mock;
+  };
 
   const mockPoliciesService = {
     findAll: jest.fn(),
@@ -136,6 +158,13 @@ describe('PoliciesController', () => {
     policiesService = module.get(PoliciesService);
 
     jest.clearAllMocks();
+    mockObjectStorage.getSignedObjectUrl.mockResolvedValue(
+      'https://signed.example.com/policy.pdf',
+    );
+    mockObjectStorage.uploadObject.mockResolvedValue({
+      bucketName: 'betayum-app-data',
+      key: 'org_123/policies/pol_123/file.pdf',
+    });
   });
 
   describe('getAllPolicies', () => {
@@ -935,6 +964,81 @@ describe('PoliciesController', () => {
       await expect(
         controller.getPolicyEvidenceTasks('pol_404', orgId, mockAuthContext),
       ).rejects.toThrow('Policy not found');
+    });
+  });
+
+  describe('policy PDFs', () => {
+    it('uploads policy PDFs through object storage', async () => {
+      mockDb.policy.findFirst.mockResolvedValue({
+        id: 'pol_123',
+        status: 'draft',
+        pdfUrl: null,
+        currentVersionId: null,
+        pendingVersionId: null,
+      });
+      mockDb.policy.update.mockResolvedValue({ id: 'pol_123' });
+
+      const result = await controller.uploadPolicyPdf(
+        'pol_123',
+        {
+          fileName: 'policy.pdf',
+          fileType: 'application/pdf',
+          fileData: Buffer.from('%PDF-1.4').toString('base64'),
+        },
+        orgId,
+        mockAuthContext,
+      );
+
+      expect(mockObjectStorage.uploadObject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: 'org_123',
+          contentType: 'application/pdf',
+        }),
+      );
+      expect(mockDb.policy.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'pol_123' },
+          data: expect.objectContaining({
+            pdfUrl: expect.stringMatching(
+              /^org_123\/policies\/pol_123\/\d+-policy\.pdf$/,
+            ),
+          }),
+        }),
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            s3Key: expect.stringMatching(/^org_123\/policies\/pol_123\//),
+          }),
+          authType: 'session',
+        }),
+      );
+    });
+
+    it('generates and deletes policy PDF URLs through object storage', async () => {
+      mockDb.policy.findFirst.mockResolvedValue({
+        id: 'pol_123',
+        pdfUrl: 'org_123/policies/pol_123/policy.pdf',
+      });
+      mockDb.policy.update.mockResolvedValue({ id: 'pol_123' });
+
+      await expect(
+        controller.getPdfUrl('pol_123', orgId, mockAuthContext),
+      ).resolves.toEqual({ url: 'https://signed.example.com/policy.pdf' });
+      expect(mockObjectStorage.getSignedObjectUrl).toHaveBeenCalledWith({
+        organizationId: 'org_123',
+        key: 'org_123/policies/pol_123/policy.pdf',
+        action: 'read',
+        expiresInSeconds: 900,
+      });
+
+      await expect(
+        controller.deletePolicyPdf('pol_123', orgId, mockAuthContext),
+      ).resolves.toMatchObject({ success: true, authType: 'session' });
+      expect(mockObjectStorage.deleteObject).toHaveBeenCalledWith({
+        organizationId: 'org_123',
+        key: 'org_123/policies/pol_123/policy.pdf',
+      });
     });
   });
 });
