@@ -65,7 +65,7 @@ async function sendTaskStatusChangeEmails(params: {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
       process.env.BETTER_AUTH_URL ||
-      'https://app.trycomp.ai';
+      'https://app.betayum.com';
     const taskUrl = `${appUrl}/${organizationId}/tasks/${taskId}`;
 
     // Filter for admins/owners

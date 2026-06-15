@@ -357,12 +357,12 @@ export class AdminOrganizationsService {
       const appUrl =
         process.env.NEXT_PUBLIC_APP_URL ??
         process.env.BETTER_AUTH_URL ??
-        'https://app.trycomp.ai';
+        'https://app.betayum.com';
       const inviteLink = `${appUrl}/invite/${invitation.id}`;
 
       await triggerEmail({
         to: normalizedEmail,
-        subject: `You've been invited to join ${org.name} on Comp AI`,
+        subject: `You've been invited to join ${org.name} on Betayum`,
         react: InviteEmail({
           organizationName: org.name,
           inviteLink,

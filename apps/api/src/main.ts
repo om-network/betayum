@@ -27,8 +27,8 @@ declare module 'express-serve-static-core' {
 let app: INestApplication | null = null;
 
 function describeServer(baseUrl: string): string {
-  if (baseUrl.includes('api.staging.trycomp.ai')) return 'Staging API Server';
-  if (baseUrl.includes('api.trycomp.ai')) return 'Production API Server';
+  if (baseUrl.includes('api.staging.betayum.com')) return 'Staging API Server';
+  if (baseUrl.includes('api.betayum.com')) return 'Production API Server';
   if (baseUrl.startsWith('http://localhost')) return 'Local API Server';
   return 'API Server';
 }
@@ -42,7 +42,7 @@ async function bootstrap(): Promise<void> {
 
   // Enable CORS with origin validation.
   // Uses a callback to support dynamic trust portal subdomains
-  // (e.g. security.trycomp.ai, acme.trust.inc) and verified custom domains.
+  // (e.g. security.betayum.com, acme.trust.inc) and verified custom domains.
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (non-browser clients, same-origin, etc.)
