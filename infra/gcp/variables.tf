@@ -22,6 +22,8 @@ variable "environments" {
     log_retention_days                 = optional(number, 365)
     security_policy_id                 = optional(string)
     edge_ip_address                    = optional(string)
+    app_data_bucket_name               = optional(string)
+    device_agent_artifacts_bucket_name = optional(string)
     cloud_sql_instance_connection_name = optional(string)
     cloudbuild_included_files = optional(list(string), [
       ".dockerignore",
@@ -43,6 +45,12 @@ variable "environments" {
       portal = string
     })
   }))
+}
+
+variable "object_storage_force_destroy" {
+  description = "Allow Terraform to delete non-empty object storage buckets. Keep false for shared environments."
+  type        = bool
+  default     = false
 }
 
 variable "auth_primary_domain" {

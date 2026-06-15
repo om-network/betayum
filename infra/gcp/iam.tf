@@ -102,3 +102,27 @@ resource "google_project_iam_member" "migrator_cloud_sql_client" {
   role    = "roles/cloudsql.client"
   member  = google_service_account.migrator[each.key].member
 }
+
+resource "google_storage_bucket_iam_member" "api_app_data_object_admin" {
+  for_each = var.environments
+
+  bucket = google_storage_bucket.app_data[each.key].name
+  role   = "roles/storage.objectAdmin"
+  member = google_service_account.runtime["${each.key}.api"].member
+}
+
+resource "google_storage_bucket_iam_member" "api_device_agent_object_viewer" {
+  for_each = var.environments
+
+  bucket = google_storage_bucket.device_agent_artifacts[each.key].name
+  role   = "roles/storage.objectViewer"
+  member = google_service_account.runtime["${each.key}.api"].member
+}
+
+resource "google_storage_bucket_iam_member" "portal_device_agent_object_viewer" {
+  for_each = var.environments
+
+  bucket = google_storage_bucket.device_agent_artifacts[each.key].name
+  role   = "roles/storage.objectViewer"
+  member = google_service_account.runtime["${each.key}.portal"].member
+}

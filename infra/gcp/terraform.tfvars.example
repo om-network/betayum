@@ -10,6 +10,8 @@ environments = {
     branch_name       = "develop"
     approval_required = false
     cloud_sql_instance_connection_name = "staging-project-id:us-central1:betayum-db"
+    app_data_bucket_name               = "betayum-staging-app-data"
+    device_agent_artifacts_bucket_name = "betayum-staging-device-agent-artifacts"
 
     domains = {
       api    = "api.staging.betayum.com"
@@ -24,6 +26,8 @@ environments = {
     branch_name       = "release"
     approval_required = true
     cloud_sql_instance_connection_name = "prod-project-id:us-central1:betayum-db"
+    app_data_bucket_name               = "betayum-production-app-data"
+    device_agent_artifacts_bucket_name = "betayum-production-device-agent-artifacts"
 
     domains = {
       api    = "api.betayum.com"

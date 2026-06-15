@@ -8,6 +8,7 @@ locals {
     "logging.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
+    "storage.googleapis.com",
   ])
 
   services = {
@@ -49,22 +50,40 @@ locals {
   runtime_env_vars = {
     for env_name, env in var.environments : env_name => {
       api = {
-        BASE_URL                    = "https://${env.domains.api}"
-        NEXT_PUBLIC_API_URL         = "https://${env.domains.api}"
-        NEXT_PUBLIC_BETTER_AUTH_URL = "https://${env.domains.api}"
-        NEXT_PUBLIC_PORTAL_URL      = "https://${env.domains.portal}"
-        AUTH_PRIMARY_DOMAIN         = var.auth_primary_domain
-        AUTH_STAGING_DOMAIN         = var.auth_staging_domain
+        BASE_URL                          = "https://${env.domains.api}"
+        NEXT_PUBLIC_API_URL               = "https://${env.domains.api}"
+        NEXT_PUBLIC_BETTER_AUTH_URL       = "https://${env.domains.api}"
+        NEXT_PUBLIC_PORTAL_URL            = "https://${env.domains.portal}"
+        AUTH_PRIMARY_DOMAIN               = var.auth_primary_domain
+        AUTH_STAGING_DOMAIN               = var.auth_staging_domain
+        APP_OBJECT_STORAGE_BUCKET         = local.object_storage_buckets[env_name].app_data
+        APP_DEVICE_AGENT_ARTIFACTS_BUCKET = local.object_storage_buckets[env_name].device_agent_artifacts
       }
       app = {
         NEXT_PUBLIC_API_URL         = "https://${env.domains.api}"
         NEXT_PUBLIC_BETTER_AUTH_URL = "https://${env.domains.api}"
         NEXT_PUBLIC_PORTAL_URL      = "https://${env.domains.portal}"
+        APP_OBJECT_STORAGE_BUCKET   = local.object_storage_buckets[env_name].app_data
       }
       portal = {
-        NEXT_PUBLIC_API_URL         = "https://${env.domains.api}"
-        NEXT_PUBLIC_BETTER_AUTH_URL = "https://${env.domains.api}"
+        NEXT_PUBLIC_API_URL               = "https://${env.domains.api}"
+        NEXT_PUBLIC_BETTER_AUTH_URL       = "https://${env.domains.api}"
+        APP_OBJECT_STORAGE_BUCKET         = local.object_storage_buckets[env_name].app_data
+        APP_DEVICE_AGENT_ARTIFACTS_BUCKET = local.object_storage_buckets[env_name].device_agent_artifacts
       }
+    }
+  }
+
+  object_storage_buckets = {
+    for env_name, env in var.environments : env_name => {
+      app_data = coalesce(
+        try(env.app_data_bucket_name, null),
+        "${env.project_id}-betayum-${env_name}-app-data",
+      )
+      device_agent_artifacts = coalesce(
+        try(env.device_agent_artifacts_bucket_name, null),
+        "${env.project_id}-betayum-${env_name}-device-agent-artifacts",
+      )
     }
   }
 
