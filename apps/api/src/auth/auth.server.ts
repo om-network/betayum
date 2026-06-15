@@ -17,6 +17,14 @@ import { ac, allRoles } from '@trycompai/auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { Redis } from '@upstash/redis';
 import type { AccessControl } from 'better-auth/plugins/access';
+import {
+  deriveCookieDomain,
+  getConfiguredTrustedOrigins,
+  getConfiguredTrustedRootDomains,
+  getTrustedCustomDomainWhere,
+  isTrustedStaticOrigin,
+  shouldUseStagingCookiePrefix,
+} from './auth-domain.config';
 
 const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
@@ -24,41 +32,23 @@ const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
  * Determine the cookie domain based on environment.
  */
 function getCookieDomain(): string | undefined {
-  const baseUrl = process.env.BASE_URL || '';
-
-  if (baseUrl.includes('staging.trycomp.ai')) {
-    return '.staging.trycomp.ai';
-  }
-  if (baseUrl.includes('trycomp.ai')) {
-    return '.trycomp.ai';
-  }
-  return undefined;
+  return deriveCookieDomain({
+    baseUrl: process.env.BASE_URL || '',
+    explicitCookieDomain: process.env.AUTH_COOKIE_DOMAIN,
+    primaryDomain: process.env.AUTH_PRIMARY_DOMAIN,
+    stagingDomain: process.env.AUTH_STAGING_DOMAIN,
+  });
 }
 
 /**
  * Get trusted origins for CORS/auth
  */
 export function getTrustedOrigins(): string[] {
-  const origins = process.env.AUTH_TRUSTED_ORIGINS;
-  if (origins) {
-    return origins.split(',').map((o) => o.trim());
-  }
-
-  return [
-    'http://localhost:3000',
-    'http://localhost:3002',
-    'http://localhost:3333',
-    'http://localhost:3004',
-    'http://localhost:3008',
-    'https://app.trycomp.ai',
-    'https://portal.trycomp.ai',
-    'https://api.trycomp.ai',
-    'https://app.staging.trycomp.ai',
-    'https://portal.staging.trycomp.ai',
-    'https://api.staging.trycomp.ai',
-    'https://dev.trycomp.ai',
-    'https://framework-editor.trycomp.ai',
-  ];
+  return getConfiguredTrustedOrigins({
+    explicitTrustedOrigins: process.env.AUTH_TRUSTED_ORIGINS,
+    primaryDomain: process.env.AUTH_PRIMARY_DOMAIN,
+    stagingDomain: process.env.AUTH_STAGING_DOMAIN,
+  });
 }
 
 /**
@@ -66,22 +56,15 @@ export function getTrustedOrigins(): string[] {
  * This is a fast synchronous check that doesn't hit the DB.
  */
 export function isStaticTrustedOrigin(origin: string): boolean {
-  const trustedOrigins = getTrustedOrigins();
-  if (trustedOrigins.includes(origin)) {
-    return true;
-  }
-
-  try {
-    const url = new URL(origin);
-    return (
-      url.hostname.endsWith('.trycomp.ai') ||
-      url.hostname.endsWith('.staging.trycomp.ai') ||
-      url.hostname.endsWith('.trust.inc') ||
-      url.hostname === 'trust.inc'
-    );
-  } catch {
-    return false;
-  }
+  return isTrustedStaticOrigin({
+    origin,
+    trustedOrigins: getTrustedOrigins(),
+    trustedRootDomains: getConfiguredTrustedRootDomains({
+      explicitTrustedRootDomains: process.env.AUTH_TRUSTED_ROOT_DOMAINS,
+      primaryDomain: process.env.AUTH_PRIMARY_DOMAIN,
+      stagingDomain: process.env.AUTH_STAGING_DOMAIN,
+    }),
+  });
 }
 
 // ── Custom domain lookup via Redis cache ─────────────────────────────────────
@@ -108,11 +91,7 @@ async function getCustomDomains(): Promise<Set<string>> {
   // Cache miss or Redis unavailable — query DB
   try {
     const trusts = await db.trust.findMany({
-      where: {
-        domain: { not: null },
-        domainVerified: true,
-        status: 'published',
-      },
+      where: getTrustedCustomDomainWhere(),
       select: { domain: true },
     });
 
@@ -147,7 +126,7 @@ export async function isTrustedOrigin(origin: string): Promise<boolean> {
     return true;
   }
 
-  // Check verified custom domains from DB via Redis cache
+  // Check published custom domains from DB via Redis cache
   try {
     const url = new URL(origin);
     const customDomains = await getCustomDomains();
@@ -253,7 +232,10 @@ export const auth = betterAuth({
     },
     // Prevent cookie collisions between environments.
     // Production keeps the default 'better-auth' prefix (unchanged).
-    ...(cookieDomain === '.staging.trycomp.ai' && {
+    ...(shouldUseStagingCookiePrefix({
+      cookieDomain,
+      stagingDomain: process.env.AUTH_STAGING_DOMAIN,
+    }) && {
       cookiePrefix: 'staging',
     }),
     ...(!cookieDomain && {

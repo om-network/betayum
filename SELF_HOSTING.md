@@ -27,6 +27,24 @@ For a functional deployment:
 - **Workflows**: `TRIGGER_SECRET_KEY` in app
 - **Misc**: `REVALIDATION_SECRET`, `NEXT_PUBLIC_PORTAL_URL` in app
 
+### Cloud Run Auth Domains
+
+For API-owned authentication on Cloud Run, configure these runtime variables on
+the API service:
+
+```bash
+BASE_URL="https://api.betayum.com"
+AUTH_PRIMARY_DOMAIN="betayum.com"
+AUTH_STAGING_DOMAIN="staging.betayum.com"
+AUTH_COOKIE_DOMAIN=".betayum.com" # optional; derived from BASE_URL when omitted
+AUTH_TRUSTED_ROOT_DOMAINS="betayum.com,staging.betayum.com,trust.inc"
+```
+
+For staging, set `BASE_URL="https://api.staging.betayum.com"` and either omit
+`AUTH_COOKIE_DOMAIN` or set it to `.staging.betayum.com`. Staging cookie names
+use a separate prefix when the cookie domain matches `AUTH_STAGING_DOMAIN`, so
+staging and production browser sessions do not collide.
+
 **Self-Hosted Mode:**
 - Set `NEXT_PUBLIC_SELF_HOSTED=true` in `apps/app/.env` to mark the instance as self-hosted
 - When enabled, organizations are automatically approved and bypass the payment/booking flow

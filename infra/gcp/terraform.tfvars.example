@@ -1,0 +1,32 @@
+repository = {
+  owner = "om-network"
+  name  = "betayum"
+}
+
+environments = {
+  staging = {
+    project_id        = "betayum-staging-project-id"
+    region            = "us-central1"
+    branch_name       = "develop"
+    approval_required = false
+
+    domains = {
+      api    = "api.staging.betayum.com"
+      app    = "app.staging.betayum.com"
+      portal = "portal.staging.betayum.com"
+    }
+  }
+
+  production = {
+    project_id        = "betayum-prod-project-id"
+    region            = "us-central1"
+    branch_name       = "release"
+    approval_required = true
+
+    domains = {
+      api    = "api.betayum.com"
+      app    = "app.betayum.com"
+      portal = "portal.betayum.com"
+    }
+  }
+}
