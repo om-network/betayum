@@ -66,6 +66,7 @@ RUN cd packages/db && bun run build
 
 # Build remaining workspace packages
 RUN cd packages/auth && bun run build \
+  && cd ../utils && bun run build \
   && cd ../integration-platform && bun run build \
   && cd ../email && bun run build \
   && cd ../company && bun run build \
