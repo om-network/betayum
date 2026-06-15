@@ -57,6 +57,7 @@ locals {
         NEXT_PUBLIC_PORTAL_URL            = "https://${env.domains.portal}"
         AUTH_PRIMARY_DOMAIN               = var.auth_primary_domain
         AUTH_STAGING_DOMAIN               = var.auth_staging_domain
+        AUTH_MICROSOFT_TENANT_ID          = "organizations"
         APP_OBJECT_STORAGE_BUCKET         = local.object_storage_buckets[env_name].app_data
         APP_DEVICE_AGENT_ARTIFACTS_BUCKET = local.object_storage_buckets[env_name].device_agent_artifacts
         APP_GCP_BUCKET_NAME               = local.object_storage_buckets[env_name].app_data

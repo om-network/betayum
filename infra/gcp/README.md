@@ -64,6 +64,24 @@ storage adapter, seed `APP_GCP_ACCESS_KEY_ID` and `APP_GCP_SECRET_ACCESS_KEY`
 secret values when `mount_runtime_secrets = true`; the baseline also wires the
 matching `APP_GCP_*` bucket, endpoint, and region environment variables.
 
+## Social Login Secrets
+
+Better Auth social providers run in the API service. Seed these API-only Secret
+Manager values when Google or Microsoft sign-in should be enabled:
+
+- `AUTH_GOOGLE_ID`
+- `AUTH_GOOGLE_SECRET`
+- `AUTH_MICROSOFT_CLIENT_ID`
+- `AUTH_MICROSOFT_CLIENT_SECRET`
+
+`AUTH_MICROSOFT_TENANT_ID` defaults to `organizations` as a non-secret API
+runtime environment variable. Change it to `common` only if personal Microsoft
+accounts should also be allowed, or to a tenant GUID to restrict sign-in to one
+Microsoft Entra tenant.
+
+Do not mount provider client secrets into app or portal. Those frontends call
+the API auth server through `NEXT_PUBLIC_API_URL`.
+
 ## Operator Inputs
 
 Copy the example file and replace placeholders:

@@ -32,6 +32,8 @@ const requiredSnippets = [
   'APP_DEVICE_AGENT_ARTIFACTS_BUCKET',
   'AUTH_PRIMARY_DOMAIN',
   'better-auth-api-key',
+  'auth-google-id',
+  'auth-microsoft-client-secret',
   'NEXT_PUBLIC_API_URL',
   'roles/run.invoker',
   'google_compute_managed_ssl_certificate',
