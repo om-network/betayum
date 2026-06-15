@@ -236,6 +236,7 @@ describe('Better Auth Infrastructure dashboard config (structural)', () => {
     expect(cloudbuild).toContain(
       'BETTER_AUTH_API_KEY=betayum-${_ENVIRONMENT}-better-auth-api-key:latest',
     );
+    expect(cloudbuild).toContain('--remove-secrets=BETTER_AUTH_API_KEY');
     expect(variables).toContain('"better-auth-api-key"');
   });
 });
