@@ -7,7 +7,7 @@ const buildEnv = resolveBuildEnv();
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
   appId: 'ai.trycomp.device-agent',
-  productName: isLinuxBuild ? 'comp-ai-device-agent' : 'Comp AI Device Agent',
+  productName: isLinuxBuild ? 'comp-ai-device-agent' : 'Betayum Device Agent',
   directories: {
     buildResources: 'assets',
     output: 'release',

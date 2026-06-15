@@ -1,6 +1,6 @@
 # @trycompai/db
 
-Database package for Comp AI.
+Database package for Betayum.
 
 ## What’s included
 

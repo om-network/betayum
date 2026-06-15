@@ -1,4 +1,4 @@
-# Comp AI Device Agent - Build Guide
+# Betayum Device Agent - Build Guide
 
 ## Prerequisites
 

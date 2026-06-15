@@ -18,7 +18,7 @@ import {
 } from './policy-acknowledgment-digest-helpers';
 
 const getPortalBase = () =>
-  (process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.trycomp.ai').replace(
+  (process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://portal.betayum.com').replace(
     /\/+$/,
     '',
   );

@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "basic",
     "config": {
-      "setupInstructions": "1. Go to https://id.atlassian.com/manage-profile/security/api-tokens\n2. Click 'Create API token' and give it a name like 'CompAI'\n3. Copy the API token\n4. Enter your Atlassian account email and the API token below\n5. After connecting, enter your Atlassian site name (the part before .atlassian.net in your URL, e.g. 'mycompany' from mycompany.atlassian.net)",
+      "setupInstructions": "1. Go to https://id.atlassian.com/manage-profile/security/api-tokens\n2. Click 'Create API token' and give it a name like 'Betayum'\n3. Copy the API token\n4. Enter your Atlassian account email and the API token below\n5. After connecting, enter your Atlassian site name (the part before .atlassian.net in your URL, e.g. 'mycompany' from mycompany.atlassian.net)",
       "usernameField": "email",
       "passwordField": "api_token"
     }

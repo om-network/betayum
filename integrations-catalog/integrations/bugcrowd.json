@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "Prerequisites: You must have an Organization Owner or Admin role on your Bugcrowd organization to generate API credentials with access to all programs and submissions.\n\n1. Log into Bugcrowd at https://tracker.bugcrowd.com\n2. Click your profile picture in the top right\n3. Select 'API Credentials' from the dropdown\n4. Enter a descriptive name (e.g., 'CompAI Integration') and click 'Create credentials'\n5. Copy the full token (username:password format) before leaving the page - it won't be shown again\n6. Paste the token here\n\nNote: The API token format is username:password (colon-separated). Ensure you copy both parts.",
+      "setupInstructions": "Prerequisites: You must have an Organization Owner or Admin role on your Bugcrowd organization to generate API credentials with access to all programs and submissions.\n\n1. Log into Bugcrowd at https://tracker.bugcrowd.com\n2. Click your profile picture in the top right\n3. Select 'API Credentials' from the dropdown\n4. Enter a descriptive name (e.g., 'Betayum Integration') and click 'Create credentials'\n5. Copy the full token (username:password format) before leaving the page - it won't be shown again\n6. Paste the token here\n\nNote: The API token format is username:password (colon-separated). Ensure you copy both parts.",
       "credentialFields": [
         {
           "label": "API Token",

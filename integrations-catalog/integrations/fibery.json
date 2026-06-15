@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "custom",
     "config": {
-      "setupInstructions": "1. Log in to your Fibery workspace\n2. Go to Settings (gear icon) > API Tokens\n3. Click 'Create Token' and give it a name (e.g. 'CompAI')\n4. Copy the generated token\n5. Enter your workspace name (the subdomain from your Fibery URL) and the API token below",
+      "setupInstructions": "1. Log in to your Fibery workspace\n2. Go to Settings (gear icon) > API Tokens\n3. Click 'Create Token' and give it a name (e.g. 'Betayum')\n4. Copy the generated token\n5. Enter your workspace name (the subdomain from your Fibery URL) and the API token below",
       "credentialFields": [
         {
           "label": "Workspace Name",

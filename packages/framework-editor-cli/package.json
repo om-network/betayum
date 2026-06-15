@@ -1,6 +1,6 @@
 {
   "name": "@trycompai/framework-editor-cli",
-  "description": "CLI for managing framework editor templates via the Comp AI API",
+  "description": "CLI for managing framework editor templates via the Betayum API",
   "version": "1.0.0",
   "private": true,
   "type": "module",

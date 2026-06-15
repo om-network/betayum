@@ -8,7 +8,7 @@
   "authConfig": {
     "type": "oauth2",
     "config": {
-      "setupInstructions": "1. Go to https://developers.outreach.io and create a new OAuth app\n2. Set the redirect URI to the one provided by CompAI\n3. Copy the Client ID and Client Secret\n4. Enter them in CompAI to connect your Outreach account",
+      "setupInstructions": "1. Go to https://developers.outreach.io and create a new OAuth app\n2. Set the redirect URI to the one provided by Betayum\n3. Copy the Client ID and Client Secret\n4. Enter them in Betayum to connect your Outreach account",
       "scopes": [
         "users.read"
       ],

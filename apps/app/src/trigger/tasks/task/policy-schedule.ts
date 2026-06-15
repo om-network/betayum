@@ -174,7 +174,7 @@ export const policySchedule = schedules.task({
             organizationName: recipient.policy.organization.name,
             organizationId: recipient.policy.organizationId,
             policyId: recipient.policy.id,
-            policyUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.trycomp.ai'}/${recipient.policy.organizationId}/policies/${recipient.policy.id}`,
+            policyUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.betayum.com'}/${recipient.policy.organizationId}/policies/${recipient.policy.id}`,
           },
         })),
       });

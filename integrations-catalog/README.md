@@ -1,6 +1,6 @@
-# CompAI Integrations Catalog
+# Betayum Integrations Catalog
 
-Public catalog of all compliance integrations available in the [CompAI](https://trycomp.ai) platform.
+Public catalog of all compliance integrations available in the [Betayum](https://betayum.com) platform.
 
 **583 integrations** across 9 categories.
 
@@ -676,7 +676,7 @@ curl https://raw.githubusercontent.com/trycompai/comp/main/integrations-catalog/
 
 ## How this is maintained
 
-This catalog is synced manually on demand from the CompAI production API using the tooling in [`tools/integrations-catalog-sync/`](../tools/integrations-catalog-sync). To request a refreshed snapshot or a new integration, open an issue.
+This catalog is synced manually on demand from the Betayum production API using the tooling in [`tools/integrations-catalog-sync/`](../tools/integrations-catalog-sync). To request a refreshed snapshot or a new integration, open an issue.
 
 ## License
 
