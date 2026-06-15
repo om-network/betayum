@@ -1,7 +1,10 @@
 import { logger, tags, task } from '@trigger.dev/sdk';
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { db } from '@db';
-import { APP_AWS_KNOWLEDGE_BASE_BUCKET, createStorageClient } from '@/app/s3';
+import {
+  getKnowledgeBaseBucketName,
+  objectStorage,
+  readObjectStreamToBuffer,
+} from '@/app/object-storage';
 import { batchUpsertEmbeddings } from '@/vector-store/lib/core/upsert-embedding';
 import { chunkText } from '@/vector-store/lib/utils/chunk-text';
 import { findEmbeddingsForSource } from '@/vector-store/lib/core/find-existing-embeddings';
@@ -9,55 +12,43 @@ import { vectorIndex } from '@/vector-store/lib/core/client';
 import { extractContentFromFile } from './helpers/extract-content-from-file';
 
 /**
- * Creates an S3 client instance for Trigger.dev tasks
- */
-function createS3Client(): S3Client {
-  return createStorageClient();
-}
-
-/**
- * Extracts content from a Knowledge Base document stored in S3
+ * Extracts content from a Knowledge Base document stored in object storage.
  */
 async function extractContentFromKnowledgeBaseDocument(
   s3Key: string,
   fileType: string,
 ): Promise<string> {
-  const knowledgeBaseBucket = APP_AWS_KNOWLEDGE_BASE_BUCKET;
+  const knowledgeBaseBucket = getKnowledgeBaseBucketName();
 
   if (!knowledgeBaseBucket) {
     throw new Error(
-      'Knowledge base bucket is not configured. Set APP_GCP_KNOWLEDGE_BASE_BUCKET or APP_AWS_KNOWLEDGE_BASE_BUCKET in Trigger.dev.',
+      'Knowledge base bucket is not configured.',
     );
   }
 
-  const s3Client = createS3Client();
-
-  const getCommand = new GetObjectCommand({
-    Bucket: knowledgeBaseBucket,
-    Key: s3Key,
-  });
-
-  const response = await s3Client.send(getCommand);
-
-  if (!response.Body) {
-    throw new Error('Failed to retrieve file from S3');
-  }
-
-  // Convert stream to buffer
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of response.Body as any) {
-    chunks.push(chunk);
-  }
-  const buffer = Buffer.concat(chunks);
+  const buffer = await readObjectStreamToBuffer(
+    objectStorage.streamObject({
+      organizationId: extractOrganizationId(s3Key),
+      key: s3Key,
+      bucketName: knowledgeBaseBucket,
+    }),
+  );
   const base64Data = buffer.toString('base64');
 
-  // Use provided fileType or determine from content type
-  const detectedFileType =
-    response.ContentType || fileType || 'application/octet-stream';
+  const detectedFileType = fileType || 'application/octet-stream';
 
   const content = await extractContentFromFile(base64Data, detectedFileType);
 
   return content;
+}
+
+function extractOrganizationId(objectKey: string): string {
+  const [organizationId] = objectKey.split('/');
+  if (!organizationId) {
+    throw new Error('Object key must include an organization prefix');
+  }
+
+  return organizationId;
 }
 
 /**

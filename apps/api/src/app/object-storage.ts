@@ -18,6 +18,7 @@ export type ResolveObjectLocationParams = {
 export type UploadObjectParams = ResolveObjectLocationParams & {
   body: Buffer | string | Uint8Array;
   contentType?: string;
+  metadata?: Record<string, string>;
 };
 
 export type DeleteObjectParams = ResolveObjectLocationParams;
@@ -68,6 +69,22 @@ function getDefaultBucketName(): string | undefined {
     process.env.APP_GCS_BUCKET_NAME,
     process.env.APP_GCP_BUCKET_NAME,
     process.env.APP_AWS_BUCKET_NAME,
+  );
+}
+
+export function getQuestionnaireUploadBucketName(): string | undefined {
+  return firstDefined(
+    process.env.APP_GCP_QUESTIONNAIRE_UPLOAD_BUCKET,
+    process.env.APP_AWS_QUESTIONNAIRE_UPLOAD_BUCKET,
+    getDefaultBucketName(),
+  );
+}
+
+export function getKnowledgeBaseBucketName(): string | undefined {
+  return firstDefined(
+    process.env.APP_GCP_KNOWLEDGE_BASE_BUCKET,
+    process.env.APP_AWS_KNOWLEDGE_BASE_BUCKET,
+    getDefaultBucketName(),
   );
 }
 
@@ -135,6 +152,32 @@ function getDeleteErrorCode(error: unknown): number | undefined {
   return typeof maybeError.code === 'number' ? maybeError.code : undefined;
 }
 
+function toBufferChunk(chunk: unknown): Buffer {
+  if (Buffer.isBuffer(chunk)) {
+    return chunk;
+  }
+
+  if (typeof chunk === 'string') {
+    return Buffer.from(chunk);
+  }
+
+  if (chunk instanceof Uint8Array) {
+    return Buffer.from(chunk);
+  }
+
+  throw new Error('Unsupported object stream chunk type');
+}
+
+export async function readObjectStreamToBuffer(stream: Readable): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of stream) {
+    chunks.push(toBufferChunk(chunk));
+  }
+
+  return Buffer.concat(chunks);
+}
+
 export class GcsObjectStorage implements ObjectStorage {
   constructor(private readonly storage: StorageClient = new Storage()) {}
 
@@ -143,9 +186,13 @@ export class GcsObjectStorage implements ObjectStorage {
     const file = this.storage.bucket(location.bucketName).file(location.key);
     await file.save(params.body, {
       resumable: false,
-      metadata: params.contentType
-        ? { contentType: params.contentType }
-        : undefined,
+      metadata:
+        params.contentType || params.metadata
+          ? {
+              contentType: params.contentType,
+              metadata: params.metadata,
+            }
+          : undefined,
     });
 
     return location;
