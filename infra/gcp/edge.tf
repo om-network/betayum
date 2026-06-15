@@ -15,6 +15,14 @@ resource "google_compute_managed_ssl_certificate" "edge" {
   depends_on = [google_project_service.required]
 }
 
+resource "google_compute_global_address" "edge" {
+  for_each = var.environments
+
+  project = each.value.project_id
+  name    = "betayum-${each.key}-edge"
+  address = try(each.value.edge_ip_address, null)
+}
+
 resource "google_compute_region_network_endpoint_group" "serverless" {
   for_each = local.env_services
 
@@ -94,14 +102,47 @@ resource "google_compute_target_https_proxy" "edge" {
   ssl_certificates = [google_compute_managed_ssl_certificate.edge[each.key].id]
 }
 
+resource "google_compute_url_map" "http_redirect" {
+  for_each = var.environments
+
+  project = each.value.project_id
+  name    = "betayum-${each.key}-http-redirect"
+
+  default_url_redirect {
+    https_redirect         = true
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+    strip_query            = false
+  }
+}
+
+resource "google_compute_target_http_proxy" "http_redirect" {
+  for_each = var.environments
+
+  project = each.value.project_id
+  name    = "betayum-${each.key}-http-redirect"
+  url_map = google_compute_url_map.http_redirect[each.key].id
+}
+
 resource "google_compute_global_forwarding_rule" "https" {
   for_each = var.environments
 
   project               = each.value.project_id
   name                  = "betayum-${each.key}-https"
-  ip_address            = try(each.value.edge_ip_address, null)
+  ip_address            = google_compute_global_address.edge[each.key].address
   ip_protocol           = "TCP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
   port_range            = "443"
   target                = google_compute_target_https_proxy.edge[each.key].id
+}
+
+resource "google_compute_global_forwarding_rule" "http" {
+  for_each = var.environments
+
+  project               = each.value.project_id
+  name                  = "betayum-${each.key}-http"
+  ip_address            = google_compute_global_address.edge[each.key].address
+  ip_protocol           = "TCP"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  port_range            = "80"
+  target                = google_compute_target_http_proxy.http_redirect[each.key].id
 }
