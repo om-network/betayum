@@ -10,6 +10,8 @@ Capture these for each production deployment:
 - Reviewed pull request and commit SHA.
 - Cloud Build logs for the production trigger.
 - Cloud Build approval records.
+- One Cloud Build run per environment deployment, including the migration gate,
+  parallel service rollout, and final smoke checks.
 - Artifact Registry image tags using the same commit SHA.
 - Cloud Run migration job logs.
 - Cloud Run revision history for API, app, and portal.
@@ -27,7 +29,7 @@ Capture these for each production deployment:
 | Secret management | Secret Manager shells and rotation records |
 | Audit logs | Cloud Build logs, Cloud Run logs, load balancer logs |
 | Traceability | commit SHA image tags and Cloud Run revision history |
-| Migration ordering | migration job logs before service deploy steps |
+| Migration ordering | migration job logs before the parallel service rollout |
 
 ## Rollback Evidence
 

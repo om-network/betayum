@@ -22,6 +22,8 @@ substitutions:
 steps:
   - id: build-api
     name: gcr.io/cloud-builders/docker
+    waitFor:
+      - '-'
     args:
       - build
       - -f
@@ -33,6 +35,8 @@ steps:
 
   - id: build-app
     name: gcr.io/cloud-builders/docker
+    waitFor:
+      - '-'
     args:
       - build
       - -f
@@ -47,6 +51,8 @@ steps:
 
   - id: build-portal
     name: gcr.io/cloud-builders/docker
+    waitFor:
+      - '-'
     args:
       - build
       - -f
@@ -60,6 +66,8 @@ steps:
 
   - id: build-migrator
     name: gcr.io/cloud-builders/docker
+    waitFor:
+      - '-'
     args:
       - build
       - -f
@@ -71,24 +79,32 @@ steps:
 
   - id: push-api
     name: gcr.io/cloud-builders/docker
+    waitFor:
+      - build-api
     args:
       - push
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/api:$COMMIT_SHA
 
   - id: push-app
     name: gcr.io/cloud-builders/docker
+    waitFor:
+      - build-app
     args:
       - push
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/app:$COMMIT_SHA
 
   - id: push-portal
     name: gcr.io/cloud-builders/docker
+    waitFor:
+      - build-portal
     args:
       - push
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/portal:$COMMIT_SHA
 
   - id: push-migrator
     name: gcr.io/cloud-builders/docker
+    waitFor:
+      - build-migrator
     args:
       - push
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/migrator:$COMMIT_SHA
@@ -96,6 +112,8 @@ steps:
   - id: update-migrator-job
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
+    waitFor:
+      - push-migrator
     args:
       - run
       - jobs
@@ -112,6 +130,8 @@ steps:
   - id: run-migrations
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
+    waitFor:
+      - update-migrator-job
     args:
       - run
       - jobs
@@ -125,6 +145,9 @@ steps:
   - id: deploy-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
+    waitFor:
+      - run-migrations
+      - push-api
     args:
       - run
       - deploy
@@ -143,6 +166,9 @@ steps:
   - id: deploy-app
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
+    waitFor:
+      - run-migrations
+      - push-app
     args:
       - run
       - deploy
@@ -161,6 +187,9 @@ steps:
   - id: deploy-portal
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
+    waitFor:
+      - run-migrations
+      - push-portal
     args:
       - run
       - deploy
@@ -179,6 +208,10 @@ steps:
   - id: smoke-api
     name: curlimages/curl:8.16.0
     entrypoint: sh
+    waitFor:
+      - deploy-api
+      - deploy-app
+      - deploy-portal
     args:
       - -c
       - curl --fail --retry 5 --retry-delay 10 "${_API_URL}/v1/health"
@@ -186,6 +219,10 @@ steps:
   - id: smoke-app
     name: curlimages/curl:8.16.0
     entrypoint: sh
+    waitFor:
+      - deploy-api
+      - deploy-app
+      - deploy-portal
     args:
       - -c
       - curl --fail --retry 5 --retry-delay 10 "${_APP_URL}/api/health"
@@ -193,6 +230,10 @@ steps:
   - id: smoke-portal
     name: curlimages/curl:8.16.0
     entrypoint: sh
+    waitFor:
+      - deploy-api
+      - deploy-app
+      - deploy-portal
     args:
       - -c
       - curl --fail --retry 5 --retry-delay 10 "${_PORTAL_URL}/"
