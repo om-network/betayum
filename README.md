@@ -88,6 +88,7 @@ To get the project working locally with all integrations, follow these extended 
 ## Add environment variables and fill them out with your credentials
 
 ```sh
+cp apps/api/.env.example apps/api/.env
 cp apps/app/.env.example apps/app/.env
 cp apps/portal/.env.example apps/portal/.env
 cp packages/db/.env.example packages/db/.env
@@ -145,6 +146,7 @@ bun run dev
 Create the following `.env` files and fill them out with your credentials
 
 - `comp/apps/app/.env`
+- `comp/apps/api/.env`
 - `comp/apps/portal/.env`
 - `comp/packages/db/.env`
 
@@ -153,6 +155,7 @@ You can copy from the `.env.example` files:
 ### Linux / macOS
 
 ```sh
+cp apps/api/.env.example apps/api/.env
 cp apps/app/.env.example apps/app/.env
 cp apps/portal/.env.example apps/portal/.env
 cp packages/db/.env.example packages/db/.env
@@ -161,6 +164,7 @@ cp packages/db/.env.example packages/db/.env
 ### Windows (Command Prompt)
 
 ```cmd
+copy apps\api\.env.example apps\api\.env
 copy apps\app\.env.example apps\app\.env
 copy apps\portal\.env.example apps\portal\.env
 copy packages\db\.env.example packages\db\.env
@@ -169,23 +173,35 @@ copy packages\db\.env.example packages\db\.env
 ### Windows (PowerShell)
 
 ```powershell
+Copy-Item apps\api\.env.example -Destination apps\api\.env
 Copy-Item apps\app\.env.example -Destination apps\app\.env
 Copy-Item apps\portal\.env.example -Destination apps\portal\.env
 Copy-Item packages\db\.env.example -Destination packages\db\.env
 ```
 
-Additionally, ensure the following required environment variables are added to `.env` in `comp/apps/app/.env`:
+Auth runs on the NestJS API. Put Better Auth server settings, provider secrets,
+the API `DATABASE_URL`, and API `BASE_URL` in `comp/apps/api/.env`:
 
 ```env
-AUTH_SECRET=""                  # Use `openssl rand -base64 32` to generate
+BASE_URL="http://localhost:3333" # API and Better Auth server origin
+SECRET_KEY=""                  # Use `openssl rand -base64 32` to generate
 DATABASE_URL="postgresql://user:password@host:port/database"
-RESEND_API_KEY="" # Resend (https://resend.com/api-keys) - Resend Dashboard -> API Keys
-NEXT_PUBLIC_PORTAL_URL="http://localhost:3002"
-REVALIDATION_SECRET=""         # Use `openssl rand -base64 32` to generate
+AUTH_GOOGLE_ID=""
+AUTH_GOOGLE_SECRET=""
+RESEND_API_KEY=""              # Resend Dashboard -> API Keys
 ```
 
-> ✅ Make sure you have all of these variables in your `.env` file.
-> If you're copying from `.env.example`, it might be missing the last two (`NEXT_PUBLIC_PORTAL_URL` and `REVALIDATION_SECRET`), so be sure to add them manually.
+Use app and portal env files for frontend origins and API client URLs:
+
+```env
+NEXT_PUBLIC_API_URL="http://localhost:3333"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_PORTAL_URL="http://localhost:3002"
+```
+
+`apps/app/.env` and `apps/portal/.env` may still mirror provider variable names
+for server-rendered sign-in button visibility, but OAuth providers are configured
+by the API service.
 
 If an environment variable is not loading, keep the value in the appropriate ignored `.env` file and verify the app or package reads that file. Do not put credentials or tokens in source files.
 
@@ -211,24 +227,29 @@ If an environment variable is not loading, keep the value in the appropriate ign
 - Add these **Authorized Redirect URIs**:
 
   ```
-  http://localhost
-  http://localhost:3000
-  http://localhost:3002
-  http://localhost:3000/api/auth/callback/google
-  http://localhost:3002/api/auth/callback/google
-  http://localhost:3000/auth
-  http://localhost:3002/auth
+  http://localhost:3333/api/auth/callback/google
+  https://<your-api-origin>/api/auth/callback/google
   ```
 
-- After creating the app, copy the `GOOGLE_ID` and `GOOGLE_SECRET`
-  - Add them to your `.env` files
+- The frontend `/auth` routes are sign-in entry points, not OAuth callback
+  handlers.
+- After creating the app, copy the Google client ID and client secret.
+  - Add them to `apps/api/.env` as `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`.
   - If the variables are not recognized:
     - Confirm the variable names match the relevant `.env.example`
     - Restart the dev server after editing env files
     - Run the app or package from the directory documented by the repo
     - For deployments, add the values through the deployment provider's secret settings
 
-#### 3. Redis (Upstash)
+#### 3. Cloud Run
+
+Local development runs the app at `http://localhost:3000`, portal at
+`http://localhost:3002`, and API/auth server at `http://localhost:3333`.
+Cloud Run deploys API, app, and portal as separate services. Deployment ports,
+Secret Manager names, and Cloud Build substitutions are documented in
+[`infra/gcp/README.md`](infra/gcp/README.md) and `cloudbuild.yaml`.
+
+#### 4. Redis (Upstash)
 
 - Go to [https://console.upstash.com](https://console.upstash.com)
 - Create a Redis database
