@@ -23,15 +23,17 @@ const requiredPipelineSnippets = [
   '_AUTH_PRIMARY_DOMAIN',
   '_AUTH_STAGING_DOMAIN',
   '_SEEDER_JOB',
+  '_APP_DATA_BUCKET',
+  '_DEVICE_AGENT_ARTIFACTS_BUCKET',
   '--update-env-vars=BASE_URL=${_API_URL}',
   'NEXT_PUBLIC_API_URL=${_API_URL}',
   'NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL}',
-  'APP_OBJECT_STORAGE_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data',
-  'APP_DEVICE_AGENT_ARTIFACTS_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-device-agent-artifacts',
-  'APP_GCP_BUCKET_NAME=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data',
+  'APP_OBJECT_STORAGE_BUCKET=${_APP_DATA_BUCKET}',
+  'APP_DEVICE_AGENT_ARTIFACTS_BUCKET=${_DEVICE_AGENT_ARTIFACTS_BUCKET}',
+  'APP_GCP_BUCKET_NAME=${_APP_DATA_BUCKET}',
   'APP_GCP_ENDPOINT=https://storage.googleapis.com',
   'APP_GCP_REGION=auto',
-  'APP_GCP_ORG_ASSETS_BUCKET=$PROJECT_ID-betayum-${_ENVIRONMENT}-app-data',
+  'APP_GCP_ORG_ASSETS_BUCKET=${_APP_DATA_BUCKET}',
 ];
 
 const requiredTriggerSnippets = [
@@ -44,6 +46,8 @@ const requiredTriggerSnippets = [
   '_PORTAL_URL',
   '_AUTH_PRIMARY_DOMAIN',
   '_AUTH_STAGING_DOMAIN',
+  '_APP_DATA_BUCKET',
+  '_DEVICE_AGENT_ARTIFACTS_BUCKET',
 ];
 
 const requiredTriggerInputSnippets = [
