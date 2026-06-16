@@ -56,6 +56,20 @@ interface MemberPermissionFilter {
   ): Promise<M[]>;
 }
 
+interface ISOFrameworkRef {
+  id: string;
+  name: string;
+}
+
+function isPrismaErrorCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === code
+  );
+}
+
 @Injectable()
 export class SOAService {
   private readonly logger = new Logger(SOAService.name);
@@ -298,7 +312,7 @@ export class SOAService {
 
     if (!configuration) {
       try {
-        configuration = await this.seedISO27001SOAConfig();
+        configuration = await this.seedISO27001SOAConfig(framework);
       } catch (error) {
         throw new InternalServerErrorException(
           `Failed to create SOA configuration: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -684,37 +698,50 @@ export class SOAService {
     const questions = configuration.questions as Array<{ id: string }>;
     const totalQuestions = Array.isArray(questions) ? questions.length : 0;
 
-    return db.sOADocument.create({
-      data: {
-        frameworkId,
-        organizationId,
-        configurationId: configuration.id,
-        version: nextVersion,
-        isLatest: true,
-        status: 'draft',
-        totalQuestions,
-        answeredQuestions: 0,
-      },
-      include: {
-        answers: { where: { isLatestAnswer: true } },
-      },
-    });
+    try {
+      return await db.sOADocument.create({
+        data: {
+          frameworkId,
+          organizationId,
+          configurationId: configuration.id,
+          version: nextVersion,
+          isLatest: true,
+          status: 'draft',
+          totalQuestions,
+          answeredQuestions: 0,
+        },
+        include: {
+          answers: { where: { isLatestAnswer: true } },
+        },
+      });
+    } catch (error) {
+      if (isPrismaErrorCode(error, 'P2002')) {
+        const racedDocument = await db.sOADocument.findFirst({
+          where: {
+            frameworkId,
+            organizationId,
+            isLatest: true,
+          },
+          include: {
+            answers: { where: { isLatestAnswer: true } },
+          },
+        });
+
+        if (racedDocument) return racedDocument;
+      }
+
+      throw error;
+    }
   }
 
-  private async seedISO27001SOAConfig() {
-    const iso27001Framework = await db.frameworkEditorFramework.findFirst({
-      where: {
-        OR: ISO27001_FRAMEWORK_NAMES.map((name) => ({ name })),
-      },
-    });
-
-    if (!iso27001Framework) {
+  private async seedISO27001SOAConfig(framework: ISOFrameworkRef) {
+    if (!ISO27001_FRAMEWORK_NAMES.includes(framework.name)) {
       throw new NotFoundException('ISO 27001 framework not found');
     }
 
     const existingConfig = await db.sOAFrameworkConfiguration.findFirst({
       where: {
-        frameworkId: iso27001Framework.id,
+        frameworkId: framework.id,
         isLatest: true,
       },
     });
@@ -725,14 +752,29 @@ export class SOAService {
 
     const soaConfig = await loadISOConfig();
 
-    return db.sOAFrameworkConfiguration.create({
-      data: {
-        frameworkId: iso27001Framework.id,
-        version: 1,
-        isLatest: true,
-        columns: soaConfig.columns,
-        questions: soaConfig.questions,
-      },
-    });
+    try {
+      return await db.sOAFrameworkConfiguration.create({
+        data: {
+          frameworkId: framework.id,
+          version: 1,
+          isLatest: true,
+          columns: soaConfig.columns,
+          questions: soaConfig.questions,
+        },
+      });
+    } catch (error) {
+      if (isPrismaErrorCode(error, 'P2002')) {
+        const racedConfig = await db.sOAFrameworkConfiguration.findFirst({
+          where: {
+            frameworkId: framework.id,
+            isLatest: true,
+          },
+        });
+
+        if (racedConfig) return racedConfig;
+      }
+
+      throw error;
+    }
   }
 }
