@@ -39,7 +39,7 @@ WORKDIR /app
 # Copy local Prisma schema and migrations from workspace
 COPY packages/db/prisma ./packages/db/prisma
 
-# Create minimal package.json for Prisma runtime (also used by seeder)
+# Create minimal package.json for Prisma runtime
 RUN echo '{"name":"migrator","type":"module","dependencies":{"prisma":"^6.14.0","@prisma/client":"^6.14.0","@trycompai/db":"^1.3.4","zod":"^3.25.7"}}' > package.json
 
 # Install ONLY Prisma dependencies
@@ -54,7 +54,21 @@ RUN echo "Running migrations against @trycompai/db combined schema"
 CMD ["bunx", "prisma", "migrate", "deploy", "--schema=node_modules/@trycompai/db/dist/schema.prisma"]
 
 # =============================================================================
-# STAGE 3: App Builder
+# STAGE 3: Seeder - Full DB package runtime
+# =============================================================================
+FROM deps AS seeder
+
+WORKDIR /app
+
+COPY packages/db ./packages/db
+COPY packages/tsconfig ./packages/tsconfig
+
+RUN cd packages/db && bun run db:generate
+
+CMD ["bun", "run", "--cwd", "packages/db", "db:seed"]
+
+# =============================================================================
+# STAGE 4: App Builder
 # =============================================================================
 FROM deps AS app-builder
 
@@ -97,7 +111,7 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
 RUN cd apps/app && SKIP_ENV_VALIDATION=true bun run build:docker
 
 # =============================================================================
-# STAGE 4: App Production
+# STAGE 5: App Production
 # =============================================================================
 FROM node:22-alpine AS app
 
@@ -112,7 +126,7 @@ EXPOSE 3000
 CMD ["node", "apps/app/server.js"]
 
 # =============================================================================
-# STAGE 5: Portal Builder
+# STAGE 6: Portal Builder
 # =============================================================================
 FROM deps AS portal-builder
 
@@ -146,7 +160,7 @@ ENV NEXT_PUBLIC_BETTER_AUTH_URL=$NEXT_PUBLIC_BETTER_AUTH_URL \
 RUN cd apps/portal && SKIP_ENV_VALIDATION=true bun run build:docker
 
 # =============================================================================
-# STAGE 6: Portal Production
+# STAGE 7: Portal Production
 # =============================================================================
 FROM node:22-alpine AS portal
 
