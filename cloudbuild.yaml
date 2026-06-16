@@ -21,6 +21,7 @@ substitutions:
   _CLOUD_SQL_INSTANCE: centered-kiln-498405-h8:us-central1:betayum-db
   _APP_DATA_BUCKET: centered-kiln-498405-h8-betayum-staging-app-data
   _DEVICE_AGENT_ARTIFACTS_BUCKET: centered-kiln-498405-h8-betayum-staging-device-agent-artifacts
+  _DB_JOB_SERVICE_ACCOUNT: betayum-staging-migrator@centered-kiln-498405-h8.iam.gserviceaccount.com
 
 steps:
   - id: build-api
@@ -133,7 +134,7 @@ steps:
       - push
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/seeder:$COMMIT_SHA
 
-  - id: update-migrator-job
+  - id: deploy-migrator-job
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
     waitFor:
@@ -141,17 +142,18 @@ steps:
     args:
       - run
       - jobs
-      - update
+      - deploy
       - ${_MIGRATOR_JOB}
       - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/migrator:$COMMIT_SHA
       - --region=${_REGION}
       - --project=$PROJECT_ID
-      - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=BASE_URL=${_API_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
-      - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest
+      - --service-account=${_DB_JOB_SERVICE_ACCOUNT}
+      - --set-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
+      - --set-env-vars=BASE_URL=${_API_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
+      - --set-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest
       - --quiet
 
-  - id: update-seeder-job
+  - id: deploy-seeder-job
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
     waitFor:
@@ -159,21 +161,22 @@ steps:
     args:
       - run
       - jobs
-      - update
+      - deploy
       - ${_SEEDER_JOB}
       - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/seeder:$COMMIT_SHA
       - --region=${_REGION}
       - --project=$PROJECT_ID
-      - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=BASE_URL=${_API_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
-      - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest
+      - --service-account=${_DB_JOB_SERVICE_ACCOUNT}
+      - --set-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
+      - --set-env-vars=BASE_URL=${_API_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
+      - --set-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest
       - --quiet
 
   - id: run-migrations
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
     waitFor:
-      - update-migrator-job
+      - deploy-migrator-job
     args:
       - run
       - jobs
@@ -189,7 +192,7 @@ steps:
     entrypoint: gcloud
     waitFor:
       - run-migrations
-      - update-seeder-job
+      - deploy-seeder-job
     args:
       - run
       - jobs

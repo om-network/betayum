@@ -23,9 +23,10 @@ migrator, and seeder do not have separate Cloud Build triggers.
 2. Tag every image with `$COMMIT_SHA`.
 3. Push each image to the environment Artifact Registry repository after its
    matching build finishes. Image pushes can run in parallel.
-4. Update the Cloud Run migration job to the new migrator image after the
-   migrator image is pushed, and update the seed job after the seeder image is
-   pushed.
+4. Deploy the Cloud Run migration job to the new migrator image after the
+   migrator image is pushed, and deploy the seed job after the seeder image is
+   pushed. Job deploys are create-or-update operations so a missing seed job can
+   be bootstrapped by the trigger.
 5. Execute the migration job with `--wait`.
 6. Stop the deployment if the migration job exits non-zero.
 7. Execute the seed job with `--wait` after migrations pass.
@@ -41,6 +42,10 @@ This gated-parallel shape keeps deployment evidence in one Cloud Build run while
 avoiding unnecessary linear waits between independent service lanes. Frontend
 image builds are intentionally throttled to avoid two memory-heavy Next.js
 builds competing on the same worker.
+
+The seed job uses the same database-job service account as the migration job.
+That identity needs access to the environment `DATABASE_URL` secret and Cloud SQL
+instance before the trigger runs.
 
 Frontend public values are passed as explicit substitutions:
 
