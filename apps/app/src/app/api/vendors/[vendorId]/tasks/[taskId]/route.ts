@@ -1,8 +1,7 @@
-import { generateVendorMitigation } from '@/trigger/tasks/onboarding/generate-vendor-mitigation';
-import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { serverApi } from '@/lib/api-server';
 import { requireApiPermission } from '@/lib/permissions.server';
-import { db } from '@db/server';
+import { generateVendorMitigation } from '@/trigger/tasks/onboarding/generate-vendor-mitigation';
+import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { tasks as triggerTasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -14,15 +13,16 @@ interface PoliciesApiResponse {
   }>;
 }
 
+interface UnlinkTaskResponse {
+  ok: true;
+}
+
 /**
  * Best-effort fan-out: re-trigger the vendor mitigation generator so the saved
  * treatment plan reflects the now-changed task linkage. We deliberately swallow
- * errors here — the unlink itself already succeeded.
+ * errors here; the unlink itself already succeeded.
  */
-async function refreshVendorTreatmentPlan(
-  organizationId: string,
-  vendorId: string,
-): Promise<void> {
+async function refreshVendorTreatmentPlan(organizationId: string, vendorId: string): Promise<void> {
   try {
     const policiesResult = await serverApi.get<PoliciesApiResponse>('/v1/policies');
     const policyRows = policiesResult.data?.data ?? [];
@@ -62,41 +62,23 @@ export async function DELETE(
 
     const { vendorId, taskId } = await params;
     if (!vendorId || !taskId) {
-      return NextResponse.json(
-        { error: 'Vendor ID and Task ID are required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Vendor ID and Task ID are required' }, { status: 400 });
     }
 
-    // Verify the vendor + the link in one query, scoped to the active org.
-    // (Cubic #22.)
-    const vendor = await db.vendor.findUnique({
-      where: { id: vendorId },
-      select: {
-        id: true,
-        organizationId: true,
-        tasks: { where: { id: taskId }, select: { id: true } },
-      },
-    });
-    if (!vendor || vendor.organizationId !== organizationId) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-    if (vendor.tasks.length === 0) {
-      return NextResponse.json(
-        { error: 'Task is not linked to this vendor' },
-        { status: 404 },
-      );
+    const response = await serverApi.delete<UnlinkTaskResponse>(
+      `/v1/vendors/${vendorId}/tasks/${taskId}`,
+    );
+
+    if (response.error) {
+      return NextResponse.json({ error: response.error }, { status: response.status || 500 });
     }
 
-    await db.vendor.update({
-      where: { id: vendorId },
-      data: { tasks: { disconnect: { id: taskId } } },
-    });
-
-    // Fire-and-forget — see risks counterpart. (Cubic #31.)
+    // Fire-and-forget: do NOT await. The unlink itself already succeeded;
+    // we don't want the response to wait on or fail because of the
+    // background plan-refresh trigger.
     void refreshVendorTreatmentPlan(organizationId, vendorId);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(response.data ?? { ok: true });
   } catch (error) {
     console.error('Error unlinking task from vendor:', error);
     return NextResponse.json({ error: 'Failed to unlink task' }, { status: 500 });

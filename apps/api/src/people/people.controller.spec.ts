@@ -4,7 +4,7 @@ import { PeopleInviteService } from './people-invite.service';
 import { AttachmentsService } from '../attachments/attachments.service';
 import type { AuthContext } from '../auth/types';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
-import { PermissionGuard } from '../auth/permission.guard';
+import { PERMISSIONS_KEY, PermissionGuard } from '../auth/permission.guard';
 import { PeopleController } from './people.controller';
 import { BadRequestException } from '@nestjs/common';
 
@@ -353,6 +353,17 @@ describe('PeopleController', () => {
   });
 
   describe('updateEmailPreferences', () => {
+    it('requires app read permission for email preference handlers', () => {
+      const expectedPermission = [{ resource: 'app', actions: ['read'] }];
+
+      expect(
+        Reflect.getMetadata(PERMISSIONS_KEY, controller.getEmailPreferences),
+      ).toEqual(expectedPermission);
+      expect(
+        Reflect.getMetadata(PERMISSIONS_KEY, controller.updateEmailPreferences),
+      ).toEqual(expectedPermission);
+    });
+
     it('should update email preferences for the current user', async () => {
       const prefs = {
         policyNotifications: true,
