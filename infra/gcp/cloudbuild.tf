@@ -22,19 +22,21 @@ resource "google_cloudbuild_trigger" "deploy" {
   }
 
   substitutions = {
-    _ENVIRONMENT         = each.key
-    _REGION              = each.value.region
-    _ARTIFACT_REPOSITORY = google_artifact_registry_repository.services[each.key].repository_id
-    _API_SERVICE         = google_cloud_run_v2_service.services["${each.key}.api"].name
-    _APP_SERVICE         = google_cloud_run_v2_service.services["${each.key}.app"].name
-    _PORTAL_SERVICE      = google_cloud_run_v2_service.services["${each.key}.portal"].name
-    _MIGRATOR_JOB        = google_cloud_run_v2_job.migrator[each.key].name
-    _SEEDER_JOB          = google_cloud_run_v2_job.seeder[each.key].name
-    _CLOUD_SQL_INSTANCE  = coalesce(try(each.value.cloud_sql_instance_connection_name, null), "")
-    _API_URL             = "https://${each.value.domains.api}"
-    _APP_URL             = "https://${each.value.domains.app}"
-    _PORTAL_URL          = "https://${each.value.domains.portal}"
-    _AUTH_PRIMARY_DOMAIN = var.auth_primary_domain
-    _AUTH_STAGING_DOMAIN = var.auth_staging_domain
+    _ENVIRONMENT                   = each.key
+    _REGION                        = each.value.region
+    _ARTIFACT_REPOSITORY           = google_artifact_registry_repository.services[each.key].repository_id
+    _API_SERVICE                   = google_cloud_run_v2_service.services["${each.key}.api"].name
+    _APP_SERVICE                   = google_cloud_run_v2_service.services["${each.key}.app"].name
+    _PORTAL_SERVICE                = google_cloud_run_v2_service.services["${each.key}.portal"].name
+    _MIGRATOR_JOB                  = google_cloud_run_v2_job.migrator[each.key].name
+    _SEEDER_JOB                    = google_cloud_run_v2_job.seeder[each.key].name
+    _CLOUD_SQL_INSTANCE            = coalesce(try(each.value.cloud_sql_instance_connection_name, null), "")
+    _API_URL                       = "https://${each.value.domains.api}"
+    _APP_URL                       = "https://${each.value.domains.app}"
+    _PORTAL_URL                    = "https://${each.value.domains.portal}"
+    _AUTH_PRIMARY_DOMAIN           = var.auth_primary_domain
+    _AUTH_STAGING_DOMAIN           = var.auth_staging_domain
+    _APP_DATA_BUCKET               = google_storage_bucket.app_data[each.key].name
+    _DEVICE_AGENT_ARTIFACTS_BUCKET = google_storage_bucket.device_agent_artifacts[each.key].name
   }
 }

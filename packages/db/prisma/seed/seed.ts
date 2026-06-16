@@ -156,8 +156,8 @@ async function seedJsonFiles(subDirectory: string) {
         let connectionsMade = 0;
         for (const relationItem of jsonData) {
           if (!relationItem.A || !relationItem.B) {
-            console.warn(`Skipping invalid relation item in ${jsonFile}:`, relationItem);
-            continue;
+            console.error(`Invalid relation item in ${jsonFile}:`, relationItem);
+            throw new Error(`Invalid relation item in ${jsonFile}.`);
           }
           const idA = relationItem.A;
           const idB = relationItem.B;
@@ -177,7 +177,7 @@ async function seedJsonFiles(subDirectory: string) {
               `Failed to connect ${prismaModelAName} (${idA}) with ${modelBNamePascal} (${idB}) from ${jsonFile}:`,
               error,
             );
-            // Decide if one error should stop the whole process for this file or continue
+            throw error;
           }
         }
         console.log(`Finished processing ${jsonFile}. Made ${connectionsMade} connections.`);
