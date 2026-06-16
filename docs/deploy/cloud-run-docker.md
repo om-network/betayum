@@ -78,8 +78,8 @@ Required public build values:
 - `NEXT_PUBLIC_PORTAL_URL`: portal URL used by the app.
 
 Required runtime values are declared as Secret Manager shells in
-`infra/gcp/variables.tf`. The migration and seed jobs only need `DATABASE_URL`
-at runtime.
+`infra/gcp/variables.tf`. The migration job and seed job share the database-job
+runtime service account and only need `DATABASE_URL` at runtime.
 
 ## Smoke Checks
 

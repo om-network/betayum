@@ -113,7 +113,7 @@ variable "secret_names" {
 }
 
 variable "runtime_secret_names" {
-  description = "Secret shells mounted into each runtime service, migration job, and seed job."
+  description = "Secret shells mounted into each runtime service and migration job."
   type        = map(list(string))
   default = {
     api = [
@@ -148,9 +148,6 @@ variable "runtime_secret_names" {
       "app-gcp-secret-access-key",
     ]
     migrator = [
-      "database-url",
-    ]
-    seeder = [
       "database-url",
     ]
   }

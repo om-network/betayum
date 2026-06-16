@@ -28,16 +28,6 @@ resource "google_service_account" "migrator" {
   depends_on = [google_project_service.required]
 }
 
-resource "google_service_account" "seeder" {
-  for_each = var.environments
-
-  project      = each.value.project_id
-  account_id   = "betayum-${each.key}-seeder"
-  display_name = "Betayum ${each.key} seed job runtime"
-
-  depends_on = [google_project_service.required]
-}
-
 resource "google_project_iam_member" "deployer_project_roles" {
   for_each = {
     for item in flatten([
@@ -73,14 +63,6 @@ resource "google_service_account_iam_member" "deployer_can_run_migrator" {
   member             = google_service_account.deployer[each.key].member
 }
 
-resource "google_service_account_iam_member" "deployer_can_run_seeder" {
-  for_each = var.environments
-
-  service_account_id = google_service_account.seeder[each.key].name
-  role               = "roles/iam.serviceAccountUser"
-  member             = google_service_account.deployer[each.key].member
-}
-
 resource "google_service_account_iam_member" "runtime_can_sign_blobs" {
   for_each = local.env_services
 
@@ -107,15 +89,6 @@ resource "google_secret_manager_secret_iam_member" "migrator_secret_access" {
   member    = google_service_account.migrator[each.value.env_name].member
 }
 
-resource "google_secret_manager_secret_iam_member" "seeder_secret_access" {
-  for_each = local.seeder_secret_bindings
-
-  project   = each.value.project_id
-  secret_id = google_secret_manager_secret.secrets[each.value.secret_key].secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = google_service_account.seeder[each.value.env_name].member
-}
-
 resource "google_project_iam_member" "runtime_cloud_sql_client" {
   for_each = {
     for key, service in local.env_services : key => service
@@ -136,17 +109,6 @@ resource "google_project_iam_member" "migrator_cloud_sql_client" {
   project = each.value.project_id
   role    = "roles/cloudsql.client"
   member  = google_service_account.migrator[each.key].member
-}
-
-resource "google_project_iam_member" "seeder_cloud_sql_client" {
-  for_each = {
-    for key, job in local.seeder_jobs : key => job
-    if job.cloud_sql_instance_connection_name != null
-  }
-
-  project = each.value.project_id
-  role    = "roles/cloudsql.client"
-  member  = google_service_account.seeder[each.key].member
 }
 
 resource "google_storage_bucket_iam_member" "api_app_data_object_admin" {
