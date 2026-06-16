@@ -1,8 +1,7 @@
-import { generateRiskMitigation } from '@/trigger/tasks/onboarding/generate-risk-mitigation';
-import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { serverApi } from '@/lib/api-server';
 import { requireApiPermission } from '@/lib/permissions.server';
-import { db } from '@db/server';
+import { generateRiskMitigation } from '@/trigger/tasks/onboarding/generate-risk-mitigation';
+import type { PolicyContext } from '@/trigger/tasks/onboarding/onboard-organization-helpers';
 import { tasks as triggerTasks } from '@trigger.dev/sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -14,10 +13,14 @@ interface PoliciesApiResponse {
   }>;
 }
 
+interface UnlinkTaskResponse {
+  ok: true;
+}
+
 /**
  * Best-effort fan-out: re-trigger the risk mitigation generator so the saved
  * treatment plan reflects the now-changed task linkage. We deliberately swallow
- * errors here — the unlink itself already succeeded and refreshing the plan is
+ * errors here; the unlink itself already succeeded and refreshing the plan is
  * not load-bearing for the user-facing operation.
  */
 async function refreshTreatmentPlan(organizationId: string, riskId: string): Promise<void> {
@@ -61,45 +64,23 @@ export async function DELETE(
 
     const { riskId, taskId } = await params;
     if (!riskId || !taskId) {
-      return NextResponse.json(
-        { error: 'Risk ID and Task ID are required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Risk ID and Task ID are required' }, { status: 400 });
     }
 
-    // Verify the risk + the link in one query, scoped to the active org.
-    // Without this, calling DELETE for a non-linked or wrong-tenant task
-    // would let Prisma's `disconnect` no-op or throw a 500 depending on
-    // the case — neither is a useful client signal. (Cubic #22.)
-    const risk = await db.risk.findUnique({
-      where: { id: riskId },
-      select: {
-        id: true,
-        organizationId: true,
-        tasks: { where: { id: taskId }, select: { id: true } },
-      },
-    });
-    if (!risk || risk.organizationId !== organizationId) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-    if (risk.tasks.length === 0) {
-      return NextResponse.json(
-        { error: 'Task is not linked to this risk' },
-        { status: 404 },
-      );
-    }
+    const response = await serverApi.delete<UnlinkTaskResponse>(
+      `/v1/risks/${riskId}/tasks/${taskId}`,
+    );
 
-    await db.risk.update({
-      where: { id: riskId },
-      data: { tasks: { disconnect: { id: taskId } } },
-    });
+    if (response.error) {
+      return NextResponse.json({ error: response.error }, { status: response.status || 500 });
+    }
 
     // Fire-and-forget: do NOT await. The unlink itself already succeeded;
-    // we don't want the response to wait on (or fail because of) the
-    // background plan-refresh trigger. (Cubic #30.)
+    // we don't want the response to wait on or fail because of the
+    // background plan-refresh trigger.
     void refreshTreatmentPlan(organizationId, riskId);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json(response.data ?? { ok: true });
   } catch (error) {
     console.error('Error unlinking task from risk:', error);
     return NextResponse.json({ error: 'Failed to unlink task' }, { status: 500 });
