@@ -198,13 +198,36 @@ jobs:
           AUTO_UPDATE_URL: ${{ needs.detect-version.outputs.auto_update_url }}
         run: bun run package:win
 
+      - name: Detect Windows signing secrets
+        id: windows_signing
+        shell: powershell
+        env:
+          ESIGNER_USERNAME: ${{ secrets.ESIGNER_USERNAME }}
+          ESIGNER_PASSWORD: ${{ secrets.ESIGNER_PASSWORD }}
+          ESIGNER_CREDENTIAL_ID: ${{ secrets.ESIGNER_CREDENTIAL_ID }}
+          ESIGNER_TOTP_SECRET: ${{ secrets.ESIGNER_TOTP_SECRET }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          if ($env:ESIGNER_USERNAME -and $env:ESIGNER_PASSWORD -and $env:ESIGNER_CREDENTIAL_ID -and $env:ESIGNER_TOTP_SECRET) {
+            "enabled=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "Windows code signing enabled."
+          } else {
+            if ($env:GITHUB_REF_NAME -eq "release") {
+              throw "Windows production releases require ESIGNER secrets for code signing."
+            }
+            "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Warning "One or more ESIGNER secrets are not configured. Uploading unsigned Windows artifact."
+          }
+
       - name: Setup Java for CodeSignTool
+        if: steps.windows_signing.outputs.enabled == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'corretto'
           java-version: '11'
 
       - name: Sign Windows EXE with SSL.com CodeSignTool
+        if: steps.windows_signing.outputs.enabled == 'true'
         shell: powershell
         working-directory: packages/device-agent/release
         env:
@@ -243,6 +266,7 @@ jobs:
           }
 
       - name: Verify Windows code signature
+        if: steps.windows_signing.outputs.enabled == 'true'
         shell: powershell
         working-directory: packages/device-agent/release
         run: |
@@ -262,6 +286,7 @@ jobs:
           if (-not $allSigned) { throw "One or more .exe files are NOT properly signed. Failing build." }
 
       - name: Recalculate latest.yml hash after signing
+        if: steps.windows_signing.outputs.enabled == 'true'
         shell: bash
         working-directory: packages/device-agent/release
         run: |
