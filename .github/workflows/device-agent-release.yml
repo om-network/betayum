@@ -206,11 +206,15 @@ jobs:
           ESIGNER_PASSWORD: ${{ secrets.ESIGNER_PASSWORD }}
           ESIGNER_CREDENTIAL_ID: ${{ secrets.ESIGNER_CREDENTIAL_ID }}
           ESIGNER_TOTP_SECRET: ${{ secrets.ESIGNER_TOTP_SECRET }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           if ($env:ESIGNER_USERNAME -and $env:ESIGNER_PASSWORD -and $env:ESIGNER_CREDENTIAL_ID -and $env:ESIGNER_TOTP_SECRET) {
             "enabled=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
             Write-Host "Windows code signing enabled."
           } else {
+            if ($env:GITHUB_REF_NAME -eq "release") {
+              throw "Windows production releases require ESIGNER secrets for code signing."
+            }
             "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
             Write-Warning "One or more ESIGNER secrets are not configured. Uploading unsigned Windows artifact."
           }

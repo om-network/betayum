@@ -29,6 +29,15 @@ if (!detectStep.includes('id: windows_signing')) {
 if (!detectStep.includes('enabled=false')) {
   fail('Windows signing detection step must allow unsigned builds when ESIGNER secrets are absent');
 }
+if (!detectStep.includes('GITHUB_REF_NAME: ${{ github.ref_name }}')) {
+  fail('Windows signing detection step must receive the GitHub branch name');
+}
+if (!detectStep.includes('$env:GITHUB_REF_NAME -eq "release"')) {
+  fail('Windows signing detection step must identify release branch builds');
+}
+if (!detectStep.includes('Windows production releases require ESIGNER secrets for code signing.')) {
+  fail('Windows signing detection step must fail production releases without ESIGNER secrets');
+}
 
 for (const stepName of [
   'Setup Java for CodeSignTool',
