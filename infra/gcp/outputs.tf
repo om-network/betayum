@@ -33,17 +33,6 @@ output "migrator_jobs" {
   }
 }
 
-output "seeder_jobs" {
-  description = "Seed Cloud Run jobs by environment."
-  value = {
-    for env_name, job in google_cloud_run_v2_job.seeder : env_name => {
-      project = job.project
-      region  = job.location
-      name    = job.name
-    }
-  }
-}
-
 output "edge_forwarding_rules" {
   description = "Managed HTTPS edge forwarding rule names."
   value = {

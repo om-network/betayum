@@ -17,19 +17,20 @@ confirmed by an operator before any plan is applied.
 Staging and production should use separate GCP projects. Secret values are not
 managed in Terraform; this baseline creates Secret Manager shells only. The
 first apply keeps `mount_runtime_secrets = false` so Cloud Run services and the
-migration and seed jobs can be created before Secret Manager versions exist.
+migration job can be created before Secret Manager versions exist. The seed job
+is created or updated by Cloud Build using the migration job runtime identity.
 
 ## What This Declares
 
 - Required GCP APIs per environment.
 - Artifact Registry repositories for immutable service images.
 - Cloud Build deployer service accounts scoped per environment.
-- Runtime service accounts for API, app, portal, migration jobs, and seed jobs.
+- Runtime service accounts for API, app, portal, and database jobs.
 - Private Google Cloud Storage buckets for app data and device-agent artifacts.
 - Secret Manager secret shells with environment-scoped names.
 - Cloud Run services for API, app, and portal.
-- A Cloud Run migration job and seed job that Cloud Build runs before service
-  rollout.
+- A Cloud Run migration job plus Cloud Build substitutions for the seed job that
+  runs before service rollout.
 - Cloud SQL attachments and IAM client grants when an environment provides a
   `cloud_sql_instance_connection_name`.
 - External HTTPS load balancer resources with managed certificates.
