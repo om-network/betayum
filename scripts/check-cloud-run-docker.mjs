@@ -9,6 +9,8 @@ const dockerDocs = readFileSync('docs/deploy/cloud-run-docker.md', 'utf8');
 
 const requiredRootSnippets = [
   'FROM oven/bun:1.2.8 AS migrator',
+  'FROM deps AS seeder',
+  'CMD ["bun", "run", "--cwd", "packages/db", "db:seed"]',
   'FROM node:22-alpine AS app',
   'FROM node:22-alpine AS portal',
   'ARG NEXT_PUBLIC_BETTER_AUTH_URL',
@@ -38,6 +40,7 @@ const requiredDocSnippets = [
   'docker build -f Dockerfile --target app',
   'docker build -f Dockerfile --target portal',
   'docker build -f Dockerfile --target migrator',
+  'docker build -f Dockerfile --target seeder',
   '/v1/health',
   '/api/health',
 ];

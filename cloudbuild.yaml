@@ -12,12 +12,15 @@ substitutions:
   _APP_SERVICE: betayum-staging-app
   _PORTAL_SERVICE: betayum-staging-portal
   _MIGRATOR_JOB: betayum-staging-migrator
+  _SEEDER_JOB: betayum-staging-seeder
   _API_URL: https://api.staging.betayum.com
   _APP_URL: https://app.staging.betayum.com
   _PORTAL_URL: https://portal.staging.betayum.com
   _AUTH_PRIMARY_DOMAIN: betayum.com
   _AUTH_STAGING_DOMAIN: staging.betayum.com
   _CLOUD_SQL_INSTANCE: centered-kiln-498405-h8:us-central1:betayum-db
+  _APP_DATA_BUCKET: centered-kiln-498405-h8-betayum-staging-app-data
+  _DEVICE_AGENT_ARTIFACTS_BUCKET: centered-kiln-498405-h8-betayum-staging-device-agent-artifacts
 
 steps:
   - id: build-api
@@ -77,6 +80,19 @@ steps:
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/migrator:$COMMIT_SHA
       - .
 
+  - id: build-seeder
+    name: gcr.io/cloud-builders/docker
+    waitFor:
+      - '-'
+    args:
+      - build
+      - -f
+      - Dockerfile
+      - --target=seeder
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/seeder:$COMMIT_SHA
+      - .
+
   - id: push-api
     name: gcr.io/cloud-builders/docker
     waitFor:
@@ -109,6 +125,14 @@ steps:
       - push
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/migrator:$COMMIT_SHA
 
+  - id: push-seeder
+    name: gcr.io/cloud-builders/docker
+    waitFor:
+      - build-seeder
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/seeder:$COMMIT_SHA
+
   - id: update-migrator-job
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
@@ -120,6 +144,24 @@ steps:
       - update
       - ${_MIGRATOR_JOB}
       - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/migrator:$COMMIT_SHA
+      - --region=${_REGION}
+      - --project=$PROJECT_ID
+      - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
+      - --update-env-vars=BASE_URL=${_API_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
+      - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest
+      - --quiet
+
+  - id: update-seeder-job
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    waitFor:
+      - push-seeder
+    args:
+      - run
+      - jobs
+      - update
+      - ${_SEEDER_JOB}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/seeder:$COMMIT_SHA
       - --region=${_REGION}
       - --project=$PROJECT_ID
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
@@ -142,11 +184,27 @@ steps:
       - --wait
       - --quiet
 
-  - id: deploy-api
+  - id: run-seed
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
     waitFor:
       - run-migrations
+      - update-seeder-job
+    args:
+      - run
+      - jobs
+      - execute
+      - ${_SEEDER_JOB}
+      - --region=${_REGION}
+      - --project=$PROJECT_ID
+      - --wait
+      - --quiet
+
+  - id: deploy-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    waitFor:
+      - run-seed
       - push-api
     args:
       - run
@@ -159,7 +217,7 @@ steps:
       - --port=3333
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},TRUST_APP_URL=${_PORTAL_URL},PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN}
+      - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},TRUST_APP_URL=${_PORTAL_URL},PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN},APP_OBJECT_STORAGE_BUCKET=${_APP_DATA_BUCKET},APP_DEVICE_AGENT_ARTIFACTS_BUCKET=${_DEVICE_AGENT_ARTIFACTS_BUCKET},APP_GCP_BUCKET_NAME=${_APP_DATA_BUCKET},APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_ORG_ASSETS_BUCKET=${_APP_DATA_BUCKET}
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,SECRET_KEY=betayum-${_ENVIRONMENT}-secret-key:latest,AUTH_SECRET=betayum-${_ENVIRONMENT}-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest,UPSTASH_REDIS_REST_URL=betayum-${_ENVIRONMENT}-upstash-redis-rest-url:latest,UPSTASH_REDIS_REST_TOKEN=betayum-${_ENVIRONMENT}-upstash-redis-rest-token:latest,BETTER_AUTH_API_KEY=betayum-${_ENVIRONMENT}-better-auth-api-key:latest
       - --quiet
 
@@ -167,7 +225,7 @@ steps:
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
     waitFor:
-      - run-migrations
+      - run-seed
       - push-app
     args:
       - run
@@ -180,7 +238,7 @@ steps:
       - --port=3000
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL}
+      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},APP_OBJECT_STORAGE_BUCKET=${_APP_DATA_BUCKET},APP_GCP_BUCKET_NAME=${_APP_DATA_BUCKET},APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_QUESTIONNAIRE_UPLOAD_BUCKET=${_APP_DATA_BUCKET},APP_GCP_KNOWLEDGE_BASE_BUCKET=${_APP_DATA_BUCKET},APP_GCP_ORG_ASSETS_BUCKET=${_APP_DATA_BUCKET}
       - --remove-secrets=BETTER_AUTH_API_KEY
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,AUTH_SECRET=betayum-${_ENVIRONMENT}-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest,TRIGGER_SECRET_KEY=betayum-${_ENVIRONMENT}-trigger-secret-key:latest,REVALIDATION_SECRET=betayum-${_ENVIRONMENT}-revalidation-secret:latest
       - --quiet
@@ -189,7 +247,7 @@ steps:
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
     waitFor:
-      - run-migrations
+      - run-seed
       - push-portal
     args:
       - run
@@ -202,7 +260,7 @@ steps:
       - --port=3000
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL}
+      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},APP_OBJECT_STORAGE_BUCKET=${_APP_DATA_BUCKET},APP_DEVICE_AGENT_ARTIFACTS_BUCKET=${_DEVICE_AGENT_ARTIFACTS_BUCKET},APP_GCP_BUCKET_NAME=${_APP_DATA_BUCKET},APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_ORG_ASSETS_BUCKET=${_APP_DATA_BUCKET},FLEET_AGENT_BUCKET_NAME=${_DEVICE_AGENT_ARTIFACTS_BUCKET}
       - --remove-secrets=BETTER_AUTH_API_KEY
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,BETTER_AUTH_SECRET=betayum-${_ENVIRONMENT}-better-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest
       - --quiet
