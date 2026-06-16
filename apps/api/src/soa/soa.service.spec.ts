@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { db } from '@db';
 import { SOAService } from './soa.service';
+import { loadISOConfig } from './utils/transform-iso-config';
 import { generateSOAExportFile } from './utils/export-generator';
 
 jest.mock('@db', () => ({
@@ -57,6 +58,7 @@ jest.mock('./utils/export-generator', () => ({
 }));
 
 const mockDb = jest.mocked(db);
+const mockLoadISOConfig = jest.mocked(loadISOConfig);
 const mockGenerateSOAExportFile = jest.mocked(generateSOAExportFile);
 const mockRolesService = {
   filterMembersWithPermission: jest.fn(),
@@ -112,9 +114,7 @@ describe('SOAService', () => {
       (
         mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock
       ).mockResolvedValue(null);
-      (
-        mockDb.frameworkEditorFramework.findFirst as jest.Mock
-      ).mockRejectedValue(new Error('DB error'));
+      mockLoadISOConfig.mockRejectedValue(new Error('DB error'));
       await expect(service.ensureSetup(dto)).rejects.toThrow(
         InternalServerErrorException,
       );
@@ -155,6 +155,64 @@ describe('SOAService', () => {
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(doc);
       const result = await service.ensureSetup(dto);
       expect(result.success).toBe(true);
+      expect(result.configuration).toEqual(config);
+      expect(result.document).toEqual(doc);
+    });
+
+    it('creates a missing configuration for the requested ISO framework', async () => {
+      const questions = [
+        {
+          id: 'q1',
+          text: 'Is the control applicable?',
+          columnMapping: {
+            title: 'Control title',
+            closure: 'A.1',
+            control_objective: null,
+            isApplicable: null,
+            justification: null,
+          },
+        },
+      ];
+      const config = {
+        id: 'cfg-requested',
+        frameworkId: 'fw-1',
+        questions,
+      };
+      const doc = { id: 'doc-1', answers: [] };
+      (
+        mockDb.frameworkEditorFramework.findUnique as jest.Mock
+      ).mockResolvedValue({
+        id: 'fw-1',
+        name: 'ISO 27001',
+      });
+      (mockDb.sOAFrameworkConfiguration.findFirst as jest.Mock)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+      mockLoadISOConfig.mockResolvedValue({
+        columns: [{ name: 'Control ID', type: 'string' }],
+        questions,
+      });
+      (
+        mockDb.sOAFrameworkConfiguration.create as jest.Mock
+      ).mockResolvedValue(config);
+      (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
+      (
+        mockDb.sOAFrameworkConfiguration.findUnique as jest.Mock
+      ).mockResolvedValue(config);
+      (mockDb.sOADocument.create as jest.Mock).mockResolvedValue(doc);
+
+      const result = await service.ensureSetup(dto);
+
+      expect(result.success).toBe(true);
+      expect(mockDb.sOAFrameworkConfiguration.create).toHaveBeenCalledWith({
+        data: {
+          frameworkId: 'fw-1',
+          version: 1,
+          isLatest: true,
+          columns: [{ name: 'Control ID', type: 'string' }],
+          questions,
+        },
+      });
       expect(result.configuration).toEqual(config);
       expect(result.document).toEqual(doc);
     });
