@@ -62,6 +62,7 @@
     "build": "turbo build",
     "check:env": "node scripts/check-unused-env.js",
     "check:brand": "node scripts/check-brand-references.mjs",
+    "check:device-agent-release": "node scripts/check-device-agent-release-workflow.mjs",
     "check:object-storage": "node scripts/check-object-storage-guardrails.mjs",
     "check:prisma-schemas": "node scripts/check-generated-prisma-schemas.js",
     "clean": "git clean -xdf node_modules",
