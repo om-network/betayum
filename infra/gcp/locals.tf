@@ -95,11 +95,11 @@ locals {
     for env_name, env in var.environments : env_name => {
       app_data = coalesce(
         try(env.app_data_bucket_name, null),
-        "${env.project_id}-betayum-${env_name}-app-data",
+        "betayum-${env_name}-app-data",
       )
       device_agent_artifacts = coalesce(
         try(env.device_agent_artifacts_bucket_name, null),
-        "${env.project_id}-betayum-${env_name}-device-agent-artifacts",
+        "betayum-${env_name}-device-agent-artifacts",
       )
     }
   }
