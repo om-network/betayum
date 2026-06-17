@@ -32,6 +32,7 @@ export function Chat() {
   const params = useParams();
 
   const [input, setInput] = useState('');
+  const [isHydrating, setIsHydrating] = useState(false);
 
   const userId = session?.user?.id;
   const orgIdFromUrl =
@@ -76,6 +77,7 @@ export function Chat() {
     if (!userId || !resolvedOrganizationId) return;
 
     isHydratingRef.current = true;
+    setIsHydrating(true);
     setMessages([]);
 
     const controller = new AbortController();
@@ -95,6 +97,7 @@ export function Chat() {
 
       if (resolvedOrganizationIdRef.current !== orgIdAtStart) {
         isHydratingRef.current = false;
+        setIsHydrating(false);
         return;
       }
 
@@ -104,6 +107,7 @@ export function Chat() {
 
       setMessages(assistantStoredMessagesToUiMessages(stored));
       isHydratingRef.current = false;
+      setIsHydrating(false);
     })();
 
     return () => {
@@ -195,6 +199,7 @@ export function Chat() {
       <AssistantConversation
         error={error}
         firstName={firstName}
+        isHydrating={isHydrating}
         isStreaming={isStreaming}
         messages={messages}
         status={status}
