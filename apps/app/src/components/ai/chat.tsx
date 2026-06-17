@@ -61,7 +61,16 @@ export function Chat() {
     credentials: 'include',
   });
 
-  const { messages, sendMessage, error, status, stop, setMessages } = useChat({
+  const {
+    messages,
+    sendMessage,
+    error,
+    status,
+    stop,
+    setMessages,
+    regenerate,
+    clearError,
+  } = useChat({
     id:
       resolvedOrganizationId && userId
         ? `assistant-chat:v1:${resolvedOrganizationId}:${userId}`
@@ -177,6 +186,11 @@ export function Chat() {
     setInput('');
   };
 
+  const handleRetry = () => {
+    clearError();
+    void regenerate();
+  };
+
   return (
     <div className="relative flex h-full flex-col">
       <div className="mx-auto flex w-full max-w-xl items-center justify-end gap-2 px-4 py-2">
@@ -202,6 +216,7 @@ export function Chat() {
         isHydrating={isHydrating}
         isStreaming={isStreaming}
         messages={messages}
+        onRetry={handleRetry}
         status={status}
       />
 
