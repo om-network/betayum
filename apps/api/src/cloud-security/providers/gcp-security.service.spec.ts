@@ -638,4 +638,34 @@ describe('GCPSecurityService — project detection', () => {
       expect(result.map((p) => p.id)).toEqual(['good-proj']);
     });
   });
+
+  describe('resolveSetupStep request target validation', () => {
+    it('rejects invalid project IDs before calling the Service Usage API', async () => {
+      const result = await service.resolveSetupStep({
+        stepId: 'enable_service_usage_api',
+        accessToken: 'token',
+        organizationId: '',
+        projectId: 'https://evil.example.com/project',
+        email: 'admin@example.com',
+      });
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(result.step.success).toBe(false);
+      expect(result.step.error).toContain('Invalid GCP project ID');
+    });
+
+    it('rejects invalid organization IDs before calling IAM policy APIs', async () => {
+      const result = await service.resolveSetupStep({
+        stepId: 'grant_findings_viewer_role',
+        accessToken: 'token',
+        organizationId: 'https://evil.example.com/org',
+        projectId: 'valid-project',
+        email: 'admin@example.com',
+      });
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(result.step.success).toBe(false);
+      expect(result.step.error).toContain('Invalid GCP organization ID');
+    });
+  });
 });

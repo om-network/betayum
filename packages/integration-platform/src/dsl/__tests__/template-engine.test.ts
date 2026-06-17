@@ -46,6 +46,21 @@ describe('interpolate', () => {
   it('handles whitespace in variable names', () => {
     expect(interpolate('{{ name }}', { name: 'Alice' })).toBe('Alice');
   });
+
+  it('leaves malformed nested braces literal while replacing valid placeholders', () => {
+    expect(interpolate('Start {{{{name}} end {{name}}', { name: 'Alice' })).toBe(
+      'Start {{{{name}} end Alice',
+    );
+  });
+
+  it('handles adjacent placeholders and long malformed brace runs', () => {
+    const malformedPrefix = '{{{{|'.repeat(2000);
+
+    expect(interpolate('{{first}}{{last}}', { first: 'Ada', last: 'Lovelace' })).toBe(
+      'AdaLovelace',
+    );
+    expect(interpolate(malformedPrefix, { first: 'Ada' })).toBe(malformedPrefix);
+  });
 });
 
 describe('interpolateTemplate', () => {
