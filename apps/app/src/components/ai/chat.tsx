@@ -209,6 +209,7 @@ export function Chat() {
         input={input}
         isLoading={isLoading}
         onInputChange={setInput}
+        onStop={stop}
         onSubmitMessage={handleSubmitMessage}
       />
     </div>
