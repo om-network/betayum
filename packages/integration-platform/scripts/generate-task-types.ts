@@ -21,6 +21,62 @@ const TASK_TEMPLATES_PATH = join(
 
 const OUTPUT_PATH = join(__dirname, '../src/task-mappings.ts');
 
+export function toTsStringLiteral(value: string): string {
+  const serialized = JSON.stringify(value);
+  if (typeof serialized !== 'string') {
+    throw new Error('Unable to serialize task metadata string');
+  }
+  return serialized;
+}
+
+export function toTaskTemplateKey(name: string): string {
+  if (name.trim().toLowerCase() === '2fa') {
+    return 'twoFactorAuth';
+  }
+
+  const key = name
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word, i) =>
+      i === 0
+        ? word.toLowerCase()
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+    )
+    .join('');
+
+  if (!key) {
+    return 'taskTemplate';
+  }
+
+  return /^[a-zA-Z_$]/.test(key) ? key : `task${key}`;
+}
+
+function toUniqueTaskTemplateKey({
+  baseKey,
+  taskId,
+  usedKeys,
+}: {
+  baseKey: string;
+  taskId: string;
+  usedKeys: Set<string>;
+}): string {
+  if (!usedKeys.has(baseKey)) {
+    usedKeys.add(baseKey);
+    return baseKey;
+  }
+
+  const suffix = taskId.replace(/[^a-zA-Z0-9]/g, '').slice(-8);
+  const uniqueKey = `${baseKey}${suffix.charAt(0).toUpperCase()}${suffix.slice(1)}`;
+  usedKeys.add(uniqueKey);
+  return uniqueKey;
+}
+
+function toTsDocText(value: string): string {
+  return value.trim().replace(/\*\//g, '* /');
+}
+
 function generateTaskTypes() {
   // Read the JSON file
   const jsonContent = readFileSync(TASK_TEMPLATES_PATH, 'utf-8');
@@ -42,7 +98,7 @@ function generateTaskTypes() {
 
   // Add each task ID as a const
   for (const task of tasks) {
-    lines.push(`  '${task.id}', // ${task.name}`);
+    lines.push(`  ${toTsStringLiteral(task.id)}, // ${toTsDocText(task.name)}`);
   }
 
   lines.push('] as const;');
@@ -61,18 +117,17 @@ function generateTaskTypes() {
   lines.push(' */');
   lines.push('export const TASK_TEMPLATES = {');
 
-  for (const task of tasks) {
-    // Convert name to a valid JS identifier (camelCase, no special chars)
-    const key = task.name
-      .replace(/[^a-zA-Z0-9\s]/g, '')
-      .split(/\s+/)
-      .map((word, i) =>
-        i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-      )
-      .join('');
+  const usedTaskTemplateKeys = new Set<string>();
 
-    lines.push(`  /** ${task.name} */`);
-    lines.push(`  ${key}: '${task.id}',`);
+  for (const task of tasks) {
+    const key = toUniqueTaskTemplateKey({
+      baseKey: toTaskTemplateKey(task.name),
+      taskId: task.id,
+      usedKeys: usedTaskTemplateKeys,
+    });
+
+    lines.push(`  /** ${toTsDocText(task.name)} */`);
+    lines.push(`  ${key}: ${toTsStringLiteral(task.id)},`);
   }
 
   lines.push('} as const;');
@@ -88,18 +143,13 @@ function generateTaskTypes() {
   lines.push('> = {');
 
   for (const task of tasks) {
-    // Escape description for use in template literal
-    const escapedDesc = task.description
-      .replace(/\\/g, '\\\\')
-      .replace(/`/g, '\\`')
-      .replace(/\$/g, '\\$')
-      .substring(0, 100); // Truncate for readability
+    const description = `${task.description.substring(0, 100)}...`;
 
-    lines.push(`  '${task.id}': {`);
-    lines.push(`    name: '${task.name.replace(/'/g, "\\'")}',`);
-    lines.push(`    description: \`${escapedDesc}...\`,`);
-    lines.push(`    department: '${task.department}',`);
-    lines.push(`    frequency: '${task.frequency}',`);
+    lines.push(`  ${toTsStringLiteral(task.id)}: {`);
+    lines.push(`    name: ${toTsStringLiteral(task.name)},`);
+    lines.push(`    description: ${toTsStringLiteral(description)},`);
+    lines.push(`    department: ${toTsStringLiteral(task.department)},`);
+    lines.push(`    frequency: ${toTsStringLiteral(task.frequency)},`);
     lines.push('  },');
   }
 
@@ -112,4 +162,6 @@ function generateTaskTypes() {
   console.log(`   ${tasks.length} task templates`);
 }
 
-generateTaskTypes();
+if (import.meta.main) {
+  generateTaskTypes();
+}
