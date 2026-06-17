@@ -25,6 +25,7 @@ variable "environments" {
     app_data_bucket_name               = optional(string)
     device_agent_artifacts_bucket_name = optional(string)
     cloud_sql_instance_connection_name = optional(string)
+    stripe_publishable_key             = optional(string, "")
     cloudbuild_included_files = optional(list(string), [
       ".dockerignore",
       "apps/**",
@@ -109,6 +110,8 @@ variable "secret_names" {
     "upstash-redis-rest-token",
     "app-gcp-access-key-id",
     "app-gcp-secret-access-key",
+    "stripe-secret-key",
+    "stripe-webhook-secret",
   ]
 }
 
@@ -130,6 +133,8 @@ variable "runtime_secret_names" {
       "upstash-redis-rest-token",
       "app-gcp-access-key-id",
       "app-gcp-secret-access-key",
+      "stripe-secret-key",
+      "stripe-webhook-secret",
     ]
     app = [
       "database-url",

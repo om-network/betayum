@@ -34,6 +34,7 @@ resource "google_cloudbuild_trigger" "deploy" {
     _API_URL                       = "https://${each.value.domains.api}"
     _APP_URL                       = "https://${each.value.domains.app}"
     _PORTAL_URL                    = "https://${each.value.domains.portal}"
+    _STRIPE_PUBLISHABLE_KEY        = coalesce(try(each.value.stripe_publishable_key, null), "")
     _AUTH_PRIMARY_DOMAIN           = var.auth_primary_domain
     _AUTH_STAGING_DOMAIN           = var.auth_staging_domain
     _APP_DATA_BUCKET               = google_storage_bucket.app_data[each.key].name
