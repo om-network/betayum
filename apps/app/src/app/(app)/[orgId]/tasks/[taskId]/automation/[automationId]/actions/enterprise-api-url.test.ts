@@ -12,13 +12,15 @@ describe('createEnterpriseApiUrl', () => {
   });
 
   it('rejects private network production API bases', () => {
-    expect(() =>
-      createEnterpriseApiUrl({
-        baseUrl: 'https://10.0.0.5',
-        endpoint: '/api/tasks-automations/s3/list',
-        nodeEnv: 'production',
-      }),
-    ).toThrow('Enterprise API base URL must not target a private network');
+    for (const baseUrl of ['https://10.0.0.5', 'https://[::1]', 'https://[fd00::1]']) {
+      expect(() =>
+        createEnterpriseApiUrl({
+          baseUrl,
+          endpoint: '/api/tasks-automations/s3/list',
+          nodeEnv: 'production',
+        }),
+      ).toThrow('Enterprise API base URL must not target a private network');
+    }
   });
 
   it('allows localhost only outside production and appends query parameters', () => {

@@ -4,8 +4,18 @@ function isAbsoluteEndpoint(endpoint: string): boolean {
   return /^[a-z][a-z0-9+.-]*:/i.test(endpoint) || endpoint.startsWith('//');
 }
 
+function normalizeHostname(hostname: string): string {
+  const normalizedHost = hostname.toLowerCase();
+  return normalizedHost.startsWith('[') && normalizedHost.endsWith(']')
+    ? normalizedHost.slice(1, -1)
+    : normalizedHost;
+}
+
 function isLocalhost(hostname: string): boolean {
-  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  const normalizedHost = normalizeHostname(hostname);
+  return (
+    normalizedHost === 'localhost' || normalizedHost === '127.0.0.1' || normalizedHost === '::1'
+  );
 }
 
 function isPrivateIpv4(hostname: string): boolean {
@@ -30,8 +40,22 @@ function isPrivateIpv4(hostname: string): boolean {
 }
 
 function isPrivateHost(hostname: string): boolean {
-  const normalizedHost = hostname.toLowerCase();
-  return isLocalhost(normalizedHost) || isPrivateIpv4(normalizedHost);
+  const normalizedHost = normalizeHostname(hostname);
+  return (
+    isLocalhost(normalizedHost) || isPrivateIpv4(normalizedHost) || isPrivateIpv6(normalizedHost)
+  );
+}
+
+function isPrivateIpv6(hostname: string): boolean {
+  const normalizedHost = normalizeHostname(hostname);
+  return (
+    normalizedHost === '::' ||
+    normalizedHost === '::1' ||
+    normalizedHost.startsWith('fc') ||
+    normalizedHost.startsWith('fd') ||
+    normalizedHost.startsWith('fe80:') ||
+    normalizedHost.startsWith('::ffff:')
+  );
 }
 
 export function createEnterpriseApiUrl({
@@ -55,7 +79,7 @@ export function createEnterpriseApiUrl({
   }
 
   const privateHost = isPrivateHost(base.hostname);
-  const localhostDev = isLocalhost(base.hostname.toLowerCase()) && nodeEnv !== 'production';
+  const localhostDev = isLocalhost(base.hostname) && nodeEnv !== 'production';
   if ((privateHost && !localhostDev) || (nodeEnv === 'production' && base.protocol !== 'https:')) {
     throw new Error('Enterprise API base URL must not target a private network');
   }
