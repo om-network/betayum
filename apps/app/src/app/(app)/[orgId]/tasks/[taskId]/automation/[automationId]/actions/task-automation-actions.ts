@@ -7,8 +7,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
+import { createEnterpriseApiUrl } from './enterprise-api-url';
 
-interface EnterpriseApiResponse<T = any> {
+interface EnterpriseApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -49,19 +50,16 @@ async function callEnterpriseApi<T>(
   endpoint: string,
   options: {
     method?: 'GET' | 'POST';
-    body?: any;
+    body?: unknown;
     params?: Record<string, string>;
   } = {},
 ): Promise<T> {
   const { enterpriseApiUrl, enterpriseApiKey } = getEnterpriseConfig();
-
-  const url = new URL(endpoint, enterpriseApiUrl);
-
-  if (options.params) {
-    Object.entries(options.params).forEach(([key, value]) => {
-      url.searchParams.append(key, value);
-    });
-  }
+  const url = createEnterpriseApiUrl({
+    baseUrl: enterpriseApiUrl,
+    endpoint,
+    params: options.params,
+  });
 
   const method = options.method || 'GET';
 
@@ -189,10 +187,13 @@ export async function executeAutomationScript(data: {
   version?: number; // Optional: test specific version
 }) {
   try {
-    const result = await callEnterpriseApi<{ runId: string }>('/api/tasks-automations/trigger/execute', {
-      method: 'POST',
-      body: data,
-    });
+    const result = await callEnterpriseApi<{ runId: string }>(
+      '/api/tasks-automations/trigger/execute',
+      {
+        method: 'POST',
+        body: data,
+      },
+    );
 
     // Don't revalidate - causes page refresh. Test results are handled via polling/state.
     return { success: true, data: result };
@@ -243,8 +244,7 @@ export async function analyzeAutomationWorkflow(scriptContent: string) {
 
 export const getAutomationRunStatus = async (runId: string) => {
   try {
-    const result = await callEnterpriseApi(`/api/tasks-automations/runs/${runId}`, {
-    });
+    const result = await callEnterpriseApi(`/api/tasks-automations/runs/${runId}`, {});
 
     return {
       success: true,
@@ -362,7 +362,9 @@ export async function publishAutomation(
       },
     );
 
-    const versionData = versionRes.data as { success: boolean; version: { version: number } } | undefined;
+    const versionData = versionRes.data as
+      | { success: boolean; version: { version: number } }
+      | undefined;
     return {
       success: true,
       version: versionData?.version,
@@ -426,10 +428,9 @@ export async function updateEvaluationCriteria(
 ) {
   try {
     const { serverApi } = await import('@/lib/api-server');
-    const response = await serverApi.patch(
-      `/v1/tasks/${taskId}/automations/${automationId}`,
-      { evaluationCriteria },
-    );
+    const response = await serverApi.patch(`/v1/tasks/${taskId}/automations/${automationId}`, {
+      evaluationCriteria,
+    });
     if (response.error) throw new Error(response.error);
     return { success: true };
   } catch (error) {
@@ -452,10 +453,9 @@ export async function toggleAutomationEnabled(
 ) {
   try {
     const { serverApi } = await import('@/lib/api-server');
-    const response = await serverApi.patch(
-      `/v1/tasks/${taskId}/automations/${automationId}`,
-      { isEnabled },
-    );
+    const response = await serverApi.patch(`/v1/tasks/${taskId}/automations/${automationId}`, {
+      isEnabled,
+    });
     if (response.error) throw new Error(response.error);
     return { success: true };
   } catch (error) {
