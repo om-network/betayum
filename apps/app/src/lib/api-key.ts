@@ -1,7 +1,24 @@
 import { db } from '@db/server';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes, scryptSync, timingSafeEqual, webcrypto } from 'node:crypto';
+
+const API_KEY_HASH_PREFIX = 'scrypt:v1';
+const API_KEY_HASH_LENGTH = 32;
+const API_KEY_SCRYPT_OPTIONS = {
+  N: 16384,
+  r: 8,
+  p: 1,
+  maxmem: 64 * 1024 * 1024,
+} as const;
+const HEX_PATTERN = /^[a-f0-9]+$/i;
+
+interface CandidateApiKeyRecord {
+  id: string;
+  key: string;
+  salt: string | null;
+  organizationId: string;
+}
 
 /**
  * Generate a new API key
@@ -28,18 +45,74 @@ export function generateSalt(): string {
 /**
  * Hash an API key for storage
  * @param apiKey The API key to hash
- * @param salt Optional salt to use for hashing. If not provided, the key is hashed without a salt (for backward compatibility).
+ * @param salt Salt to use for hashing.
  * @returns The hashed API key
  */
-export function hashApiKey(apiKey: string, salt?: string): string {
-  if (salt) {
-    // If salt is provided, use it for hashing
-    return createHash('sha256')
-      .update(apiKey + salt)
-      .digest('hex');
+export function hashApiKey(apiKey: string, salt: string): string {
+  const derivedKey = scryptSync(
+    apiKey,
+    Buffer.from(salt, 'hex'),
+    API_KEY_HASH_LENGTH,
+    API_KEY_SCRYPT_OPTIONS,
+  );
+
+  return `${API_KEY_HASH_PREFIX}:${derivedKey.toString('hex')}`;
+}
+
+async function legacyHashApiKey(apiKey: string, salt: string | null) {
+  const input = new TextEncoder().encode(salt ? apiKey + salt : apiKey);
+  const digest = await webcrypto.subtle.digest('SHA-256', input);
+  return Buffer.from(digest).toString('hex');
+}
+
+function timingSafeStringEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function isValidHex(value: string): boolean {
+  return value.length > 0 && value.length % 2 === 0 && HEX_PATTERN.test(value);
+}
+
+async function verifyApiKeyHash({
+  apiKey,
+  storedHash,
+  salt,
+}: {
+  apiKey: string;
+  storedHash: string;
+  salt: string | null;
+}): Promise<boolean> {
+  if (storedHash.startsWith(`${API_KEY_HASH_PREFIX}:`)) {
+    if (!salt || !isValidHex(salt)) {
+      return false;
+    }
+
+    return timingSafeStringEqual(hashApiKey(apiKey, salt), storedHash);
   }
-  // For backward compatibility, hash without salt
-  return createHash('sha256').update(apiKey).digest('hex');
+
+  const legacyHash = await legacyHashApiKey(apiKey, salt);
+  return timingSafeStringEqual(legacyHash, storedHash);
+}
+
+async function findMatchingRecord(
+  records: CandidateApiKeyRecord[],
+  apiKey: string,
+): Promise<CandidateApiKeyRecord | null> {
+  for (const record of records) {
+    if (
+      await verifyApiKeyHash({
+        apiKey,
+        storedHash: record.key,
+        salt: record.salt,
+      })
+    ) {
+      return record;
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -75,7 +148,7 @@ export async function validateApiKey(req: NextRequest): Promise<string | null> {
  * @param apiKey The API key to validate
  * @returns The organization ID if the API key is valid, null otherwise
  */
-async function validateApiKeyValue(apiKey: string): Promise<string | null> {
+export async function validateApiKeyValue(apiKey: string): Promise<string | null> {
   if (!apiKey) {
     return null;
   }
@@ -94,10 +167,7 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
     const apiKeyRecords = await db.apiKey.findMany({
       where: {
         isActive: true,
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: new Date() } },
-        ],
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
         ...(keyPrefix ? { keyPrefix } : {}),
       },
       select: {
@@ -109,10 +179,7 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
       },
     });
 
-    const matchingRecord = apiKeyRecords.find((record) => {
-      const hashedKey = record.salt ? hashApiKey(apiKey, record.salt) : hashApiKey(apiKey);
-      return hashedKey === record.key;
-    });
+    const matchingRecord = await findMatchingRecord(apiKeyRecords, apiKey);
 
     if (!matchingRecord) {
       // Try legacy keys (no prefix set) for backwards compatibility
@@ -121,10 +188,7 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
           where: {
             isActive: true,
             keyPrefix: null,
-            OR: [
-              { expiresAt: null },
-              { expiresAt: { gt: new Date() } },
-            ],
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
           select: {
             id: true,
@@ -134,10 +198,7 @@ async function validateApiKeyValue(apiKey: string): Promise<string | null> {
             expiresAt: true,
           },
         });
-        const legacyMatch = legacyRecords.find((record) => {
-          const hashedKey = record.salt ? hashApiKey(apiKey, record.salt) : hashApiKey(apiKey);
-          return hashedKey === record.key;
-        });
+        const legacyMatch = await findMatchingRecord(legacyRecords, apiKey);
         if (legacyMatch) {
           // Backfill the prefix for future lookups
           await db.apiKey.update({

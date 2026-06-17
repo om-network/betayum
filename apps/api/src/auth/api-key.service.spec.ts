@@ -23,13 +23,32 @@ jest.mock('@trycompai/auth', () => ({
   },
 }));
 
+const mockDb = {
+  apiKey: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+  },
+};
+
+jest.mock('@db', () => ({ db: mockDb }));
+
+import { webcrypto } from 'node:crypto';
 import { ApiKeyService } from './api-key.service';
+
+async function sha256Hex(value: string): Promise<string> {
+  const input = new TextEncoder().encode(value);
+  const digest = await webcrypto.subtle.digest('SHA-256', input);
+  return Buffer.from(digest).toString('hex');
+}
 
 describe('ApiKeyService', () => {
   let service: ApiKeyService;
 
   beforeEach(() => {
     service = new ApiKeyService();
+    Object.values(mockDb.apiKey).forEach((mock) => mock.mockReset());
   });
 
   describe('getAvailableScopes', () => {
@@ -84,6 +103,97 @@ describe('ApiKeyService', () => {
 
     it('should not return an empty array', () => {
       expect(scopes.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('api key hashing', () => {
+    it('stores newly created API keys with scrypt and validates them', async () => {
+      let persistedData: {
+        key: string;
+        keyPrefix: string;
+        salt: string;
+        organizationId: string;
+        scopes: string[];
+      } | null = null;
+
+      mockDb.apiKey.create.mockImplementation(
+        async ({
+          data,
+        }: {
+          data: {
+            key: string;
+            keyPrefix: string;
+            salt: string;
+            organizationId: string;
+            scopes: string[];
+          };
+        }) => {
+          persistedData = data;
+          return {
+            id: 'apk_1',
+            name: 'CI key',
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+            expiresAt: null,
+          };
+        },
+      );
+
+      const created = await service.create('org_1', 'CI key', 'never', [
+        'risk:read',
+      ]);
+
+      expect(persistedData).not.toBeNull();
+      expect(persistedData?.key).toMatch(/^scrypt:v1:[a-f0-9]{64}$/);
+      expect(persistedData?.salt).toMatch(/^[a-f0-9]{32}$/);
+      expect(created.key).toMatch(/^comp_[a-f0-9]{64}$/);
+
+      mockDb.apiKey.findMany.mockResolvedValueOnce([
+        {
+          id: 'apk_1',
+          name: 'CI key',
+          key: persistedData?.key,
+          salt: persistedData?.salt,
+          organizationId: 'org_1',
+          scopes: ['risk:read'],
+        },
+      ]);
+      mockDb.apiKey.update.mockResolvedValueOnce({});
+
+      await expect(service.validateApiKey(created.key)).resolves.toEqual({
+        apiKeyId: 'apk_1',
+        apiKeyName: 'CI key',
+        organizationId: 'org_1',
+        scopes: ['risk:read'],
+      });
+      expect(mockDb.apiKey.update).toHaveBeenCalledWith({
+        where: { id: 'apk_1' },
+        data: { lastUsedAt: expect.any(Date) },
+      });
+    });
+
+    it('continues to validate salted legacy SHA-256 hashes', async () => {
+      const apiKey = 'comp_1234567890abcdef';
+      const salt = 'aabbccddeeff00112233445566778899';
+      const legacyHash = await sha256Hex(apiKey + salt);
+
+      mockDb.apiKey.findMany.mockResolvedValueOnce([
+        {
+          id: 'apk_legacy',
+          name: 'Legacy key',
+          key: legacyHash,
+          salt,
+          organizationId: 'org_legacy',
+          scopes: ['task:read'],
+        },
+      ]);
+      mockDb.apiKey.update.mockResolvedValueOnce({});
+
+      await expect(service.validateApiKey(apiKey)).resolves.toEqual({
+        apiKeyId: 'apk_legacy',
+        apiKeyName: 'Legacy key',
+        organizationId: 'org_legacy',
+        scopes: ['task:read'],
+      });
     });
   });
 });
