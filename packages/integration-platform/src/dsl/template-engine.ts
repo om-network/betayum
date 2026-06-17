@@ -14,26 +14,63 @@ export function interpolate(
   template: string,
   scope: Record<string, unknown>,
 ): string {
-  return template.replace(/\{\{([^}]+)\}\}/g, (_match, path: string) => {
-    const trimmedPath = path.trim();
+  let result = '';
+  let cursor = 0;
 
-    // Special built-in variables
-    if (trimmedPath === 'now') {
-      return new Date().toISOString();
+  while (cursor < template.length) {
+    const openIndex = template.indexOf('{{', cursor);
+
+    if (openIndex === -1) {
+      result += template.slice(cursor);
+      break;
     }
 
-    const value = resolvePath(scope, trimmedPath);
+    result += template.slice(cursor, openIndex);
 
-    if (value === undefined || value === null) {
-      return '';
+    const closeIndex = template.indexOf('}}', openIndex + 2);
+    if (closeIndex === -1) {
+      result += template.slice(openIndex);
+      break;
     }
 
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
+    const rawPath = template.slice(openIndex + 2, closeIndex);
+    const isWellFormed = !rawPath.includes('{') && !rawPath.includes('}');
+
+    if (!isWellFormed) {
+      result += template.slice(openIndex, closeIndex + 2);
+      cursor = closeIndex + 2;
+      continue;
     }
 
-    return String(value);
-  });
+    result += resolveTemplateValue(rawPath, scope);
+    cursor = closeIndex + 2;
+  }
+
+  return result;
+}
+
+function resolveTemplateValue(
+  path: string,
+  scope: Record<string, unknown>,
+): string {
+  const trimmedPath = path.trim();
+
+  // Special built-in variables
+  if (trimmedPath === 'now') {
+    return new Date().toISOString();
+  }
+
+  const value = resolvePath(scope, trimmedPath);
+
+  if (value === undefined || value === null) {
+    return '';
+  }
+
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
 }
 
 /**
