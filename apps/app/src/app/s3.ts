@@ -122,6 +122,12 @@ function isValidGcsHost(host: string): boolean {
   );
 }
 
+function hasDomainLikePrefix(value: string): boolean {
+  const domainPattern =
+    /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}(\/|$)/i;
+  return domainPattern.test(value);
+}
+
 export function extractS3KeyFromUrl(url: string): string {
   if (!url || typeof url !== 'string') {
     throw new Error('Invalid input: URL must be a non-empty string');
@@ -135,8 +141,12 @@ export function extractS3KeyFromUrl(url: string): string {
   }
 
   if (parsedUrl) {
-    const isAwsHost = isValidAwsS3Host(parsedUrl.host);
-    const isGcsHost = isValidGcsHost(parsedUrl.host);
+    if (parsedUrl.protocol !== 'https:') {
+      throw new Error('Invalid URL: Object storage endpoint must use HTTPS');
+    }
+
+    const isAwsHost = isValidAwsS3Host(parsedUrl.hostname);
+    const isGcsHost = isValidGcsHost(parsedUrl.hostname);
 
     if (!isAwsHost && !isGcsHost) {
       throw new Error('Invalid URL: Not a valid object storage endpoint');
@@ -148,7 +158,7 @@ export function extractS3KeyFromUrl(url: string): string {
     let key = pathname;
     if (
       isGcsHost &&
-      parsedUrl.host.toLowerCase() === 'storage.googleapis.com' &&
+      parsedUrl.hostname.toLowerCase() === 'storage.googleapis.com' &&
       pathSegments.length > 1 &&
       knownBucketNames.includes(pathSegments[0]!)
     ) {
@@ -167,12 +177,12 @@ export function extractS3KeyFromUrl(url: string): string {
   }
 
   const lowerInput = url.toLowerCase();
-  if (
-    lowerInput.includes('://') ||
-    lowerInput.includes('amazonaws.com') ||
-    lowerInput.includes('storage.googleapis.com')
-  ) {
+  if (lowerInput.includes('://')) {
     throw new Error('Invalid input: Malformed URL detected');
+  }
+
+  if (hasDomainLikePrefix(url)) {
+    throw new Error('Invalid input: Domain-like pattern detected in S3 key');
   }
 
   if (url.includes('../') || url.includes('..\\')) {

@@ -2,10 +2,11 @@
 
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@radix-ui/react-scroll-area';
-import { CompassIcon, RefreshCwIcon } from 'lucide-react';
+import { Launch, Renew } from '@trycompai/design-system/icons';
 import { useEffect, useRef, useState } from 'react';
 import { BarLoader } from 'react-spinners';
 import { Panel, PanelHeader } from '../../components/panels/panels';
+import { toSafePreviewUrl } from './preview-url';
 
 interface Props {
   className?: string;
@@ -14,7 +15,7 @@ interface Props {
 }
 
 export function Preview({ className, disabled, url }: Props) {
-  const [currentUrl, setCurrentUrl] = useState(url);
+  const [currentUrl, setCurrentUrl] = useState(() => toSafePreviewUrl(url)?.toString());
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState(url || '');
   const [isLoading, setIsLoading] = useState(false);
@@ -22,11 +23,11 @@ export function Preview({ className, disabled, url }: Props) {
   const loadStartTime = useRef<number | null>(null);
 
   useEffect(() => {
-    setCurrentUrl(url);
+    setCurrentUrl(toSafePreviewUrl(url)?.toString());
     setInputValue(url || '');
   }, [url]);
 
-  const refreshIframe = () => {
+  const handleRefreshIframe = () => {
     if (iframeRef.current && currentUrl) {
       setIsLoading(true);
       setError(null);
@@ -40,15 +41,23 @@ export function Preview({ className, disabled, url }: Props) {
     }
   };
 
-  const loadNewUrl = () => {
+  const handleLoadNewUrl = () => {
     if (iframeRef.current && inputValue) {
-      if (inputValue !== currentUrl) {
+      const safeUrl = toSafePreviewUrl(inputValue)?.toString();
+      if (!safeUrl) {
+        setIsLoading(false);
+        setError('Enter a valid http or https URL');
+        return;
+      }
+
+      if (safeUrl !== currentUrl) {
         setIsLoading(true);
         setError(null);
         loadStartTime.current = Date.now();
-        iframeRef.current.src = inputValue;
+        iframeRef.current.src = safeUrl;
+        setCurrentUrl(safeUrl);
       } else {
-        refreshIframe();
+        handleRefreshIframe();
       }
     }
   };
@@ -67,17 +76,19 @@ export function Preview({ className, disabled, url }: Props) {
     <Panel className={className}>
       <PanelHeader>
         <div className="absolute flex items-center space-x-1">
-          <a href={currentUrl} target="_blank" className="cursor-pointer px-1">
-            <CompassIcon className="w-4" />
-          </a>
+          {currentUrl && (
+            <a href={currentUrl} target="_blank" className="cursor-pointer px-1">
+              <Launch className="w-4" />
+            </a>
+          )}
           <button
-            onClick={refreshIframe}
+            onClick={handleRefreshIframe}
             type="button"
             className={cn('cursor-pointer px-1', {
               'animate-spin': isLoading,
             })}
           >
-            <RefreshCwIcon className="w-4" />
+            <Renew className="w-4" />
           </button>
         </div>
 
@@ -91,7 +102,7 @@ export function Preview({ className, disabled, url }: Props) {
               onKeyDown={(event) => {
                 if (event.key === 'Enter') {
                   event.currentTarget.blur();
-                  loadNewUrl();
+                  handleLoadNewUrl();
                 }
               }}
               value={inputValue}

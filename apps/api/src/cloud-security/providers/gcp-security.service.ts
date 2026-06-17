@@ -225,6 +225,22 @@ const FINDINGS_VIEWER_ACTION = {
   requiredForScan: true,
 };
 
+const GCP_PROJECT_ID_PATTERN = /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/;
+const GCP_ORGANIZATION_ID_PATTERN = /^\d{1,30}$/;
+const GCP_API_NAME_PATTERN = /^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/;
+
+function isValidGcpProjectId(projectId: string): boolean {
+  return GCP_PROJECT_ID_PATTERN.test(projectId);
+}
+
+function isValidGcpOrganizationId(organizationId: string): boolean {
+  return GCP_ORGANIZATION_ID_PATTERN.test(organizationId);
+}
+
+function isValidGcpApiName(apiName: string): boolean {
+  return GCP_API_NAME_PATTERN.test(apiName);
+}
+
 @Injectable()
 export class GCPSecurityService {
   private readonly logger = new Logger(GCPSecurityService.name);
@@ -364,18 +380,42 @@ export class GCPSecurityService {
     const { stepDef, accessToken, projectId } = params;
     const actionUrl = this.getApiConsoleUrl(stepDef.api, projectId);
 
+    if (!isValidGcpProjectId(projectId)) {
+      return {
+        id: stepDef.id,
+        name: stepDef.name,
+        success: false,
+        error: 'Invalid GCP project ID.',
+        actionUrl,
+        actionText: stepDef.actionText,
+        requiredForScan: stepDef.requiredForScan,
+      };
+    }
+
+    if (!isValidGcpApiName(stepDef.api)) {
+      return {
+        id: stepDef.id,
+        name: stepDef.name,
+        success: false,
+        error: 'Invalid GCP API service name.',
+        actionUrl,
+        actionText: stepDef.actionText,
+        requiredForScan: stepDef.requiredForScan,
+      };
+    }
+
     try {
-      const resp = await fetch(
-        `https://serviceusage.googleapis.com/v1/projects/${projectId}/services/${stepDef.api}:enable`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: '{}',
-        },
+      const enableUrl = new URL(
+        `https://serviceusage.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/services/${encodeURIComponent(stepDef.api)}:enable`,
       );
+      const resp = await fetch(enableUrl.toString(), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      });
 
       if (resp.ok || resp.status === 409) {
         return {
@@ -489,23 +529,33 @@ export class GCPSecurityService {
       };
     }
 
+    if (!isValidGcpOrganizationId(organizationId)) {
+      return {
+        id: 'grant_findings_viewer_role',
+        name: 'Grant Findings Viewer role',
+        success: false,
+        error: 'Invalid GCP organization ID.',
+        ...FINDINGS_VIEWER_ACTION,
+      };
+    }
+
     const adminActions = this.buildFindingsViewerAdminActions({
       organizationId,
       email,
     });
 
     try {
-      const getPolicyResp = await fetch(
-        `https://cloudresourcemanager.googleapis.com/v3/organizations/${organizationId}:getIamPolicy`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ options: { requestedPolicyVersion: 3 } }),
-        },
+      const getPolicyUrl = new URL(
+        `https://cloudresourcemanager.googleapis.com/v3/organizations/${encodeURIComponent(organizationId)}:getIamPolicy`,
       );
+      const getPolicyResp = await fetch(getPolicyUrl.toString(), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ options: { requestedPolicyVersion: 3 } }),
+      });
 
       if (!getPolicyResp.ok) {
         const rawError = await getPolicyResp.text();
@@ -545,24 +595,24 @@ export class GCPSecurityService {
         bindings.push({ role, members: [member] });
       }
 
-      const setPolicyResp = await fetch(
-        `https://cloudresourcemanager.googleapis.com/v3/organizations/${organizationId}:setIamPolicy`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            policy: {
-              version: policy.version ?? 3,
-              bindings,
-              ...(policy.etag ? { etag: policy.etag } : {}),
-            },
-            updateMask: 'bindings',
-          }),
-        },
+      const setPolicyUrl = new URL(
+        `https://cloudresourcemanager.googleapis.com/v3/organizations/${encodeURIComponent(organizationId)}:setIamPolicy`,
       );
+      const setPolicyResp = await fetch(setPolicyUrl.toString(), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          policy: {
+            version: policy.version ?? 3,
+            bindings,
+            ...(policy.etag ? { etag: policy.etag } : {}),
+          },
+          updateMask: 'bindings',
+        }),
+      });
 
       if (setPolicyResp.ok) {
         return {
@@ -637,16 +687,20 @@ export class GCPSecurityService {
     projectId: string,
     apiName: string,
   ): Promise<boolean> {
+    if (!isValidGcpProjectId(projectId) || !isValidGcpApiName(apiName)) {
+      return false;
+    }
+
     try {
-      const resp = await fetch(
-        `https://serviceusage.googleapis.com/v1/projects/${projectId}/services/${apiName}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        },
+      const serviceUrl = new URL(
+        `https://serviceusage.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/services/${encodeURIComponent(apiName)}`,
       );
+      const resp = await fetch(serviceUrl.toString(), {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!resp.ok) return false;
 
@@ -661,9 +715,13 @@ export class GCPSecurityService {
     accessToken: string,
     organizationId: string,
   ): Promise<boolean> {
+    if (!isValidGcpOrganizationId(organizationId)) {
+      return false;
+    }
+
     try {
       const url = new URL(
-        `https://securitycenter.googleapis.com/v2/organizations/${organizationId}/sources/-/findings`,
+        `https://securitycenter.googleapis.com/v2/organizations/${encodeURIComponent(organizationId)}/sources/-/findings`,
       );
       url.searchParams.set('pageSize', '1');
       url.searchParams.set('filter', 'state="ACTIVE"');
@@ -1370,8 +1428,7 @@ export class GCPSecurityService {
             allFindings.push({
               id: f.name,
               title: this.formatTitle(f.category),
-              description:
-                f.description || `Security finding: ${f.category}`,
+              description: f.description || `Security finding: ${f.category}`,
               severity: this.mapSeverity(f.severity),
               resourceType: result.resource?.type ?? 'gcp-resource',
               resourceId: f.resourceName,

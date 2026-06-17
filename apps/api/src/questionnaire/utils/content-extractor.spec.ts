@@ -1,4 +1,7 @@
-import { extractContentFromFile } from './content-extractor';
+import {
+  extractContentFromFile,
+  extractSharedStringTextFromXml,
+} from './content-extractor';
 import ExcelJS from 'exceljs';
 import { PDFDocument } from 'pdf-lib';
 import { generateText } from 'ai';
@@ -161,5 +164,21 @@ describe('content-extractor: extractContentFromFile', () => {
     await expect(
       extractContentFromFile(base64, 'application/octet-stream'),
     ).rejects.toThrow('Unsupported file type');
+  });
+});
+
+describe('content-extractor: shared string XML text extraction', () => {
+  it('extracts text runs without treating script-like text as markup', () => {
+    expect(
+      extractSharedStringTextFromXml(
+        '<si><r><t>Plain &lt;SCRIPT&gt;alert(1)&lt;/SCRIPT&gt;</t></r><r><d:t> &amp; safe</d:t></r></si>',
+      ),
+    ).toBe('Plain <SCRIPT>alert(1)</SCRIPT> & safe');
+  });
+
+  it('decodes XML entities once without double-unescaping ampersands', () => {
+    expect(
+      extractSharedStringTextFromXml('<si><t>&amp;lt;SCRIPT&amp;gt;</t></si>'),
+    ).toBe('&lt;SCRIPT&gt;');
   });
 });
