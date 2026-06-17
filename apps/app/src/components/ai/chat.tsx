@@ -89,38 +89,41 @@ export function Chat() {
     setIsHydrating(true);
     setMessages([]);
 
-    const controller = new AbortController();
+    let isCurrent = true;
     const orgIdAtStart = resolvedOrganizationId;
 
     void (async () => {
-      const res = await apiClient.get<{ messages: AssistantStoredMessage[] }>(
-        '/v1/assistant-chat/history',
-      );
+      try {
+        const res = await apiClient.get<{ messages: AssistantStoredMessage[] }>(
+          '/v1/assistant-chat/history',
+        );
 
-      if (res.error || res.status !== 200) {
-        console.error('[assistant-chat] Failed to load history', {
-          status: res.status,
-          error: res.error,
-        });
+        if (res.error || res.status !== 200) {
+          console.error('[assistant-chat] Failed to load history', {
+            status: res.status,
+            error: res.error,
+          });
+        }
+
+        if (!isCurrent || resolvedOrganizationIdRef.current !== orgIdAtStart) {
+          return;
+        }
+
+        const stored = res.data?.messages ?? [];
+        latestSnapshotRef.current = { organizationId: orgIdAtStart, messages: stored };
+        lastSavedJsonRef.current = JSON.stringify(stored);
+
+        setMessages(assistantStoredMessagesToUiMessages(stored));
+      } finally {
+        if (isCurrent && resolvedOrganizationIdRef.current === orgIdAtStart) {
+          isHydratingRef.current = false;
+          setIsHydrating(false);
+        }
       }
-
-      if (resolvedOrganizationIdRef.current !== orgIdAtStart) {
-        isHydratingRef.current = false;
-        setIsHydrating(false);
-        return;
-      }
-
-      const stored = res.data?.messages ?? [];
-      latestSnapshotRef.current = { organizationId: orgIdAtStart, messages: stored };
-      lastSavedJsonRef.current = JSON.stringify(stored);
-
-      setMessages(assistantStoredMessagesToUiMessages(stored));
-      isHydratingRef.current = false;
-      setIsHydrating(false);
     })();
 
     return () => {
-      controller.abort();
+      isCurrent = false;
     };
   }, [resolvedOrganizationId, setMessages, userId]);
 
