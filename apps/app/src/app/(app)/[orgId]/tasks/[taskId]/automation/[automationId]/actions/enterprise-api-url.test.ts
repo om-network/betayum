@@ -33,4 +33,13 @@ describe('createEnterpriseApiUrl', () => {
       }).toString(),
     ).toBe('http://localhost:3006/api/tasks-automations/s3/list?orgId=org_123');
   });
+
+  it('rejects endpoints that normalize outside the automation API prefix', () => {
+    expect(() =>
+      createEnterpriseApiUrl({
+        baseUrl: 'https://enterprise.betayum.com',
+        endpoint: '/api/tasks-automations/runs/../../admin',
+      }),
+    ).toThrow('Enterprise API endpoint must stay under the automation path');
+  });
 });

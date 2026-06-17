@@ -75,6 +75,10 @@ function isValidHex(value: string): boolean {
   return value.length > 0 && value.length % 2 === 0 && HEX_PATTERN.test(value);
 }
 
+function isScryptHash(storedHash: string): boolean {
+  return storedHash.startsWith(`${API_KEY_HASH_PREFIX}:`);
+}
+
 async function verifyApiKeyHash({
   apiKey,
   storedHash,
@@ -84,12 +88,29 @@ async function verifyApiKeyHash({
   storedHash: string;
   salt: string | null;
 }): Promise<boolean> {
-  if (storedHash.startsWith(`${API_KEY_HASH_PREFIX}:`)) {
+  if (isScryptHash(storedHash)) {
     if (!salt || !isValidHex(salt)) {
       return false;
     }
 
     return timingSafeStringEqual(hashApiKey(apiKey, salt), storedHash);
+  }
+
+  const legacyHash = await legacyHashApiKey(apiKey, salt);
+  return timingSafeStringEqual(legacyHash, storedHash);
+}
+
+async function verifyLegacyApiKeyHash({
+  apiKey,
+  storedHash,
+  salt,
+}: {
+  apiKey: string;
+  storedHash: string;
+  salt: string | null;
+}): Promise<boolean> {
+  if (isScryptHash(storedHash)) {
+    return false;
   }
 
   const legacyHash = await legacyHashApiKey(apiKey, salt);
@@ -103,6 +124,25 @@ async function findMatchingRecord(
   for (const record of records) {
     if (
       await verifyApiKeyHash({
+        apiKey,
+        storedHash: record.key,
+        salt: record.salt,
+      })
+    ) {
+      return record;
+    }
+  }
+
+  return null;
+}
+
+async function findMatchingLegacyRecord(
+  records: CandidateApiKeyRecord[],
+  apiKey: string,
+): Promise<CandidateApiKeyRecord | null> {
+  for (const record of records) {
+    if (
+      await verifyLegacyApiKeyHash({
         apiKey,
         storedHash: record.key,
         salt: record.salt,
@@ -164,49 +204,48 @@ export async function validateApiKeyValue(apiKey: string): Promise<string | null
     // fall back to full scan for legacy keys without prefix
     const keyPrefix = apiKey.startsWith('comp_') ? extractKeyPrefix(apiKey) : null;
 
-    const apiKeyRecords = await db.apiKey.findMany({
-      where: {
-        isActive: true,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-        ...(keyPrefix ? { keyPrefix } : {}),
-      },
-      select: {
-        id: true,
-        key: true,
-        salt: true,
-        organizationId: true,
-        expiresAt: true,
-      },
-    });
+    const activeUnexpiredWhere = {
+      isActive: true,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    };
+    const apiKeySelect = {
+      id: true,
+      key: true,
+      salt: true,
+      organizationId: true,
+      expiresAt: true,
+    };
 
-    const matchingRecord = await findMatchingRecord(apiKeyRecords, apiKey);
+    const matchingRecord = keyPrefix
+      ? await findMatchingRecord(
+          await db.apiKey.findMany({
+            where: {
+              ...activeUnexpiredWhere,
+              keyPrefix,
+            },
+            select: apiKeySelect,
+          }),
+          apiKey,
+        )
+      : null;
 
     if (!matchingRecord) {
-      // Try legacy keys (no prefix set) for backwards compatibility
-      if (keyPrefix) {
-        const legacyRecords = await db.apiKey.findMany({
+      const legacyMatch = await findMatchingLegacyRecord(
+        await db.apiKey.findMany({
           where: {
-            isActive: true,
+            ...activeUnexpiredWhere,
             keyPrefix: null,
-            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
           },
-          select: {
-            id: true,
-            key: true,
-            salt: true,
-            organizationId: true,
-            expiresAt: true,
-          },
+          select: apiKeySelect,
+        }),
+        apiKey,
+      );
+      if (legacyMatch) {
+        await db.apiKey.update({
+          where: { id: legacyMatch.id },
+          data: keyPrefix ? { keyPrefix, lastUsedAt: new Date() } : { lastUsedAt: new Date() },
         });
-        const legacyMatch = await findMatchingRecord(legacyRecords, apiKey);
-        if (legacyMatch) {
-          // Backfill the prefix for future lookups
-          await db.apiKey.update({
-            where: { id: legacyMatch.id },
-            data: { keyPrefix, lastUsedAt: new Date() },
-          });
-          return legacyMatch.organizationId;
-        }
+        return legacyMatch.organizationId;
       }
       return null;
     }

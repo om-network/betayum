@@ -195,5 +195,42 @@ describe('ApiKeyService', () => {
         scopes: ['task:read'],
       });
     });
+
+    it('limits non-prefixed API keys to legacy records without scrypt verification', async () => {
+      const apiKey = 'legacy-api-key';
+      const legacyHash = await sha256Hex(apiKey);
+
+      mockDb.apiKey.findMany.mockResolvedValueOnce([
+        {
+          id: 'apk_legacy',
+          name: 'Legacy key',
+          key: legacyHash,
+          salt: null,
+          organizationId: 'org_legacy',
+          scopes: ['task:read'],
+        },
+      ]);
+      mockDb.apiKey.update.mockResolvedValueOnce({});
+
+      await expect(service.validateApiKey(apiKey)).resolves.toEqual({
+        apiKeyId: 'apk_legacy',
+        apiKeyName: 'Legacy key',
+        organizationId: 'org_legacy',
+        scopes: ['task:read'],
+      });
+
+      expect(mockDb.apiKey.findMany).toHaveBeenCalledTimes(1);
+      expect(mockDb.apiKey.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            keyPrefix: null,
+          }),
+        }),
+      );
+      expect(mockDb.apiKey.update).toHaveBeenCalledWith({
+        where: { id: 'apk_legacy' },
+        data: { lastUsedAt: expect.any(Date) },
+      });
+    });
   });
 });

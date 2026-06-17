@@ -81,6 +81,10 @@ export class ApiKeyService {
     );
   }
 
+  private isScryptHash(storedHash: string): boolean {
+    return storedHash.startsWith(`${API_KEY_HASH_PREFIX}:`);
+  }
+
   private async verifyApiKeyHash({
     apiKey,
     storedHash,
@@ -90,7 +94,7 @@ export class ApiKeyService {
     storedHash: string;
     salt: string | null;
   }): Promise<boolean> {
-    if (storedHash.startsWith(`${API_KEY_HASH_PREFIX}:`)) {
+    if (this.isScryptHash(storedHash)) {
       if (!salt || !this.isValidHex(salt)) {
         return false;
       }
@@ -105,6 +109,23 @@ export class ApiKeyService {
     return this.timingSafeStringEqual(legacyHash, storedHash);
   }
 
+  private async verifyLegacyApiKeyHash({
+    apiKey,
+    storedHash,
+    salt,
+  }: {
+    apiKey: string;
+    storedHash: string;
+    salt: string | null;
+  }): Promise<boolean> {
+    if (this.isScryptHash(storedHash)) {
+      return false;
+    }
+
+    const legacyHash = await this.legacyHashApiKey(apiKey, salt);
+    return this.timingSafeStringEqual(legacyHash, storedHash);
+  }
+
   private async findMatchingRecord(
     records: CandidateApiKeyRecord[],
     apiKey: string,
@@ -112,6 +133,25 @@ export class ApiKeyService {
     for (const record of records) {
       if (
         await this.verifyApiKeyHash({
+          apiKey,
+          storedHash: record.key,
+          salt: record.salt,
+        })
+      ) {
+        return record;
+      }
+    }
+
+    return null;
+  }
+
+  private async findMatchingLegacyRecord(
+    records: CandidateApiKeyRecord[],
+    apiKey: string,
+  ): Promise<CandidateApiKeyRecord | null> {
+    for (const record of records) {
+      if (
+        await this.verifyLegacyApiKeyHash({
           apiKey,
           storedHash: record.key,
           salt: record.salt,
@@ -268,64 +308,57 @@ export class ApiKeyService {
         ? this.extractPrefix(apiKey)
         : null;
 
-      const apiKeyRecords = await db.apiKey.findMany({
-        where: {
-          isActive: true,
-          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-          ...(keyPrefix ? { keyPrefix } : {}),
-        },
-        select: {
-          id: true,
-          name: true,
-          key: true,
-          salt: true,
-          organizationId: true,
-          expiresAt: true,
-          scopes: true,
-        },
-      });
+      const activeUnexpiredWhere = {
+        isActive: true,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      };
+      const apiKeySelect = {
+        id: true,
+        name: true,
+        key: true,
+        salt: true,
+        organizationId: true,
+        expiresAt: true,
+        scopes: true,
+      };
 
-      const matchingRecord = await this.findMatchingRecord(
-        apiKeyRecords,
-        apiKey,
-      );
+      const matchingRecord = keyPrefix
+        ? await this.findMatchingRecord(
+            await db.apiKey.findMany({
+              where: {
+                ...activeUnexpiredWhere,
+                keyPrefix,
+              },
+              select: apiKeySelect,
+            }),
+            apiKey,
+          )
+        : null;
 
       if (!matchingRecord) {
-        // If prefix lookup found nothing, try legacy keys (no prefix set)
-        if (keyPrefix) {
-          const legacyRecords = await db.apiKey.findMany({
+        const legacyMatch = await this.findMatchingLegacyRecord(
+          await db.apiKey.findMany({
             where: {
-              isActive: true,
+              ...activeUnexpiredWhere,
               keyPrefix: null,
-              OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
             },
-            select: {
-              id: true,
-              name: true,
-              key: true,
-              salt: true,
-              organizationId: true,
-              expiresAt: true,
-              scopes: true,
-            },
+            select: apiKeySelect,
+          }),
+          apiKey,
+        );
+        if (legacyMatch) {
+          await db.apiKey.update({
+            where: { id: legacyMatch.id },
+            data: keyPrefix
+              ? { keyPrefix, lastUsedAt: new Date() }
+              : { lastUsedAt: new Date() },
           });
-          const legacyMatch = await this.findMatchingRecord(
-            legacyRecords,
-            apiKey,
-          );
-          if (legacyMatch) {
-            // Backfill the prefix for future lookups
-            await db.apiKey.update({
-              where: { id: legacyMatch.id },
-              data: { keyPrefix, lastUsedAt: new Date() },
-            });
-            return {
-              apiKeyId: legacyMatch.id,
-              apiKeyName: legacyMatch.name,
-              organizationId: legacyMatch.organizationId,
-              scopes: legacyMatch.scopes,
-            };
-          }
+          return {
+            apiKeyId: legacyMatch.id,
+            apiKeyName: legacyMatch.name,
+            organizationId: legacyMatch.organizationId,
+            scopes: legacyMatch.scopes,
+          };
         }
         this.logger.warn('Invalid or expired API key attempted');
         return null;

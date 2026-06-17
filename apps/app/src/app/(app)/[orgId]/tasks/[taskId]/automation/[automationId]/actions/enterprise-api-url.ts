@@ -88,6 +88,9 @@ export function createEnterpriseApiUrl({
   if (url.origin !== base.origin) {
     throw new Error('Enterprise API endpoint must stay on the configured origin');
   }
+  if (!url.pathname.startsWith(AUTOMATION_API_PREFIX)) {
+    throw new Error('Enterprise API endpoint must stay under the automation path');
+  }
 
   for (const [key, value] of Object.entries(params ?? {})) {
     url.searchParams.append(key, value);

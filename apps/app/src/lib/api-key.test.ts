@@ -70,4 +70,34 @@ describe('api-key hashing', () => {
 
     await expect(validateApiKeyValue(apiKey)).resolves.toBe('org_legacy');
   });
+
+  it('limits non-prefixed API keys to legacy records without scrypt verification', async () => {
+    const apiKey = 'legacy-api-key';
+    const legacyHash = await sha256Hex(apiKey);
+
+    dbMock.apiKey.findMany.mockResolvedValueOnce([
+      {
+        id: 'apk_legacy',
+        key: legacyHash,
+        salt: null,
+        organizationId: 'org_legacy',
+      },
+    ]);
+    dbMock.apiKey.update.mockResolvedValueOnce({});
+
+    await expect(validateApiKeyValue(apiKey)).resolves.toBe('org_legacy');
+
+    expect(dbMock.apiKey.findMany).toHaveBeenCalledTimes(1);
+    expect(dbMock.apiKey.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          keyPrefix: null,
+        }),
+      }),
+    );
+    expect(dbMock.apiKey.update).toHaveBeenCalledWith({
+      where: { id: 'apk_legacy' },
+      data: { lastUsedAt: expect.any(Date) },
+    });
+  });
 });
