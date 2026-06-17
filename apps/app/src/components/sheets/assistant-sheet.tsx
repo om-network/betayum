@@ -1,12 +1,17 @@
 'use client';
 
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+  Sheet,
+  SheetContent,
+} from '@trycompai/design-system';
 import { useMediaQuery } from '@trycompai/ui/hooks';
-import { Sheet, SheetContent } from '@trycompai/ui/sheet';
 
-import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
 import '@/styles/editor.css';
 import { useQueryState } from 'nuqs';
-import Chat from '../ai/chat';
+import { Chat } from '../ai/chat';
 
 export function AssistantSheet() {
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -19,7 +24,7 @@ export function AssistantSheet() {
 
   if (isDesktop) {
     return (
-      <Sheet open={isOpen ?? false} onOpenChange={setIsOpen}>
+      <Sheet open={isOpen ?? false} onOpenChange={(open) => void setIsOpen(open)}>
         <SheetContent>
           <Chat />
         </SheetContent>
@@ -28,10 +33,12 @@ export function AssistantSheet() {
   }
 
   return (
-    <Drawer open={isOpen ?? false} onOpenChange={setIsOpen}>
+    <Drawer open={isOpen ?? false} onOpenChange={(open) => void setIsOpen(open)}>
       <DrawerTitle hidden>Assistant</DrawerTitle>
-      <DrawerContent className="p-6">
-        <Chat />
+      <DrawerContent>
+        <div className="p-6">
+          <Chat />
+        </div>
       </DrawerContent>
     </Drawer>
   );
