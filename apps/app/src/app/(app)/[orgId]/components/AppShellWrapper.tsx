@@ -1,7 +1,7 @@
 'use client';
 
 import { updateSidebarState } from '@/actions/sidebar';
-import Chat from '@/components/ai/chat';
+import { Chat } from '@/components/ai/chat';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
