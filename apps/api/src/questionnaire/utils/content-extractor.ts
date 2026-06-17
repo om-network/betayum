@@ -436,6 +436,30 @@ function isImageFile(fileType: string): boolean {
   return fileType.startsWith('image/');
 }
 
+function decodeXmlText(value: string): string {
+  return value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'");
+}
+
+export function extractSharedStringTextFromXml(
+  sharedStringXml: string,
+): string {
+  const textRuns: string[] = [];
+  const textRunPattern =
+    /<(?:[A-Za-z_][\w.-]*:)?t\b[^>]*>([^<]*)<\/(?:[A-Za-z_][\w.-]*:)?t>/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = textRunPattern.exec(sharedStringXml)) !== null) {
+    textRuns.push(decodeXmlText(match[1] ?? ''));
+  }
+
+  return textRuns.join('').trim();
+}
+
 /**
  * Extracts sheet names from the workbook XML inside an xlsx zip archive
  */
@@ -479,17 +503,7 @@ function extractSharedStrings(fileBuffer: Buffer): string[] {
     const siMatches = content.match(/<si>[\s\S]*?<\/si>/g) || [];
 
     for (const si of siMatches) {
-      // Extract text from both <t>...</t> and <d:t>...</d:t> (or any namespace:t)
-      const textMatches = si.match(/<[^>]*:?t[^>]*>([^<]*)<\/[^>]*:?t>/g) || [];
-
-      let fullText = '';
-      for (const match of textMatches) {
-        // Extract just the text content between tags
-        const textContent = match.replace(/<[^>]*>/g, '');
-        fullText += textContent;
-      }
-
-      strings.push(fullText.trim());
+      strings.push(extractSharedStringTextFromXml(si));
     }
 
     return strings;
