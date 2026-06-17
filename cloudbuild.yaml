@@ -19,8 +19,8 @@ substitutions:
   _AUTH_PRIMARY_DOMAIN: betayum.com
   _AUTH_STAGING_DOMAIN: staging.betayum.com
   _CLOUD_SQL_INSTANCE: centered-kiln-498405-h8:us-central1:betayum-db
-  _APP_DATA_BUCKET: centered-kiln-498405-h8-betayum-staging-app-data
-  _DEVICE_AGENT_ARTIFACTS_BUCKET: centered-kiln-498405-h8-betayum-staging-device-agent-artifacts
+  _APP_DATA_BUCKET: betayum-staging-app-data
+  _DEVICE_AGENT_ARTIFACTS_BUCKET: betayum-staging-device-agent-artifacts
   _DB_JOB_SERVICE_ACCOUNT: betayum-staging-migrator@centered-kiln-498405-h8.iam.gserviceaccount.com
 
 steps:
