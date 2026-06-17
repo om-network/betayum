@@ -175,4 +175,10 @@ describe('content-extractor: shared string XML text extraction', () => {
       ),
     ).toBe('Plain <SCRIPT>alert(1)</SCRIPT> & safe');
   });
+
+  it('decodes XML entities once without double-unescaping ampersands', () => {
+    expect(
+      extractSharedStringTextFromXml('<si><t>&amp;lt;SCRIPT&amp;gt;</t></si>'),
+    ).toBe('&lt;SCRIPT&gt;');
+  });
 });

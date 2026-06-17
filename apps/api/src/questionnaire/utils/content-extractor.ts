@@ -436,13 +436,18 @@ function isImageFile(fileType: string): boolean {
   return fileType.startsWith('image/');
 }
 
+const XML_TEXT_ENTITIES: Record<string, string> = {
+  lt: '<',
+  gt: '>',
+  amp: '&',
+  quot: '"',
+  apos: "'",
+};
+
 function decodeXmlText(value: string): string {
-  return value
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'");
+  return value.replace(/&(lt|gt|amp|quot|apos);/g, (entity, name: string) => {
+    return XML_TEXT_ENTITIES[name] ?? entity;
+  });
 }
 
 export function extractSharedStringTextFromXml(
