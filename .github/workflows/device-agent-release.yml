@@ -30,6 +30,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Validate workflow signing guards
+        run: node scripts/check-device-agent-release-workflow.mjs
+
       - name: Compute next version
         id: version
         run: |
