@@ -1,9 +1,7 @@
 import { logger } from '@/utils/logger';
-import { BUCKET_NAME, s3Client } from '@/utils/s3';
-import { GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { BUCKET_NAME, getPresignedDownloadUrl, s3Client } from '@/utils/s3';
 import { client as kv } from '@trycompai/kv';
 import { type NextRequest, NextResponse } from 'next/server';
-import { Readable } from 'stream';
 
 import { DOWNLOAD_TARGETS } from './constants';
 import type { SupportedOS } from './types';
@@ -20,36 +18,6 @@ interface DownloadTokenInfo {
   createdAt: number;
 }
 
-interface DownloadTarget {
-  key: string;
-  filename: string;
-  contentType: string;
-}
-
-const getDownloadTarget = (os: SupportedOS): DownloadTarget => {
-  const target = DOWNLOAD_TARGETS[os];
-  if (!target) throw new Error(`Unsupported OS: ${os}`);
-  return target;
-};
-
-const buildResponseHeaders = (
-  target: DownloadTarget,
-  contentLength?: number | null,
-): Record<string, string> => {
-  const headers: Record<string, string> = {
-    'Content-Type': target.contentType,
-    'Content-Disposition': `attachment; filename="${target.filename}"`,
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'X-Accel-Buffering': 'no',
-  };
-
-  if (typeof contentLength === 'number' && Number.isFinite(contentLength)) {
-    headers['Content-Length'] = contentLength.toString();
-  }
-
-  return headers;
-};
-
 const getDownloadToken = async (token: string): Promise<DownloadTokenInfo | null> => {
   const info = await kv.get<DownloadTokenInfo>(`download:${token}`);
   return info ?? null;
@@ -60,7 +28,7 @@ const ensureBucket = (): string | null => {
   return bucket ?? null;
 };
 
-const handleDownload = async (req: NextRequest, isHead: boolean) => {
+export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token');
 
   if (!token) {
@@ -85,57 +53,43 @@ const handleDownload = async (req: NextRequest, isHead: boolean) => {
     return new NextResponse('Server configuration error', { status: 500 });
   }
 
-  const target = getDownloadTarget(downloadInfo.os);
+  const target = DOWNLOAD_TARGETS[downloadInfo.os];
+  if (!target) {
+    return new NextResponse('Unsupported OS', { status: 400 });
+  }
 
   try {
-    if (isHead) {
-      const headCommand = new HeadObjectCommand({
-        Bucket: fleetBucketName,
-        Key: target.key,
-      });
-
-      const headResult = await s3Client.send(headCommand);
-
-      return new NextResponse(null, {
-        headers: buildResponseHeaders(target, headResult.ContentLength ?? null),
-      });
-    }
-
-    const getObjectCommand = new GetObjectCommand({
-      Bucket: fleetBucketName,
-      Key: target.key,
+    // Generate a short-lived signed URL and redirect the client directly to GCS.
+    // This avoids proxying large binaries through the Next.js server (Cloud Run
+    // has a 32 MB response size limit that DMG/EXE files exceed).
+    const signedUrl = await getPresignedDownloadUrl({
+      bucketName: fleetBucketName,
+      key: target.key,
+      expiresIn: 300, // 5 minutes — enough time to start the download
     });
 
-    const s3Response = await s3Client.send(getObjectCommand);
-
-    if (!s3Response.Body) {
-      return new NextResponse('Installer file not found', { status: 404 });
-    }
-
+    // Consume the token so it can't be reused
     await kv.del(`download:${token}`);
 
-    const s3Stream = s3Response.Body as Readable;
-    const webStream = Readable.toWeb(s3Stream) as unknown as ReadableStream;
-
-    return new NextResponse(webStream, {
-      headers: buildResponseHeaders(target, s3Response.ContentLength ?? null),
-    });
+    return NextResponse.redirect(signedUrl, { status: 302 });
   } catch (error) {
-    logger('Error serving device agent download', {
+    logger('Error generating device agent download URL', {
       error,
       token,
       os: downloadInfo.os,
-      method: isHead ? 'HEAD' : 'GET',
     });
 
-    return new NextResponse('Failed to download agent', { status: 500 });
+    return new NextResponse('Failed to generate download link', { status: 500 });
   }
-};
-
-export async function GET(req: NextRequest) {
-  return handleDownload(req, false);
 }
 
 export async function HEAD(req: NextRequest) {
-  return handleDownload(req, true);
+  // HEAD just validates the token — no redirect needed
+  const token = req.nextUrl.searchParams.get('token');
+  if (!token) return new NextResponse(null, { status: 400 });
+
+  const downloadInfo = await getDownloadToken(token);
+  if (!downloadInfo) return new NextResponse(null, { status: 403 });
+
+  return new NextResponse(null, { status: 200 });
 }
