@@ -4,10 +4,21 @@ import { GithubSignIn } from '@/components/github-sign-in';
 import { GoogleSignIn } from '@/components/google-sign-in';
 import { MagicLinkSignIn } from '@/components/magic-link';
 import { MicrosoftSignIn } from '@/components/microsoft-sign-in';
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent, CardDescription, CardTitle } from '@trycompai/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/ui/collapsible';
-import { CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@trycompai/design-system';
+import {
+  CheckmarkOutline,
+  ChevronDown,
+  ChevronUp,
+} from '@trycompai/design-system/icons';
 import { useState } from 'react';
 
 interface LoginFormProps {
@@ -21,9 +32,9 @@ interface LoginFormProps {
 export function LoginForm({
   inviteCode,
   redirectTo,
-  showGoogle,
+  showGoogle: _showGoogle,
   showGithub,
-  showMicrosoft,
+  showMicrosoft: _showMicrosoft,
 }: LoginFormProps) {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [magicLinkState, setMagicLinkState] = useState({ sent: false, email: '' });
@@ -34,54 +45,49 @@ export function LoginForm({
 
   if (magicLinkState.sent) {
     return (
-      <Card className="w-full max-w-md">
-        <CardContent className="flex flex-col items-center justify-center text-center space-y-6 py-16 px-6">
-          <CheckCircle2 className="h-16 w-16 text-primary" />
-          <div className="space-y-2">
-            <CardTitle className="text-2xl font-semibold text-card-foreground">
-              Magic link sent
-            </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Check your inbox at{' '}
-              <span className="font-semibold text-foreground">{magicLinkState.email}</span> for a
-              magic link to sign in.
-            </CardDescription>
+      <Card width="full" maxWidth="md">
+        <CardContent>
+          <div className="flex flex-col items-center justify-center space-y-6 px-2 py-12 text-center">
+            <CheckmarkOutline className="h-16 w-16 text-primary" />
+            <div className="space-y-2">
+              <CardTitle>Magic link sent</CardTitle>
+              <CardDescription>
+                Check your inbox at{' '}
+                <span className="font-semibold text-foreground">
+                  {magicLinkState.email}
+                </span>{' '}
+                for a magic link to sign in.
+              </CardDescription>
+            </div>
+            <Button variant="link" onClick={() => setMagicLinkState({ sent: false, email: '' })}>
+              Use another method
+            </Button>
           </div>
-          <Button variant="link" onClick={() => setMagicLinkState({ sent: false, email: '' })}>
-            Use another method
-          </Button>
         </CardContent>
       </Card>
     );
   }
 
-  const preferredSignInOption = showGoogle ? (
-    <GoogleSignIn inviteCode={inviteCode} redirectTo={redirectTo} />
-  ) : (
+  // OAuth provider availability is determined by the API auth server, not by
+  // per-app provider secrets in apps/app.
+  const preferredSignInOptions = [
+    <GoogleSignIn key="google" inviteCode={inviteCode} redirectTo={redirectTo} />,
+    <MicrosoftSignIn
+      key="microsoft-primary"
+      inviteCode={inviteCode}
+      redirectTo={redirectTo}
+    />,
+  ];
+
+  const moreOptionsList = [
     <MagicLinkSignIn
-      key="preferred-magic"
+      key="magic-link"
       inviteCode={inviteCode}
       redirectTo={redirectTo}
       onMagicLinkSubmit={handleMagicLinkSent}
-    />
-  );
+    />,
+  ];
 
-  const moreOptionsList = [];
-  if (showGoogle) {
-    moreOptionsList.push(
-      <MagicLinkSignIn
-        key="secondary-magic"
-        inviteCode={inviteCode}
-        redirectTo={redirectTo}
-        onMagicLinkSubmit={handleMagicLinkSent}
-      />,
-    );
-  }
-  if (showMicrosoft) {
-    moreOptionsList.push(
-      <MicrosoftSignIn key="microsoft" inviteCode={inviteCode} redirectTo={redirectTo} />,
-    );
-  }
   if (showGithub) {
     moreOptionsList.push(
       <GithubSignIn key="github" inviteCode={inviteCode} redirectTo={redirectTo} />,
@@ -90,31 +96,21 @@ export function LoginForm({
 
   return (
     <div className="space-y-4">
-      {preferredSignInOption}
+      <div className="space-y-3">{preferredSignInOptions}</div>
 
       {moreOptionsList.length > 0 && (
-        <Collapsible open={isOptionsOpen} onOpenChange={setIsOptionsOpen} className="w-full">
+        <Collapsible open={isOptionsOpen} onOpenChange={setIsOptionsOpen}>
           <div className="relative flex items-center justify-center py-2">
             <div className="absolute inset-x-0 top-1/2 flex items-center">
               <span className="w-full border-t" />
             </div>
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="relative px-4 text-sm text-muted-foreground bg-background hover:bg-muted"
-              >
-                More options
-                {isOptionsOpen ? (
-                  <ChevronUp className="ml-1 h-4 w-4 transition-transform duration-200" />
-                ) : (
-                  <ChevronDown className="ml-1 h-4 w-4 transition-transform duration-200" />
-                )}
-              </Button>
+            <CollapsibleTrigger className="relative inline-flex items-center gap-1 rounded-md border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              More options
+              {isOptionsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </CollapsibleTrigger>
           </div>
 
-          <CollapsibleContent className="space-y-4 pt-4 data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95">
+          <CollapsibleContent className="space-y-4 pt-4 data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:slide-in-from-top-2">
             {moreOptionsList}
           </CollapsibleContent>
         </Collapsible>

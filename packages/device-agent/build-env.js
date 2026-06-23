@@ -1,6 +1,5 @@
 const { existsSync, readFileSync } = require('node:fs');
 const { resolve } = require('node:path');
-const dotenv = require('dotenv');
 
 const envFiles = [
   resolve(__dirname, '.env.local'),
@@ -15,6 +14,32 @@ const envFiles = [
   resolve(__dirname, '../../apps/api/.env'),
 ];
 
+/**
+ * Minimal .env file parser — covers the common KEY=VALUE, KEY="VALUE", and
+ * KEY='VALUE' forms used by the project. Keeps dotenv out of this package's
+ * dependencies so the build works in CI without a full monorepo install.
+ */
+function parseEnvContent(content) {
+  const result = {};
+  for (const raw of content.split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eqIdx = line.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = line.slice(0, eqIdx).trim();
+    let value = line.slice(eqIdx + 1).trim();
+    // Strip surrounding quotes (single or double)
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    result[key] = value;
+  }
+  return result;
+}
+
 function loadEnvFromFiles() {
   const loaded = {};
 
@@ -23,7 +48,7 @@ function loadEnvFromFiles() {
       continue;
     }
 
-    const parsed = dotenv.parse(readFileSync(envFile));
+    const parsed = parseEnvContent(readFileSync(envFile, 'utf8'));
     Object.assign(loaded, parsed);
   }
 

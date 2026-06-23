@@ -31,6 +31,12 @@ const MAGIC_LINK_EXPIRES_IN_SECONDS = 60 * 60; // 1 hour
 
 /**
  * Determine the cookie domain based on environment.
+ *
+ * Browsers do not allow "any domain" cookies. The best we can do is:
+ * 1. Respect an explicit parent-domain override, e.g. `.staging.example.com`
+ * 2. Derive the registrable parent domain from BASE_URL, e.g. `api.example.com`
+ *    -> `.example.com`
+ * 3. Fall back to host-only cookies for localhost/IP/single-host deployments
  */
 function getCookieDomain(): string | undefined {
   return deriveCookieDomain({

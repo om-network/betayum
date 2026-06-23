@@ -90,19 +90,100 @@ function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, str
   return obj;
 }
 
+function getRequestOrigin(headers: ReadonlyHeaders | Headers): string {
+  const forwardedOrigin = headers.get('origin');
+  if (forwardedOrigin) {
+    return forwardedOrigin;
+  }
+
+  const referer = headers.get('referer');
+  if (referer) {
+    try {
+      return new URL(referer).origin;
+    } catch {
+      // Fall through to forwarded host detection.
+    }
+  }
+
+  const forwardedProto = headers.get('x-forwarded-proto');
+  const forwardedHost = headers.get('x-forwarded-host') ?? headers.get('host');
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  for (const value of [
+    process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    process.env.BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_PORTAL_URL,
+  ]) {
+    if (!value) {
+      continue;
+    }
+
+    try {
+      return new URL(value).origin;
+    } catch {
+      continue;
+    }
+  }
+
+  return API_URL;
+}
+
+function summarizeCookieHeader(cookieHeader: string | undefined) {
+  if (!cookieHeader) {
+    return {
+      present: false,
+      cookieNames: [],
+      hasBetterAuthCookie: false,
+    };
+  }
+
+  const cookieNames = cookieHeader
+    .split(';')
+    .map((part) => part.trim().split('=')[0])
+    .filter(Boolean);
+
+  return {
+    present: true,
+    cookieNames,
+    hasBetterAuthCookie: cookieNames.some(
+      (name) => name.includes('better-auth') || name.includes('local'),
+    ),
+  };
+}
+
 /**
  * Get the current session from the API.
  */
 async function getSession(options: { headers: ReadonlyHeaders | Headers }): Promise<Session | null> {
   try {
+    const forwardedHeaders = headersToObject(options.headers);
+    if (IS_DEVELOPMENT) {
+      console.log(
+        '[portal auth] getSession request',
+        JSON.stringify({
+          apiUrl: API_URL,
+          cookieSummary: summarizeCookieHeader(forwardedHeaders.cookie),
+        }),
+      );
+    }
+
     const response = await fetch(`${API_URL}/api/auth/get-session`, {
       method: 'GET',
       headers: {
-        ...headersToObject(options.headers),
+        ...forwardedHeaders,
         'Content-Type': 'application/json',
       },
       cache: 'no-store',
     });
+
+    if (IS_DEVELOPMENT) {
+      console.log(
+        '[portal auth] getSession response',
+        JSON.stringify({ status: response.status }),
+      );
+    }
 
     if (!response.ok) return null;
 
@@ -126,18 +207,26 @@ async function setActiveOrganization(options: {
   body: { organizationId: string };
 }): Promise<void> {
   try {
+    const forwardedHeaders = headersToObject(options.headers);
+    const origin = getRequestOrigin(options.headers);
     const response = await fetch(`${API_URL}/api/auth/organization/set-active`, {
       method: 'POST',
       headers: {
-        ...headersToObject(options.headers),
+        ...forwardedHeaders,
         'Content-Type': 'application/json',
+        Origin: origin,
+        Referer: `${origin}/`,
       },
       body: JSON.stringify({ organizationId: options.body.organizationId }),
       cache: 'no-store',
     });
 
     if (!response.ok && IS_DEVELOPMENT) {
-      console.error('[auth] Failed to set active organization:', response.status);
+      console.error(
+        '[auth] Failed to set active organization:',
+        response.status,
+        await response.text(),
+      );
     }
   } catch (error) {
     if (IS_DEVELOPMENT) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { FrameworkCard } from '@/components/framework-card';
-import { Alert, Button, Spinner } from '@trycompai/design-system';
+import { Button, Spinner } from '@trycompai/design-system';
 import {
   DialogContent,
   DialogDescription,
@@ -10,10 +10,10 @@ import {
   DialogTitle,
 } from '@trycompai/ui/dialog';
 import type { FrameworkEditorFramework } from '@db';
-import { useSession } from '@/utils/auth-client';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useFrameworks } from '@/hooks/use-frameworks';
+import { usePermissions } from '@/hooks/use-permissions';
 
 type Props = {
   onOpenChange: (isOpen: boolean) => void;
@@ -29,20 +29,13 @@ export function AddFrameworkModal({
   availableFrameworks,
 }: Props) {
   const { addFrameworks } = useFrameworks();
-  const { data: session } = useSession();
-  const isImpersonating = typeof (session?.session as Record<string, unknown>)?.impersonatedBy === 'string';
-  const canAddFramework = session?.user?.role === 'admin' || isImpersonating;
+  const { hasPermission } = usePermissions();
+  const canAddFramework = hasPermission('framework', 'create');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showContactMessage, setShowContactMessage] = useState(false);
 
   const handleSubmit = async () => {
-    if (selectedIds.length === 0) return;
-
-    if (!canAddFramework) {
-      setShowContactMessage(true);
-      return;
-    }
+    if (selectedIds.length === 0 || !canAddFramework) return;
 
     setIsSubmitting(true);
 
@@ -68,7 +61,6 @@ export function AddFrameworkModal({
   };
 
   const toggleFramework = (id: string, checked: boolean) => {
-    setShowContactMessage(false);
     setSelectedIds((prev) =>
       checked ? [...prev, id] : prev.filter((fid) => fid !== id),
     );
@@ -104,14 +96,6 @@ export function AddFrameworkModal({
               ))}
           </div>
 
-          {showContactMessage && (
-            <Alert
-              variant="info"
-              title="Contact your account manager"
-              description="To add frameworks to your organization, please reach out to your account manager."
-            />
-          )}
-
           <DialogFooter className="gap-2 border-t pt-4">
             <Button
               variant="outline"
@@ -123,7 +107,11 @@ export function AddFrameworkModal({
             </Button>
             <Button
               size="sm"
-              disabled={isSubmitting || selectedIds.length === 0}
+              disabled={
+                isSubmitting ||
+                selectedIds.length === 0 ||
+                !canAddFramework
+              }
               loading={isSubmitting}
               onClick={handleSubmit}
             >

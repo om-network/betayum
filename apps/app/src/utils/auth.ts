@@ -120,12 +120,47 @@ function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, str
       obj[key] = value;
     }
   });
-  // Ensure Origin is always present — server actions may not have one.
-  // better-auth requires it for CSRF protection on POST requests.
-  if (!obj.origin && !obj.Origin) {
-    obj.origin = API_URL;
-  }
   return obj;
+}
+
+function getRequestOrigin(headers: ReadonlyHeaders | Headers): string {
+  const forwardedOrigin = headers.get('origin');
+  if (forwardedOrigin) {
+    return forwardedOrigin;
+  }
+
+  const referer = headers.get('referer');
+  if (referer) {
+    try {
+      return new URL(referer).origin;
+    } catch {
+      // Fall through to forwarded host detection.
+    }
+  }
+
+  const forwardedProto = headers.get('x-forwarded-proto');
+  const forwardedHost = headers.get('x-forwarded-host') ?? headers.get('host');
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  for (const value of [
+    process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    process.env.BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+  ]) {
+    if (!value) {
+      continue;
+    }
+
+    try {
+      return new URL(value).origin;
+    } catch {
+      continue;
+    }
+  }
+
+  return API_URL;
 }
 
 /**
@@ -315,11 +350,15 @@ async function setActiveOrganization(options: {
   asResponse?: boolean;
 }): Promise<Response | Session | null> {
   try {
+    const forwardedHeaders = headersToObject(options.headers);
+    const origin = getRequestOrigin(options.headers);
     const response = await fetch(`${API_URL}/api/auth/organization/set-active`, {
       method: 'POST',
       headers: {
-        ...headersToObject(options.headers),
+        ...forwardedHeaders,
         'Content-Type': 'application/json',
+        Origin: origin,
+        Referer: `${origin}/`,
       },
       body: JSON.stringify(options.body),
       cache: 'no-store',

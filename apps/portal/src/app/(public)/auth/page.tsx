@@ -1,5 +1,6 @@
 import { LoginForm } from '@/app/components/login-form';
 import { OtpSignIn } from '@/app/components/otp';
+import { env } from '@/env.mjs';
 import { Button } from '@trycompai/ui/button';
 import {
   Card,
@@ -41,10 +42,10 @@ export default async function Page({
     </div>
   );
 
-  // Social providers are configured on the NestJS API.
-  // Use optional env vars to explicitly disable them on the portal if needed.
-  const showGoogle = process.env.PORTAL_DISABLE_GOOGLE_SIGN_IN !== 'true';
-  const showMicrosoft = process.env.PORTAL_DISABLE_MICROSOFT_SIGN_IN !== 'true';
+  const showGoogle = !!(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
+  const showMicrosoft = !!(
+    env.AUTH_MICROSOFT_CLIENT_ID && env.AUTH_MICROSOFT_CLIENT_SECRET
+  );
 
   return (
     <div className="flex min-h-dvh flex-col text-foreground">
