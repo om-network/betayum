@@ -1,6 +1,6 @@
 'use client';
 
-import { authClient } from '@/app/lib/auth-client';
+import { createBrowserAuthClient } from '@/app/lib/auth-client';
 import { Button } from '@trycompai/ui/button';
 import { Icons } from '@trycompai/ui/icons';
 import { Spinner } from '@trycompai/design-system';
@@ -20,6 +20,8 @@ export function MicrosoftSignIn({
     setLoading(true);
 
     try {
+      const authClient = createBrowserAuthClient();
+
       // Build the callback URL with search params
       const baseURL = window.location.origin;
       const isDeviceAuth = searchParams?.get('device_auth') === 'true';

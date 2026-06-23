@@ -1,5 +1,5 @@
-import { config } from 'dotenv';
-import { existsSync } from 'fs';
+import { parse } from 'dotenv';
+import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 
 let envLoaded = false;
@@ -19,13 +19,18 @@ const appEnvPaths = [
 ];
 
 function loadEnv(): void {
+  const runtimeEnvKeys = new Set(Object.keys(process.env));
+
   // Load the repo root first so shared local secrets are available to the API.
   for (const rootEnvPath of rootEnvPaths) {
     if (!existsSync(rootEnvPath)) {
       continue;
     }
 
-    config({ path: rootEnvPath, override: false });
+    mergeEnvFile({
+      envPath: rootEnvPath,
+      shouldOverride: () => false,
+    });
     break;
   }
 
@@ -35,11 +40,30 @@ function loadEnv(): void {
       continue;
     }
 
-    config({ path: envPath, override: true });
+    mergeEnvFile({
+      envPath,
+      shouldOverride: (key) => !runtimeEnvKeys.has(key),
+    });
     break;
   }
 
   envLoaded = true;
+}
+
+function mergeEnvFile({
+  envPath,
+  shouldOverride,
+}: {
+  envPath: string;
+  shouldOverride: (key: string) => boolean;
+}): void {
+  const parsed = parse(readFileSync(envPath));
+
+  for (const [key, value] of Object.entries(parsed)) {
+    if (process.env[key] === undefined || shouldOverride(key)) {
+      process.env[key] = value;
+    }
+  }
 }
 
 if (!envLoaded) {

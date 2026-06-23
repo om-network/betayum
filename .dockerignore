@@ -1,6 +1,9 @@
 # Dependencies
 node_modules
+/node_modules
 **/node_modules
+apps/*/node_modules
+packages/*/node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -13,6 +16,7 @@ test-results
 
 # Next.js
 .next/
+apps/*/.next/
 */.next/
 out/
 */out/
@@ -160,6 +164,7 @@ test-results/
 
 # Turbo
 .turbo
+/.turbo
 */.turbo
 
 # Build artifacts and caches
@@ -170,8 +175,26 @@ test-results/
 **/coverage/
 **/.nyc_output/
 
+!packages/auth/dist/
+!packages/auth/dist/**
+!packages/billing/dist/
+!packages/billing/dist/**
+!packages/company/dist/
+!packages/company/dist/**
+!packages/db/dist/
+!packages/db/dist/**
+!packages/email/dist/
+!packages/email/dist/**
+!packages/integration-platform/dist/
+!packages/integration-platform/dist/**
+!packages/utils/dist/
+!packages/utils/dist/**
+
 # Platform specific binaries
 **/bin/
 **/*.dylib*
 **/*.node
 **/*.pack
+
+# Local packaged app artifacts
+packages/device-agent/release/

@@ -4,10 +4,35 @@ import './src/env.mjs';
 
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === 'true';
 
+function getAllowedDevOrigins() {
+  const urls = [
+    process.env.BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    process.env.NEXT_PUBLIC_API_URL,
+  ];
+
+  return Array.from(
+    new Set(
+      urls.flatMap((value) => {
+        if (!value) {
+          return [];
+        }
+
+        try {
+          return [new URL(value).hostname];
+        } catch {
+          return [];
+        }
+      }),
+    ),
+  );
+}
+
 const config = {
   typescript: {
     ignoreBuildErrors: process.env.NEXT_SKIP_TYPECHECK === 'true',
   },
+  allowedDevOrigins: getAllowedDevOrigins(),
   transpilePackages: [
     '@trycompai/auth',
     '@trycompai/db',
