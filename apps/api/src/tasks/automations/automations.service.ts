@@ -2,12 +2,22 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 
+interface TaskAutomationScope {
+  organizationId: string;
+  taskId: string;
+}
+
+interface ScopedAutomationParams extends TaskAutomationScope {
+  automationId: string;
+}
+
 @Injectable()
 export class AutomationsService {
-  async findByTaskId(taskId: string) {
+  async findByTaskId({ organizationId, taskId }: TaskAutomationScope) {
     const automations = await db.evidenceAutomation.findMany({
       where: {
-        taskId: taskId,
+        taskId,
+        task: { organizationId },
       },
       include: {
         runs: {
@@ -28,10 +38,16 @@ export class AutomationsService {
     };
   }
 
-  async findById(automationId: string) {
+  async findById({
+    organizationId,
+    taskId,
+    automationId,
+  }: ScopedAutomationParams) {
     const automation = await db.evidenceAutomation.findFirst({
       where: {
         id: automationId,
+        taskId,
+        task: { organizationId },
       },
     });
 
@@ -45,12 +61,11 @@ export class AutomationsService {
     };
   }
 
-  async create(organizationId: string, taskId: string) {
-    // Verify task exists and belongs to organization
+  async create({ organizationId, taskId }: TaskAutomationScope) {
     const task = await db.task.findFirst({
       where: {
         id: taskId,
-        organizationId: organizationId,
+        organizationId,
       },
     });
 
@@ -58,11 +73,10 @@ export class AutomationsService {
       throw new NotFoundException('Task not found');
     }
 
-    // Create the automation
     const automation = await db.evidenceAutomation.create({
       data: {
         name: `${task.title} - Evidence Collection`,
-        taskId: taskId,
+        taskId,
       },
     });
 
@@ -75,21 +89,15 @@ export class AutomationsService {
     };
   }
 
-  async update(automationId: string, updateAutomationDto: UpdateAutomationDto) {
-    // Verify automation exists and belongs to organization
-    const existingAutomation = await db.evidenceAutomation.findFirst({
-      where: {
-        id: automationId,
-      },
-    });
+  async update({
+    organizationId,
+    taskId,
+    automationId,
+    data,
+  }: ScopedAutomationParams & { data: UpdateAutomationDto }) {
+    await this.findById({ organizationId, taskId, automationId });
 
-    if (!existingAutomation) {
-      throw new NotFoundException('Automation not found');
-    }
-
-    const { scheduleFrequency, ...rest } = updateAutomationDto;
-
-    // Update the automation
+    const { scheduleFrequency, ...rest } = data;
     const automation = await db.evidenceAutomation.update({
       where: {
         id: automationId,
@@ -110,19 +118,13 @@ export class AutomationsService {
     };
   }
 
-  async delete(automationId: string) {
-    // Verify automation exists and belongs to organization
-    const existingAutomation = await db.evidenceAutomation.findFirst({
-      where: {
-        id: automationId,
-      },
-    });
+  async delete({
+    organizationId,
+    taskId,
+    automationId,
+  }: ScopedAutomationParams) {
+    await this.findById({ organizationId, taskId, automationId });
 
-    if (!existingAutomation) {
-      throw new NotFoundException('Automation not found');
-    }
-
-    // Delete the automation
     await db.evidenceAutomation.delete({
       where: {
         id: automationId,
@@ -135,10 +137,16 @@ export class AutomationsService {
     };
   }
 
-  async createVersion(
-    automationId: string,
-    data: { version: number; scriptKey: string; changelog?: string },
-  ) {
+  async createVersion({
+    organizationId,
+    taskId,
+    automationId,
+    data,
+  }: ScopedAutomationParams & {
+    data: { version: number; scriptKey: string; changelog?: string };
+  }) {
+    await this.findById({ organizationId, taskId, automationId });
+
     const [version] = await db.$transaction([
       db.evidenceAutomationVersion.create({
         data: {
@@ -148,7 +156,6 @@ export class AutomationsService {
           changelog: data.changelog,
         },
       }),
-      // Enable automation on publish if not already enabled
       db.evidenceAutomation.update({
         where: { id: automationId },
         data: { isEnabled: true },
@@ -157,10 +164,18 @@ export class AutomationsService {
     return { success: true, version };
   }
 
-  async findRunsByAutomationId(automationId: string) {
+  async findRunsByAutomationId({
+    organizationId,
+    taskId,
+    automationId,
+  }: ScopedAutomationParams) {
     const runs = await db.evidenceAutomationRun.findMany({
       where: {
         evidenceAutomationId: automationId,
+        evidenceAutomation: {
+          taskId,
+          task: { organizationId },
+        },
       },
       include: {
         evidenceAutomation: {
@@ -175,16 +190,26 @@ export class AutomationsService {
     return runs;
   }
 
-  async listVersions(automationId: string, limit?: number, offset?: number) {
+  async listVersions({
+    organizationId,
+    taskId,
+    automationId,
+    limit,
+    offset,
+  }: ScopedAutomationParams & { limit?: number; offset?: number }) {
     const versions = await db.evidenceAutomationVersion.findMany({
       where: {
         evidenceAutomationId: automationId,
+        evidenceAutomation: {
+          taskId,
+          task: { organizationId },
+        },
       },
       orderBy: {
         version: 'desc',
       },
-      ...(limit && { take: limit }),
-      ...(offset && { skip: offset }),
+      ...(limit ? { take: limit } : {}),
+      ...(offset ? { skip: offset } : {}),
     });
 
     return {
