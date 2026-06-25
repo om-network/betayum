@@ -153,6 +153,23 @@ describe('AutomationRuntimeService', () => {
     ).toThrow(ServiceUnavailableException);
   });
 
+  it('rejects internal network targets that include ports', () => {
+    const service = new AutomationRuntimeService();
+
+    expect(() =>
+      service.buildExecutionRequest({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        automationId: 'aut_1',
+        runId: 'ear_1',
+        version: 2,
+        artifactKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
+        trigger: 'manual',
+        tools: [{ type: 'http', allowedHosts: ['localhost:3000'] }],
+      }),
+    ).toThrow(ServiceUnavailableException);
+  });
+
   it('sanitizes secret-like fields from run output', () => {
     const service = new AutomationRuntimeService();
 

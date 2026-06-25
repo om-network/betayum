@@ -13,6 +13,7 @@ export class AutomationUsageLimitsService {
     const runCount = await db.evidenceAutomationRun.count({
       where: {
         createdAt: { gte: since },
+        triggeredBy: 'manual',
         evidenceAutomation: {
           task: { organizationId },
         },

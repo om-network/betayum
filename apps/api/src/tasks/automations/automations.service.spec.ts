@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { db } from '@db';
 import { AutomationAuditService } from './automation-audit.service';
 import { AutomationRuntimeService } from './automation-runtime.service';
@@ -18,6 +24,7 @@ jest.mock('@db', () => ({
     evidenceAutomationRun: {
       findMany: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
       count: jest.fn(),
     },
     evidenceAutomationVersion: {
@@ -48,6 +55,7 @@ const mockedDb = db as unknown as {
   evidenceAutomationRun: {
     findMany: jest.Mock;
     create: jest.Mock;
+    update: jest.Mock;
     count: jest.Mock;
   };
   evidenceAutomationVersion: {
@@ -82,6 +90,9 @@ describe('AutomationsService', () => {
   const auditService = {
     logAutomationEvent: jest.fn(),
   };
+  const workerDispatcher = {
+    enqueue: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -90,11 +101,13 @@ describe('AutomationsService', () => {
     usageLimitsService.assertVersionLimit.mockResolvedValue(undefined);
     secretsService.verifySecretRefs.mockResolvedValue(undefined);
     auditService.logAutomationEvent.mockResolvedValue(undefined);
+    workerDispatcher.enqueue.mockResolvedValue(undefined);
     service = new AutomationsService(
       runtimeService as unknown as AutomationRuntimeService,
       usageLimitsService as unknown as AutomationUsageLimitsService,
       secretsService as unknown as AutomationSecretsService,
       auditService as unknown as AutomationAuditService,
+      workerDispatcher,
     );
   });
 
@@ -250,7 +263,7 @@ describe('AutomationsService', () => {
     });
   });
 
-  it('restores a prior version as a draft reference without mutating it', async () => {
+  it('rejects version restore until draft storage is configured', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
     } as never);
@@ -261,12 +274,14 @@ describe('AutomationsService', () => {
       changelog: 'Initial version',
     } as never);
 
-    const result = await service.restoreVersion({
-      organizationId: 'org_1',
-      taskId: 'tsk_1',
-      automationId: 'aut_1',
-      version: 1,
-    });
+    await expect(
+      service.restoreVersion({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        automationId: 'aut_1',
+        version: 1,
+      }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
 
     expect(mockedDb.evidenceAutomationVersion.findFirst).toHaveBeenCalledWith({
       where: {
@@ -280,14 +295,6 @@ describe('AutomationsService', () => {
     });
     expect(mockedDb.evidenceAutomationVersion.create).not.toHaveBeenCalled();
     expect(mockedDb.evidenceAutomation.update).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      success: true,
-      draft: {
-        automationId: 'aut_1',
-        restoredFromVersion: 1,
-        scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v1.js',
-      },
-    });
   });
 
   it('loads paged chat history from the scoped automation draft', async () => {
@@ -425,6 +432,17 @@ describe('AutomationsService', () => {
       secretRefs: [{ name: 'github-token', category: 'automation' }],
       tools: [],
     });
+    expect(workerDispatcher.enqueue).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      runId: 'ear_1',
+      version: 2,
+      artifactKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
+      trigger: 'manual',
+      secretRefs: [{ name: 'github-token', category: 'automation' }],
+      tools: [],
+    });
     expect(result).toEqual({
       success: true,
       run: { id: 'ear_1', status: 'pending', version: 2 },
@@ -440,6 +458,20 @@ describe('AutomationsService', () => {
         tools: [],
       },
     });
+  });
+
+  it('rejects manual runs without a concrete published version', async () => {
+    await expect(
+      service.startManualRun({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        automationId: 'aut_1',
+        version: 0,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(mockedDb.evidenceAutomationRun.create).not.toHaveBeenCalled();
+    expect(workerDispatcher.enqueue).not.toHaveBeenCalled();
   });
 
   it('rejects manual runs that reference secrets outside the organization', async () => {
@@ -466,6 +498,47 @@ describe('AutomationsService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
 
     expect(mockedDb.evidenceAutomationRun.create).not.toHaveBeenCalled();
+  });
+
+  it('marks the run failed when worker enqueue fails', async () => {
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+    } as never);
+    mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
+      id: 'eav_2',
+      version: 2,
+      scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
+    } as never);
+    mockedDb.evidenceAutomationRun.create.mockResolvedValue({
+      id: 'ear_1',
+      status: 'pending',
+      version: 2,
+    } as never);
+    workerDispatcher.enqueue.mockRejectedValue(
+      new ServiceUnavailableException(
+        'Task automation worker queue is not configured',
+      ),
+    );
+
+    await expect(
+      service.startManualRun({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        automationId: 'aut_1',
+        version: 2,
+      }),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+
+    expect(mockedDb.evidenceAutomationRun.update).toHaveBeenCalledWith({
+      where: { id: 'ear_1' },
+      data: expect.objectContaining({
+        status: 'failed',
+        error: 'Task automation worker queue is not configured',
+      }),
+    });
+    expect(auditService.logAutomationEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'manual_run_started' }),
+    );
   });
 
   it('enforces the organization manual run limit before creating a run', async () => {

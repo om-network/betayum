@@ -56,4 +56,15 @@ describe('AutomationSecretsService', () => {
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
+
+  it('accepts category-less references when the organization has a secret by name', async () => {
+    mockedDb.secret.findMany.mockResolvedValue([
+      { name: 'github-token', category: 'automation' },
+    ] as never);
+
+    await service.verifySecretRefs({
+      organizationId: 'org_1',
+      secretRefs: [{ name: 'github-token' }],
+    });
+  });
 });

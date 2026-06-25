@@ -47,6 +47,7 @@ describe('AutomationUsageLimitsService', () => {
     expect(mockedDb.evidenceAutomationRun.count).toHaveBeenCalledWith({
       where: {
         createdAt: { gte: expect.any(Date) },
+        triggeredBy: 'manual',
         evidenceAutomation: {
           task: { organizationId: 'org_1' },
         },

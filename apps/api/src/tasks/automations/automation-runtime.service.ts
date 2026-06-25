@@ -55,9 +55,7 @@ export interface AutomationServiceState {
   workerHealthy: boolean;
 }
 
-export type AutomationExecutionRequest = z.infer<
-  typeof executionRequestSchema
->;
+export type AutomationExecutionRequest = z.infer<typeof executionRequestSchema>;
 
 @Injectable()
 export class AutomationRuntimeService {
@@ -66,7 +64,8 @@ export class AutomationRuntimeService {
     const executionSwitchEnabled = this.isEnabled(
       'TASK_AUTOMATION_EXECUTION_ENABLED',
     );
-    const workerHealthy = process.env.TASK_AUTOMATION_WORKER_HEALTH !== 'unhealthy';
+    const workerHealthy =
+      process.env.TASK_AUTOMATION_WORKER_HEALTH !== 'unhealthy';
     const executionEnabled = generationEnabled && executionSwitchEnabled;
 
     return {
@@ -186,7 +185,7 @@ export class AutomationRuntimeService {
   }
 
   private isInternalHost(host: string): boolean {
-    const normalized = host.toLowerCase().trim();
+    const normalized = this.getHostname(host);
 
     if (
       normalized === 'localhost' ||
@@ -214,5 +213,17 @@ export class AutomationRuntimeService {
 
     const octet = Number(private172Match[1]);
     return octet >= 16 && octet <= 31;
+  }
+
+  private getHostname(host: string): string {
+    const normalized = host.toLowerCase().trim();
+
+    try {
+      return new URL(
+        normalized.includes('://') ? normalized : `http://${normalized}`,
+      ).hostname;
+    } catch {
+      return normalized.replace(/:\d+$/, '');
+    }
   }
 }

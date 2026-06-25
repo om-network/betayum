@@ -46,7 +46,7 @@ export function useTaskAutomationAnalyze({
       // Call the AI-powered workflow analysis API
       const result = (await taskAutomationApi.workflow.analyzeWorkflow(
         content,
-      )) as TaskAutomationAnalyze;
+      )) as unknown as TaskAutomationAnalyze;
 
       // Map the API response to our workflow steps format
       const steps: TaskAutomationAnalyzeStep[] = result.steps.map((step, index) => ({

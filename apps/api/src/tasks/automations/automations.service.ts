@@ -1,6 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { AutomationAuditService } from './automation-audit.service';
+import {
+  getAutomationChatHistory,
+  saveAutomationChatHistory,
+} from './automation-chat-history.operations';
+import {
+  findAutomationRunById,
+  findAutomationRunsByAutomationId,
+  startManualAutomationRun,
+} from './automation-run.operations';
+import { AutomationRuntimeService } from './automation-runtime.service';
 import { AutomationSecretsService } from './automation-secrets.service';
 import type {
   AutomationActor,
@@ -9,7 +19,12 @@ import type {
   TaskAutomationScope,
 } from './automation-types';
 import { AutomationUsageLimitsService } from './automation-usage-limits.service';
-import { AutomationRuntimeService } from './automation-runtime.service';
+import {
+  createAutomationVersion,
+  listAutomationVersions,
+  restoreAutomationVersion,
+} from './automation-version.operations';
+import { AutomationWorkerDispatcherService } from './automation-worker-dispatcher.service';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 
 @Injectable()
@@ -19,6 +34,7 @@ export class AutomationsService {
     private readonly automationUsageLimitsService: AutomationUsageLimitsService,
     private readonly automationSecretsService: AutomationSecretsService,
     private readonly automationAuditService: AutomationAuditService,
+    private readonly automationWorkerDispatcher: AutomationWorkerDispatcherService,
   ) {}
 
   async findByTaskId({ organizationId, taskId }: TaskAutomationScope) {
@@ -189,241 +205,77 @@ export class AutomationsService {
     };
   }
 
-  async createVersion({
-    organizationId,
-    taskId,
-    automationId,
-    data,
-    actor,
-  }: ScopedAutomationParams & {
-    data: { scriptKey: string; changelog?: string };
-    actor?: AutomationActor;
+  createVersion(
+    params: ScopedAutomationParams & {
+      data: { scriptKey: string; changelog?: string };
+      actor?: AutomationActor;
+    },
+  ) {
+    return createAutomationVersion({
+      ...params,
+      auditService: this.automationAuditService,
+      usageLimitsService: this.automationUsageLimitsService,
+    });
+  }
+  restoreVersion(
+    params: ScopedAutomationParams & {
+      version: number;
+      actor?: AutomationActor;
+    },
+  ) {
+    return restoreAutomationVersion(params);
+  }
+  getChatHistory(
+    params: ScopedAutomationParams & { offset?: number; limit?: number },
+  ) {
+    return getAutomationChatHistory(params);
+  }
+
+  saveChatHistory(
+    params: ScopedAutomationParams & {
+      messages: unknown[];
+      actor?: AutomationActor;
+    },
+  ) {
+    return saveAutomationChatHistory({
+      ...params,
+      auditService: this.automationAuditService,
+    });
+  }
+
+  startManualRun(
+    params: ScopedAutomationParams & {
+      version: number;
+      secretRefs?: AutomationSecretRef[];
+      actor?: AutomationActor;
+    },
+  ) {
+    return startManualAutomationRun({
+      ...params,
+      auditService: this.automationAuditService,
+      runtimeService: this.automationRuntimeService,
+      secretsService: this.automationSecretsService,
+      usageLimitsService: this.automationUsageLimitsService,
+      workerDispatcher: this.automationWorkerDispatcher,
+    });
+  }
+
+  findRunsByAutomationId(params: ScopedAutomationParams) {
+    return findAutomationRunsByAutomationId(params);
+  }
+
+  findRunById(params: {
+    organizationId: string;
+    taskId: string;
+    runId: string;
   }) {
-    await this.findById({ organizationId, taskId, automationId });
-    await this.automationUsageLimitsService.assertVersionLimit({
-      organizationId,
-      taskId,
-      automationId,
-    });
-    const latestVersion = await db.evidenceAutomationVersion.findFirst({
-      where: {
-        evidenceAutomationId: automationId,
-        evidenceAutomation: {
-          taskId,
-          task: { organizationId },
-        },
-      },
-      orderBy: { version: 'desc' },
-      select: { version: true },
-    });
-    const nextVersion = (latestVersion?.version ?? 0) + 1;
-
-    const [version] = await db.$transaction([
-      db.evidenceAutomationVersion.create({
-        data: {
-          evidenceAutomationId: automationId,
-          version: nextVersion,
-          scriptKey: data.scriptKey,
-          changelog: data.changelog,
-        },
-      }),
-      db.evidenceAutomation.update({
-        where: { id: automationId },
-        data: { isEnabled: true },
-      }),
-    ]);
-    await this.logIfActor({
-      actor,
-      organizationId,
-      taskId,
-      automationId,
-      action: 'published',
-      description: `published automation v${version.version}`,
-      version: version.version,
-    });
-    return { success: true, version };
+    return findAutomationRunById(params);
   }
 
-  async restoreVersion({
-    organizationId,
-    taskId,
-    automationId,
-    version,
-    actor,
-  }: ScopedAutomationParams & { version: number; actor?: AutomationActor }) {
-    await this.findById({ organizationId, taskId, automationId });
-
-    const versionRecord = await db.evidenceAutomationVersion.findFirst({
-      where: {
-        evidenceAutomationId: automationId,
-        version,
-        evidenceAutomation: {
-          taskId,
-          task: { organizationId },
-        },
-      },
-    });
-
-    if (!versionRecord) {
-      throw new NotFoundException('Automation version not found');
-    }
-
-    await this.logIfActor({
-      actor,
-      organizationId,
-      taskId,
-      automationId,
-      action: 'restored',
-      description: `restored automation v${versionRecord.version}`,
-      version: versionRecord.version,
-    });
-
-    return {
-      success: true,
-      draft: {
-        automationId,
-        restoredFromVersion: versionRecord.version,
-        scriptKey: versionRecord.scriptKey,
-      },
-    };
-  }
-
-  async getChatHistory({
-    organizationId,
-    taskId,
-    automationId,
-    offset = 0,
-    limit = 50,
-  }: ScopedAutomationParams & { offset?: number; limit?: number }) {
-    const { automation } = await this.findById({
-      organizationId,
-      taskId,
-      automationId,
-    });
-    const messages = this.parseChatHistory(automation.chatHistory);
-    const pagedMessages = messages.slice(offset, offset + limit);
-
-    return {
-      success: true,
-      data: {
-        messages: pagedMessages,
-        total: messages.length,
-        hasMore: offset + limit < messages.length,
-      },
-    };
-  }
-
-  async saveChatHistory({
-    organizationId,
-    taskId,
-    automationId,
-    messages,
-    actor,
-  }: ScopedAutomationParams & {
-    messages: unknown[];
-    actor?: AutomationActor;
-  }) {
-    await this.findById({ organizationId, taskId, automationId });
-    await db.evidenceAutomation.update({
-      where: { id: automationId },
-      data: { chatHistory: JSON.stringify(messages) },
-    });
-    await this.logIfActor({
-      actor,
-      organizationId,
-      taskId,
-      automationId,
-      action: 'draft_updated',
-      description: 'updated automation chat draft',
-    });
-
-    return { success: true };
-  }
-
-  async startManualRun({
-    organizationId,
-    taskId,
-    automationId,
-    version,
-    secretRefs = [],
-    actor,
-  }: ScopedAutomationParams & {
-    version: number;
-    secretRefs?: AutomationSecretRef[];
-    actor?: AutomationActor;
-  }) {
-    this.automationRuntimeService.assertExecutionAvailable();
-    await this.findById({ organizationId, taskId, automationId });
-    await this.automationUsageLimitsService.assertManualRunLimit({
-      organizationId,
-    });
-    await this.automationSecretsService.verifySecretRefs({
-      organizationId,
-      secretRefs,
-    });
-
-    const versionRecord = await db.evidenceAutomationVersion.findFirst({
-      where: {
-        evidenceAutomationId: automationId,
-        version,
-        evidenceAutomation: {
-          taskId,
-          task: { organizationId },
-        },
-      },
-    });
-
-    if (!versionRecord) {
-      throw new NotFoundException('Automation version not found');
-    }
-
-    const run = await db.evidenceAutomationRun.create({
-      data: {
-        evidenceAutomationId: automationId,
-        taskId,
-        triggeredBy: 'manual',
-        status: 'pending',
-        version,
-      },
-    });
-
-    const workerRequest = this.automationRuntimeService.buildExecutionRequest({
-      organizationId,
-      taskId,
-      automationId,
-      runId: run.id,
-      version,
-      artifactKey: versionRecord.scriptKey,
-      trigger: 'manual',
-      secretRefs,
-      tools: [],
-    });
-
-    await this.logIfActor({
-      actor,
-      organizationId,
-      taskId,
-      automationId,
-      action: 'manual_run_started',
-      description: `started automation run v${version}`,
-      runId: run.id,
-      version,
-    });
-    if (secretRefs.length > 0) {
-      await this.logIfActor({
-        actor,
-        organizationId,
-        taskId,
-        automationId,
-        action: 'secret_refs_used',
-        description: 'used automation secret references',
-        runId: run.id,
-        version,
-        secretRefs,
-      });
-    }
-
-    return { success: true, run, workerRequest };
+  listVersions(
+    params: ScopedAutomationParams & { limit?: number; offset?: number },
+  ) {
+    return listAutomationVersions(params);
   }
 
   private async logIfActor({
@@ -443,72 +295,5 @@ export class AutomationsService {
       ...params,
       actor,
     });
-  }
-
-  private parseChatHistory(chatHistory: string | null): unknown[] {
-    if (!chatHistory) {
-      return [];
-    }
-
-    try {
-      const parsed: unknown = JSON.parse(chatHistory);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-
-  async findRunsByAutomationId({
-    organizationId,
-    taskId,
-    automationId,
-  }: ScopedAutomationParams) {
-    const runs = await db.evidenceAutomationRun.findMany({
-      where: {
-        evidenceAutomationId: automationId,
-        evidenceAutomation: {
-          taskId,
-          task: { organizationId },
-        },
-      },
-      include: {
-        evidenceAutomation: {
-          select: { name: true },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return runs;
-  }
-
-  async listVersions({
-    organizationId,
-    taskId,
-    automationId,
-    limit,
-    offset,
-  }: ScopedAutomationParams & { limit?: number; offset?: number }) {
-    const versions = await db.evidenceAutomationVersion.findMany({
-      where: {
-        evidenceAutomationId: automationId,
-        evidenceAutomation: {
-          taskId,
-          task: { organizationId },
-        },
-      },
-      orderBy: {
-        version: 'desc',
-      },
-      ...(limit ? { take: limit } : {}),
-      ...(offset ? { skip: offset } : {}),
-    });
-
-    return {
-      success: true,
-      versions,
-    };
   }
 }

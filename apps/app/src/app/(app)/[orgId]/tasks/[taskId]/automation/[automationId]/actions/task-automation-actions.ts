@@ -1,11 +1,24 @@
 'use server';
 
-type ChatHistoryMessage = { id: string };
+import { randomUUID } from 'crypto';
+import type { ChatUIMessage } from '../components/chat/types';
+
+type ChatHistoryMessage = ChatUIMessage;
+type AutomationRunStatus = {
+  id: string;
+  status: string;
+  success?: boolean | null;
+  error?: string | null;
+  output?: unknown;
+  evaluationStatus?: 'fail' | 'pass' | null;
+  evaluationReason?: string | null;
+};
 
 function getUnavailableResult(operation: string) {
   return {
-    success: false,
+    success: false as const,
     error: `${operation} is not available until first-party automation storage is configured.`,
+    data: undefined,
   };
 }
 
@@ -49,8 +62,16 @@ export async function executeAutomationScript(data: {
   orgId: string;
   taskId: string;
   automationId: string;
-  version?: number; // Optional: test specific version
+  version: number;
 }) {
+  if (!Number.isInteger(data.version) || data.version <= 0) {
+    return {
+      success: false as const,
+      error: 'Select a published automation version before running it.',
+      data: undefined,
+    };
+  }
+
   try {
     const { serverApi } = await import('@/lib/api-server');
     const response = await serverApi.post<{
@@ -66,8 +87,9 @@ export async function executeAutomationScript(data: {
     return { success: true, data: { runId } };
   } catch (error) {
     return {
-      success: false,
+      success: false as const,
       error: getActionError(error, 'Failed to execute script'),
+      data: undefined,
     };
   }
 }
@@ -80,9 +102,45 @@ export async function analyzeAutomationWorkflow(scriptContent: string) {
   return getUnavailableResult('Automation workflow analysis');
 }
 
-export const getAutomationRunStatus = async (runId: string) => {
-  void runId;
-  return getUnavailableResult('Automation run status polling');
+export const getAutomationRunStatus = async ({
+  taskId,
+  runId,
+}: {
+  taskId: string;
+  runId: string;
+}) => {
+  try {
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.get<{
+      success: boolean;
+      run: AutomationRunStatus;
+    }>(`/v1/tasks/${taskId}/automations/runs/${runId}`);
+    if (response.error) throw new Error(response.error);
+    if (!response.data?.run) throw new Error('Automation run was not found');
+
+    const { run } = response.data;
+    return {
+      success: true,
+      data: {
+        id: run.id,
+        status: run.status.toUpperCase(),
+        error: run.error,
+        output: {
+          success: run.success ?? run.status === 'completed',
+          error: run.error,
+          output: isRecord(run.output) ? run.output : undefined,
+          evaluationStatus: run.evaluationStatus ?? undefined,
+          evaluationReason: run.evaluationReason ?? undefined,
+        },
+      },
+    };
+  } catch (error) {
+    return {
+      success: false as const,
+      error: getActionError(error, 'Failed to fetch automation run status'),
+      data: undefined,
+    };
+  }
 };
 
 /**
@@ -124,8 +182,9 @@ export async function loadChatHistory({
   } catch (error) {
     console.error('[loadChatHistory] Failed:', error);
     return {
-      success: false,
+      success: false as const,
       error: getActionError(error, 'Failed to load chat history'),
+      data: undefined,
     };
   }
 }
@@ -140,7 +199,7 @@ export async function saveChatHistory({
 }: {
   taskId: string;
   automationId: string;
-  messages: ChatHistoryMessage[];
+  messages: unknown[];
 }) {
   try {
     const { serverApi } = await import('@/lib/api-server');
@@ -177,7 +236,7 @@ export async function publishAutomation(
       success: boolean;
       version: { version: number };
     }>(`/v1/tasks/${taskId}/automations/${automationId}/versions`, {
-      scriptKey: `first-party://${orgId}/${taskId}/${automationId}/draft`,
+      scriptKey: getDraftSnapshotKey({ orgId, taskId, automationId }),
       changelog,
     });
     if (versionRes.error) throw new Error(versionRes.error);
@@ -193,6 +252,22 @@ export async function publishAutomation(
       error: getActionError(error, 'Failed to publish automation'),
     };
   }
+}
+
+function getDraftSnapshotKey({
+  orgId,
+  taskId,
+  automationId,
+}: {
+  orgId: string;
+  taskId: string;
+  automationId: string;
+}) {
+  return `first-party://${orgId}/${taskId}/${automationId}/snapshots/${randomUUID()}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**

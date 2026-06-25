@@ -29,24 +29,22 @@ export class AutomationSecretsService {
       },
     });
 
-    const available = new Set(
-      secrets.map((secret) => this.getSecretRefKey(secret)),
-    );
-    const missing = secretRefs.find(
-      (secretRef) => !available.has(this.getSecretRefKey(secretRef)),
-    );
+    const missing = secretRefs.find((secretRef) => {
+      if (!secretRef.category) {
+        return !secrets.some((secret) => secret.name === secretRef.name);
+      }
+
+      return !secrets.some(
+        (secret) =>
+          secret.name === secretRef.name &&
+          secret.category === secretRef.category,
+      );
+    });
 
     if (!missing) {
       return;
     }
 
     throw new NotFoundException('Automation secret not found');
-  }
-
-  private getSecretRefKey(secretRef: {
-    name: string;
-    category?: string | null;
-  }): string {
-    return `${secretRef.name}:${secretRef.category ?? ''}`;
   }
 }
