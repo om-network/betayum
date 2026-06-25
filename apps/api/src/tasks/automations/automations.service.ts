@@ -288,6 +288,58 @@ export class AutomationsService {
     };
   }
 
+  async getChatHistory({
+    organizationId,
+    taskId,
+    automationId,
+    offset = 0,
+    limit = 50,
+  }: ScopedAutomationParams & { offset?: number; limit?: number }) {
+    const { automation } = await this.findById({
+      organizationId,
+      taskId,
+      automationId,
+    });
+    const messages = this.parseChatHistory(automation.chatHistory);
+    const pagedMessages = messages.slice(offset, offset + limit);
+
+    return {
+      success: true,
+      data: {
+        messages: pagedMessages,
+        total: messages.length,
+        hasMore: offset + limit < messages.length,
+      },
+    };
+  }
+
+  async saveChatHistory({
+    organizationId,
+    taskId,
+    automationId,
+    messages,
+    actor,
+  }: ScopedAutomationParams & {
+    messages: unknown[];
+    actor?: AutomationActor;
+  }) {
+    await this.findById({ organizationId, taskId, automationId });
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { chatHistory: JSON.stringify(messages) },
+    });
+    await this.logIfActor({
+      actor,
+      organizationId,
+      taskId,
+      automationId,
+      action: 'draft_updated',
+      description: 'updated automation chat draft',
+    });
+
+    return { success: true };
+  }
+
   async startManualRun({
     organizationId,
     taskId,
@@ -391,6 +443,19 @@ export class AutomationsService {
       ...params,
       actor,
     });
+  }
+
+  private parseChatHistory(chatHistory: string | null): unknown[] {
+    if (!chatHistory) {
+      return [];
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(chatHistory);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
   }
 
   async findRunsByAutomationId({

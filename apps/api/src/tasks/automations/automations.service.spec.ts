@@ -290,6 +290,68 @@ describe('AutomationsService', () => {
     });
   });
 
+  it('loads paged chat history from the scoped automation draft', async () => {
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+      chatHistory: JSON.stringify([{ id: 'msg_1' }, { id: 'msg_2' }]),
+    } as never);
+
+    const result = await service.getChatHistory({
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      offset: 1,
+      limit: 1,
+    });
+
+    expect(mockedDb.evidenceAutomation.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'aut_1',
+        taskId: 'tsk_1',
+        task: { organizationId: 'org_1' },
+      },
+    });
+    expect(result).toEqual({
+      success: true,
+      data: {
+        messages: [{ id: 'msg_2' }],
+        total: 2,
+        hasMore: false,
+      },
+    });
+  });
+
+  it('saves chat history on the scoped automation draft', async () => {
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+      chatHistory: null,
+    } as never);
+    mockedDb.evidenceAutomation.update.mockResolvedValue({
+      id: 'aut_1',
+    } as never);
+
+    await service.saveChatHistory({
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      messages: [{ id: 'msg_1' }],
+      actor: { userId: 'usr_1', memberId: 'mem_1' },
+    });
+
+    expect(mockedDb.evidenceAutomation.update).toHaveBeenCalledWith({
+      where: { id: 'aut_1' },
+      data: { chatHistory: JSON.stringify([{ id: 'msg_1' }]) },
+    });
+    expect(auditService.logAutomationEvent).toHaveBeenCalledWith({
+      actor: { userId: 'usr_1', memberId: 'mem_1' },
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      action: 'draft_updated',
+      description: 'updated automation chat draft',
+    });
+  });
+
   it('starts a manual run pinned to a published version through the runtime contract', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',

@@ -247,6 +247,54 @@ export class AutomationsController {
     });
   }
 
+  @Get(':automationId/chat-history')
+  @RequirePermission('task', 'read')
+  @ApiOperation({
+    summary: 'Get first-party automation builder chat history',
+  })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  async getChatHistory(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+    @Query('offset') offset?: string,
+    @Query('limit') limit?: string,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.getChatHistory({
+      organizationId,
+      taskId,
+      automationId,
+      offset: offset ? Math.max(0, parseInt(offset, 10) || 0) : 0,
+      limit: limit ? Math.min(100, Math.max(1, parseInt(limit, 10) || 50)) : 50,
+    });
+  }
+
+  @Post(':automationId/chat-history')
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Save first-party automation builder chat history',
+  })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  async saveChatHistory(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+    @Body() body: { messages?: unknown[] },
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.saveChatHistory({
+      organizationId,
+      taskId,
+      automationId,
+      messages: body.messages ?? [],
+      actor: await this.resolveAutomationActor(organizationId, authContext),
+    });
+  }
+
   @Post(':automationId/runs')
   @RequirePermission('task', 'update')
   @ApiOperation({

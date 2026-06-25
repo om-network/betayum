@@ -24,16 +24,18 @@ export function ChatProvider({
   initialMessages = [],
 }: {
   children: ReactNode;
-  initialMessages?: any[];
+  initialMessages?: ChatUIMessage[];
 }) {
   const mapDataToState = useTaskAutomationDataMapper();
   const mapDataToStateRef = useRef(mapDataToState);
   mapDataToStateRef.current = mapDataToState;
 
-  const baseUrl = process.env.NEXT_PUBLIC_ENTERPRISE_API_URL;
-  const url = `${baseUrl}/api/tasks-automations/chat`;
+  const url = '/api/tasks-automations/chat';
 
-  const { automationId } = useParams<{ automationId: string }>();
+  const { taskId, automationId } = useParams<{
+    taskId: string;
+    automationId: string;
+  }>();
 
   // Use ref to track the latest automation ID (important for ephemeral → real transition)
   // Initialize once, don't overwrite on every render
@@ -82,7 +84,11 @@ export function ChatProvider({
         isSavingRef.current = true;
         try {
           const messagesToSave = event.messages;
-          await saveChatHistory(currentAutomationId, messagesToSave || []);
+          await saveChatHistory({
+            taskId,
+            automationId: currentAutomationId,
+            messages: messagesToSave || [],
+          });
         } finally {
           isSavingRef.current = false;
         }

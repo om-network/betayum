@@ -26,7 +26,7 @@ export default async function Page({
   // Load chat history server-side (skip for ephemeral 'new' automations)
   let initialMessages: ChatUIMessage[] = [];
   if (automationId !== 'new') {
-    const historyResult = await loadChatHistory(automationId);
+    const historyResult = await loadChatHistory({ taskId, automationId });
     if (historyResult.success && historyResult.data?.messages) {
       // Deduplicate messages by ID (in case of concurrent save/load race conditions)
       const seen = new Set();
