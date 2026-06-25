@@ -1,6 +1,9 @@
-import { HttpStatus, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
+import { AutomationAuditService } from './automation-audit.service';
 import { AutomationRuntimeService } from './automation-runtime.service';
+import { AutomationSecretsService } from './automation-secrets.service';
+import { AutomationUsageLimitsService } from './automation-usage-limits.service';
 import { AutomationsService } from './automations.service';
 
 jest.mock('@db', () => ({
@@ -25,6 +28,7 @@ jest.mock('@db', () => ({
     },
     task: {
       findFirst: jest.fn(),
+      update: jest.fn(),
     },
     secret: {
       findMany: jest.fn(),
@@ -33,27 +37,65 @@ jest.mock('@db', () => ({
   },
 }));
 
-const mockedDb = db as jest.Mocked<typeof db>;
+const mockedDb = db as unknown as {
+  evidenceAutomation: {
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
+  evidenceAutomationRun: {
+    findMany: jest.Mock;
+    create: jest.Mock;
+    count: jest.Mock;
+  };
+  evidenceAutomationVersion: {
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    create: jest.Mock;
+    count: jest.Mock;
+  };
+  task: {
+    findFirst: jest.Mock;
+    update: jest.Mock;
+  };
+  secret: {
+    findMany: jest.Mock;
+  };
+  $transaction: jest.Mock;
+};
 
 describe('AutomationsService', () => {
   let service: AutomationsService;
-  const originalEnv = process.env;
   const runtimeService = {
     assertExecutionAvailable: jest.fn(),
     buildExecutionRequest: jest.fn(),
   };
+  const usageLimitsService = {
+    assertManualRunLimit: jest.fn(),
+    assertVersionLimit: jest.fn(),
+  };
+  const secretsService = {
+    verifySecretRefs: jest.fn(),
+  };
+  const auditService = {
+    logAutomationEvent: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...originalEnv };
     runtimeService.buildExecutionRequest.mockImplementation((input) => input);
+    usageLimitsService.assertManualRunLimit.mockResolvedValue(undefined);
+    usageLimitsService.assertVersionLimit.mockResolvedValue(undefined);
+    secretsService.verifySecretRefs.mockResolvedValue(undefined);
+    auditService.logAutomationEvent.mockResolvedValue(undefined);
     service = new AutomationsService(
       runtimeService as unknown as AutomationRuntimeService,
+      usageLimitsService as unknown as AutomationUsageLimitsService,
+      secretsService as unknown as AutomationSecretsService,
+      auditService as unknown as AutomationAuditService,
     );
-  });
-
-  afterAll(() => {
-    process.env = originalEnv;
   });
 
   it('lists automations only for the requested task and organization', async () => {
@@ -156,12 +198,13 @@ describe('AutomationsService', () => {
     mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
       version: 2,
     } as never);
-    mockedDb.evidenceAutomationVersion.count.mockResolvedValue(2);
     mockedDb.evidenceAutomationVersion.create.mockReturnValue({
       id: 'eav_3',
       version: 3,
     } as never);
-    mockedDb.evidenceAutomation.update.mockReturnValue({ id: 'aut_1' } as never);
+    mockedDb.evidenceAutomation.update.mockReturnValue({
+      id: 'aut_1',
+    } as never);
     mockedDb.$transaction.mockResolvedValue([
       { id: 'eav_3', version: 3 },
       { id: 'aut_1' },
@@ -177,6 +220,11 @@ describe('AutomationsService', () => {
       },
     });
 
+    expect(usageLimitsService.assertVersionLimit).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+    });
     expect(mockedDb.evidenceAutomationVersion.findFirst).toHaveBeenCalledWith({
       where: {
         evidenceAutomationId: 'aut_1',
@@ -256,20 +304,23 @@ describe('AutomationsService', () => {
       status: 'pending',
       version: 2,
     } as never);
-    mockedDb.evidenceAutomationRun.count.mockResolvedValue(0);
-    mockedDb.secret.findMany.mockResolvedValue([
-      { name: 'github-token', category: 'automation' },
-    ] as never);
-
     const result = await service.startManualRun({
       organizationId: 'org_1',
       taskId: 'tsk_1',
       automationId: 'aut_1',
       version: 2,
       secretRefs: [{ name: 'github-token', category: 'automation' }],
+      actor: { userId: 'usr_1', memberId: 'mem_1' },
     });
 
     expect(runtimeService.assertExecutionAvailable).toHaveBeenCalled();
+    expect(usageLimitsService.assertManualRunLimit).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+    });
+    expect(secretsService.verifySecretRefs).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      secretRefs: [{ name: 'github-token', category: 'automation' }],
+    });
     expect(mockedDb.evidenceAutomationRun.create).toHaveBeenCalledWith({
       data: {
         evidenceAutomationId: 'aut_1',
@@ -278,6 +329,28 @@ describe('AutomationsService', () => {
         status: 'pending',
         version: 2,
       },
+    });
+    expect(mockedDb.task.update).not.toHaveBeenCalled();
+    expect(auditService.logAutomationEvent).toHaveBeenCalledWith({
+      actor: { userId: 'usr_1', memberId: 'mem_1' },
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      action: 'manual_run_started',
+      description: 'started automation run v2',
+      runId: 'ear_1',
+      version: 2,
+    });
+    expect(auditService.logAutomationEvent).toHaveBeenCalledWith({
+      actor: { userId: 'usr_1', memberId: 'mem_1' },
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      action: 'secret_refs_used',
+      description: 'used automation secret references',
+      runId: 'ear_1',
+      version: 2,
+      secretRefs: [{ name: 'github-token', category: 'automation' }],
     });
     expect(runtimeService.buildExecutionRequest).toHaveBeenCalledWith({
       organizationId: 'org_1',
@@ -316,8 +389,9 @@ describe('AutomationsService', () => {
       version: 2,
       scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
     } as never);
-    mockedDb.secret.findMany.mockResolvedValue([]);
-    mockedDb.evidenceAutomationRun.count.mockResolvedValue(0);
+    secretsService.verifySecretRefs.mockRejectedValue(
+      new NotFoundException('Automation secret not found'),
+    );
 
     await expect(
       service.startManualRun({
@@ -333,7 +407,6 @@ describe('AutomationsService', () => {
   });
 
   it('enforces the organization manual run limit before creating a run', async () => {
-    process.env.TASK_AUTOMATION_MANUAL_RUNS_PER_DAY = '1';
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
     } as never);
@@ -342,7 +415,12 @@ describe('AutomationsService', () => {
       version: 2,
       scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
     } as never);
-    mockedDb.evidenceAutomationRun.count.mockResolvedValue(1);
+    usageLimitsService.assertManualRunLimit.mockRejectedValue(
+      new HttpException(
+        'Task automation manual run limit reached',
+        HttpStatus.TOO_MANY_REQUESTS,
+      ),
+    );
 
     await expect(
       service.startManualRun({
@@ -357,11 +435,15 @@ describe('AutomationsService', () => {
   });
 
   it('enforces the stored version limit before publishing', async () => {
-    process.env.TASK_AUTOMATION_MAX_VERSIONS_PER_AUTOMATION = '2';
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
     } as never);
-    mockedDb.evidenceAutomationVersion.count.mockResolvedValue(2);
+    usageLimitsService.assertVersionLimit.mockRejectedValue(
+      new HttpException(
+        'Task automation version limit reached',
+        HttpStatus.TOO_MANY_REQUESTS,
+      ),
+    );
 
     await expect(
       service.createVersion({

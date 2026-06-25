@@ -1,25 +1,45 @@
 'use client';
 
+import { ScheduleSummary } from '@/components/schedule-summary';
 import { downloadAutomationPDF } from '@/lib/evidence-download';
 import { EvidenceAutomation, EvidenceAutomationRun } from '@db';
+import { Button, HStack, Section, Stack, Text } from '@trycompai/design-system';
+import { Add, ArrowRight, Download } from '@trycompai/design-system/icons';
 import { formatDistanceToNow } from 'date-fns';
-import {
-  ArrowRight,
-  Download,
-  Plus,
-} from 'lucide-react';
-import type React from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import type React from 'react';
 import { toast } from 'sonner';
-import { Button, HStack, Section, Stack, Text } from '@trycompai/design-system';
-import { ScheduleSummary } from '@/components/schedule-summary';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 
 type AutomationWithLatestRun = EvidenceAutomation & {
   runs: EvidenceAutomationRun[];
 };
+
+function getAutomationStatus(automation: AutomationWithLatestRun) {
+  if (!automation.isEnabled) {
+    return { label: 'Disabled', className: 'text-muted-foreground' };
+  }
+
+  const latestRun = automation.runs.find((run) => run.version !== null);
+  if (!latestRun) {
+    return { label: 'Ready', className: 'text-info' };
+  }
+
+  if (latestRun.status === 'pending' || latestRun.status === 'running') {
+    return { label: 'Running', className: 'text-warning' };
+  }
+
+  if (latestRun.status === 'failed' || latestRun.evaluationStatus === 'fail') {
+    return { label: 'Failed', className: 'text-destructive' };
+  }
+
+  if (latestRun.status === 'completed') {
+    return { label: 'Passed', className: 'text-primary' };
+  }
+
+  return { label: 'Unavailable', className: 'text-muted-foreground' };
+}
 
 interface TaskAutomationsProps {
   automations: AutomationWithLatestRun[];
@@ -43,7 +63,7 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
   if (automations.length === 0) {
     return (
       <Section title="Custom Automations" description="Build AI-powered automations for this task">
-        <Button variant="outline" size="lg" iconLeft={<Plus />} onClick={handleCreateAutomation}>
+        <Button variant="outline" size="lg" iconLeft={<Add />} onClick={handleCreateAutomation}>
           Create Automation
         </Button>
       </Section>
@@ -58,11 +78,14 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
           const lastRan = latestVersionRun?.createdAt
             ? formatDistanceToNow(new Date(latestVersionRun.createdAt), { addSuffix: true })
             : null;
-          const isPassing = latestVersionRun &&
+          const isPassing =
+            latestVersionRun &&
             latestVersionRun.status === 'completed' &&
             latestVersionRun.evaluationStatus !== 'fail';
-          const isFailing = latestVersionRun &&
+          const isFailing =
+            latestVersionRun &&
             (latestVersionRun.status === 'failed' || latestVersionRun.evaluationStatus === 'fail');
+          const status = getAutomationStatus(automation);
 
           const borderColor = isFailing
             ? 'border-destructive/50 bg-destructive/5'
@@ -84,7 +107,12 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
               <div className={`h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
 
               <Stack gap="none" as="div" style={{ flex: 1, minWidth: 0 }}>
-                <Text size="sm" weight="medium">{automation.name}</Text>
+                <HStack gap="sm" align="center">
+                  <Text size="sm" weight="medium">
+                    {automation.name}
+                  </Text>
+                  <span className={`text-xs font-medium ${status.className}`}>{status.label}</span>
+                </HStack>
                 <Text size="xs" variant="muted">
                   {latestVersionRun && lastRan
                     ? `Last ran ${lastRan} • v${latestVersionRun.version}`
@@ -126,8 +154,7 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
         })}
 
         {!isManualTask && (
-          <Button variant="outline" size="lg" onClick={handleCreateAutomation}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button variant="outline" size="lg" iconLeft={<Add />} onClick={handleCreateAutomation}>
             Create Automation
           </Button>
         )}

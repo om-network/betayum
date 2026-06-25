@@ -16,10 +16,12 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import { OrganizationId } from '../../auth/auth-context.decorator';
+import { AuthContext, OrganizationId } from '../../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
+import type { AuthContext as AuthContextType } from '../../auth/types';
+import type { AutomationActor } from './automation-types';
 import { TasksService } from '../tasks.service';
 import { AutomationRuntimeService } from './automation-runtime.service';
 import { AutomationsService } from './automations.service';
@@ -137,12 +139,17 @@ export class AutomationsController {
   @ApiResponse(CREATE_AUTOMATION_RESPONSES[404])
   async createAutomation(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Param('taskId') taskId: string,
   ) {
     // Verify task access first
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
-    return this.automationsService.create({ organizationId, taskId });
+    return this.automationsService.create({
+      organizationId,
+      taskId,
+      actor: await this.resolveAutomationActor(organizationId, authContext),
+    });
   }
 
   @Patch(':automationId')
@@ -164,6 +171,7 @@ export class AutomationsController {
   @ApiResponse(UPDATE_AUTOMATION_RESPONSES[404])
   async updateAutomation(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Param('taskId') taskId: string,
     @Param('automationId') automationId: string,
     @Body() updateAutomationDto: UpdateAutomationDto,
@@ -176,6 +184,7 @@ export class AutomationsController {
       taskId,
       automationId,
       data: updateAutomationDto,
+      actor: await this.resolveAutomationActor(organizationId, authContext),
     });
   }
 
@@ -201,6 +210,7 @@ export class AutomationsController {
   })
   async deleteAutomation(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Param('taskId') taskId: string,
     @Param('automationId') automationId: string,
   ) {
@@ -211,6 +221,7 @@ export class AutomationsController {
       organizationId,
       taskId,
       automationId,
+      actor: await this.resolveAutomationActor(organizationId, authContext),
     });
   }
 
@@ -245,9 +256,14 @@ export class AutomationsController {
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
   async startManualRun(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Param('taskId') taskId: string,
     @Param('automationId') automationId: string,
-    @Body() body: { version: number },
+    @Body()
+    body: {
+      version: number;
+      secretRefs?: { name: string; category?: string }[];
+    },
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
     return this.automationsService.startManualRun({
@@ -255,6 +271,8 @@ export class AutomationsController {
       taskId,
       automationId,
       version: body.version,
+      secretRefs: body.secretRefs,
+      actor: await this.resolveAutomationActor(organizationId, authContext),
     });
   }
 
@@ -324,6 +342,7 @@ export class AutomationsController {
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
   async createVersion(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Param('taskId') taskId: string,
     @Param('automationId') automationId: string,
     @Body() body: { scriptKey: string; changelog?: string },
@@ -334,6 +353,7 @@ export class AutomationsController {
       taskId,
       automationId,
       data: body,
+      actor: await this.resolveAutomationActor(organizationId, authContext),
     });
   }
 
@@ -347,6 +367,7 @@ export class AutomationsController {
   @ApiParam({ name: 'version', description: 'Published version number' })
   async restoreVersion(
     @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
     @Param('taskId') taskId: string,
     @Param('automationId') automationId: string,
     @Param('version') version: string,
@@ -357,7 +378,25 @@ export class AutomationsController {
       taskId,
       automationId,
       version: parseInt(version),
+      actor: await this.resolveAutomationActor(organizationId, authContext),
     });
+  }
+
+  private async resolveAutomationActor(
+    organizationId: string,
+    authContext: AuthContextType,
+  ): Promise<AutomationActor> {
+    if (authContext.userId) {
+      return {
+        userId: authContext.userId,
+        memberId: authContext.memberId,
+      };
+    }
+
+    return {
+      userId: await this.tasksService.getApiKeyActorUserId(organizationId),
+      memberId: null,
+    };
   }
 
   // ==================== AUTOMATION RUNS (per task) ====================

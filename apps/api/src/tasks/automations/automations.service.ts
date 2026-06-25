@@ -1,30 +1,25 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
+import { AutomationAuditService } from './automation-audit.service';
+import { AutomationSecretsService } from './automation-secrets.service';
+import type {
+  AutomationActor,
+  AutomationSecretRef,
+  ScopedAutomationParams,
+  TaskAutomationScope,
+} from './automation-types';
+import { AutomationUsageLimitsService } from './automation-usage-limits.service';
 import { AutomationRuntimeService } from './automation-runtime.service';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 
-interface TaskAutomationScope {
-  organizationId: string;
-  taskId: string;
-}
-
-interface ScopedAutomationParams extends TaskAutomationScope {
-  automationId: string;
-}
-
-interface AutomationSecretRef {
-  name: string;
-  category?: string;
-}
-
 @Injectable()
 export class AutomationsService {
-  constructor(private readonly automationRuntimeService: AutomationRuntimeService) {}
+  constructor(
+    private readonly automationRuntimeService: AutomationRuntimeService,
+    private readonly automationUsageLimitsService: AutomationUsageLimitsService,
+    private readonly automationSecretsService: AutomationSecretsService,
+    private readonly automationAuditService: AutomationAuditService,
+  ) {}
 
   async findByTaskId({ organizationId, taskId }: TaskAutomationScope) {
     const automations = await db.evidenceAutomation.findMany({
@@ -74,7 +69,11 @@ export class AutomationsService {
     };
   }
 
-  async create({ organizationId, taskId }: TaskAutomationScope) {
+  async create({
+    organizationId,
+    taskId,
+    actor,
+  }: TaskAutomationScope & { actor?: AutomationActor }) {
     const task = await db.task.findFirst({
       where: {
         id: taskId,
@@ -93,6 +92,15 @@ export class AutomationsService {
       },
     });
 
+    await this.logIfActor({
+      actor,
+      organizationId,
+      taskId,
+      automationId: automation.id,
+      action: 'created',
+      description: 'created automation',
+    });
+
     return {
       success: true,
       automation: {
@@ -107,7 +115,11 @@ export class AutomationsService {
     taskId,
     automationId,
     data,
-  }: ScopedAutomationParams & { data: UpdateAutomationDto }) {
+    actor,
+  }: ScopedAutomationParams & {
+    data: UpdateAutomationDto;
+    actor?: AutomationActor;
+  }) {
     await this.findById({ organizationId, taskId, automationId });
 
     const { scheduleFrequency, ...rest } = data;
@@ -119,6 +131,23 @@ export class AutomationsService {
         ...rest,
         ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
       },
+    });
+
+    const statusAction =
+      data.isEnabled === undefined
+        ? null
+        : data.isEnabled
+          ? 'enabled'
+          : 'disabled';
+    await this.logIfActor({
+      actor,
+      organizationId,
+      taskId,
+      automationId,
+      action: statusAction ?? 'draft_updated',
+      description: statusAction
+        ? `${statusAction} automation`
+        : 'updated automation draft',
     });
 
     return {
@@ -135,13 +164,23 @@ export class AutomationsService {
     organizationId,
     taskId,
     automationId,
-  }: ScopedAutomationParams) {
+    actor,
+  }: ScopedAutomationParams & { actor?: AutomationActor }) {
     await this.findById({ organizationId, taskId, automationId });
 
     await db.evidenceAutomation.delete({
       where: {
         id: automationId,
       },
+    });
+
+    await this.logIfActor({
+      actor,
+      organizationId,
+      taskId,
+      automationId,
+      action: 'disabled',
+      description: 'deleted automation',
     });
 
     return {
@@ -155,11 +194,17 @@ export class AutomationsService {
     taskId,
     automationId,
     data,
+    actor,
   }: ScopedAutomationParams & {
     data: { scriptKey: string; changelog?: string };
+    actor?: AutomationActor;
   }) {
     await this.findById({ organizationId, taskId, automationId });
-    await this.assertVersionLimit({ organizationId, taskId, automationId });
+    await this.automationUsageLimitsService.assertVersionLimit({
+      organizationId,
+      taskId,
+      automationId,
+    });
     const latestVersion = await db.evidenceAutomationVersion.findFirst({
       where: {
         evidenceAutomationId: automationId,
@@ -187,6 +232,15 @@ export class AutomationsService {
         data: { isEnabled: true },
       }),
     ]);
+    await this.logIfActor({
+      actor,
+      organizationId,
+      taskId,
+      automationId,
+      action: 'published',
+      description: `published automation v${version.version}`,
+      version: version.version,
+    });
     return { success: true, version };
   }
 
@@ -195,7 +249,8 @@ export class AutomationsService {
     taskId,
     automationId,
     version,
-  }: ScopedAutomationParams & { version: number }) {
+    actor,
+  }: ScopedAutomationParams & { version: number; actor?: AutomationActor }) {
     await this.findById({ organizationId, taskId, automationId });
 
     const versionRecord = await db.evidenceAutomationVersion.findFirst({
@@ -213,6 +268,16 @@ export class AutomationsService {
       throw new NotFoundException('Automation version not found');
     }
 
+    await this.logIfActor({
+      actor,
+      organizationId,
+      taskId,
+      automationId,
+      action: 'restored',
+      description: `restored automation v${versionRecord.version}`,
+      version: versionRecord.version,
+    });
+
     return {
       success: true,
       draft: {
@@ -229,14 +294,21 @@ export class AutomationsService {
     automationId,
     version,
     secretRefs = [],
+    actor,
   }: ScopedAutomationParams & {
     version: number;
     secretRefs?: AutomationSecretRef[];
+    actor?: AutomationActor;
   }) {
     this.automationRuntimeService.assertExecutionAvailable();
     await this.findById({ organizationId, taskId, automationId });
-    await this.assertManualRunLimit({ organizationId });
-    await this.verifySecretRefs({ organizationId, secretRefs });
+    await this.automationUsageLimitsService.assertManualRunLimit({
+      organizationId,
+    });
+    await this.automationSecretsService.verifySecretRefs({
+      organizationId,
+      secretRefs,
+    });
 
     const versionRecord = await db.evidenceAutomationVersion.findFirst({
       where: {
@@ -275,123 +347,50 @@ export class AutomationsService {
       tools: [],
     });
 
+    await this.logIfActor({
+      actor,
+      organizationId,
+      taskId,
+      automationId,
+      action: 'manual_run_started',
+      description: `started automation run v${version}`,
+      runId: run.id,
+      version,
+    });
+    if (secretRefs.length > 0) {
+      await this.logIfActor({
+        actor,
+        organizationId,
+        taskId,
+        automationId,
+        action: 'secret_refs_used',
+        description: 'used automation secret references',
+        runId: run.id,
+        version,
+        secretRefs,
+      });
+    }
+
     return { success: true, run, workerRequest };
   }
 
-  private async assertManualRunLimit({
-    organizationId,
-  }: {
-    organizationId: string;
+  private async logIfActor({
+    actor,
+    ...params
+  }: Omit<
+    Parameters<AutomationAuditService['logAutomationEvent']>[0],
+    'actor'
+  > & {
+    actor?: AutomationActor;
   }) {
-    const limit = this.getPositiveIntegerEnv({
-      name: 'TASK_AUTOMATION_MANUAL_RUNS_PER_DAY',
-      fallback: 100,
-    });
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const runCount = await db.evidenceAutomationRun.count({
-      where: {
-        createdAt: { gte: since },
-        evidenceAutomation: {
-          task: { organizationId },
-        },
-      },
-    });
-
-    if (runCount < limit) {
+    if (!actor) {
       return;
     }
 
-    throw new HttpException(
-      'Task automation manual run limit reached',
-      HttpStatus.TOO_MANY_REQUESTS,
-    );
-  }
-
-  private async assertVersionLimit({
-    organizationId,
-    taskId,
-    automationId,
-  }: ScopedAutomationParams) {
-    const limit = this.getPositiveIntegerEnv({
-      name: 'TASK_AUTOMATION_MAX_VERSIONS_PER_AUTOMATION',
-      fallback: 50,
+    await this.automationAuditService.logAutomationEvent({
+      ...params,
+      actor,
     });
-    const versionCount = await db.evidenceAutomationVersion.count({
-      where: {
-        evidenceAutomationId: automationId,
-        evidenceAutomation: {
-          taskId,
-          task: { organizationId },
-        },
-      },
-    });
-
-    if (versionCount < limit) {
-      return;
-    }
-
-    throw new HttpException(
-      'Task automation version limit reached',
-      HttpStatus.TOO_MANY_REQUESTS,
-    );
-  }
-
-  private getPositiveIntegerEnv({
-    name,
-    fallback,
-  }: {
-    name: string;
-    fallback: number;
-  }) {
-    const parsed = Number.parseInt(process.env[name] ?? '', 10);
-    if (Number.isInteger(parsed) && parsed > 0) {
-      return parsed;
-    }
-
-    return fallback;
-  }
-
-  private async verifySecretRefs({
-    organizationId,
-    secretRefs,
-  }: {
-    organizationId: string;
-    secretRefs: AutomationSecretRef[];
-  }) {
-    if (secretRefs.length === 0) {
-      return;
-    }
-
-    const secrets = await db.secret.findMany({
-      where: {
-        organizationId,
-        OR: secretRefs.map((secretRef) => ({
-          name: secretRef.name,
-          ...(secretRef.category ? { category: secretRef.category } : {}),
-        })),
-      },
-      select: {
-        name: true,
-        category: true,
-      },
-    });
-
-    const available = new Set(
-      secrets.map((secret) => this.getSecretRefKey(secret)),
-    );
-    const missing = secretRefs.find(
-      (secretRef) => !available.has(this.getSecretRefKey(secretRef)),
-    );
-
-    if (!missing) {
-      return;
-    }
-
-    throw new NotFoundException('Automation secret not found');
-  }
-
-  private getSecretRefKey(secretRef: AutomationSecretRef): string {
-    return `${secretRef.name}:${secretRef.category ?? ''}`;
   }
 
   async findRunsByAutomationId({
