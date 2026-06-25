@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { db } from '@db';
 import { AutomationRuntimeService } from './automation-runtime.service';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
@@ -154,6 +159,7 @@ export class AutomationsService {
     data: { scriptKey: string; changelog?: string };
   }) {
     await this.findById({ organizationId, taskId, automationId });
+    await this.assertVersionLimit({ organizationId, taskId, automationId });
     const latestVersion = await db.evidenceAutomationVersion.findFirst({
       where: {
         evidenceAutomationId: automationId,
@@ -229,6 +235,7 @@ export class AutomationsService {
   }) {
     this.automationRuntimeService.assertExecutionAvailable();
     await this.findById({ organizationId, taskId, automationId });
+    await this.assertManualRunLimit({ organizationId });
     await this.verifySecretRefs({ organizationId, secretRefs });
 
     const versionRecord = await db.evidenceAutomationVersion.findFirst({
@@ -269,6 +276,79 @@ export class AutomationsService {
     });
 
     return { success: true, run, workerRequest };
+  }
+
+  private async assertManualRunLimit({
+    organizationId,
+  }: {
+    organizationId: string;
+  }) {
+    const limit = this.getPositiveIntegerEnv({
+      name: 'TASK_AUTOMATION_MANUAL_RUNS_PER_DAY',
+      fallback: 100,
+    });
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const runCount = await db.evidenceAutomationRun.count({
+      where: {
+        createdAt: { gte: since },
+        evidenceAutomation: {
+          task: { organizationId },
+        },
+      },
+    });
+
+    if (runCount < limit) {
+      return;
+    }
+
+    throw new HttpException(
+      'Task automation manual run limit reached',
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+
+  private async assertVersionLimit({
+    organizationId,
+    taskId,
+    automationId,
+  }: ScopedAutomationParams) {
+    const limit = this.getPositiveIntegerEnv({
+      name: 'TASK_AUTOMATION_MAX_VERSIONS_PER_AUTOMATION',
+      fallback: 50,
+    });
+    const versionCount = await db.evidenceAutomationVersion.count({
+      where: {
+        evidenceAutomationId: automationId,
+        evidenceAutomation: {
+          taskId,
+          task: { organizationId },
+        },
+      },
+    });
+
+    if (versionCount < limit) {
+      return;
+    }
+
+    throw new HttpException(
+      'Task automation version limit reached',
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+
+  private getPositiveIntegerEnv({
+    name,
+    fallback,
+  }: {
+    name: string;
+    fallback: number;
+  }) {
+    const parsed = Number.parseInt(process.env[name] ?? '', 10);
+    if (Number.isInteger(parsed) && parsed > 0) {
+      return parsed;
+    }
+
+    return fallback;
   }
 
   private async verifySecretRefs({

@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { HttpStatus, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { AutomationRuntimeService } from './automation-runtime.service';
 import { AutomationsService } from './automations.service';
@@ -15,11 +15,13 @@ jest.mock('@db', () => ({
     evidenceAutomationRun: {
       findMany: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
     },
     evidenceAutomationVersion: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
     },
     task: {
       findFirst: jest.fn(),
@@ -35,6 +37,7 @@ const mockedDb = db as jest.Mocked<typeof db>;
 
 describe('AutomationsService', () => {
   let service: AutomationsService;
+  const originalEnv = process.env;
   const runtimeService = {
     assertExecutionAvailable: jest.fn(),
     buildExecutionRequest: jest.fn(),
@@ -42,10 +45,15 @@ describe('AutomationsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env = { ...originalEnv };
     runtimeService.buildExecutionRequest.mockImplementation((input) => input);
     service = new AutomationsService(
       runtimeService as unknown as AutomationRuntimeService,
     );
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
   });
 
   it('lists automations only for the requested task and organization', async () => {
@@ -148,6 +156,7 @@ describe('AutomationsService', () => {
     mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
       version: 2,
     } as never);
+    mockedDb.evidenceAutomationVersion.count.mockResolvedValue(2);
     mockedDb.evidenceAutomationVersion.create.mockReturnValue({
       id: 'eav_3',
       version: 3,
@@ -247,6 +256,7 @@ describe('AutomationsService', () => {
       status: 'pending',
       version: 2,
     } as never);
+    mockedDb.evidenceAutomationRun.count.mockResolvedValue(0);
     mockedDb.secret.findMany.mockResolvedValue([
       { name: 'github-token', category: 'automation' },
     ] as never);
@@ -307,6 +317,7 @@ describe('AutomationsService', () => {
       scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
     } as never);
     mockedDb.secret.findMany.mockResolvedValue([]);
+    mockedDb.evidenceAutomationRun.count.mockResolvedValue(0);
 
     await expect(
       service.startManualRun({
@@ -319,5 +330,50 @@ describe('AutomationsService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
 
     expect(mockedDb.evidenceAutomationRun.create).not.toHaveBeenCalled();
+  });
+
+  it('enforces the organization manual run limit before creating a run', async () => {
+    process.env.TASK_AUTOMATION_MANUAL_RUNS_PER_DAY = '1';
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+    } as never);
+    mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
+      id: 'eav_2',
+      version: 2,
+      scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
+    } as never);
+    mockedDb.evidenceAutomationRun.count.mockResolvedValue(1);
+
+    await expect(
+      service.startManualRun({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        automationId: 'aut_1',
+        version: 2,
+      }),
+    ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+
+    expect(mockedDb.evidenceAutomationRun.create).not.toHaveBeenCalled();
+  });
+
+  it('enforces the stored version limit before publishing', async () => {
+    process.env.TASK_AUTOMATION_MAX_VERSIONS_PER_AUTOMATION = '2';
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+    } as never);
+    mockedDb.evidenceAutomationVersion.count.mockResolvedValue(2);
+
+    await expect(
+      service.createVersion({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        automationId: 'aut_1',
+        data: {
+          scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v3.js',
+        },
+      }),
+    ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+
+    expect(mockedDb.evidenceAutomationVersion.create).not.toHaveBeenCalled();
   });
 });
