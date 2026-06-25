@@ -24,6 +24,9 @@ jest.mock('@db', () => ({
     task: {
       findFirst: jest.fn(),
     },
+    secret: {
+      findMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   },
 }));
@@ -244,12 +247,16 @@ describe('AutomationsService', () => {
       status: 'pending',
       version: 2,
     } as never);
+    mockedDb.secret.findMany.mockResolvedValue([
+      { name: 'github-token', category: 'automation' },
+    ] as never);
 
     const result = await service.startManualRun({
       organizationId: 'org_1',
       taskId: 'tsk_1',
       automationId: 'aut_1',
       version: 2,
+      secretRefs: [{ name: 'github-token', category: 'automation' }],
     });
 
     expect(runtimeService.assertExecutionAvailable).toHaveBeenCalled();
@@ -270,7 +277,7 @@ describe('AutomationsService', () => {
       version: 2,
       artifactKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
       trigger: 'manual',
-      secretRefs: [],
+      secretRefs: [{ name: 'github-token', category: 'automation' }],
       tools: [],
     });
     expect(result).toEqual({
@@ -284,9 +291,33 @@ describe('AutomationsService', () => {
         version: 2,
         artifactKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
         trigger: 'manual',
-        secretRefs: [],
+        secretRefs: [{ name: 'github-token', category: 'automation' }],
         tools: [],
       },
     });
+  });
+
+  it('rejects manual runs that reference secrets outside the organization', async () => {
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+    } as never);
+    mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
+      id: 'eav_2',
+      version: 2,
+      scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
+    } as never);
+    mockedDb.secret.findMany.mockResolvedValue([]);
+
+    await expect(
+      service.startManualRun({
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        automationId: 'aut_1',
+        version: 2,
+        secretRefs: [{ name: 'other-org-token', category: 'automation' }],
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+
+    expect(mockedDb.evidenceAutomationRun.create).not.toHaveBeenCalled();
   });
 });

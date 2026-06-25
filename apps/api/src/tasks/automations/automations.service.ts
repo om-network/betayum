@@ -12,6 +12,11 @@ interface ScopedAutomationParams extends TaskAutomationScope {
   automationId: string;
 }
 
+interface AutomationSecretRef {
+  name: string;
+  category?: string;
+}
+
 @Injectable()
 export class AutomationsService {
   constructor(private readonly automationRuntimeService: AutomationRuntimeService) {}
@@ -217,9 +222,14 @@ export class AutomationsService {
     taskId,
     automationId,
     version,
-  }: ScopedAutomationParams & { version: number }) {
+    secretRefs = [],
+  }: ScopedAutomationParams & {
+    version: number;
+    secretRefs?: AutomationSecretRef[];
+  }) {
     this.automationRuntimeService.assertExecutionAvailable();
     await this.findById({ organizationId, taskId, automationId });
+    await this.verifySecretRefs({ organizationId, secretRefs });
 
     const versionRecord = await db.evidenceAutomationVersion.findFirst({
       where: {
@@ -254,11 +264,54 @@ export class AutomationsService {
       version,
       artifactKey: versionRecord.scriptKey,
       trigger: 'manual',
-      secretRefs: [],
+      secretRefs,
       tools: [],
     });
 
     return { success: true, run, workerRequest };
+  }
+
+  private async verifySecretRefs({
+    organizationId,
+    secretRefs,
+  }: {
+    organizationId: string;
+    secretRefs: AutomationSecretRef[];
+  }) {
+    if (secretRefs.length === 0) {
+      return;
+    }
+
+    const secrets = await db.secret.findMany({
+      where: {
+        organizationId,
+        OR: secretRefs.map((secretRef) => ({
+          name: secretRef.name,
+          ...(secretRef.category ? { category: secretRef.category } : {}),
+        })),
+      },
+      select: {
+        name: true,
+        category: true,
+      },
+    });
+
+    const available = new Set(
+      secrets.map((secret) => this.getSecretRefKey(secret)),
+    );
+    const missing = secretRefs.find(
+      (secretRef) => !available.has(this.getSecretRefKey(secretRef)),
+    );
+
+    if (!missing) {
+      return;
+    }
+
+    throw new NotFoundException('Automation secret not found');
+  }
+
+  private getSecretRefKey(secretRef: AutomationSecretRef): string {
+    return `${secretRef.name}:${secretRef.category ?? ''}`;
   }
 
   async findRunsByAutomationId({

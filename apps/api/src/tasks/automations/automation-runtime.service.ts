@@ -118,6 +118,10 @@ export class AutomationRuntimeService {
     );
   }
 
+  sanitizeRunOutput(value: unknown): unknown {
+    return this.sanitizeValue({ value });
+  }
+
   private getAvailability({
     generationEnabled,
     executionEnabled,
@@ -144,6 +148,41 @@ export class AutomationRuntimeService {
 
   private isEnabled(name: string): boolean {
     return process.env[name] !== 'false';
+  }
+
+  private sanitizeValue({
+    value,
+    key,
+  }: {
+    value: unknown;
+    key?: string;
+  }): unknown {
+    if (key && this.isSensitiveKey(key)) {
+      return '[redacted]';
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => this.sanitizeValue({ value: item }));
+    }
+
+    if (!this.isRecord(value)) {
+      return value;
+    }
+
+    return Object.fromEntries(
+      Object.entries(value).map(([entryKey, entryValue]) => [
+        entryKey,
+        this.sanitizeValue({ value: entryValue, key: entryKey }),
+      ]),
+    );
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  private isSensitiveKey(key: string): boolean {
+    return /token|secret|password|authorization|cookie|api[-_]?key/i.test(key);
   }
 
   private isInternalHost(host: string): boolean {

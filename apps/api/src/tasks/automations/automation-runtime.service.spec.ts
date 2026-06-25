@@ -152,4 +152,28 @@ describe('AutomationRuntimeService', () => {
       }),
     ).toThrow(ServiceUnavailableException);
   });
+
+  it('sanitizes secret-like fields from run output', () => {
+    const service = new AutomationRuntimeService();
+
+    expect(
+      service.sanitizeRunOutput({
+        status: 'failed',
+        token: 'ghp_secret',
+        nested: {
+          Authorization: 'Bearer abc123',
+          message: 'request failed',
+          values: [{ password: 'super-secret' }, 'safe text'],
+        },
+      }),
+    ).toEqual({
+      status: 'failed',
+      token: '[redacted]',
+      nested: {
+        Authorization: '[redacted]',
+        message: 'request failed',
+        values: [{ password: '[redacted]' }, 'safe text'],
+      },
+    });
+  });
 });
