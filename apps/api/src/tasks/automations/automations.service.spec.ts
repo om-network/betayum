@@ -16,6 +16,7 @@ jest.mock('@db', () => ({
     },
     evidenceAutomationVersion: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
     },
     task: {
@@ -125,6 +126,98 @@ describe('AutomationsService', () => {
     });
     expect(mockedDb.evidenceAutomation.delete).toHaveBeenCalledWith({
       where: { id: 'aut_1' },
+    });
+  });
+
+  it('publishes the next immutable automation version for the scoped automation', async () => {
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+    } as never);
+    mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
+      version: 2,
+    } as never);
+    mockedDb.evidenceAutomationVersion.create.mockReturnValue({
+      id: 'eav_3',
+      version: 3,
+    } as never);
+    mockedDb.evidenceAutomation.update.mockReturnValue({ id: 'aut_1' } as never);
+    mockedDb.$transaction.mockResolvedValue([
+      { id: 'eav_3', version: 3 },
+      { id: 'aut_1' },
+    ] as never);
+
+    const result = await service.createVersion({
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      data: {
+        scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v3.js',
+        changelog: 'Publish stable automation',
+      },
+    });
+
+    expect(mockedDb.evidenceAutomationVersion.findFirst).toHaveBeenCalledWith({
+      where: {
+        evidenceAutomationId: 'aut_1',
+        evidenceAutomation: {
+          taskId: 'tsk_1',
+          task: { organizationId: 'org_1' },
+        },
+      },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+    expect(mockedDb.evidenceAutomationVersion.create).toHaveBeenCalledWith({
+      data: {
+        evidenceAutomationId: 'aut_1',
+        version: 3,
+        scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v3.js',
+        changelog: 'Publish stable automation',
+      },
+    });
+    expect(result).toEqual({
+      success: true,
+      version: { id: 'eav_3', version: 3 },
+    });
+  });
+
+  it('restores a prior version as a draft reference without mutating it', async () => {
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+    } as never);
+    mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
+      id: 'eav_1',
+      version: 1,
+      scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v1.js',
+      changelog: 'Initial version',
+    } as never);
+
+    const result = await service.restoreVersion({
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      version: 1,
+    });
+
+    expect(mockedDb.evidenceAutomationVersion.findFirst).toHaveBeenCalledWith({
+      where: {
+        evidenceAutomationId: 'aut_1',
+        version: 1,
+        evidenceAutomation: {
+          taskId: 'tsk_1',
+          task: { organizationId: 'org_1' },
+        },
+      },
+    });
+    expect(mockedDb.evidenceAutomationVersion.create).not.toHaveBeenCalled();
+    expect(mockedDb.evidenceAutomation.update).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      success: true,
+      draft: {
+        automationId: 'aut_1',
+        restoredFromVersion: 1,
+        scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v1.js',
+      },
     });
   });
 });

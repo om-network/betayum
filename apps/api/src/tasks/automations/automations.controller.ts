@@ -304,7 +304,7 @@ export class AutomationsController {
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
     @Param('automationId') automationId: string,
-    @Body() body: { version: number; scriptKey: string; changelog?: string },
+    @Body() body: { scriptKey: string; changelog?: string },
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
     return this.automationsService.createVersion({
@@ -312,6 +312,29 @@ export class AutomationsController {
       taskId,
       automationId,
       data: body,
+    });
+  }
+
+  @Post(':automationId/versions/:version/restore')
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Restore a published automation version into a draft reference',
+  })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  @ApiParam({ name: 'version', description: 'Published version number' })
+  async restoreVersion(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+    @Param('version') version: string,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.restoreVersion({
+      organizationId,
+      taskId,
+      automationId,
+      version: parseInt(version),
     });
   }
 

@@ -143,15 +143,27 @@ export class AutomationsService {
     automationId,
     data,
   }: ScopedAutomationParams & {
-    data: { version: number; scriptKey: string; changelog?: string };
+    data: { scriptKey: string; changelog?: string };
   }) {
     await this.findById({ organizationId, taskId, automationId });
+    const latestVersion = await db.evidenceAutomationVersion.findFirst({
+      where: {
+        evidenceAutomationId: automationId,
+        evidenceAutomation: {
+          taskId,
+          task: { organizationId },
+        },
+      },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+    const nextVersion = (latestVersion?.version ?? 0) + 1;
 
     const [version] = await db.$transaction([
       db.evidenceAutomationVersion.create({
         data: {
           evidenceAutomationId: automationId,
-          version: data.version,
+          version: nextVersion,
           scriptKey: data.scriptKey,
           changelog: data.changelog,
         },
@@ -162,6 +174,39 @@ export class AutomationsService {
       }),
     ]);
     return { success: true, version };
+  }
+
+  async restoreVersion({
+    organizationId,
+    taskId,
+    automationId,
+    version,
+  }: ScopedAutomationParams & { version: number }) {
+    await this.findById({ organizationId, taskId, automationId });
+
+    const versionRecord = await db.evidenceAutomationVersion.findFirst({
+      where: {
+        evidenceAutomationId: automationId,
+        version,
+        evidenceAutomation: {
+          taskId,
+          task: { organizationId },
+        },
+      },
+    });
+
+    if (!versionRecord) {
+      throw new NotFoundException('Automation version not found');
+    }
+
+    return {
+      success: true,
+      draft: {
+        automationId,
+        restoredFromVersion: versionRecord.version,
+        scriptKey: versionRecord.scriptKey,
+      },
+    };
   }
 
   async findRunsByAutomationId({
