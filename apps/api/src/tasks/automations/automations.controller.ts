@@ -236,6 +236,28 @@ export class AutomationsController {
     });
   }
 
+  @Post(':automationId/runs')
+  @RequirePermission('task', 'update')
+  @ApiOperation({
+    summary: 'Start a manual run for a published automation version',
+  })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  async startManualRun(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+    @Body() body: { version: number },
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.startManualRun({
+      organizationId,
+      taskId,
+      automationId,
+      version: body.version,
+    });
+  }
+
   @Get(':automationId/versions')
   @RequirePermission('task', 'read')
   @ApiOperation({

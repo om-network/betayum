@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { db } from '@db';
+import { AutomationRuntimeService } from './automation-runtime.service';
 import { AutomationsService } from './automations.service';
 
 jest.mock('@db', () => ({
@@ -13,6 +14,7 @@ jest.mock('@db', () => ({
     },
     evidenceAutomationRun: {
       findMany: jest.fn(),
+      create: jest.fn(),
     },
     evidenceAutomationVersion: {
       findMany: jest.fn(),
@@ -30,10 +32,17 @@ const mockedDb = db as jest.Mocked<typeof db>;
 
 describe('AutomationsService', () => {
   let service: AutomationsService;
+  const runtimeService = {
+    assertExecutionAvailable: jest.fn(),
+    buildExecutionRequest: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new AutomationsService();
+    runtimeService.buildExecutionRequest.mockImplementation((input) => input);
+    service = new AutomationsService(
+      runtimeService as unknown as AutomationRuntimeService,
+    );
   });
 
   it('lists automations only for the requested task and organization', async () => {
@@ -217,6 +226,66 @@ describe('AutomationsService', () => {
         automationId: 'aut_1',
         restoredFromVersion: 1,
         scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v1.js',
+      },
+    });
+  });
+
+  it('starts a manual run pinned to a published version through the runtime contract', async () => {
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+    } as never);
+    mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
+      id: 'eav_2',
+      version: 2,
+      scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
+    } as never);
+    mockedDb.evidenceAutomationRun.create.mockResolvedValue({
+      id: 'ear_1',
+      status: 'pending',
+      version: 2,
+    } as never);
+
+    const result = await service.startManualRun({
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      version: 2,
+    });
+
+    expect(runtimeService.assertExecutionAvailable).toHaveBeenCalled();
+    expect(mockedDb.evidenceAutomationRun.create).toHaveBeenCalledWith({
+      data: {
+        evidenceAutomationId: 'aut_1',
+        taskId: 'tsk_1',
+        triggeredBy: 'manual',
+        status: 'pending',
+        version: 2,
+      },
+    });
+    expect(runtimeService.buildExecutionRequest).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+      runId: 'ear_1',
+      version: 2,
+      artifactKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
+      trigger: 'manual',
+      secretRefs: [],
+      tools: [],
+    });
+    expect(result).toEqual({
+      success: true,
+      run: { id: 'ear_1', status: 'pending', version: 2 },
+      workerRequest: {
+        organizationId: 'org_1',
+        taskId: 'tsk_1',
+        automationId: 'aut_1',
+        runId: 'ear_1',
+        version: 2,
+        artifactKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
+        trigger: 'manual',
+        secretRefs: [],
+        tools: [],
       },
     });
   });

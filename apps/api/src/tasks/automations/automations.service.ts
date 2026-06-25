@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
+import { AutomationRuntimeService } from './automation-runtime.service';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 
 interface TaskAutomationScope {
@@ -13,6 +14,8 @@ interface ScopedAutomationParams extends TaskAutomationScope {
 
 @Injectable()
 export class AutomationsService {
+  constructor(private readonly automationRuntimeService: AutomationRuntimeService) {}
+
   async findByTaskId({ organizationId, taskId }: TaskAutomationScope) {
     const automations = await db.evidenceAutomation.findMany({
       where: {
@@ -207,6 +210,55 @@ export class AutomationsService {
         scriptKey: versionRecord.scriptKey,
       },
     };
+  }
+
+  async startManualRun({
+    organizationId,
+    taskId,
+    automationId,
+    version,
+  }: ScopedAutomationParams & { version: number }) {
+    this.automationRuntimeService.assertExecutionAvailable();
+    await this.findById({ organizationId, taskId, automationId });
+
+    const versionRecord = await db.evidenceAutomationVersion.findFirst({
+      where: {
+        evidenceAutomationId: automationId,
+        version,
+        evidenceAutomation: {
+          taskId,
+          task: { organizationId },
+        },
+      },
+    });
+
+    if (!versionRecord) {
+      throw new NotFoundException('Automation version not found');
+    }
+
+    const run = await db.evidenceAutomationRun.create({
+      data: {
+        evidenceAutomationId: automationId,
+        taskId,
+        triggeredBy: 'manual',
+        status: 'pending',
+        version,
+      },
+    });
+
+    const workerRequest = this.automationRuntimeService.buildExecutionRequest({
+      organizationId,
+      taskId,
+      automationId,
+      runId: run.id,
+      version,
+      artifactKey: versionRecord.scriptKey,
+      trigger: 'manual',
+      secretRefs: [],
+      tools: [],
+    });
+
+    return { success: true, run, workerRequest };
   }
 
   async findRunsByAutomationId({
