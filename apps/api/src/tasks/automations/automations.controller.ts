@@ -21,6 +21,7 @@ import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
 import { TasksService } from '../tasks.service';
+import { AutomationRuntimeService } from './automation-runtime.service';
 import { AutomationsService } from './automations.service';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 import { AUTOMATION_OPERATIONS } from './schemas/automation-operations';
@@ -34,6 +35,7 @@ import { UPDATE_AUTOMATION_RESPONSES } from './schemas/update-automation.respons
 export class AutomationsController {
   constructor(
     private readonly automationsService: AutomationsService,
+    private readonly automationRuntimeService: AutomationRuntimeService,
     private readonly tasksService: TasksService,
   ) {}
 
@@ -60,6 +62,30 @@ export class AutomationsController {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
 
     return this.automationsService.findByTaskId(taskId);
+  }
+
+  @Get('service-state')
+  @RequirePermission('task', 'read')
+  @ApiOperation({
+    summary: 'Get task automation service state',
+    description:
+      'Report whether first-party task automation generation and execution are available for this task.',
+  })
+  @ApiParam({
+    name: 'taskId',
+    description: 'Unique task identifier',
+    example: 'tsk_abc123def456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Automation service state retrieved successfully',
+  })
+  async getAutomationServiceState(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationRuntimeService.getServiceState();
   }
 
   @Get(':automationId')
