@@ -6,7 +6,7 @@ FROM oven/bun:1.3.4 AS deps
 WORKDIR /app
 
 # Copy workspace configuration
-COPY package.json bun.lock ./
+COPY package.json bun.lock bunfig.toml ./
 
 # Copy package.json files for workspace packages used by the app and portal
 COPY packages/auth/package.json ./packages/auth/
