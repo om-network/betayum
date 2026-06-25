@@ -13,8 +13,8 @@
  *   onError: (error) => console.error('Failed!', error)
  * });
  *
- * // Execute the script
- * await execute();
+ * // Execute a published script version
+ * await execute(2);
  * ```
  */
 
@@ -67,7 +67,7 @@ export function useTaskAutomationExecution({
 
     const pollRunStatus = async () => {
       try {
-        const res = await getAutomationRunStatus(runId);
+        const res = await getAutomationRunStatus({ taskId, runId });
         if (!res.success) {
           throw new Error(res.error || 'Failed to fetch run status');
         }
@@ -107,7 +107,8 @@ export function useTaskAutomationExecution({
           const rawErr = data.error;
           const sanitizedMessage = await sanitizeErrorMessage(rawErr).catch(() => {
             if (typeof rawErr === 'string') return rawErr;
-            if (rawErr && typeof rawErr === 'object' && 'message' in rawErr) return String((rawErr as { message: unknown }).message);
+            if (rawErr && typeof rawErr === 'object' && 'message' in rawErr)
+              return String((rawErr as { message: unknown }).message);
             return 'The automation failed to execute';
           });
           const error = new Error(sanitizedMessage);
@@ -121,8 +122,8 @@ export function useTaskAutomationExecution({
         }
       } catch (err) {
         // Sanitize with fallback to ensure state cleanup always happens
-        const sanitizedMessage = await sanitizeErrorMessage(err).catch(
-          () => (err instanceof Error ? err.message : 'An unexpected error occurred'),
+        const sanitizedMessage = await sanitizeErrorMessage(err).catch(() =>
+          err instanceof Error ? err.message : 'An unexpected error occurred',
         );
         const error = new Error(sanitizedMessage);
         setError(error);
@@ -139,50 +140,58 @@ export function useTaskAutomationExecution({
         clearTimeout(pollingIntervalRef.current);
       }
     };
-  }, [runId, isExecuting, onSuccess, onError]);
+  }, [runId, isExecuting, onSuccess, onError, taskId]);
 
   /**
    * Execute the automation script
    */
-  const execute = useCallback(async () => {
-    setIsExecuting(true);
-    setError(null);
-    setResult(null);
-    setRunId(null);
+  const execute = useCallback(
+    async (version?: number) => {
+      setIsExecuting(true);
+      setError(null);
+      setResult(null);
+      setRunId(null);
 
-    try {
-      const response = await taskAutomationApi.execution.executeScript({
-        orgId,
-        taskId,
-        automationId: automationIdRef.current,
-      });
+      try {
+        if (!Number.isInteger(version) || !version || version <= 0) {
+          throw new Error('Select a published automation version before running it.');
+        }
 
-      // The API now returns a run ID that we can monitor
-      if (
-        response &&
-        typeof response === 'object' &&
-        'runId' in response &&
-        typeof response.runId === 'string'
-      ) {
-        setRunId(response.runId);
-        return response;
-      } else {
-        // No runId — treat as immediate completion
+        const response = await taskAutomationApi.execution.executeScript({
+          orgId,
+          taskId,
+          automationId: automationIdRef.current,
+          version,
+        });
+
+        // The API now returns a run ID that we can monitor
+        if (
+          response &&
+          typeof response === 'object' &&
+          'runId' in response &&
+          typeof response.runId === 'string'
+        ) {
+          setRunId(response.runId);
+          return response;
+        } else {
+          // No runId — treat as immediate completion
+          setIsExecuting(false);
+          return response;
+        }
+      } catch (err) {
+        // Sanitize with fallback to ensure state cleanup always happens
+        const sanitizedMessage = await sanitizeErrorMessage(err).catch(() =>
+          err instanceof Error ? err.message : 'An unexpected error occurred',
+        );
+        const error = new Error(sanitizedMessage);
+        setError(error);
         setIsExecuting(false);
-        return response;
+        onError?.(error);
+        throw error;
       }
-    } catch (err) {
-      // Sanitize with fallback to ensure state cleanup always happens
-      const sanitizedMessage = await sanitizeErrorMessage(err).catch(
-        () => (err instanceof Error ? err.message : 'An unexpected error occurred'),
-      );
-      const error = new Error(sanitizedMessage);
-      setError(error);
-      setIsExecuting(false);
-      onError?.(error);
-      throw error;
-    }
-  }, [orgId, taskId, onSuccess, onError]);
+    },
+    [orgId, taskId, onSuccess, onError, automationIdRef],
+  );
 
   /**
    * Reset the execution state

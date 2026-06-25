@@ -2,18 +2,14 @@
 // The added config here will be used whenever a users loads a page in their browser.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
-import { initBotId } from 'botid/client/core';
 import * as Sentry from '@sentry/nextjs';
+import { initBotId } from 'botid/client/core';
 
 initBotId({
   protect: [
     { path: '/api/chat', method: 'POST' },
     {
-      path: `${process.env.NEXT_PUBLIC_ENTERPRISE_API_URL}/api/tasks-automations/chat`,
-      method: 'POST',
-    },
-    {
-      path: `${process.env.NEXT_PUBLIC_ENTERPRISE_API_URL}/api/tasks-automations/errors`,
+      path: '/api/tasks-automations/chat',
       method: 'POST',
     },
   ],

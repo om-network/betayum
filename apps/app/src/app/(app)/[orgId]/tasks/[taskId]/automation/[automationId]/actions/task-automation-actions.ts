@@ -1,103 +1,29 @@
 'use server';
 
-/**
- * Server actions for task automation
- * These actions securely call the enterprise API with server-side license key
- */
+import { randomUUID } from 'crypto';
+import type { ChatUIMessage } from '../components/chat/types';
 
-import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
-import { createEnterpriseApiUrl } from './enterprise-api-url';
+type ChatHistoryMessage = ChatUIMessage;
+type AutomationRunStatus = {
+  id: string;
+  status: string;
+  success?: boolean | null;
+  error?: string | null;
+  output?: unknown;
+  evaluationStatus?: 'fail' | 'pass' | null;
+  evaluationReason?: string | null;
+};
 
-interface EnterpriseApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
+function getUnavailableResult(operation: string) {
+  return {
+    success: false as const,
+    error: `${operation} is not available until first-party automation storage is configured.`,
+    data: undefined,
+  };
 }
 
-class EnterpriseApiError extends Error {
-  constructor(
-    message: string,
-    public status?: number,
-  ) {
-    super(message);
-    this.name = 'EnterpriseApiError';
-  }
-}
-
-/**
- * Get enterprise API configuration
- */
-function getEnterpriseConfig() {
-  const enterpriseApiUrl = process.env.NEXT_PUBLIC_ENTERPRISE_API_URL || 'http://localhost:3006';
-  const enterpriseApiKey = process.env.ENTERPRISE_API_SECRET;
-
-  if (!enterpriseApiKey) {
-    throw new EnterpriseApiError(
-      'Task automations require an enterprise license. Please contact sales@betayum.com to learn more.',
-      403,
-    );
-  }
-
-  return { enterpriseApiUrl, enterpriseApiKey };
-}
-
-/**
- * Make authenticated request to enterprise API
- */
-async function callEnterpriseApi<T>(
-  endpoint: string,
-  options: {
-    method?: 'GET' | 'POST';
-    body?: unknown;
-    params?: Record<string, string>;
-  } = {},
-): Promise<T> {
-  const { enterpriseApiUrl, enterpriseApiKey } = getEnterpriseConfig();
-  const url = createEnterpriseApiUrl({
-    baseUrl: enterpriseApiUrl,
-    endpoint,
-    params: options.params,
-  });
-
-  const method = options.method || 'GET';
-
-  const response = await fetch(url.toString(), {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-secret': enterpriseApiKey,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  if (!response.ok) {
-    let errorMessage = `API request failed: ${response.status}`;
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.message || errorData.error || errorMessage;
-    } catch {}
-    throw new EnterpriseApiError(errorMessage, response.status);
-  }
-
-  const result: EnterpriseApiResponse<T> = await response.json();
-
-  if (!result.success && result.error) {
-    throw new EnterpriseApiError(result.error);
-  }
-
-  return result.data || (result as T);
-}
-
-/**
- * Revalidate current path
- */
-async function revalidateCurrentPath() {
-  const headersList = await headers();
-  let path = headersList.get('x-pathname') || headersList.get('referer') || '';
-  path = path.replace(/\/[a-z]{2}\//, '/');
-  revalidatePath(path);
+function getActionError(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 /**
@@ -109,72 +35,24 @@ export async function uploadAutomationScript(data: {
   content: string;
   type?: string;
 }) {
-  try {
-    const result = await callEnterpriseApi('/api/tasks-automations/s3/upload', {
-      method: 'POST',
-      body: data,
-    });
-
-    await revalidateCurrentPath();
-    return { success: true, data: result };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to upload script',
-    };
-  }
+  void data;
+  return getUnavailableResult('Automation draft upload');
 }
 
 /**
  * Get automation script
  */
 export async function getAutomationScript(key: string) {
-  try {
-    const result = await callEnterpriseApi('/api/tasks-automations/s3/get', {
-      params: { key },
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to get script',
-    };
-  }
+  void key;
+  return getUnavailableResult('Automation script retrieval');
 }
 
 /**
  * List automation scripts
  */
 export async function listAutomationScripts(orgId: string) {
-  try {
-    const result = await callEnterpriseApi('/api/tasks-automations/s3/list', {
-      params: { orgId },
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    const typedError = error as EnterpriseApiError;
-
-    if (typedError.status === 401) {
-      return {
-        success: false,
-        error: 'Unauthorized. Please contact your administrator.',
-      };
-    }
-
-    if (typedError.status === 404) {
-      return {
-        success: false,
-        error: 'Files not found.',
-      };
-    }
-
-    return {
-      success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to list scripts',
-    };
-  }
+  void orgId;
+  return getUnavailableResult('Automation script listing');
 }
 
 /**
@@ -184,32 +62,34 @@ export async function executeAutomationScript(data: {
   orgId: string;
   taskId: string;
   automationId: string;
-  version?: number; // Optional: test specific version
+  version: number;
 }) {
-  try {
-    const result = await callEnterpriseApi<{ runId: string }>(
-      '/api/tasks-automations/trigger/execute',
-      {
-        method: 'POST',
-        body: data,
-      },
-    );
-
-    // Don't revalidate - causes page refresh. Test results are handled via polling/state.
-    return { success: true, data: result };
-  } catch (error) {
-    const typedError = error as EnterpriseApiError;
-
-    if (typedError.status === 401) {
-      return {
-        success: false,
-        error: 'Unauthorized. Please contact your administrator.',
-      };
-    }
-
+  if (!Number.isInteger(data.version) || data.version <= 0) {
     return {
-      success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to execute script',
+      success: false as const,
+      error: 'Select a published automation version before running it.',
+      data: undefined,
+    };
+  }
+
+  try {
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.post<{
+      success: boolean;
+      run: { id: string };
+    }>(`/v1/tasks/${data.taskId}/automations/${data.automationId}/runs`, {
+      version: data.version,
+    });
+    if (response.error) throw new Error(response.error);
+    const runId = response.data?.run.id;
+    if (!runId) throw new Error('Automation run was not created');
+
+    return { success: true, data: { runId } };
+  } catch (error) {
+    return {
+      success: false as const,
+      error: getActionError(error, 'Failed to execute script'),
+      data: undefined,
     };
   }
 }
@@ -218,51 +98,47 @@ export async function executeAutomationScript(data: {
  * Analyze workflow
  */
 export async function analyzeAutomationWorkflow(scriptContent: string) {
-  try {
-    const result = await callEnterpriseApi('/api/tasks-automations/workflow/analyze', {
-      method: 'POST',
-      body: { scriptContent },
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    const typedError = error as EnterpriseApiError;
-
-    if (typedError.status === 401) {
-      return {
-        success: false,
-        error: 'Unauthorized. Please contact your administrator.',
-      };
-    }
-
-    return {
-      success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to analyze workflow',
-    };
-  }
+  void scriptContent;
+  return getUnavailableResult('Automation workflow analysis');
 }
 
-export const getAutomationRunStatus = async (runId: string) => {
+export const getAutomationRunStatus = async ({
+  taskId,
+  runId,
+}: {
+  taskId: string;
+  runId: string;
+}) => {
   try {
-    const result = await callEnterpriseApi(`/api/tasks-automations/runs/${runId}`, {});
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.get<{
+      success: boolean;
+      run: AutomationRunStatus;
+    }>(`/v1/tasks/${taskId}/automations/runs/${runId}`);
+    if (response.error) throw new Error(response.error);
+    if (!response.data?.run) throw new Error('Automation run was not found');
 
+    const { run } = response.data;
     return {
       success: true,
-      data: result,
+      data: {
+        id: run.id,
+        status: run.status.toUpperCase(),
+        error: run.error,
+        output: {
+          success: run.success ?? run.status === 'completed',
+          error: run.error,
+          output: isRecord(run.output) ? run.output : undefined,
+          evaluationStatus: run.evaluationStatus ?? undefined,
+          evaluationReason: run.evaluationReason ?? undefined,
+        },
+      },
     };
   } catch (error) {
-    const typedError = error as EnterpriseApiError;
-
-    if (typedError.status === 401) {
-      return {
-        success: false,
-        error: 'Unauthorized. Please contact your administrator.',
-      };
-    }
-
     return {
-      success: false,
-      error: error instanceof EnterpriseApiError ? error.message : 'Failed to get run status',
+      success: false as const,
+      error: getActionError(error, 'Failed to fetch automation run status'),
+      data: undefined,
     };
   }
 };
@@ -270,30 +146,45 @@ export const getAutomationRunStatus = async (runId: string) => {
 /**
  * Load chat history for an automation
  */
-export async function loadChatHistory(automationId: string, offset = 0, limit = 50) {
+export async function loadChatHistory({
+  taskId,
+  automationId,
+  offset = 0,
+  limit = 50,
+}: {
+  taskId: string;
+  automationId: string;
+  offset?: number;
+  limit?: number;
+}) {
   try {
-    const response = await callEnterpriseApi<{
-      messages: any[];
-      total: number;
-      hasMore: boolean;
-    }>('/api/tasks-automations/chat/history', {
-      method: 'GET',
-      params: {
-        automationId,
-        offset: offset.toString(),
-        limit: limit.toString(),
-      },
-    });
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.get<{
+      success: boolean;
+      data: {
+        messages: ChatHistoryMessage[];
+        total: number;
+        hasMore: boolean;
+      };
+    }>(
+      `/v1/tasks/${taskId}/automations/${automationId}/chat-history?offset=${offset}&limit=${limit}`,
+    );
+    if (response.error) throw new Error(response.error);
 
     return {
       success: true,
-      data: response,
+      data: response.data?.data ?? {
+        messages: [],
+        total: 0,
+        hasMore: false,
+      },
     };
   } catch (error) {
     console.error('[loadChatHistory] Failed:', error);
     return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to load chat history',
+      success: false as const,
+      error: getActionError(error, 'Failed to load chat history'),
+      data: undefined,
     };
   }
 }
@@ -301,15 +192,22 @@ export async function loadChatHistory(automationId: string, offset = 0, limit = 
 /**
  * Save chat history for an automation
  */
-export async function saveChatHistory(automationId: string, messages: any[]) {
+export async function saveChatHistory({
+  taskId,
+  automationId,
+  messages,
+}: {
+  taskId: string;
+  automationId: string;
+  messages: unknown[];
+}) {
   try {
-    await callEnterpriseApi('/api/tasks-automations/chat/save', {
-      method: 'POST',
-      body: {
-        automationId,
-        messages,
-      },
-    });
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.post(
+      `/v1/tasks/${taskId}/automations/${automationId}/chat-history`,
+      { messages },
+    );
+    if (response.error) throw new Error(response.error);
 
     return {
       success: true,
@@ -318,7 +216,7 @@ export async function saveChatHistory(automationId: string, messages: any[]) {
     console.error('[saveChatHistory] Failed:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to save chat history',
+      error: getActionError(error, 'Failed to save chat history'),
     };
   }
 }
@@ -333,49 +231,43 @@ export async function publishAutomation(
   changelog?: string,
 ) {
   try {
-    // Call enterprise API to copy draft → versioned S3 key
-    const response = await callEnterpriseApi<{
-      success: boolean;
-      version: number;
-      scriptKey: string;
-    }>('/api/tasks-automations/publish', {
-      method: 'POST',
-      body: {
-        orgId,
-        taskId,
-        automationId,
-      },
-    });
-
-    if (!response.success) {
-      throw new Error('Enterprise API failed to publish');
-    }
-
-    // Save version record via NestJS API (also enables automation in one transaction)
     const { serverApi } = await import('@/lib/api-server');
-    const versionRes = await serverApi.post(
-      `/v1/tasks/${taskId}/automations/${automationId}/versions`,
-      {
-        version: response.version,
-        scriptKey: response.scriptKey,
-        changelog,
-      },
-    );
+    const versionRes = await serverApi.post<{
+      success: boolean;
+      version: { version: number };
+    }>(`/v1/tasks/${taskId}/automations/${automationId}/versions`, {
+      scriptKey: getDraftSnapshotKey({ orgId, taskId, automationId }),
+      changelog,
+    });
+    if (versionRes.error) throw new Error(versionRes.error);
 
-    const versionData = versionRes.data as
-      | { success: boolean; version: { version: number } }
-      | undefined;
     return {
       success: true,
-      version: versionData?.version,
+      version: versionRes.data?.version,
     };
   } catch (error) {
     console.error('[publishAutomation] Failed:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to publish automation',
+      error: getActionError(error, 'Failed to publish automation'),
     };
   }
+}
+
+function getDraftSnapshotKey({
+  orgId,
+  taskId,
+  automationId,
+}: {
+  orgId: string;
+  taskId: string;
+  automationId: string;
+}) {
+  return `first-party://${orgId}/${taskId}/${automationId}/snapshots/${randomUUID()}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -388,22 +280,13 @@ export async function restoreVersion(
   version: number,
 ) {
   try {
-    const response = await callEnterpriseApi<{ success: boolean }>(
-      '/api/tasks-automations/restore-version',
-      {
-        method: 'POST',
-        body: {
-          orgId,
-          taskId,
-          automationId,
-          version,
-        },
-      },
+    void orgId;
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.post(
+      `/v1/tasks/${taskId}/automations/${automationId}/versions/${version}/restore`,
+      {},
     );
-
-    if (!response.success) {
-      throw new Error('Enterprise API failed to restore version');
-    }
+    if (response.error) throw new Error(response.error);
 
     return {
       success: true,
@@ -412,7 +295,7 @@ export async function restoreVersion(
     console.error('[restoreVersion] Failed:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to restore version',
+      error: getActionError(error, 'Failed to restore version'),
     };
   }
 }

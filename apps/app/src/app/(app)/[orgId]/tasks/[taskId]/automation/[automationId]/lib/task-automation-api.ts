@@ -82,8 +82,8 @@ export const taskAutomationApi = {
      * Get run status - Enterprise only
      * @param runId - The enterprise run ID
      */
-    getRunStatus: async (runId: string) => {
-      const result = await getAutomationRunStatus(runId);
+    getRunStatus: async ({ taskId, runId }: { taskId: string; runId: string }) => {
+      const result = await getAutomationRunStatus({ taskId, runId });
       if (!result.success) {
         throw new Error(result.error || 'Failed to get run status');
       }
