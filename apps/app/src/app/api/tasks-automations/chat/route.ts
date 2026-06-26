@@ -41,6 +41,7 @@ RULES:
 - Scripts must be read-only (GET requests only).
 - Always include a main() function returning { success, data, error } and print JSON at the end.
 - Handle errors gracefully.
+- Never call runScript automatically. Only call it when the user explicitly asks to test or run the script.
 
 After saving, give a one-sentence summary of what the script collects and what secrets it needs (if any).`;
 }
