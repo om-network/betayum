@@ -30,7 +30,12 @@ export function ChatProvider({
   const mapDataToStateRef = useRef(mapDataToState);
   mapDataToStateRef.current = mapDataToState;
 
-  const { automationId } = useParams<{ automationId: string }>();
+  const url = '/api/tasks-automations/chat';
+
+  const { taskId, automationId } = useParams<{
+    taskId: string;
+    automationId: string;
+  }>();
 
   // Use ref to track the latest automation ID (important for ephemeral → real transition)
   // Initialize once, don't overwrite on every render
@@ -54,7 +59,7 @@ export function ChatProvider({
   if (!chatRef.current) {
     chatRef.current = new Chat<ChatUIMessage>({
       transport: new DefaultChatTransport({
-        api: '/api/tasks-automations/chat',
+        api: url,
       }),
       messages: initialMessages,
       onToolCall: () => mutate(`/api/auth/info`),
@@ -79,7 +84,11 @@ export function ChatProvider({
         isSavingRef.current = true;
         try {
           const messagesToSave = event.messages;
-          await saveChatHistory(currentAutomationId, messagesToSave || []);
+          await saveChatHistory({
+            taskId,
+            automationId: currentAutomationId,
+            messages: messagesToSave || [],
+          });
         } finally {
           isSavingRef.current = false;
         }

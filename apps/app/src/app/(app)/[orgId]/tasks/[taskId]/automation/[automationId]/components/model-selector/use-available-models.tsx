@@ -21,7 +21,7 @@ export function useAvailableModels() {
         setError(null);
       }
 
-      const url = `${process.env.NEXT_PUBLIC_ENTERPRISE_API_URL}/api/tasks-automations/models`;
+      const url = '/api/tasks-automations/models';
 
       try {
         const response = await fetch(url, { credentials: 'include' });

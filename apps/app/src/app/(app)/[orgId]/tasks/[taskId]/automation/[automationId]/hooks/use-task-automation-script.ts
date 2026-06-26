@@ -27,7 +27,7 @@ export function useTaskAutomationScript({
 
   const { data, error, isLoading, mutate } = useSWR<TaskAutomationScript>(
     enabled ? ['task-automation-script', scriptKey] : null,
-    () => taskAutomationApi.s3.getScript(scriptKey) as Promise<TaskAutomationScript>,
+    () => taskAutomationApi.s3.getScript(scriptKey) as unknown as Promise<TaskAutomationScript>,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
