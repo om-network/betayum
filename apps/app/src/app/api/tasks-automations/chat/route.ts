@@ -84,7 +84,7 @@ export async function POST(req: Request) {
     const optionalTools = {
       runScript: tool({
         description:
-          'Execute the current draft script as a test run. Use this after saving a script to verify it works correctly. Returns execution output, logs, and any errors.',
+          'Execute the current draft script as a test run. Only call this when the user explicitly asks to run or test the script. Do NOT call this automatically after saving.',
         inputSchema: z.object({
           secretRefs: z
             .array(z.object({ name: z.string(), category: z.string().optional() }))
