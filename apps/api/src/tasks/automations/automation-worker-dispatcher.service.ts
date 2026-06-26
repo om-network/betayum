@@ -1,26 +1,19 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { tasks } from '@trigger.dev/sdk/v3';
 import type { AutomationExecutionRequest } from './automation-runtime.service';
+import type { runEvidenceAutomation } from '../../trigger/tasks/run-evidence-automation';
 
 @Injectable()
 export class AutomationWorkerDispatcherService {
   async enqueue(request: AutomationExecutionRequest): Promise<void> {
-    const queueUrl = process.env.TASK_AUTOMATION_WORKER_QUEUE_URL;
-
-    if (!queueUrl) {
-      throw new ServiceUnavailableException(
-        'Task automation worker queue is not configured',
+    try {
+      await tasks.trigger<typeof runEvidenceAutomation>(
+        'run-evidence-automation',
+        request,
       );
-    }
-
-    const response = await fetch(queueUrl, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-
-    if (!response.ok) {
+    } catch (error) {
       throw new ServiceUnavailableException(
-        'Task automation worker queue rejected the run',
+        error instanceof Error ? error.message : 'Failed to enqueue automation run',
       );
     }
   }

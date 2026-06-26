@@ -30,7 +30,7 @@ const executionRequestSchema = z
     taskId: z.string().min(1),
     automationId: z.string().min(1),
     runId: z.string().min(1),
-    version: z.number().int().positive(),
+    version: z.number().int().min(0),
     artifactKey: z.string().min(1),
     trigger: z.enum(['manual', 'test']),
     secretRefs: z.array(secretRefSchema).default([]),
@@ -65,8 +65,7 @@ export class AutomationRuntimeService {
       'TASK_AUTOMATION_EXECUTION_ENABLED',
     );
     const workerHealthy =
-      process.env.TASK_AUTOMATION_WORKER_HEALTH !== 'unhealthy' &&
-      !!process.env.TASK_AUTOMATION_WORKER_QUEUE_URL;
+      process.env.TASK_AUTOMATION_WORKER_HEALTH !== 'unhealthy';
     const executionEnabled = generationEnabled && executionSwitchEnabled;
 
     return {
