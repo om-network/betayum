@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { mutate } from 'swr';
 import { saveChatHistory } from '../actions/task-automation-actions';
 import { type ChatUIMessage } from '../components/chat/types';
+import { getAutomationChatErrorMessage } from './chat-error-message';
 import { useTaskAutomationDataMapper } from './task-automation-store';
 import { DataPart } from './types/data-parts';
 
@@ -65,7 +66,7 @@ export function ChatProvider({
       onToolCall: () => mutate(`/api/auth/info`),
       onData: (data) => mapDataToStateRef.current(data as DataUIPart<DataPart>),
       onError: (error) => {
-        toast.error(`Communication error with the AI: ${error.message}`);
+        toast.error(getAutomationChatErrorMessage(error.message));
         console.error('Error sending message:', error);
       },
       onFinish: async (event) => {
