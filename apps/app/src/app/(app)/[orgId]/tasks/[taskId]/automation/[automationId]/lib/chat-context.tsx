@@ -24,14 +24,11 @@ export function ChatProvider({
   initialMessages = [],
 }: {
   children: ReactNode;
-  initialMessages?: any[];
+  initialMessages?: ChatUIMessage[];
 }) {
   const mapDataToState = useTaskAutomationDataMapper();
   const mapDataToStateRef = useRef(mapDataToState);
   mapDataToStateRef.current = mapDataToState;
-
-  const baseUrl = process.env.NEXT_PUBLIC_ENTERPRISE_API_URL;
-  const url = `${baseUrl}/api/tasks-automations/chat`;
 
   const { automationId } = useParams<{ automationId: string }>();
 
@@ -57,7 +54,7 @@ export function ChatProvider({
   if (!chatRef.current) {
     chatRef.current = new Chat<ChatUIMessage>({
       transport: new DefaultChatTransport({
-        api: url,
+        api: '/api/tasks-automations/chat',
       }),
       messages: initialMessages,
       onToolCall: () => mutate(`/api/auth/info`),
