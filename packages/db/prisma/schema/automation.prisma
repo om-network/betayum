@@ -9,6 +9,7 @@ model EvidenceAutomation {
 
   chatHistory        String?
   evaluationCriteria String?
+  scriptDraft        String?
 
   taskId String
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)

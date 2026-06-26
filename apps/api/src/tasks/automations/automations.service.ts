@@ -278,6 +278,35 @@ export class AutomationsService {
     return listAutomationVersions(params);
   }
 
+  async getDraftScript({
+    organizationId,
+    taskId,
+    automationId,
+  }: ScopedAutomationParams) {
+    const automation = await db.evidenceAutomation.findFirst({
+      where: { id: automationId, taskId, task: { organizationId } },
+      select: { scriptDraft: true },
+    });
+    if (!automation) {
+      return { success: true, content: null };
+    }
+    return { success: true, content: automation.scriptDraft ?? null };
+  }
+
+  async saveDraftScript({
+    organizationId,
+    taskId,
+    automationId,
+    content,
+  }: ScopedAutomationParams & { content: string }) {
+    await this.findById({ organizationId, taskId, automationId });
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { scriptDraft: content },
+    });
+    return { success: true };
+  }
+
   private async logIfActor({
     actor,
     ...params
