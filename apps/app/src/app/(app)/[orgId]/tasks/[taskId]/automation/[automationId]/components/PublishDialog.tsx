@@ -15,7 +15,7 @@ import { Loader2 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { executeAutomationScript, publishAutomation } from '../actions/task-automation-actions';
+import { publishAutomation } from '../actions/task-automation-actions';
 import { useAutomationVersions } from '../hooks/use-automation-versions';
 import { useSharedChatContext } from '../lib/chat-context';
 
@@ -67,26 +67,7 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
       toast.success(`Version ${versionNumber} published successfully!`);
       setPublishedVersion(versionNumber || null);
 
-      // Refresh versions list
       await mutate();
-
-      // Trigger a test run with the new version
-      if (versionNumber) {
-        const runResult = await executeAutomationScript({
-          orgId,
-          taskId,
-          automationId: automationIdRef.current,
-          version: versionNumber,
-        });
-
-        if (runResult.success) {
-          toast.success('Running automation with published version');
-        } else {
-          toast.error(runResult.error || 'Failed to start automation run');
-        }
-      }
-
-      // Show post-publish options instead of closing
       setShowPostPublishOptions(true);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to publish automation');
@@ -148,7 +129,7 @@ export function PublishDialog({ open, onOpenChange }: PublishDialogProps) {
             <DialogHeader>
               <DialogTitle>Automation Published!</DialogTitle>
               <DialogDescription>
-                Version {publishedVersion} has been published and is now running. Where would you like to go?
+                Version {publishedVersion} has been published. Where would you like to go?
               </DialogDescription>
             </DialogHeader>
 
