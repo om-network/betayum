@@ -29,7 +29,14 @@ async function fetchScriptContent({
     where: { evidenceAutomationId: automationId, version },
     select: { scriptContent: true },
   });
-  return versionRecord?.scriptContent ?? null;
+
+  if (versionRecord?.scriptContent) return versionRecord.scriptContent;
+
+  const automation = await db.evidenceAutomation.findUnique({
+    where: { id: automationId },
+    select: { scriptDraft: true },
+  });
+  return automation?.scriptDraft ?? null;
 }
 
 async function resolveSecrets(
