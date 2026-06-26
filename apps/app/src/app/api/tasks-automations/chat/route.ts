@@ -84,13 +84,71 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Missing required parameters' }, { status: 400 });
     }
 
-    const taskResponse = await serverApi.get<{ title?: string; description?: string }>(
-      `/v1/tasks/${taskId}`,
-    );
+    const [taskResponse, automationResponse] = await Promise.all([
+      serverApi.get<{ title?: string; description?: string }>(`/v1/tasks/${taskId}`),
+      serverApi.get<{ automation: { allowedTools: string[] } }>(
+        `/v1/tasks/${taskId}/automations/${automationId}`,
+      ),
+    ]);
+
     const task = taskResponse.data ?? null;
+    const allowedTools: string[] | null = automationResponse.data?.automation.allowedTools ?? null;
 
     const systemPrompt = buildSystemPrompt(task);
     const modelMessages = await convertToModelMessages(messages);
+
+    const optionalTools = {
+      promptForSecret: tool({
+        description:
+          'Request an API key or secret from the user. Use this when the script needs credentials.',
+        inputSchema: z.object({
+          secretName: z
+            .string()
+            .describe('The environment variable name for the secret (e.g. GITHUB_TOKEN)'),
+          description: z.string().optional().describe('What this secret is used for'),
+          category: z.string().optional().default('automation'),
+          exampleValue: z
+            .string()
+            .optional()
+            .describe('An example of what this value looks like'),
+          reason: z.string().describe('Why this secret is needed'),
+        }),
+        execute: async (input) => {
+          return { requested: true, secretName: input.secretName };
+        },
+      }),
+      promptForInfo: tool({
+        description:
+          'Request additional configuration information from the user (non-secret values like IDs, URLs, etc.).',
+        inputSchema: z.object({
+          reason: z.string().describe('Why this information is needed'),
+          fields: z.array(
+            z.object({
+              name: z.string().describe('Field identifier'),
+              label: z.string().describe('Human-readable label'),
+              description: z.string().optional().describe('Explanation of what to enter'),
+              placeholder: z.string().optional(),
+              defaultValue: z.string().optional(),
+              required: z.boolean().default(true),
+            }),
+          ),
+        }),
+        execute: async (input) => {
+          return { requested: true, fields: input.fields };
+        },
+      }),
+    };
+
+    type OptionalToolName = keyof typeof optionalTools;
+
+    const enabledOptionalTools =
+      allowedTools === null
+        ? optionalTools
+        : (Object.fromEntries(
+            Object.entries(optionalTools).filter(([name]) =>
+              allowedTools.includes(name as OptionalToolName),
+            ),
+          ) as Partial<typeof optionalTools>);
 
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
@@ -130,50 +188,7 @@ export async function POST(req: Request) {
                 }
               },
             }),
-            promptForSecret: tool({
-              description:
-                'Request an API key or secret from the user. Use this when the script needs credentials.',
-              inputSchema: z.object({
-                secretName: z
-                  .string()
-                  .describe(
-                    'The environment variable name for the secret (e.g. GITHUB_TOKEN)',
-                  ),
-                description: z.string().optional().describe('What this secret is used for'),
-                category: z.string().optional().default('automation'),
-                exampleValue: z
-                  .string()
-                  .optional()
-                  .describe('An example of what this value looks like'),
-                reason: z.string().describe('Why this secret is needed'),
-              }),
-              execute: async (input) => {
-                return { requested: true, secretName: input.secretName };
-              },
-            }),
-            promptForInfo: tool({
-              description:
-                'Request additional configuration information from the user (non-secret values like IDs, URLs, etc.).',
-              inputSchema: z.object({
-                reason: z.string().describe('Why this information is needed'),
-                fields: z.array(
-                  z.object({
-                    name: z.string().describe('Field identifier'),
-                    label: z.string().describe('Human-readable label'),
-                    description: z
-                      .string()
-                      .optional()
-                      .describe('Explanation of what to enter'),
-                    placeholder: z.string().optional(),
-                    defaultValue: z.string().optional(),
-                    required: z.boolean().default(true),
-                  }),
-                ),
-              }),
-              execute: async (input) => {
-                return { requested: true, fields: input.fields };
-              },
-            }),
+            ...enabledOptionalTools,
           },
         });
 

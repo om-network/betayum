@@ -138,7 +138,7 @@ export class AutomationsService {
   }) {
     await this.findById({ organizationId, taskId, automationId });
 
-    const { scheduleFrequency, ...rest } = data;
+    const { scheduleFrequency, allowedTools, ...rest } = data;
     const automation = await db.evidenceAutomation.update({
       where: {
         id: automationId,
@@ -146,6 +146,7 @@ export class AutomationsService {
       data: {
         ...rest,
         ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
+        ...(allowedTools !== undefined ? { allowedTools } : {}),
       },
     });
 

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsEnum, IsArray } from 'class-validator';
 import { TaskFrequency } from '@db';
 
 export class UpdateAutomationDto {
@@ -44,4 +44,15 @@ export class UpdateAutomationDto {
   @IsEnum(TaskFrequency)
   @IsOptional()
   scheduleFrequency?: TaskFrequency;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'Tool names the AI may use during chat (e.g. promptForSecret, promptForInfo). Null means all tools are allowed.',
+    example: ['promptForSecret', 'promptForInfo'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  allowedTools?: string[];
 }
