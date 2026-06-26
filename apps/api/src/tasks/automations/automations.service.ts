@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { AutomationAuditService } from './automation-audit.service';
 import {
@@ -306,6 +306,88 @@ export class AutomationsService {
       data: { scriptDraft: content },
     });
     return { success: true };
+  }
+
+  async runDraftScript({
+    organizationId,
+    taskId,
+    automationId,
+    secretRefs = [],
+    actor,
+  }: ScopedAutomationParams & {
+    secretRefs?: AutomationSecretRef[];
+    actor?: AutomationActor;
+  }) {
+    this.automationRuntimeService.assertExecutionAvailable();
+
+    const automation = await db.evidenceAutomation.findFirst({
+      where: { id: automationId, taskId, task: { organizationId } },
+      select: { scriptDraft: true },
+    });
+
+    if (!automation) {
+      throw new NotFoundException('Automation not found');
+    }
+
+    if (!automation.scriptDraft) {
+      throw new BadRequestException('No draft script to run');
+    }
+
+    await this.automationUsageLimitsService.assertManualRunLimit({ organizationId });
+
+    if (secretRefs.length > 0) {
+      await this.automationSecretsService.verifySecretRefs({ organizationId, secretRefs });
+    }
+
+    const run = await db.evidenceAutomationRun.create({
+      data: {
+        evidenceAutomationId: automationId,
+        taskId,
+        triggeredBy: 'manual',
+        status: 'pending',
+        version: null,
+      },
+    });
+
+    const artifactKey = `first-party://${organizationId}/${taskId}/${automationId}/draft`;
+
+    const workerRequest = this.automationRuntimeService.buildExecutionRequest({
+      organizationId,
+      taskId,
+      automationId,
+      runId: run.id,
+      version: 0,
+      artifactKey,
+      trigger: 'test',
+      secretRefs,
+      tools: [],
+    });
+
+    try {
+      await this.automationWorkerDispatcher.enqueue(workerRequest);
+    } catch (error) {
+      await db.evidenceAutomationRun.update({
+        where: { id: run.id },
+        data: {
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Worker enqueue failed',
+          completedAt: new Date(),
+        },
+      });
+      throw error;
+    }
+
+    await this.logIfActor({
+      actor,
+      organizationId,
+      taskId,
+      automationId,
+      action: 'manual_run_started',
+      description: 'started draft script test run',
+      runId: run.id,
+    });
+
+    return { success: true, run };
   }
 
   private async logIfActor({

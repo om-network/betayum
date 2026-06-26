@@ -98,6 +98,55 @@ export async function POST(req: Request) {
     const modelMessages = await convertToModelMessages(messages);
 
     const optionalTools = {
+      runScript: tool({
+        description:
+          'Execute the current draft script as a test run. Use this after saving a script to verify it works correctly. Returns execution output, logs, and any errors.',
+        inputSchema: z.object({
+          secretRefs: z
+            .array(z.object({ name: z.string(), category: z.string().optional() }))
+            .optional()
+            .describe('Secret references to inject as environment variables'),
+        }),
+        execute: async ({ secretRefs }) => {
+          const triggerResult = await serverApi.post<{ run: { id: string } }>(
+            `/v1/tasks/${taskId}/automations/${automationId}/draft-script/run`,
+            { secretRefs },
+          );
+
+          if (triggerResult.error || !triggerResult.data?.run?.id) {
+            return { success: false, error: triggerResult.error ?? 'Failed to start run' };
+          }
+
+          const runId = triggerResult.data.run.id;
+          const deadline = Date.now() + 60_000;
+
+          while (Date.now() < deadline) {
+            await new Promise((r) => setTimeout(r, 2000));
+
+            const pollResult = await serverApi.get<{
+              run: { status: string; success: boolean | null; output: unknown; error: string | null; logs: unknown };
+            }>(`/v1/tasks/${taskId}/automations/runs/${runId}`);
+
+            if (pollResult.error) {
+              return { success: false, error: pollResult.error };
+            }
+
+            const run = pollResult.data?.run;
+            if (!run) return { success: false, error: 'Run not found' };
+
+            if (run.status === 'completed' || run.status === 'failed') {
+              return {
+                success: run.success ?? false,
+                output: run.output,
+                logs: run.logs,
+                error: run.error,
+              };
+            }
+          }
+
+          return { success: false, error: 'Run timed out after 60 seconds' };
+        },
+      }),
       promptForSecret: tool({
         description:
           'Request an API key or secret from the user. Use this when the script needs credentials.',
