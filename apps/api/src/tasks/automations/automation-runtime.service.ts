@@ -65,7 +65,8 @@ export class AutomationRuntimeService {
       'TASK_AUTOMATION_EXECUTION_ENABLED',
     );
     const workerHealthy =
-      process.env.TASK_AUTOMATION_WORKER_HEALTH !== 'unhealthy';
+      process.env.TASK_AUTOMATION_WORKER_HEALTH !== 'unhealthy' &&
+      !!process.env.TASK_AUTOMATION_WORKER_QUEUE_URL;
     const executionEnabled = generationEnabled && executionSwitchEnabled;
 
     return {
