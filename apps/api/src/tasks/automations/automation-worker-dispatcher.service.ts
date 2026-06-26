@@ -1,20 +1,12 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { tasks } from '@trigger.dev/sdk/v3';
+import { Injectable } from '@nestjs/common';
 import type { AutomationExecutionRequest } from './automation-runtime.service';
-import type { runEvidenceAutomation } from '../../trigger/tasks/run-evidence-automation';
+import { AutomationScriptExecutorService } from './automation-script-executor.service';
 
 @Injectable()
 export class AutomationWorkerDispatcherService {
+  constructor(private readonly executor: AutomationScriptExecutorService) {}
+
   async enqueue(request: AutomationExecutionRequest): Promise<void> {
-    try {
-      await tasks.trigger<typeof runEvidenceAutomation>(
-        'run-evidence-automation',
-        request,
-      );
-    } catch (error) {
-      throw new ServiceUnavailableException(
-        error instanceof Error ? error.message : 'Failed to enqueue automation run',
-      );
-    }
+    await this.executor.executeInBackground(request);
   }
 }

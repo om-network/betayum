@@ -7,6 +7,7 @@ import { AutomationAuditService } from './automation-audit.service';
 import { AutomationSecretsService } from './automation-secrets.service';
 import { AutomationRuntimeService } from './automation-runtime.service';
 import { AutomationUsageLimitsService } from './automation-usage-limits.service';
+import { AutomationScriptExecutorService } from './automation-script-executor.service';
 import { AutomationWorkerDispatcherService } from './automation-worker-dispatcher.service';
 import { AutomationsService } from './automations.service';
 
@@ -19,6 +20,7 @@ import { AutomationsService } from './automations.service';
     AutomationUsageLimitsService,
     AutomationSecretsService,
     AutomationAuditService,
+    AutomationScriptExecutorService,
     AutomationWorkerDispatcherService,
   ],
   exports: [AutomationsService, AutomationRuntimeService],
