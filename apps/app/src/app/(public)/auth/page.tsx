@@ -1,5 +1,4 @@
 import { LoginForm } from '@/components/login-form';
-import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { getSafeRedirectPath } from '@/utils/auth-callback';
 import {
@@ -42,9 +41,9 @@ export default async function Page({
     redirect('/');
   }
 
-  const showGoogle = !!(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
-  const showGithub = !!(env.AUTH_GITHUB_ID && env.AUTH_GITHUB_SECRET);
-  const showMicrosoft = !!(env.AUTH_MICROSOFT_CLIENT_ID && env.AUTH_MICROSOFT_CLIENT_SECRET);
+  const showGoogle = process.env.APP_DISABLE_GOOGLE_SIGN_IN !== 'true';
+  const showGithub = process.env.APP_DISABLE_GITHUB_SIGN_IN !== 'true';
+  const showMicrosoft = process.env.APP_DISABLE_MICROSOFT_SIGN_IN !== 'true';
 
   return (
     <div className="flex min-h-dvh flex-col text-foreground">

@@ -1010,7 +1010,7 @@
     },
     "/v1/organization-access/auto-approve": {
       "post": {
-        "description": "Grants hasAccess on the active organization if the requesting user is an internal betayum.com user, the deployment is self-hosted, or the user email domain matches the organization website domain and is an active Stripe customer.",
+        "description": "Grants hasAccess on the active organization if the requesting user is an internal trycomp.ai user, the deployment is self-hosted, or the user email domain matches the organization website domain and is an active Stripe customer.",
         "operationId": "OrganizationAccessController_autoApprove_v1",
         "parameters": [],
         "responses": {
@@ -1026,9 +1026,9 @@
           "metadata": {
             "title": "Auto-approve organization access via domain | Betayum API",
             "sidebarTitle": "Auto-approve organization access via domain or self-hosted check",
-            "description": "Grants hasAccess on the active organization if the requesting user is an internal betayum.com user, the deployment is self-hosted, or the user email domain.",
+            "description": "Grants hasAccess on the active organization if the requesting user is an internal trycomp.ai user, the deployment is self-hosted, or the user email domain.",
             "og:title": "Auto-approve organization access via domain | Betayum API",
-            "og:description": "Grants hasAccess on the active organization if the requesting user is an internal betayum.com user, the deployment is self-hosted, or the user email domain."
+            "og:description": "Grants hasAccess on the active organization if the requesting user is an internal trycomp.ai user, the deployment is self-hosted, or the user email domain."
           }
         }
       }
@@ -4332,6 +4332,80 @@
         }
       }
     },
+    "/v1/risks/{id}/auto-link/apply": {
+      "post": {
+        "operationId": "RiskTaskLinksController_applyTaskLinks_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyTaskLinksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Risks"
+        ]
+      }
+    },
+    "/v1/risks/{id}/tasks/{taskId}": {
+      "delete": {
+        "operationId": "RiskTaskLinksController_unlinkTask_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Risks"
+        ]
+      }
+    },
     "/v1/vendors/global/search": {
       "get": {
         "operationId": "VendorsController_searchGlobalVendors_v1",
@@ -5525,6 +5599,80 @@
             "og:description": "Trigger a vendor risk assessment so Betayum can update third-party risk evidence and vendor security review status."
           }
         }
+      }
+    },
+    "/v1/vendors/{id}/auto-link/apply": {
+      "post": {
+        "operationId": "VendorTaskLinksController_applyTaskLinks_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyTaskLinksDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Vendors"
+        ]
+      }
+    },
+    "/v1/vendors/{id}/tasks/{taskId}": {
+      "delete": {
+        "operationId": "VendorTaskLinksController_unlinkTask_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "tags": [
+          "Vendors"
+        ]
       }
     },
     "/v1/context": {
@@ -9340,7 +9488,7 @@
                 "description": "Indicates file should be downloaded with specific filename",
                 "schema": {
                   "type": "string",
-                  "example": "attachment; filename=\"Betayum Agent-1.0.0-arm64.dmg\""
+                  "example": "attachment; filename=\"Comp AI Agent-1.0.0-arm64.dmg\""
                 }
               },
               "Content-Type": {
@@ -11262,6 +11410,47 @@
         }
       }
     },
+    "/v1/tasks/{taskId}/automations/service-state": {
+      "get": {
+        "description": "Get task automation service state in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+        "operationId": "AutomationsController_getAutomationServiceState_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Unique task identifier",
+            "schema": {
+              "example": "tsk_abc123def456",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation service state retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get task automation service state",
+        "tags": [
+          "Task Automations"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get task automation service state | Betayum API",
+            "sidebarTitle": "Get task automation service state",
+            "description": "Get task automation service state in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+            "og:title": "Get task automation service state | Betayum API",
+            "og:description": "Get task automation service state in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
+          }
+        }
+      }
+    },
     "/v1/tasks/{taskId}/automations/{automationId}": {
       "get": {
         "description": "Get automation details in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
@@ -11546,6 +11735,165 @@
             "og:description": "Get all runs for a specific automation in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
           }
         }
+      },
+      "post": {
+        "operationId": "AutomationsController_startManualRun_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Start a manual run for a published automation version",
+        "tags": [
+          "Task Automations"
+        ],
+        "description": "Start a manual run for a published automation version in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+        "x-mint": {
+          "metadata": {
+            "title": "Start a manual run for a published automation | Betayum API",
+            "sidebarTitle": "Start a manual run for a published automation version",
+            "description": "Start a manual run for a published automation version in Betayum. Create, version, run, and inspect automated evidence collection workflows attached.",
+            "og:title": "Start a manual run for a published automation | Betayum API",
+            "og:description": "Start a manual run for a published automation version in Betayum. Create, version, run, and inspect automated evidence collection workflows attached."
+          }
+        }
+      }
+    },
+    "/v1/tasks/{taskId}/automations/{automationId}/chat-history": {
+      "get": {
+        "operationId": "AutomationsController_getChatHistory_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get first-party automation builder chat history",
+        "tags": [
+          "Task Automations"
+        ],
+        "description": "Get first-party automation builder chat history in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+        "x-mint": {
+          "metadata": {
+            "title": "Get first-party automation builder chat | Betayum API",
+            "sidebarTitle": "Get first-party automation builder chat history",
+            "description": "Get first-party automation builder chat history in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance.",
+            "og:title": "Get first-party automation builder chat | Betayum API",
+            "og:description": "Get first-party automation builder chat history in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance."
+          }
+        }
+      },
+      "post": {
+        "operationId": "AutomationsController_saveChatHistory_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Save first-party automation builder chat history",
+        "tags": [
+          "Task Automations"
+        ],
+        "description": "Save first-party automation builder chat history in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+        "x-mint": {
+          "metadata": {
+            "title": "Save first-party automation builder chat | Betayum API",
+            "sidebarTitle": "Save first-party automation builder chat history",
+            "description": "Save first-party automation builder chat history in Betayum. Create, version, run, and inspect automated evidence collection workflows attached.",
+            "og:title": "Save first-party automation builder chat | Betayum API",
+            "og:description": "Save first-party automation builder chat history in Betayum. Create, version, run, and inspect automated evidence collection workflows attached."
+          }
+        }
       }
     },
     "/v1/tasks/{taskId}/automations/{automationId}/versions": {
@@ -11701,6 +12049,209 @@
         }
       }
     },
+    "/v1/tasks/{taskId}/automations/{automationId}/draft-script": {
+      "get": {
+        "operationId": "AutomationsController_getDraftScript_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get automation draft script content",
+        "tags": [
+          "Task Automations"
+        ],
+        "description": "Get automation draft script content in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+        "x-mint": {
+          "metadata": {
+            "title": "Get automation draft script content | Betayum API",
+            "sidebarTitle": "Get automation draft script content",
+            "description": "Get automation draft script content in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+            "og:title": "Get automation draft script content | Betayum API",
+            "og:description": "Get automation draft script content in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
+          }
+        }
+      },
+      "put": {
+        "operationId": "AutomationsController_saveDraftScript_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Save automation draft script content",
+        "tags": [
+          "Task Automations"
+        ],
+        "description": "Save automation draft script content in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+        "x-mint": {
+          "metadata": {
+            "title": "Save automation draft script content | Betayum API",
+            "sidebarTitle": "Save automation draft script content",
+            "description": "Save automation draft script content in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+            "og:title": "Save automation draft script content | Betayum API",
+            "og:description": "Save automation draft script content in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
+          }
+        }
+      }
+    },
+    "/v1/tasks/{taskId}/automations/{automationId}/draft-script/run": {
+      "post": {
+        "operationId": "AutomationsController_runDraftScript_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Run the current draft script as a test run",
+        "tags": [
+          "Task Automations"
+        ],
+        "description": "Run the current draft script as a test run in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+        "x-mint": {
+          "metadata": {
+            "title": "Run the current draft script as a test run | Betayum API",
+            "sidebarTitle": "Run the current draft script as a test run",
+            "description": "Run the current draft script as a test run in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+            "og:title": "Run the current draft script as a test run | Betayum API",
+            "og:description": "Run the current draft script as a test run in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
+          }
+        }
+      }
+    },
+    "/v1/tasks/{taskId}/automations/{automationId}/versions/{version}/restore": {
+      "post": {
+        "operationId": "AutomationsController_restoreVersion_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "automationId",
+            "required": true,
+            "in": "path",
+            "description": "Automation ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "path",
+            "description": "Published version number",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Restore a published automation version into a draft reference",
+        "tags": [
+          "Task Automations"
+        ],
+        "description": "Restore a published automation version into a draft reference in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+        "x-mint": {
+          "metadata": {
+            "title": "Restore a published automation version into a | Betayum API",
+            "sidebarTitle": "Restore a published automation version into a draft reference",
+            "description": "Restore a published automation version into a draft reference in Betayum. Create, version, run, and inspect automated evidence collection workflows attached.",
+            "og:title": "Restore a published automation version into a | Betayum API",
+            "og:description": "Restore a published automation version into a draft reference in Betayum. Create, version, run, and inspect automated evidence collection workflows attached."
+          }
+        }
+      }
+    },
     "/v1/tasks/{taskId}/automations/runs": {
       "get": {
         "description": "Get all automation runs for a task in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
@@ -11784,6 +12335,55 @@
             "description": "Get all automation runs for a task in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
             "og:title": "Get all automation runs for a task | Betayum API",
             "og:description": "Get all automation runs for a task in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
+          }
+        }
+      }
+    },
+    "/v1/tasks/{taskId}/automations/runs/{runId}": {
+      "get": {
+        "description": "Get automation run status in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+        "operationId": "AutomationRunsController_getAutomationRun_v1",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "description": "Task ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "runId",
+            "required": true,
+            "in": "path",
+            "description": "Automation run ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "apikey": []
+          }
+        ],
+        "summary": "Get automation run status",
+        "tags": [
+          "Task Automations"
+        ],
+        "x-mint": {
+          "metadata": {
+            "title": "Get automation run status | Betayum API",
+            "sidebarTitle": "Get automation run status",
+            "description": "Get automation run status in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks.",
+            "og:title": "Get automation run status | Betayum API",
+            "og:description": "Get automation run status in Betayum. Create, version, run, and inspect automated evidence collection workflows attached to compliance tasks."
           }
         }
       }
@@ -21724,18 +22324,18 @@
             "apikey": []
           }
         ],
-        "summary": "Get members with pending offboarding checklists",
+        "summary": "List pending offboardings",
         "tags": [
           "Offboarding Checklist"
         ],
-        "description": "Get members with pending offboarding checklists in Betayum.",
+        "description": "List organization members who still have incomplete offboarding checklist items so teams can finish access removal and evidence collection.",
         "x-mint": {
           "metadata": {
-            "title": "Get members with pending offboarding | Betayum API",
-            "sidebarTitle": "Get members with pending offboarding checklists",
-            "description": "Get members with pending offboarding checklists in Betayum.",
-            "og:title": "Get members with pending offboarding | Betayum API",
-            "og:description": "Get members with pending offboarding checklists in Betayum."
+            "title": "List pending offboardings | Betayum API",
+            "sidebarTitle": "List pending offboardings",
+            "description": "List organization members who still have incomplete offboarding checklist items so teams can finish access removal and evidence collection.",
+            "og:title": "List pending offboardings | Betayum API",
+            "og:description": "List organization members who still have incomplete offboarding checklist items so teams can finish access removal and evidence collection."
           }
         }
       }
@@ -21756,7 +22356,18 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "summary": "Get offboarding template",
+        "description": "Retrieve the organization offboarding checklist template used to standardize access removal, equipment return, and evidence collection.",
+        "x-mint": {
+          "metadata": {
+            "title": "Get offboarding template | Betayum API",
+            "sidebarTitle": "Get offboarding template",
+            "description": "Retrieve the organization offboarding checklist template used to standardize access removal, equipment return, and evidence collection.",
+            "og:title": "Get offboarding template | Betayum API",
+            "og:description": "Retrieve the organization offboarding checklist template used to standardize access removal, equipment return, and evidence collection."
+          }
+        }
       },
       "post": {
         "operationId": "OffboardingChecklistController_createTemplateItem_v1",
@@ -21783,7 +22394,18 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "summary": "Create offboarding item",
+        "description": "Create an offboarding checklist template item so administrators can track required steps for departing workforce members.",
+        "x-mint": {
+          "metadata": {
+            "title": "Create offboarding item | Betayum API",
+            "sidebarTitle": "Create offboarding item",
+            "description": "Create an offboarding checklist template item so administrators can track required steps for departing workforce members.",
+            "og:title": "Create offboarding item | Betayum API",
+            "og:description": "Create an offboarding checklist template item so administrators can track required steps for departing workforce members."
+          }
+        }
       }
     },
     "/v1/offboarding-checklist/template/{id}": {
@@ -21821,7 +22443,18 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "summary": "Update offboarding item",
+        "description": "Update an offboarding checklist template item to refine required access removal, evidence, or workforce compliance steps.",
+        "x-mint": {
+          "metadata": {
+            "title": "Update offboarding item | Betayum API",
+            "sidebarTitle": "Update offboarding item",
+            "description": "Update an offboarding checklist template item to refine required access removal, evidence, or workforce compliance steps.",
+            "og:title": "Update offboarding item | Betayum API",
+            "og:description": "Update an offboarding checklist template item to refine required access removal, evidence, or workforce compliance steps."
+          }
+        }
       },
       "delete": {
         "operationId": "OffboardingChecklistController_deleteTemplateItem_v1",
@@ -21847,7 +22480,18 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "summary": "Delete offboarding item",
+        "description": "Delete an offboarding checklist template item that no longer applies to the organization workforce compliance process.",
+        "x-mint": {
+          "metadata": {
+            "title": "Delete offboarding item | Betayum API",
+            "sidebarTitle": "Delete offboarding item",
+            "description": "Delete an offboarding checklist template item that no longer applies to the organization workforce compliance process.",
+            "og:title": "Delete offboarding item | Betayum API",
+            "og:description": "Delete an offboarding checklist template item that no longer applies to the organization workforce compliance process."
+          }
+        }
       }
     },
     "/v1/offboarding-checklist/member/{memberId}": {
@@ -21875,7 +22519,18 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "summary": "Get member offboarding checklist",
+        "description": "Retrieve one member offboarding checklist with completion status, evidence records, and remaining access revocation work.",
+        "x-mint": {
+          "metadata": {
+            "title": "Get member offboarding checklist | Betayum API",
+            "sidebarTitle": "Get member offboarding checklist",
+            "description": "Retrieve one member offboarding checklist with completion status, evidence records, and remaining access revocation work.",
+            "og:title": "Get member offboarding checklist | Betayum API",
+            "og:description": "Retrieve one member offboarding checklist with completion status, evidence records, and remaining access revocation work."
+          }
+        }
       }
     },
     "/v1/offboarding-checklist/export-all": {
@@ -21892,18 +22547,18 @@
             "apikey": []
           }
         ],
-        "summary": "Export all offboarding evidence as a zip file",
+        "summary": "Export all offboarding evidence",
         "tags": [
           "Offboarding Checklist"
         ],
-        "description": "Export all offboarding evidence as a zip file in Betayum.",
+        "description": "Download a zip archive of offboarding evidence across the organization for audits, access reviews, and workforce compliance records.",
         "x-mint": {
           "metadata": {
-            "title": "Export all offboarding evidence as a zip file | Betayum API",
-            "sidebarTitle": "Export all offboarding evidence as a zip file",
-            "description": "Export all offboarding evidence as a zip file in Betayum.",
-            "og:title": "Export all offboarding evidence as a zip file | Betayum API",
-            "og:description": "Export all offboarding evidence as a zip file in Betayum."
+            "title": "Export all offboarding evidence | Betayum API",
+            "sidebarTitle": "Export all offboarding evidence",
+            "description": "Download a zip archive of offboarding evidence across the organization for audits, access reviews, and workforce compliance records.",
+            "og:title": "Export all offboarding evidence | Betayum API",
+            "og:description": "Download a zip archive of offboarding evidence across the organization for audits, access reviews, and workforce compliance records."
           }
         }
       }
@@ -21932,18 +22587,18 @@
             "apikey": []
           }
         ],
-        "summary": "Export offboarding evidence as a zip file",
+        "summary": "Export member offboarding evidence",
         "tags": [
           "Offboarding Checklist"
         ],
-        "description": "Export offboarding evidence as a zip file in Betayum.",
+        "description": "Download a zip archive of offboarding evidence for one workforce member, including checklist completion and access revocation records.",
         "x-mint": {
           "metadata": {
-            "title": "Export offboarding evidence as a zip file | Betayum API",
-            "sidebarTitle": "Export offboarding evidence as a zip file",
-            "description": "Export offboarding evidence as a zip file in Betayum.",
-            "og:title": "Export offboarding evidence as a zip file | Betayum API",
-            "og:description": "Export offboarding evidence as a zip file in Betayum."
+            "title": "Export member offboarding evidence | Betayum API",
+            "sidebarTitle": "Export member offboarding evidence",
+            "description": "Download a zip archive of offboarding evidence for one workforce member, including checklist completion and access revocation records.",
+            "og:title": "Export member offboarding evidence | Betayum API",
+            "og:description": "Download a zip archive of offboarding evidence for one workforce member, including checklist completion and access revocation records."
           }
         }
       }
@@ -21991,7 +22646,18 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "summary": "Complete offboarding item",
+        "description": "Mark one member offboarding checklist item as complete and attach evidence that supports the access or compliance step.",
+        "x-mint": {
+          "metadata": {
+            "title": "Complete offboarding item | Betayum API",
+            "sidebarTitle": "Complete offboarding item",
+            "description": "Mark one member offboarding checklist item as complete and attach evidence that supports the access or compliance step.",
+            "og:title": "Complete offboarding item | Betayum API",
+            "og:description": "Mark one member offboarding checklist item as complete and attach evidence that supports the access or compliance step."
+          }
+        }
       },
       "delete": {
         "operationId": "OffboardingChecklistController_uncompleteItem_v1",
@@ -22025,7 +22691,18 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "summary": "Undo offboarding completion",
+        "description": "Remove a checklist completion marker when an offboarding step was completed by mistake or requires updated evidence.",
+        "x-mint": {
+          "metadata": {
+            "title": "Undo offboarding completion | Betayum API",
+            "sidebarTitle": "Undo offboarding completion",
+            "description": "Remove a checklist completion marker when an offboarding step was completed by mistake or requires updated evidence.",
+            "og:title": "Undo offboarding completion | Betayum API",
+            "og:description": "Remove a checklist completion marker when an offboarding step was completed by mistake or requires updated evidence."
+          }
+        }
       }
     },
     "/v1/offboarding-checklist/member/{memberId}/item/{templateItemId}/evidence": {
@@ -22071,7 +22748,18 @@
         ],
         "tags": [
           "Offboarding Checklist"
-        ]
+        ],
+        "summary": "Upload offboarding evidence",
+        "description": "Attach evidence to an offboarding checklist item so workforce access removal and compliance activity can be audited.",
+        "x-mint": {
+          "metadata": {
+            "title": "Upload offboarding evidence | Betayum API",
+            "sidebarTitle": "Upload offboarding evidence",
+            "description": "Attach evidence to an offboarding checklist item so workforce access removal and compliance activity can be audited.",
+            "og:title": "Upload offboarding evidence | Betayum API",
+            "og:description": "Attach evidence to an offboarding checklist item so workforce access removal and compliance activity can be audited."
+          }
+        }
       }
     },
     "/v1/offboarding-checklist/member/{memberId}/access-revocations": {
@@ -22098,18 +22786,18 @@
             "apikey": []
           }
         ],
-        "summary": "Get vendor access revocation status for a member",
+        "summary": "List access revocations",
         "tags": [
           "Offboarding Checklist"
         ],
-        "description": "Get vendor access revocation status for a member in Betayum.",
+        "description": "List vendor access revocation status for an offboarded member so administrators can confirm all connected systems were removed.",
         "x-mint": {
           "metadata": {
-            "title": "Get vendor access revocation status for a | Betayum API",
-            "sidebarTitle": "Get vendor access revocation status for a member",
-            "description": "Get vendor access revocation status for a member in Betayum.",
-            "og:title": "Get vendor access revocation status for a | Betayum API",
-            "og:description": "Get vendor access revocation status for a member in Betayum."
+            "title": "List access revocations | Betayum API",
+            "sidebarTitle": "List access revocations",
+            "description": "List vendor access revocation status for an offboarded member so administrators can confirm all connected systems were removed.",
+            "og:title": "List access revocations | Betayum API",
+            "og:description": "List vendor access revocation status for an offboarded member so administrators can confirm all connected systems were removed."
           }
         }
       }
@@ -22138,18 +22826,18 @@
             "apikey": []
           }
         ],
-        "summary": "Confirm all vendor access as revoked",
+        "summary": "Confirm all access revoked",
         "tags": [
           "Offboarding Checklist"
         ],
-        "description": "Confirm all vendor access as revoked in Betayum.",
+        "description": "Mark every tracked vendor access item as revoked for one member after administrators complete offboarding access removal.",
         "x-mint": {
           "metadata": {
-            "title": "Confirm all vendor access as revoked | Betayum API",
-            "sidebarTitle": "Confirm all vendor access as revoked",
-            "description": "Confirm all vendor access as revoked in Betayum.",
-            "og:title": "Confirm all vendor access as revoked | Betayum API",
-            "og:description": "Confirm all vendor access as revoked in Betayum."
+            "title": "Confirm all access revoked | Betayum API",
+            "sidebarTitle": "Confirm all access revoked",
+            "description": "Mark every tracked vendor access item as revoked for one member after administrators complete offboarding access removal.",
+            "og:title": "Confirm all access revoked | Betayum API",
+            "og:description": "Mark every tracked vendor access item as revoked for one member after administrators complete offboarding access removal."
           }
         }
       }
@@ -22187,18 +22875,18 @@
             "apikey": []
           }
         ],
-        "summary": "Mark vendor access as revoked",
+        "summary": "Confirm vendor access revoked",
         "tags": [
           "Offboarding Checklist"
         ],
-        "description": "Mark vendor access as revoked in Betayum.",
+        "description": "Mark one vendor access item as revoked for a member and optionally attach evidence that documents the completed offboarding step.",
         "x-mint": {
           "metadata": {
-            "title": "Mark vendor access as revoked | Betayum API",
-            "sidebarTitle": "Mark vendor access as revoked",
-            "description": "Mark vendor access as revoked in Betayum.",
-            "og:title": "Mark vendor access as revoked | Betayum API",
-            "og:description": "Mark vendor access as revoked in Betayum."
+            "title": "Confirm vendor access revoked | Betayum API",
+            "sidebarTitle": "Confirm vendor access revoked",
+            "description": "Mark one vendor access item as revoked for a member and optionally attach evidence that documents the completed offboarding step.",
+            "og:title": "Confirm vendor access revoked | Betayum API",
+            "og:description": "Mark one vendor access item as revoked for a member and optionally attach evidence that documents the completed offboarding step."
           }
         }
       },
@@ -22234,18 +22922,18 @@
             "apikey": []
           }
         ],
-        "summary": "Undo vendor access revocation",
+        "summary": "Undo access revocation",
         "tags": [
           "Offboarding Checklist"
         ],
-        "description": "Undo vendor access revocation in Betayum.",
+        "description": "Undo a vendor access revocation marker when an offboarding record was confirmed by mistake or needs updated evidence.",
         "x-mint": {
           "metadata": {
-            "title": "Undo vendor access revocation | Betayum API",
-            "sidebarTitle": "Undo vendor access revocation",
-            "description": "Undo vendor access revocation in Betayum.",
-            "og:title": "Undo vendor access revocation | Betayum API",
-            "og:description": "Undo vendor access revocation in Betayum."
+            "title": "Undo access revocation | Betayum API",
+            "sidebarTitle": "Undo access revocation",
+            "description": "Undo a vendor access revocation marker when an offboarding record was confirmed by mistake or needs updated evidence.",
+            "og:title": "Undo access revocation | Betayum API",
+            "og:description": "Undo a vendor access revocation marker when an offboarding record was confirmed by mistake or needs updated evidence."
           }
         }
       }
@@ -23160,6 +23848,10 @@
             "example": "mem_abc123def456"
           }
         }
+      },
+      "ApplyTaskLinksDto": {
+        "type": "object",
+        "properties": {}
       },
       "CreateVendorDto": {
         "type": "object",
@@ -24788,6 +25480,17 @@
               "yearly"
             ],
             "description": "Automation schedule cadence"
+          },
+          "allowedTools": {
+            "description": "Tool names the AI may use during chat (e.g. promptForSecret, promptForInfo). Null means all tools are allowed.",
+            "example": [
+              "promptForSecret",
+              "promptForInfo"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
