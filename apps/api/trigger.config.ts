@@ -3,10 +3,11 @@ import { caBundleExtension } from './caBundleExtension';
 import { prismaExtension } from './customPrismaExtension';
 import { emailExtension } from './emailExtension';
 import { integrationPlatformExtension } from './integrationPlatformExtension';
-
+import dotenv from 'dotenv';
+dotenv.config();
 export default defineConfig({
   runtime: 'node-22',
-  project: 'proj_ixwgznsvcyqykqxcwnkp', // API project
+  project: process.env.TRIGGER_PROJECT_ID ?? 'proj_ixwgznsvcyqykqxcwnkp',
   logLevel: 'log',
   maxDuration: 300, // 5 minutes
   build: {
