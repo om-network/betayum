@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -378,6 +379,66 @@ export class AutomationsController {
       automationId,
       limit: parsedLimit,
       offset: parsedOffset,
+    });
+  }
+
+  @Get(':automationId/draft-script')
+  @RequirePermission('task', 'read')
+  @ApiOperation({ summary: 'Get automation draft script content' })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  async getDraftScript(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.getDraftScript({
+      organizationId,
+      taskId,
+      automationId,
+    });
+  }
+
+  @Post(':automationId/draft-script/run')
+  @RequirePermission('task', 'update')
+  @ApiOperation({ summary: 'Run the current draft script as a test run' })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  async runDraftScript(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+    @Body() body: { secretRefs?: { name: string; category?: string }[] },
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.runDraftScript({
+      organizationId,
+      taskId,
+      automationId,
+      secretRefs: body.secretRefs,
+      actor: await this.resolveAutomationActor(organizationId, authContext),
+    });
+  }
+
+  @Put(':automationId/draft-script')
+  @RequirePermission('task', 'update')
+  @ApiOperation({ summary: 'Save automation draft script content' })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  async saveDraftScript(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+    @Body() body: { content: string },
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationsService.saveDraftScript({
+      organizationId,
+      taskId,
+      automationId,
+      content: body.content,
     });
   }
 

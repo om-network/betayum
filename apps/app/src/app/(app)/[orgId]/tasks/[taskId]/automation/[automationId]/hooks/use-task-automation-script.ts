@@ -23,7 +23,7 @@ export function useTaskAutomationScript({
   automationId,
   enabled = true,
 }: UseTaskAutomationScriptOptions) {
-  const scriptKey = `${orgId}/${taskId}/${automationId}.draft.js`;
+  const scriptKey = `first-party://${orgId}/${taskId}/${automationId}/draft`;
 
   const { data, error, isLoading, mutate } = useSWR<TaskAutomationScript>(
     enabled ? ['task-automation-script', scriptKey] : null,

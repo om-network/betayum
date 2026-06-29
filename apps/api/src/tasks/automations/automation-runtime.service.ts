@@ -30,7 +30,7 @@ const executionRequestSchema = z
     taskId: z.string().min(1),
     automationId: z.string().min(1),
     runId: z.string().min(1),
-    version: z.number().int().positive(),
+    version: z.number().int().min(0),
     artifactKey: z.string().min(1),
     trigger: z.enum(['manual', 'test']),
     secretRefs: z.array(secretRefSchema).default([]),

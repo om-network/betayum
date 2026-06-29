@@ -153,10 +153,6 @@ export function useTaskAutomationExecution({
       setRunId(null);
 
       try {
-        if (!Number.isInteger(version) || !version || version <= 0) {
-          throw new Error('Select a published automation version before running it.');
-        }
-
         const response = await taskAutomationApi.execution.executeScript({
           orgId,
           taskId,

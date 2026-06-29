@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '@db';
 import { AutomationAuditService } from './automation-audit.service';
 import {
@@ -138,7 +138,7 @@ export class AutomationsService {
   }) {
     await this.findById({ organizationId, taskId, automationId });
 
-    const { scheduleFrequency, ...rest } = data;
+    const { scheduleFrequency, allowedTools, ...rest } = data;
     const automation = await db.evidenceAutomation.update({
       where: {
         id: automationId,
@@ -146,6 +146,7 @@ export class AutomationsService {
       data: {
         ...rest,
         ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
+        ...(allowedTools !== undefined ? { allowedTools } : {}),
       },
     });
 
@@ -276,6 +277,117 @@ export class AutomationsService {
     params: ScopedAutomationParams & { limit?: number; offset?: number },
   ) {
     return listAutomationVersions(params);
+  }
+
+  async getDraftScript({
+    organizationId,
+    taskId,
+    automationId,
+  }: ScopedAutomationParams) {
+    const automation = await db.evidenceAutomation.findFirst({
+      where: { id: automationId, taskId, task: { organizationId } },
+      select: { scriptDraft: true },
+    });
+    if (!automation) {
+      return { success: true, content: null };
+    }
+    return { success: true, content: automation.scriptDraft ?? null };
+  }
+
+  async saveDraftScript({
+    organizationId,
+    taskId,
+    automationId,
+    content,
+  }: ScopedAutomationParams & { content: string }) {
+    await this.findById({ organizationId, taskId, automationId });
+    await db.evidenceAutomation.update({
+      where: { id: automationId },
+      data: { scriptDraft: content },
+    });
+    return { success: true };
+  }
+
+  async runDraftScript({
+    organizationId,
+    taskId,
+    automationId,
+    secretRefs = [],
+    actor,
+  }: ScopedAutomationParams & {
+    secretRefs?: AutomationSecretRef[];
+    actor?: AutomationActor;
+  }) {
+    this.automationRuntimeService.assertExecutionAvailable();
+
+    const automation = await db.evidenceAutomation.findFirst({
+      where: { id: automationId, taskId, task: { organizationId } },
+      select: { scriptDraft: true },
+    });
+
+    if (!automation) {
+      throw new NotFoundException('Automation not found');
+    }
+
+    if (!automation.scriptDraft) {
+      throw new BadRequestException('No draft script to run');
+    }
+
+    await this.automationUsageLimitsService.assertManualRunLimit({ organizationId });
+
+    if (secretRefs.length > 0) {
+      await this.automationSecretsService.verifySecretRefs({ organizationId, secretRefs });
+    }
+
+    const run = await db.evidenceAutomationRun.create({
+      data: {
+        evidenceAutomationId: automationId,
+        taskId,
+        triggeredBy: 'manual',
+        status: 'pending',
+        version: null,
+      },
+    });
+
+    const artifactKey = `first-party://${organizationId}/${taskId}/${automationId}/draft`;
+
+    const workerRequest = this.automationRuntimeService.buildExecutionRequest({
+      organizationId,
+      taskId,
+      automationId,
+      runId: run.id,
+      version: 0,
+      artifactKey,
+      trigger: 'test',
+      secretRefs,
+      tools: [],
+    });
+
+    try {
+      await this.automationWorkerDispatcher.enqueue(workerRequest);
+    } catch (error) {
+      await db.evidenceAutomationRun.update({
+        where: { id: run.id },
+        data: {
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Worker enqueue failed',
+          completedAt: new Date(),
+        },
+      });
+      throw error;
+    }
+
+    await this.logIfActor({
+      actor,
+      organizationId,
+      taskId,
+      automationId,
+      action: 'manual_run_started',
+      description: 'started draft script test run',
+      runId: run.id,
+    });
+
+    return { success: true, run };
   }
 
   private async logIfActor({

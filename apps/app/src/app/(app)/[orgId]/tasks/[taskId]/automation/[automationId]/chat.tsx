@@ -251,6 +251,15 @@ export function Chat({
     setChatStatus(status);
   }, [status, setChatStatus]);
 
+  const autoTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (autoTriggeredRef.current) return;
+    if (messages.length > 0) return;
+    if (isEphemeral) return;
+    autoTriggeredRef.current = true;
+    validateAndSubmitMessage('Build the automation script for this task.');
+  }, [isEphemeral, messages.length, validateAndSubmitMessage]);
+
   const hasMessages = messages.length > 0;
 
   return (

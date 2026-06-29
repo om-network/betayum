@@ -37,6 +37,10 @@ export function caBundleExtension(): BuildExtension {
     onBuildComplete: async (context: BuildContext, manifest: BuildManifest) => {
       const src = findBundleSrc(context.workingDir);
       if (!src) {
+        if (manifest.target === 'dev') {
+          context.logger.log('CABundleExtension: rds-global-bundle.pem not found — skipping in dev mode');
+          return;
+        }
         throw new Error(
           `CABundleExtension: rds-global-bundle.pem not found. Searched relative to ${context.workingDir}`,
         );

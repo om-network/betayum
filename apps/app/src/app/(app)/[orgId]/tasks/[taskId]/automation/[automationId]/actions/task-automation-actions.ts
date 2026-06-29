@@ -34,17 +34,63 @@ export async function uploadAutomationScript(data: {
   taskId: string;
   content: string;
   type?: string;
+  automationId?: string;
 }) {
-  void data;
-  return getUnavailableResult('Automation draft upload');
+  if (!data.automationId) {
+    return getUnavailableResult('Automation draft upload');
+  }
+  try {
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.put(
+      `/v1/tasks/${data.taskId}/automations/${data.automationId}/draft-script`,
+      { content: data.content },
+    );
+    if (response.error) throw new Error(response.error);
+    const key = `first-party://${data.orgId}/${data.taskId}/${data.automationId}/draft`;
+    return {
+      success: true,
+      error: undefined,
+      data: { key, bucket: 'first-party', message: 'Script saved' },
+    };
+  } catch (error) {
+    return {
+      success: false as const,
+      error: getActionError(error, 'Failed to upload script'),
+      data: undefined,
+    };
+  }
 }
 
 /**
  * Get automation script
  */
 export async function getAutomationScript(key: string) {
-  void key;
-  return getUnavailableResult('Automation script retrieval');
+  const match = key.match(/^first-party:\/\/[^/]+\/([^/]+)\/([^/]+)\//);
+  if (!match) {
+    return getUnavailableResult('Automation script retrieval');
+  }
+  const [, taskId, automationId] = match;
+  try {
+    const { serverApi } = await import('@/lib/api-server');
+    const response = await serverApi.get<{ success: boolean; content: string | null }>(
+      `/v1/tasks/${taskId}/automations/${automationId}/draft-script`,
+    );
+    if (response.error) throw new Error(response.error);
+    if (!response.data?.content) {
+      return { success: false as const, error: 'Script not found', data: undefined };
+    }
+    return {
+      success: true,
+      error: undefined,
+      data: { content: response.data.content, key },
+    };
+  } catch (error) {
+    return {
+      success: false as const,
+      error: getActionError(error, 'Failed to retrieve script'),
+      data: undefined,
+    };
+  }
 }
 
 /**
@@ -62,24 +108,21 @@ export async function executeAutomationScript(data: {
   orgId: string;
   taskId: string;
   automationId: string;
-  version: number;
+  version?: number;
 }) {
-  if (!Number.isInteger(data.version) || data.version <= 0) {
-    return {
-      success: false as const,
-      error: 'Select a published automation version before running it.',
-      data: undefined,
-    };
-  }
-
   try {
     const { serverApi } = await import('@/lib/api-server');
+
+    const isDraft = !data.version || data.version <= 0;
+    const endpoint = isDraft
+      ? `/v1/tasks/${data.taskId}/automations/${data.automationId}/draft-script/run`
+      : `/v1/tasks/${data.taskId}/automations/${data.automationId}/runs`;
+
     const response = await serverApi.post<{
       success: boolean;
       run: { id: string };
-    }>(`/v1/tasks/${data.taskId}/automations/${data.automationId}/runs`, {
-      version: data.version,
-    });
+    }>(endpoint, isDraft ? {} : { version: data.version });
+
     if (response.error) throw new Error(response.error);
     const runId = response.data?.run.id;
     if (!runId) throw new Error('Automation run was not created');

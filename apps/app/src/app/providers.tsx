@@ -68,7 +68,6 @@ export function Providers({ children, session }: ProviderProps) {
         attribute="class"
         defaultTheme="light"
         disableTransitionOnChange
-        scriptProps={{ 'data-cfasync': 'false' }}
       >
         <AnalyticsProvider
           userId={session?.user?.id ?? undefined}
