@@ -13,7 +13,6 @@ export default async function Page({
   params: Promise<{ taskId: string; orgId: string; automationId: string }>;
 }) {
   const { taskId, orgId, automationId } = await params;
-
   const taskResponse = await serverApi.get<Task>(`/v1/tasks/${taskId}`);
   const task = taskResponse.data;
 

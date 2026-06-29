@@ -108,24 +108,21 @@ export async function executeAutomationScript(data: {
   orgId: string;
   taskId: string;
   automationId: string;
-  version: number;
+  version?: number;
 }) {
-  if (!Number.isInteger(data.version) || data.version <= 0) {
-    return {
-      success: false as const,
-      error: 'Select a published automation version before running it.',
-      data: undefined,
-    };
-  }
-
   try {
     const { serverApi } = await import('@/lib/api-server');
+
+    const isDraft = !data.version || data.version <= 0;
+    const endpoint = isDraft
+      ? `/v1/tasks/${data.taskId}/automations/${data.automationId}/draft-script/run`
+      : `/v1/tasks/${data.taskId}/automations/${data.automationId}/runs`;
+
     const response = await serverApi.post<{
       success: boolean;
       run: { id: string };
-    }>(`/v1/tasks/${data.taskId}/automations/${data.automationId}/runs`, {
-      version: data.version,
-    });
+    }>(endpoint, isDraft ? {} : { version: data.version });
+
     if (response.error) throw new Error(response.error);
     const runId = response.data?.run.id;
     if (!runId) throw new Error('Automation run was not created');

@@ -107,7 +107,7 @@ export interface TaskAutomationExecuteRequest {
   orgId: string;
   taskId: string;
   automationId: string;
-  version: number;
+  version?: number;
 }
 
 // ============================================================================
