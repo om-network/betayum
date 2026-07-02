@@ -28,6 +28,19 @@ resource "google_service_account" "migrator" {
   depends_on = [google_project_service.required]
 }
 
+resource "google_service_account" "evidence_reader" {
+  for_each = {
+    for env_name, env in var.environments : env_name => env
+    if env_name == "staging" && env.project_id == "centered-kiln-498405-h8"
+  }
+
+  project      = each.value.project_id
+  account_id   = "betayum-evidence-reader"
+  display_name = "Betayum Evidence Reader"
+
+  depends_on = [google_project_service.required]
+}
+
 resource "google_project_iam_member" "deployer_project_roles" {
   for_each = {
     for item in flatten([
@@ -109,6 +122,34 @@ resource "google_project_iam_member" "migrator_cloud_sql_client" {
   project = each.value.project_id
   role    = "roles/cloudsql.client"
   member  = google_service_account.migrator[each.key].member
+}
+
+locals {
+  staging_evidence_reader_project_roles = toset([
+    "roles/viewer",
+    "roles/cloudasset.viewer",
+    "roles/logging.viewer",
+    "roles/monitoring.viewer",
+  ])
+}
+
+resource "google_project_iam_member" "staging_evidence_reader_project_roles" {
+  for_each = {
+    for item in flatten([
+      for env_name, env in var.environments : [
+        for role in local.staging_evidence_reader_project_roles : {
+          key        = "${env_name}.${role}"
+          env_name   = env_name
+          project_id = env.project_id
+          role       = role
+        }
+      ] if env_name == "staging" && env.project_id == "centered-kiln-498405-h8"
+    ]) : item.key => item
+  }
+
+  project = each.value.project_id
+  role    = each.value.role
+  member  = google_service_account.evidence_reader[each.value.env_name].member
 }
 
 resource "google_storage_bucket_iam_member" "api_app_data_object_admin" {
