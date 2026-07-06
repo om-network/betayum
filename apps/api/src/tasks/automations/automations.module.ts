@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
 import { TasksModule } from '../tasks.module';
+import { IntegrationPlatformModule } from '../../integration-platform/integration-platform.module';
 import { AutomationsController } from './automations.controller';
 import { AutomationRunsController } from './automation-runs.controller';
 import { AutomationAuditService } from './automation-audit.service';
@@ -12,7 +13,7 @@ import { AutomationWorkerDispatcherService } from './automation-worker-dispatche
 import { AutomationsService } from './automations.service';
 
 @Module({
-  imports: [AuthModule, forwardRef(() => TasksModule)],
+  imports: [AuthModule, forwardRef(() => TasksModule), IntegrationPlatformModule],
   controllers: [AutomationsController, AutomationRunsController],
   providers: [
     AutomationsService,

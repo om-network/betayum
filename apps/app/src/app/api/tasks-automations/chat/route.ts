@@ -22,16 +22,35 @@ function writeS3Event(writer: { write: (chunk: never) => void }, data: StoreToS3
   (writer as { write: (chunk: unknown) => void }).write({ type: 'data-store-to-s3', data });
 }
 
-function buildSystemPrompt(task: { title?: string; description?: string } | null | undefined) {
+type GcpContext = {
+  projectIds: string[];
+  organizationId?: string;
+} | null;
+
+function buildSystemPrompt(
+  task: { title?: string; description?: string } | null | undefined,
+  gcpContext?: GcpContext,
+) {
   const taskTitle = task?.title ?? 'Unknown task';
   const taskDescription = task?.description ?? '';
+
+  const gcpSection = gcpContext
+    ? `
+GCP INTEGRATION (connected):
+- GCP_ACCESS_TOKEN is pre-injected as an env var — do NOT use promptForSecret for GCP credentials
+- Project IDs: ${gcpContext.projectIds.length > 0 ? gcpContext.projectIds.join(', ') : 'not yet configured — use promptForInfo to ask'}
+${gcpContext.organizationId ? `- Organization ID: ${gcpContext.organizationId}` : ''}
+- Use Bearer token auth: Authorization: Bearer <token from os.environ["GCP_ACCESS_TOKEN"]>
+- Use read-only GCP REST APIs (cloudresourcemanager, iam, logging, compute, storage, etc.)
+- Always include a collectedAt timestamp in ISO 8601 format`
+    : '';
 
   return `You are an automation engineer. Your job is to immediately write and save a working Python evidence collection script — not to discuss or plan.
 
 TASK:
 Title: ${taskTitle}
 ${taskDescription ? `Description: ${taskDescription}` : ''}
-
+${gcpSection}
 RULES:
 - On every response, write a complete script and call storeToS3 to save it. No exceptions.
 - Never just reply with text. Always produce and save a script.
@@ -68,17 +87,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Missing required parameters' }, { status: 400 });
     }
 
-    const [taskResponse, automationResponse] = await Promise.all([
+    const [taskResponse, automationResponse, connectionsResponse] = await Promise.all([
       serverApi.get<{ title?: string; description?: string }>(`/v1/tasks/${taskId}`),
       serverApi.get<{ automation: { allowedTools: string[] } }>(
         `/v1/tasks/${taskId}/automations/${automationId}`,
+      ),
+      serverApi.get<Array<{ providerSlug: string; status: string; variables?: Record<string, unknown> }>>(
+        `/v1/integrations/connections`,
       ),
     ]);
 
     const task = taskResponse.data ?? null;
     const allowedTools: string[] | null = automationResponse.data?.automation.allowedTools ?? null;
 
-    const systemPrompt = buildSystemPrompt(task);
+    const connections = Array.isArray(connectionsResponse.data) ? connectionsResponse.data : [];
+    const gcpConnection = connections.find(
+      (c) => c.providerSlug === 'gcp' && c.status === 'active',
+    );
+    const gcpContext: GcpContext = gcpConnection
+      ? {
+          projectIds: Array.isArray(gcpConnection.variables?.project_ids)
+            ? (gcpConnection.variables.project_ids as string[])
+            : [],
+          organizationId:
+            typeof gcpConnection.variables?.organization_id === 'string'
+              ? gcpConnection.variables.organization_id
+              : undefined,
+        }
+      : null;
+
+    const systemPrompt = buildSystemPrompt(task, gcpContext);
     const modelMessages = await convertToModelMessages(messages);
 
     const optionalTools = {

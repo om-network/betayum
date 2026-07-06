@@ -7,6 +7,9 @@ import { join } from 'path';
 import { promisify } from 'util';
 import { decrypt, type EncryptedData } from '../../secrets/encryption.util';
 import type { AutomationExecutionRequest } from './automation-runtime.service';
+import { ConnectionService } from '../../integration-platform/services/connection.service';
+import { OAuthCredentialsService } from '../../integration-platform/services/oauth-credentials.service';
+import { CredentialVaultService } from '../../integration-platform/services/credential-vault.service';
 
 const execAsync = promisify(exec);
 const logger = new Logger('AutomationScriptExecutor');
@@ -97,6 +100,34 @@ async function runPython(script: string, env: Record<string, string>) {
 
 @Injectable()
 export class AutomationScriptExecutorService {
+  constructor(
+    private readonly connectionService: ConnectionService,
+    private readonly oauthCredentialsService: OAuthCredentialsService,
+    private readonly credentialVaultService: CredentialVaultService,
+  ) {}
+
+  private async resolveIntegrationTokens(organizationId: string): Promise<Record<string, string>> {
+    try {
+      const connection = await this.connectionService.getConnectionByProviderSlug('gcp', organizationId);
+      if (!connection || connection.status !== 'active') return {};
+
+      const oauthCreds = await this.oauthCredentialsService.getCredentials('gcp', organizationId);
+      if (!oauthCreds) return {};
+
+      const token = await this.credentialVaultService.getValidAccessToken(connection.id, {
+        tokenUrl: 'https://oauth2.googleapis.com/token',
+        clientId: oauthCreds.clientId,
+        clientSecret: oauthCreds.clientSecret,
+        clientAuthMethod: 'body',
+      });
+      if (!token) return {};
+
+      return { GCP_ACCESS_TOKEN: token };
+    } catch {
+      return {};
+    }
+  }
+
   async executeInBackground(request: AutomationExecutionRequest): Promise<void> {
     setImmediate(() => void this.execute(request));
   }
@@ -118,7 +149,11 @@ export class AutomationScriptExecutorService {
 
       logger.log(`Executing script for automation ${automationId} v${version}`);
 
-      const env = await resolveSecrets(organizationId, secretRefs);
+      const [secrets, integrationTokens] = await Promise.all([
+        resolveSecrets(organizationId, secretRefs),
+        this.resolveIntegrationTokens(organizationId),
+      ]);
+      const env = { ...secrets, ...integrationTokens };
       const result = await runPython(scriptContent, env);
 
       await db.evidenceAutomationRun.update({
