@@ -101,7 +101,7 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
           return (
             <Link
               key={automation.id}
-              href={`/${orgId}/tasks/${taskId}/automations/${automation.id}/overview`}
+              href={`/${orgId}/tasks/${taskId}/automation/${automation.id}`}
               className={`group flex items-center gap-3 rounded-lg border transition-colors py-2.5 px-4 ${borderColor}`}
             >
               <div className={`h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
