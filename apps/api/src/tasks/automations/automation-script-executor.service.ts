@@ -107,25 +107,46 @@ export class AutomationScriptExecutorService {
   ) {}
 
   private async resolveIntegrationTokens(organizationId: string): Promise<Record<string, string>> {
-    try {
-      const connection = await this.connectionService.getConnectionByProviderSlug('gcp', organizationId);
-      if (!connection || connection.status !== 'active') return {};
+    const tokens: Record<string, string> = {};
 
-      const oauthCreds = await this.oauthCredentialsService.getCredentials('gcp', organizationId);
-      if (!oauthCreds) return {};
+    await Promise.all([
+      (async () => {
+        try {
+          const connection = await this.connectionService.getConnectionByProviderSlug('gcp', organizationId);
+          if (!connection || connection.status !== 'active') return;
+          const oauthCreds = await this.oauthCredentialsService.getCredentials('gcp', organizationId);
+          if (!oauthCreds) return;
+          const token = await this.credentialVaultService.getValidAccessToken(connection.id, {
+            tokenUrl: 'https://oauth2.googleapis.com/token',
+            clientId: oauthCreds.clientId,
+            clientSecret: oauthCreds.clientSecret,
+            clientAuthMethod: 'body',
+          });
+          if (token) tokens['GCP_ACCESS_TOKEN'] = token;
+        } catch {
+          // ignore
+        }
+      })(),
+      (async () => {
+        try {
+          const connection = await this.connectionService.getConnectionByProviderSlug('azure', organizationId);
+          if (!connection || connection.status !== 'active') return;
+          const oauthCreds = await this.oauthCredentialsService.getCredentials('azure', organizationId);
+          if (!oauthCreds) return;
+          const token = await this.credentialVaultService.getValidAccessToken(connection.id, {
+            tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+            clientId: oauthCreds.clientId,
+            clientSecret: oauthCreds.clientSecret,
+            clientAuthMethod: 'body',
+          });
+          if (token) tokens['AZURE_ACCESS_TOKEN'] = token;
+        } catch {
+          // ignore
+        }
+      })(),
+    ]);
 
-      const token = await this.credentialVaultService.getValidAccessToken(connection.id, {
-        tokenUrl: 'https://oauth2.googleapis.com/token',
-        clientId: oauthCreds.clientId,
-        clientSecret: oauthCreds.clientSecret,
-        clientAuthMethod: 'body',
-      });
-      if (!token) return {};
-
-      return { GCP_ACCESS_TOKEN: token };
-    } catch {
-      return {};
-    }
+    return tokens;
   }
 
   async executeInBackground(request: AutomationExecutionRequest): Promise<void> {

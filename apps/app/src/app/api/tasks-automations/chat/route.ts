@@ -27,9 +27,14 @@ type GcpContext = {
   organizationId?: string;
 } | null;
 
+type AzureContext = {
+  subscriptionId?: string;
+} | null;
+
 function buildSystemPrompt(
   task: { title?: string; description?: string } | null | undefined,
   gcpContext?: GcpContext,
+  azureContext?: AzureContext,
 ) {
   const taskTitle = task?.title ?? 'Unknown task';
   const taskDescription = task?.description ?? '';
@@ -45,12 +50,23 @@ ${gcpContext.organizationId ? `- Organization ID: ${gcpContext.organizationId}` 
 - Always include a collectedAt timestamp in ISO 8601 format`
     : '';
 
+  const azureSection = azureContext
+    ? `
+AZURE INTEGRATION (connected):
+- AZURE_ACCESS_TOKEN is pre-injected as an env var — do NOT use promptForSecret for Azure credentials
+- Subscription ID: ${azureContext.subscriptionId ?? 'not yet configured — use promptForInfo to ask'}
+- Use Bearer token auth: Authorization: Bearer <token from os.environ["AZURE_ACCESS_TOKEN"]>
+- Base URL: https://management.azure.com — always append ?api-version=<version> to requests
+- Use read-only Azure REST APIs (subscriptions, resources, Defender for Cloud, policy, Key Vault, Monitor, etc.)
+- Always include a collectedAt timestamp in ISO 8601 format`
+    : '';
+
   return `You are an automation engineer. Your job is to immediately write and save a working Python evidence collection script — not to discuss or plan.
 
 TASK:
 Title: ${taskTitle}
 ${taskDescription ? `Description: ${taskDescription}` : ''}
-${gcpSection}
+${gcpSection}${azureSection}
 RULES:
 - On every response, write a complete script and call storeToS3 to save it. No exceptions.
 - Never just reply with text. Always produce and save a script.
@@ -101,9 +117,8 @@ export async function POST(req: Request) {
     const allowedTools: string[] | null = automationResponse.data?.automation.allowedTools ?? null;
 
     const connections = Array.isArray(connectionsResponse.data) ? connectionsResponse.data : [];
-    const gcpConnection = connections.find(
-      (c) => c.providerSlug === 'gcp' && c.status === 'active',
-    );
+
+    const gcpConnection = connections.find((c) => c.providerSlug === 'gcp' && c.status === 'active');
     const gcpContext: GcpContext = gcpConnection
       ? {
           projectIds: Array.isArray(gcpConnection.variables?.project_ids)
@@ -116,7 +131,17 @@ export async function POST(req: Request) {
         }
       : null;
 
-    const systemPrompt = buildSystemPrompt(task, gcpContext);
+    const azureConnection = connections.find((c) => c.providerSlug === 'azure' && c.status === 'active');
+    const azureContext: AzureContext = azureConnection
+      ? {
+          subscriptionId:
+            typeof azureConnection.variables?.subscription_id === 'string'
+              ? azureConnection.variables.subscription_id
+              : undefined,
+        }
+      : null;
+
+    const systemPrompt = buildSystemPrompt(task, gcpContext, azureContext);
     const modelMessages = await convertToModelMessages(messages);
 
     const optionalTools = {
