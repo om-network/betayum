@@ -93,6 +93,8 @@ function makeAutomation({
     lastRunAt: null,
     chatHistory: null,
     evaluationCriteria: null,
+    scriptDraft: null,
+    allowedTools: [],
     taskId: 'tsk_1',
     runs: run
       ? [

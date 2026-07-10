@@ -52,14 +52,16 @@ interface Props {
 }
 
 export function WorkflowVisualizerSimple({ className }: Props) {
-  const { scriptGenerated, viewMode, setViewMode, setScriptUrl } = useTaskAutomationStore();
+  const scriptGenerated = useTaskAutomationStore((s) => s.scriptGenerated);
+  const viewMode = useTaskAutomationStore((s) => s.viewMode);
+  const { setViewMode, setScriptUrl } = useTaskAutomationStore.getState();
   const { orgId, taskId, automationId } = useParams<{
     orgId: string;
     taskId: string;
     automationId: string;
   }>();
   const { chat, automationIdRef } = useSharedChatContext();
-  const { sendMessage } = useChat<ChatUIMessage>({ chat });
+  const { sendMessage } = useChat<ChatUIMessage>({ chat, experimental_throttle: 50 });
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);

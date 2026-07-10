@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@/lib/api-client';
 import { ScheduleSummary } from '@/components/schedule-summary';
 import { downloadAutomationPDF } from '@/lib/evidence-download';
 import { EvidenceAutomation, EvidenceAutomationRun } from '@db';
@@ -9,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import type React from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTaskAutomations } from '../hooks/use-task-automations';
 
@@ -50,10 +52,26 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
   const { orgId, taskId } = useParams<{ orgId: string; taskId: string }>();
   const router = useRouter();
   const { mutate: mutateAutomations } = useTaskAutomations();
+  const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreateAutomation = () => {
-    if (isManualTask) return;
-    router.push(`/${orgId}/tasks/${taskId}/automation/new`);
+  const handleCreateAutomation = async () => {
+    if (isManualTask || isCreating) return;
+    setIsCreating(true);
+    try {
+      const response = await api.post<{ success: boolean; automation: { id: string } }>(
+        `/v1/tasks/${taskId}/automations`,
+      );
+      if (response.error || !response.data?.automation?.id) {
+        toast.error('Failed to create automation');
+        return;
+      }
+      void mutateAutomations();
+      router.push(`/${orgId}/tasks/${taskId}/automation/${response.data.automation.id}`);
+    } catch {
+      toast.error('Failed to create automation');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   if (isManualTask && automations.length === 0) {
@@ -63,7 +81,7 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
   if (automations.length === 0) {
     return (
       <Section title="Custom Automations" description="Build AI-powered automations for this task">
-        <Button variant="outline" size="lg" iconLeft={<Add />} onClick={handleCreateAutomation}>
+        <Button variant="outline" size="lg" iconLeft={<Add />} onClick={handleCreateAutomation} loading={isCreating}>
           Create Automation
         </Button>
       </Section>
@@ -154,7 +172,7 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
         })}
 
         {!isManualTask && (
-          <Button variant="outline" size="lg" iconLeft={<Add />} onClick={handleCreateAutomation}>
+          <Button variant="outline" size="lg" iconLeft={<Add />} onClick={handleCreateAutomation} loading={isCreating}>
             Create Automation
           </Button>
         )}
