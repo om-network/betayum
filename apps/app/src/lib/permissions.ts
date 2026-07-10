@@ -211,7 +211,7 @@ export function resolveBuiltInPermissions(roleString: string | null | undefined)
     if (BUILT_IN_ROLE_NAMES.includes(roleName)) {
       const role = allRoles[roleName as RoleName];
       if (role) {
-        mergePermissions(combined, role.statements as Record<string, string[]>);
+        mergePermissions(combined, role.statements as unknown as Record<string, string[]>);
       }
     }
   }

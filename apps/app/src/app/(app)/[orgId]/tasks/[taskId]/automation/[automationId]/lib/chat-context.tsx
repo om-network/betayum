@@ -3,18 +3,19 @@
 import { Chat } from '@ai-sdk/react';
 import { DataUIPart, DefaultChatTransport } from 'ai';
 import { useParams } from 'next/navigation';
-import { createContext, useCallback, useContext, useRef, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { mutate } from 'swr';
 import { saveChatHistory } from '../actions/task-automation-actions';
 import { type ChatUIMessage } from '../components/chat/types';
-import { useTaskAutomationDataMapper } from './task-automation-store';
+import { useTaskAutomationStore } from './task-automation-store';
 import { DataPart } from './types/data-parts';
 
 interface ChatContextValue {
   chat: Chat<ChatUIMessage>;
   updateAutomationId: (newId: string) => void;
   automationIdRef: React.MutableRefObject<string>;
+  autoTriggeredRef: React.MutableRefObject<boolean>;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -26,9 +27,17 @@ export function ChatProvider({
   children: ReactNode;
   initialMessages?: ChatUIMessage[];
 }) {
-  const mapDataToState = useTaskAutomationDataMapper();
-  const mapDataToStateRef = useRef(mapDataToState);
-  mapDataToStateRef.current = mapDataToState;
+  const mapDataToStateRef = useRef((data: DataUIPart<DataPart>) => {
+    if (data.type === 'data-store-to-s3') {
+      const payload = data.data as { status: string; key?: string };
+      if (payload.status === 'done' && payload.key) {
+        useTaskAutomationStore.getState().setScriptGenerated(true, payload.key);
+        window.dispatchEvent(new CustomEvent('task-automation:script-saved'));
+      } else if (payload.status === 'uploading') {
+        window.dispatchEvent(new CustomEvent('task-automation:script-uploading'));
+      }
+    }
+  });
 
   const url = '/api/tasks-automations/chat';
 
@@ -42,6 +51,7 @@ export function ChatProvider({
   const automationIdRef = useRef(automationId);
   const hasBeenManuallyUpdated = useRef(false);
   const isSavingRef = useRef(false);
+  const autoTriggeredRef = useRef(false);
 
   // Only update from params if it hasn't been manually set
   if (!hasBeenManuallyUpdated.current) {
@@ -96,8 +106,13 @@ export function ChatProvider({
     });
   }
 
+  const contextValue = useMemo(
+    () => ({ chat: chatRef.current!, updateAutomationId, automationIdRef, autoTriggeredRef }),
+    [updateAutomationId, automationIdRef, autoTriggeredRef],
+  );
+
   return (
-    <ChatContext.Provider value={{ chat: chatRef.current, updateAutomationId, automationIdRef }}>
+    <ChatContext.Provider value={contextValue}>
       {children}
     </ChatContext.Provider>
   );

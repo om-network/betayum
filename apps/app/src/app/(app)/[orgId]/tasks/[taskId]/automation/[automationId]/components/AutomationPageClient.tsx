@@ -2,7 +2,6 @@
 
 import { useChat } from '@ai-sdk/react';
 import { useEffect, useState } from 'react';
-import { flushSync } from 'react-dom';
 import { generateAutomationSuggestions } from '../actions/generate-suggestions';
 import { Chat } from '../chat';
 import { useSharedChatContext } from '../lib';
@@ -26,9 +25,9 @@ export function AutomationPageClient({
   taskName,
   taskDescription,
 }: Props) {
-  const { scriptUrl } = useTaskAutomationStore();
+  const scriptUrl = useTaskAutomationStore((s) => s.scriptUrl);
   const { chat } = useSharedChatContext();
-  const { messages } = useChat<ChatUIMessage>({ chat });
+  const { messages } = useChat<ChatUIMessage>({ chat, experimental_throttle: 50 });
   const [suggestions, setSuggestions] = useState<
     {
       title: string;
@@ -48,11 +47,8 @@ export function AutomationPageClient({
       setIsLoadingSuggestions(true);
       generateAutomationSuggestions(taskDescription, orgId)
         .then((result) => {
-          // Use flushSync to force immediate re-render
-          flushSync(() => {
-            setSuggestions(result);
-            setIsLoadingSuggestions(false);
-          });
+          setSuggestions(result);
+          setIsLoadingSuggestions(false);
         })
         .catch((error) => {
           console.error('Failed to generate suggestions:', error);

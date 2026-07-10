@@ -214,11 +214,13 @@ export function Chat({
 }: Props) {
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get('prompt') || '';
-  const { chat, updateAutomationId, automationIdRef } = useSharedChatContext();
+  const { chat, updateAutomationId, automationIdRef, autoTriggeredRef } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({
     chat,
+    experimental_throttle: 50,
   });
-  const { setChatStatus, scriptUrl } = useTaskAutomationStore();
+  const scriptUrl = useTaskAutomationStore((s) => s.scriptUrl);
+  const setChatStatus = useTaskAutomationStore.getState().setChatStatus;
   const { automation } = useTaskAutomation();
 
   // Local text input state
@@ -251,7 +253,6 @@ export function Chat({
     setChatStatus(status);
   }, [status, setChatStatus]);
 
-  const autoTriggeredRef = useRef(false);
   useEffect(() => {
     if (autoTriggeredRef.current) return;
     if (messages.length > 0) return;
