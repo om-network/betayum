@@ -61,7 +61,7 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     automationId: string;
   }>();
   const { chat, automationIdRef } = useSharedChatContext();
-  const { sendMessage } = useChat<ChatUIMessage>({ chat, experimental_throttle: 50 });
+  const { sendMessage } = useChat<ChatUIMessage>({ chat, experimental_throttle: 150 });
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);

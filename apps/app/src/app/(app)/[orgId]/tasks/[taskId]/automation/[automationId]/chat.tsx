@@ -217,7 +217,7 @@ export function Chat({
   const { chat, updateAutomationId, automationIdRef, autoTriggeredRef } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({
     chat,
-    experimental_throttle: 50,
+    experimental_throttle: 150,
   });
   const scriptUrl = useTaskAutomationStore((s) => s.scriptUrl);
   const setChatStatus = useTaskAutomationStore.getState().setChatStatus;
