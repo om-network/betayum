@@ -11,6 +11,7 @@ import { AutomationUsageLimitsService } from './automation-usage-limits.service'
 import { AutomationScriptExecutorService } from './automation-script-executor.service';
 import { AutomationWorkerDispatcherService } from './automation-worker-dispatcher.service';
 import { AutomationsService } from './automations.service';
+import { GoogleDocsService } from './google-docs.service';
 
 @Module({
   imports: [AuthModule, forwardRef(() => TasksModule), IntegrationPlatformModule],
@@ -23,6 +24,7 @@ import { AutomationsService } from './automations.service';
     AutomationAuditService,
     AutomationScriptExecutorService,
     AutomationWorkerDispatcherService,
+    GoogleDocsService,
   ],
   exports: [AutomationsService, AutomationRuntimeService],
 })

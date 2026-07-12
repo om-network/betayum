@@ -26,6 +26,8 @@ import type { AutomationActor } from './automation-types';
 import { TasksService } from '../tasks.service';
 import { AutomationRuntimeService } from './automation-runtime.service';
 import { AutomationsService } from './automations.service';
+import { GoogleDocsService } from './google-docs.service';
+import { AppendGoogleDocDto, CreateGoogleDocDto } from './dto/google-docs.dto';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 import { AUTOMATION_OPERATIONS } from './schemas/automation-operations';
 import { CREATE_AUTOMATION_RESPONSES } from './schemas/create-automation.responses';
@@ -40,6 +42,7 @@ export class AutomationsController {
     private readonly automationsService: AutomationsService,
     private readonly automationRuntimeService: AutomationRuntimeService,
     private readonly tasksService: TasksService,
+    private readonly googleDocsService: GoogleDocsService,
   ) {}
 
   @Get()
@@ -488,6 +491,45 @@ export class AutomationsController {
       automationId,
       version: parseInt(version),
       actor: await this.resolveAutomationActor(organizationId, authContext),
+    });
+  }
+
+  @Post(':automationId/google-docs')
+  @RequirePermission('task', 'update')
+  @ApiOperation({ summary: 'Create a Google Doc and write evidence content into it' })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  async createGoogleDoc(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+    @Body() body: CreateGoogleDocDto,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.googleDocsService.createDocument({
+      organizationId,
+      title: body.title,
+      content: body.content,
+    });
+  }
+
+  @Post(':automationId/google-docs/:documentId/append')
+  @RequirePermission('task', 'update')
+  @ApiOperation({ summary: 'Append evidence content to an existing Google Doc' })
+  @ApiParam({ name: 'taskId', description: 'Task ID' })
+  @ApiParam({ name: 'automationId', description: 'Automation ID' })
+  @ApiParam({ name: 'documentId', description: 'Google Docs document ID' })
+  async appendToGoogleDoc(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('documentId') documentId: string,
+    @Body() body: AppendGoogleDocDto,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.googleDocsService.appendToDocument({
+      organizationId,
+      documentId,
+      content: body.content,
     });
   }
 
