@@ -45,7 +45,11 @@ export function AssistantConversation({
         ) : messages.length === 0 && !error ? (
           <ConversationEmptyState
             icon={<LogoSpinner />}
-            title={`Hi ${firstName}, how can I help you today?`}
+            title={
+              firstName
+                ? `Hi ${firstName}, how can I help you today?`
+                : 'Hi, how can I help you today?'
+            }
           />
         ) : (
           messages.map((message, index) => (

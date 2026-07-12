@@ -33,6 +33,11 @@ export function Chat() {
 
   const [input, setInput] = useState('');
   const [isHydrating, setIsHydrating] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const userId = session?.user?.id;
   const orgIdFromUrl =
@@ -180,7 +185,9 @@ export function Chat() {
   }, [resolvedOrganizationId, userId]);
 
   const isStreaming = status === 'streaming';
-  const firstName = session?.user?.name?.split(' ').at(0) ?? '';
+  const firstName = isMounted
+    ? session?.user?.name?.split(' ').at(0) ?? ''
+    : '';
 
   const handleSubmitMessage = () => {
     if (!input.trim()) return;
