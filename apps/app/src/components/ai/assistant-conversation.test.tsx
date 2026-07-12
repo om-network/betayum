@@ -35,6 +35,22 @@ const baseProps = {
 };
 
 describe('AssistantConversation', () => {
+  it('greets with the first name when available', () => {
+    render(<AssistantConversation {...baseProps} />);
+
+    expect(
+      screen.getByText('Hi Pat, how can I help you today?'),
+    ).toBeInTheDocument();
+  });
+
+  it('greets without a name before the session resolves', () => {
+    render(<AssistantConversation {...baseProps} firstName="" />);
+
+    expect(
+      screen.getByText('Hi, how can I help you today?'),
+    ).toBeInTheDocument();
+  });
+
   it('shows a subtle loading state while chat history hydrates', () => {
     render(<AssistantConversation {...baseProps} isHydrating />);
 
