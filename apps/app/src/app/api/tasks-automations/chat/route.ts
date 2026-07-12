@@ -13,6 +13,9 @@ import {
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { buildGoogleDocsTools } from './google-docs-tools';
+import { buildReadRunOutputTool } from './read-run-output-tool';
+import { buildSystemPrompt, type GcpContext } from './system-prompt';
 
 export const maxDuration = 120;
 
@@ -20,49 +23,6 @@ type StoreToS3Data = { status: 'uploading' | 'done' | 'error'; key?: string; err
 
 function writeS3Event(writer: { write: (chunk: never) => void }, data: StoreToS3Data) {
   (writer as { write: (chunk: unknown) => void }).write({ type: 'data-store-to-s3', data });
-}
-
-type GcpContext = {
-  projectIds: string[];
-  organizationId?: string;
-} | null;
-
-function buildSystemPrompt(
-  task: { title?: string; description?: string } | null | undefined,
-  gcpContext?: GcpContext,
-) {
-  const taskTitle = task?.title ?? 'Unknown task';
-  const taskDescription = task?.description ?? '';
-
-  const gcpSection = gcpContext
-    ? `
-GCP INTEGRATION (connected):
-- GCP_ACCESS_TOKEN is pre-injected as an env var — do NOT use promptForSecret for GCP credentials
-- Project IDs: ${gcpContext.projectIds.length > 0 ? gcpContext.projectIds.join(', ') : 'not yet configured — use promptForInfo to ask'}
-${gcpContext.organizationId ? `- Organization ID: ${gcpContext.organizationId}` : ''}
-- Use Bearer token auth: Authorization: Bearer <token from os.environ["GCP_ACCESS_TOKEN"]>
-- Use read-only GCP REST APIs (cloudresourcemanager, iam, logging, compute, storage, etc.)
-- Always include a collectedAt timestamp in ISO 8601 format`
-    : '';
-
-  return `You are an automation engineer. Your job is to immediately write and save a working Python evidence collection script — not to discuss or plan.
-
-TASK:
-Title: ${taskTitle}
-${taskDescription ? `Description: ${taskDescription}` : ''}
-${gcpSection}
-RULES:
-- On every response, write a complete script and call storeToS3 to save it. No exceptions.
-- Never just reply with text. Always produce and save a script.
-- Make reasonable assumptions. Do not ask clarifying questions.
-- If credentials are needed, use promptForSecret AFTER you have written the script.
-- Scripts use Python 3, the requests library, and os.environ for secrets.
-- Scripts must be read-only (GET requests only).
-- Always include a main() function returning { success, data, error } and print JSON at the end.
-- Handle errors gracefully.
-- Never call runScript automatically. Only call it when the user explicitly asks to test or run the script.
-
-After saving, give a one-sentence summary of what the script collects and what secrets it needs (if any).`;
 }
 
 export async function POST(req: Request) {
@@ -116,7 +76,7 @@ export async function POST(req: Request) {
         }
       : null;
 
-    const systemPrompt = buildSystemPrompt(task, gcpContext);
+    const systemPrompt = buildSystemPrompt(task, gcpContext, !!gcpConnection);
     const modelMessages = await convertToModelMessages(messages);
 
     const optionalTools = {
@@ -157,6 +117,24 @@ export async function POST(req: Request) {
             if (!run) return { success: false, error: 'Run not found' };
 
             if (run.status === 'completed' || run.status === 'failed') {
+              const serialized =
+                run.output === null || run.output === undefined
+                  ? ''
+                  : typeof run.output === 'string'
+                    ? run.output
+                    : JSON.stringify(run.output, null, 2);
+              const OUTPUT_LIMIT = 2000;
+              if (serialized.length > OUTPUT_LIMIT) {
+                return {
+                  success: run.success ?? false,
+                  output: serialized.slice(0, OUTPUT_LIMIT),
+                  truncated: true,
+                  totalChars: serialized.length,
+                  runId,
+                  note: 'Output truncated. Use readRunOutput with this runId and increasing offsets to read the full result.',
+                  error: run.error,
+                };
+              }
               return {
                 success: run.success ?? false,
                 output: run.output,
@@ -221,6 +199,12 @@ export async function POST(req: Request) {
             ),
           ) as Partial<typeof optionalTools>);
 
+    const googleDocsTools = gcpConnection
+      ? buildGoogleDocsTools({ taskId, automationId })
+      : {};
+
+    const readRunOutputTool = buildReadRunOutputTool({ taskId, automationId });
+
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
         const result = streamText({
@@ -260,6 +244,8 @@ export async function POST(req: Request) {
               },
             }),
             ...enabledOptionalTools,
+            ...googleDocsTools,
+            ...readRunOutputTool,
           },
         });
 
