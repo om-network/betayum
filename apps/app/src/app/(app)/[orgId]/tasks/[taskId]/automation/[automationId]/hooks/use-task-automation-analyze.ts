@@ -13,7 +13,7 @@
  * ```
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   TaskAutomationAnalyze,
   TaskAutomationAnalyzeStep,
@@ -34,6 +34,7 @@ export function useTaskAutomationAnalyze({
   const [description, setDescription] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const lastAnalyzedRef = useRef<string | null>(null);
 
   /**
    * Analyze the script content using AI
@@ -101,11 +102,14 @@ export function useTaskAutomationAnalyze({
     }
   }, []);
 
-  // Auto-analyze when content changes
+  // Auto-analyze when content changes. Guard against re-analyzing identical
+  // content — a new SWR object with the same script text would otherwise
+  // re-trigger analysis on every render and loop.
   useEffect(() => {
-    if (enabled && scriptContent) {
-      analyze(scriptContent);
-    }
+    if (!enabled || !scriptContent) return;
+    if (lastAnalyzedRef.current === scriptContent) return;
+    lastAnalyzedRef.current = scriptContent;
+    analyze(scriptContent);
   }, [scriptContent, enabled, analyze]);
 
   return {
