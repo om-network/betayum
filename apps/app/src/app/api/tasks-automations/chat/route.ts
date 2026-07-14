@@ -65,6 +65,9 @@ export async function POST(req: Request) {
     const gcpConnection = connections.find(
       (c) => c.providerSlug === 'gcp' && c.status === 'active',
     );
+    const googleWorkspaceConnection = connections.find(
+      (c) => c.providerSlug === 'google-workspace' && c.status === 'active',
+    );
     const gcpContext: GcpContext = gcpConnection
       ? {
           projectIds: Array.isArray(gcpConnection.variables?.project_ids)
@@ -77,13 +80,14 @@ export async function POST(req: Request) {
         }
       : null;
 
-    const systemPrompt = buildSystemPrompt(task, gcpContext, !!gcpConnection);
+    const hasGoogleWorkspace = !!(gcpConnection || googleWorkspaceConnection);
+    const systemPrompt = buildSystemPrompt(task, gcpContext, hasGoogleWorkspace);
     const modelMessages = await convertToModelMessages(messages);
 
     const optionalTools = {
       runScript: tool({
         description:
-          'Execute the current draft script as a test run. Only call this when the user explicitly asks to run or test the script. Do NOT call this automatically after saving.',
+          'Re-run the saved automation script (e.g., after fixing a bug or when the user asks to run again). Note: storeToS3 already starts a run automatically, so you only need this for explicit re-runs.',
         inputSchema: z.object({
           secretRefs: z
             .array(z.object({ name: z.string(), category: z.string().optional() }))
@@ -200,11 +204,11 @@ export async function POST(req: Request) {
             ),
           ) as Partial<typeof optionalTools>);
 
-    const googleDocsTools = gcpConnection
+    const googleDocsTools = hasGoogleWorkspace
       ? buildGoogleDocsTools({ taskId, automationId })
       : {};
 
-    const googleSheetsTools = gcpConnection
+    const googleSheetsTools = hasGoogleWorkspace
       ? buildGoogleSheetsTools({ taskId, automationId })
       : {};
 
@@ -220,7 +224,7 @@ export async function POST(req: Request) {
           tools: {
             storeToS3: tool({
               description:
-                'Save the generated automation script. Call this when you have a complete Python script ready.',
+                'Save the generated automation script AND automatically run it. Call this when you have a complete Python script ready. The script will be saved and immediately executed — you will receive a runId to read the output with readRunOutput.',
               inputSchema: z.object({
                 content: z.string().describe('The complete Python script content'),
                 filename: z
@@ -228,8 +232,12 @@ export async function POST(req: Request) {
                   .optional()
                   .default('automation.py')
                   .describe('The filename for the script'),
+                secretRefs: z
+                  .array(z.object({ name: z.string(), category: z.string().optional() }))
+                  .optional()
+                  .describe('Secret references to inject as environment variables when running'),
               }),
-              execute: async ({ content }) => {
+              execute: async ({ content, secretRefs }) => {
                 writeS3Event(writer, { status: 'uploading' });
                 const key = `first-party://${orgId}/${taskId}/${automationId}/snapshots/${Date.now()}`;
 
@@ -240,7 +248,68 @@ export async function POST(req: Request) {
                   );
                   if (saveResult.error) throw new Error(saveResult.error);
                   writeS3Event(writer, { status: 'done', key });
-                  return { key, success: true };
+
+                  const triggerResult = await serverApi.post<{ run: { id: string } }>(
+                    `/v1/tasks/${taskId}/automations/${automationId}/draft-script/run`,
+                    { secretRefs },
+                  );
+
+                  if (triggerResult.error || !triggerResult.data?.run?.id) {
+                    return { key, success: true, runStarted: false, runError: triggerResult.error ?? 'Failed to start run' };
+                  }
+
+                  const runId = triggerResult.data.run.id;
+                  const deadline = Date.now() + 60_000;
+
+                  while (Date.now() < deadline) {
+                    await new Promise((r) => setTimeout(r, 2000));
+
+                    const pollResult = await serverApi.get<{
+                      run: { status: string; success: boolean | null; output: unknown; error: string | null };
+                    }>(`/v1/tasks/${taskId}/automations/runs/${runId}`);
+
+                    if (pollResult.error) {
+                      return { key, success: true, runStarted: true, runId, runError: pollResult.error };
+                    }
+
+                    const run = pollResult.data?.run;
+                    if (!run) {
+                      return { key, success: true, runStarted: true, runId, runError: 'Run not found during poll' };
+                    }
+
+                    if (run.status === 'completed' || run.status === 'failed') {
+                      const serialized =
+                        run.output === null || run.output === undefined
+                          ? ''
+                          : typeof run.output === 'string'
+                            ? run.output
+                            : JSON.stringify(run.output, null, 2);
+                      const OUTPUT_LIMIT = 2000;
+                      if (serialized.length > OUTPUT_LIMIT) {
+                        return {
+                          key,
+                          success: true,
+                          runId,
+                          runSuccess: run.success ?? false,
+                          output: serialized.slice(0, OUTPUT_LIMIT),
+                          truncated: true,
+                          totalChars: serialized.length,
+                          note: 'Output truncated. Use readRunOutput with this runId and increasing offsets to read the full result.',
+                          error: run.error,
+                        };
+                      }
+                      return {
+                        key,
+                        success: true,
+                        runId,
+                        runSuccess: run.success ?? false,
+                        output: run.output,
+                        error: run.error,
+                      };
+                    }
+                  }
+
+                  return { key, success: true, runStarted: true, runId, runError: 'Run timed out after 60 seconds' };
                 } catch (error) {
                   const message = error instanceof Error ? error.message : 'Failed to save script';
                   writeS3Event(writer, { status: 'error', error: { message } });
