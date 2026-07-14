@@ -20,6 +20,7 @@ export const gcpManifest: IntegrationManifest = {
         'https://www.googleapis.com/auth/cloud-platform',
         'https://www.googleapis.com/auth/documents',
         'https://www.googleapis.com/auth/drive.file',
+        'https://www.googleapis.com/auth/spreadsheets',
         'openid',
         'email',
         'profile',
