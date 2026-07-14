@@ -14,6 +14,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { buildGoogleDocsTools } from './google-docs-tools';
+import { buildGoogleSheetsTools } from './google-sheets-tools';
 import { buildReadRunOutputTool } from './read-run-output-tool';
 import { buildSystemPrompt, type GcpContext } from './system-prompt';
 
@@ -203,12 +204,16 @@ export async function POST(req: Request) {
       ? buildGoogleDocsTools({ taskId, automationId })
       : {};
 
+    const googleSheetsTools = gcpConnection
+      ? buildGoogleSheetsTools({ taskId, automationId })
+      : {};
+
     const readRunOutputTool = buildReadRunOutputTool({ taskId, automationId });
 
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
         const result = streamText({
-          model: openai('gpt-4o'),
+          model: openai('gpt-5'),
           system: systemPrompt,
           messages: modelMessages,
           stopWhen: stepCountIs(10),
@@ -245,6 +250,7 @@ export async function POST(req: Request) {
             }),
             ...enabledOptionalTools,
             ...googleDocsTools,
+            ...googleSheetsTools,
             ...readRunOutputTool,
           },
         });

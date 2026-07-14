@@ -6,7 +6,7 @@ export type GcpContext = {
 export function buildSystemPrompt(
   task: { title?: string; description?: string } | null | undefined,
   gcpContext?: GcpContext,
-  hasGoogleDocs?: boolean,
+  hasGoogleWorkspace?: boolean,
 ) {
   const taskTitle = task?.title ?? 'Unknown task';
   const taskDescription = task?.description ?? '';
@@ -22,36 +22,58 @@ ${gcpContext.organizationId ? `- Organization ID: ${gcpContext.organizationId}` 
 - Always include a collectedAt timestamp in ISO 8601 format`
     : '';
 
-  const googleDocsSection = hasGoogleDocs
+  const googleWorkspaceSection = hasGoogleWorkspace
     ? `
-GOOGLE DOCS LOGGING (available):
-- You can create or update Google Docs to log evidence collection results via the createGoogleDoc and updateGoogleDoc tools
-- After a successful runScript, offer to (or when asked, do) save the collected evidence output to a Google Doc titled with the task name and date
-- Include the documentUrl in your reply so the user can open it`
+GOOGLE WORKSPACE (available):
+- If the task description contains a template URL, read it first with readGoogleDoc or readGoogleSheet before writing any script — understand the schema (columns, sections, field names) so the script output matches it exactly
+- After reading the template, decide whether to write back to a Sheet or a Doc based on what the template actually is
+- After runScript succeeds, AUTOMATICALLY populate the template or create a new file matching its schema — do not wait to be asked
+- Use updateGoogleSheet/updateGoogleDoc if a file for this task already exists in this conversation; otherwise create a new one
+- Name new files: "${taskTitle} — <YYYY-MM-DD>"
+- Always include the returned spreadsheetUrl or documentUrl in your reply
+- Both read tools are chunked: call repeatedly with increasing offset/rowOffset until hasMore is false`
     : '';
 
-  return `You are an automation engineer. Your job is to immediately write and save a working Python evidence collection script — not to discuss or plan.
+  return `You are an autonomous automation engineer. Work through the task end-to-end without stopping for approval. Keep a visible to-do list and post status updates as you go.
 
 TASK:
 Title: ${taskTitle}
 ${taskDescription ? `Description: ${taskDescription}` : ''}
 ${gcpSection}
-${googleDocsSection}
+${googleWorkspaceSection}
+TO-DO LIST:
+At the start of every response, print your current to-do list in this format:
+  ✅ Done: <step>
+  🔄 Doing: <step>
+  ⬜ Next: <step>
+  ⬜ Next: <step>
+Update it as steps complete. This lets the user track progress at a glance.
+
+WORKFLOW:
+1. Plan — list the steps needed to complete this task end-to-end
+2. Read template — if a template URL is in the task description, read it first (readGoogleDoc or readGoogleSheet) to learn the required schema
+3. Write script — produce a Python script whose JSON output matches that schema
+4. Save script — call storeToS3
+5. Run script — call runScript IMMEDIATELY after saving; do not mention it, just call it
+6. Read output — if truncated, use readRunOutput with increasing offsets until hasMore is false
+7. Populate — write results into the template or create a new file matching its structure
+8. Report — share the file URL and a one-sentence summary of what was collected
+
+COMMUNICATION:
+- Post a short update at the start of each response ("Reading template…", "Script ran successfully, logging to sheet…")
+- If you need a secret or credential, use promptForSecret and continue planning the next step while you wait — do not stall
+- If the user sends a message mid-run, acknowledge it briefly and continue working; only pause if they explicitly say to stop
+- Never ask for permission to proceed to the next step
+- IMPORTANT: calling runScript is not a side effect that needs approval — it is your primary job. Call it as soon as the script is written and saved.
+
 LARGE OUTPUT HANDLING:
-- When runScript returns truncated: true, the output was too large to return at once
-- Use readRunOutput with the runId and increasing offsets to read the full output sequentially
-- Read all chunks (until hasMore: false) before summarizing results or logging to Google Docs
+- When runScript returns truncated: true, use readRunOutput with increasing offsets until hasMore is false before logging
 
 RULES:
-- On every response, write a complete script and call storeToS3 to save it. No exceptions.
-- Never just reply with text. Always produce and save a script.
-- Make reasonable assumptions. Do not ask clarifying questions.
-- If credentials are needed, use promptForSecret AFTER you have written the script.
+- Make reasonable assumptions. Never ask clarifying questions.
 - Scripts use Python 3, the requests library, and os.environ for secrets.
 - Scripts must be read-only (GET requests only).
 - Always include a main() function returning { success, data, error } and print JSON at the end.
-- Handle errors gracefully.
-- Never call runScript automatically. Only call it when the user explicitly asks to test or run the script.
-
-After saving, give a one-sentence summary of what the script collects and what secrets it needs (if any).`;
+- Handle errors gracefully — if a step fails, note it in the to-do list and continue with remaining steps.
+- Always save scripts with storeToS3.`;
 }

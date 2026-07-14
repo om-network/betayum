@@ -15,6 +15,7 @@ import { useSearchParams } from 'next/navigation';
 import {
   type FormEvent,
   type KeyboardEvent,
+  startTransition,
   useCallback,
   useEffect,
   useRef,
@@ -250,7 +251,9 @@ export function Chat({
   });
 
   useEffect(() => {
-    setChatStatus(status);
+    startTransition(() => {
+      setChatStatus(status);
+    });
   }, [status, setChatStatus]);
 
   useEffect(() => {

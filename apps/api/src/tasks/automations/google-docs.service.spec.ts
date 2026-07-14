@@ -143,4 +143,60 @@ describe('GoogleDocsService', () => {
       ).rejects.toThrow('The caller does not have permission');
     });
   });
+
+  describe('readDocument', () => {
+    it('extracts plain text from paragraph elements and returns title', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          documentId: 'doc_read',
+          title: 'Evidence Report',
+          body: {
+            content: [
+              {
+                paragraph: {
+                  elements: [
+                    { textRun: { content: 'Hello ' } },
+                    { textRun: { content: 'world\n' } },
+                  ],
+                },
+              },
+              {
+                paragraph: {
+                  elements: [
+                    { textRun: { content: 'Second paragraph\n' } },
+                  ],
+                },
+              },
+              {},
+            ],
+          },
+        }),
+      } as Response);
+
+      const result = await service.readDocument({ organizationId: ORG_ID, documentId: 'doc_read' });
+
+      expect(result).toEqual({
+        documentId: 'doc_read',
+        title: 'Evidence Report',
+        content: 'Hello world\nSecond paragraph\n',
+      });
+
+      const [url, opts] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('https://docs.googleapis.com/v1/documents/doc_read');
+      expect(opts.method).toBe('GET');
+    });
+
+    it('throws BadGatewayException on Google API error', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        json: async () => ({ error: { message: 'Insufficient permission to read document' } }),
+      } as Response);
+
+      await expect(
+        service.readDocument({ organizationId: ORG_ID, documentId: 'doc_read' }),
+      ).rejects.toThrow('Insufficient permission to read document');
+    });
+  });
 });

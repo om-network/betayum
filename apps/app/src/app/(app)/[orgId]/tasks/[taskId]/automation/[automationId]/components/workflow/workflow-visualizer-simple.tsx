@@ -1,7 +1,6 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { useChat } from '@ai-sdk/react';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -34,7 +33,6 @@ import {
 import { useAutomationVersions } from '../../hooks/use-automation-versions';
 import { useSharedChatContext } from '../../lib/chat-context';
 import { useTaskAutomationStore } from '../../lib/task-automation-store';
-import type { ChatUIMessage } from '../chat/types';
 import { Panel, PanelHeader } from '../panels/panels';
 import { PublishDialog } from '../PublishDialog';
 import {
@@ -61,7 +59,7 @@ export function WorkflowVisualizerSimple({ className }: Props) {
     automationId: string;
   }>();
   const { chat, automationIdRef } = useSharedChatContext();
-  const { sendMessage } = useChat<ChatUIMessage>({ chat, experimental_throttle: 150 });
+  const { sendMessage } = chat;
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);

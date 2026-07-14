@@ -3,38 +3,22 @@ import { CredentialVaultService } from '../../integration-platform/services/cred
 import { OAuthCredentialsService } from '../../integration-platform/services/oauth-credentials.service';
 import { ConnectionService } from '../../integration-platform/services/connection.service';
 
-interface DocsCreateResponse {
-  documentId: string;
+interface SheetsCreateResponse {
+  spreadsheetId: string;
 }
 
-interface DocsErrorResponse {
+interface SheetsValuesResponse {
+  values?: (string | number)[][];
+}
+
+interface SheetsErrorResponse {
   error?: { message?: string };
 }
 
-interface DocsTextRun {
-  content: string;
-}
-
-interface DocsParagraphElement {
-  textRun?: DocsTextRun;
-}
-
-interface DocsParagraph {
-  elements: DocsParagraphElement[];
-}
-
-interface DocsStructuralElement {
-  paragraph?: DocsParagraph;
-}
-
-interface DocsReadResponse {
-  documentId: string;
-  title: string;
-  body: { content: DocsStructuralElement[] };
-}
+type CellRow = (string | number)[];
 
 @Injectable()
-export class GoogleDocsService {
+export class GoogleSheetsService {
   constructor(
     private readonly connectionService: ConnectionService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
@@ -66,7 +50,7 @@ export class GoogleDocsService {
     return token;
   }
 
-  private async docsRequest<T>(
+  private async sheetsRequest<T>(
     url: string,
     method: string,
     token: string,
@@ -82,92 +66,73 @@ export class GoogleDocsService {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({})) as DocsErrorResponse;
-      throw new BadGatewayException(err.error?.message ?? `Google Docs API error: ${res.status}`);
+      const err = await res.json().catch(() => ({})) as SheetsErrorResponse;
+      throw new BadGatewayException(err.error?.message ?? `Google Sheets API error: ${res.status}`);
     }
 
     return res.json() as Promise<T>;
   }
 
-  async createDocument({ organizationId, title, content }: {
+  async createSpreadsheet({ organizationId, title, headers, rows }: {
     organizationId: string;
     title: string;
-    content: string;
-  }): Promise<{ documentId: string; documentUrl: string }> {
+    headers?: CellRow;
+    rows: CellRow[];
+  }): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
     const token = await this.resolveAccessToken(organizationId);
 
-    const created = await this.docsRequest<DocsCreateResponse>(
-      'https://docs.googleapis.com/v1/documents',
+    const created = await this.sheetsRequest<SheetsCreateResponse>(
+      'https://sheets.googleapis.com/v4/spreadsheets',
       'POST',
       token,
-      { title },
+      { properties: { title } },
     );
 
-    const { documentId } = created;
+    const { spreadsheetId } = created;
+    const values: CellRow[] = [...(headers ? [headers] : []), ...rows];
 
-    await this.docsRequest<unknown>(
-      `https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`,
+    await this.sheetsRequest<unknown>(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:append?valueInputOption=RAW`,
       'POST',
       token,
-      {
-        requests: [
-          {
-            insertText: {
-              location: { index: 1 },
-              text: content,
-            },
-          },
-        ],
-      },
+      { values },
     );
 
     return {
-      documentId,
-      documentUrl: `https://docs.google.com/document/d/${documentId}/edit`,
+      spreadsheetId,
+      spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`,
     };
   }
 
-  async readDocument({ organizationId, documentId }: {
+  async readValues({ organizationId, spreadsheetId, range }: {
     organizationId: string;
-    documentId: string;
-  }): Promise<{ documentId: string; title: string; content: string }> {
+    spreadsheetId: string;
+    range?: string;
+  }): Promise<{ spreadsheetId: string; values: (string | number)[][] }> {
     const token = await this.resolveAccessToken(organizationId);
+    const effectiveRange = range ?? 'A1:Z10000';
 
-    const doc = await this.docsRequest<DocsReadResponse>(
-      `https://docs.googleapis.com/v1/documents/${documentId}`,
+    const result = await this.sheetsRequest<SheetsValuesResponse>(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(effectiveRange)}`,
       'GET',
       token,
     );
 
-    const content = doc.body.content
-      .flatMap((el) => el.paragraph?.elements ?? [])
-      .map((el) => el.textRun?.content ?? '')
-      .join('');
-
-    return { documentId: doc.documentId, title: doc.title, content };
+    return { spreadsheetId, values: result.values ?? [] };
   }
 
-  async appendToDocument({ organizationId, documentId, content }: {
+  async appendRows({ organizationId, spreadsheetId, rows }: {
     organizationId: string;
-    documentId: string;
-    content: string;
+    spreadsheetId: string;
+    rows: CellRow[];
   }): Promise<{ success: true }> {
     const token = await this.resolveAccessToken(organizationId);
 
-    await this.docsRequest<unknown>(
-      `https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`,
+    await this.sheetsRequest<unknown>(
+      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:append?valueInputOption=RAW`,
       'POST',
       token,
-      {
-        requests: [
-          {
-            insertText: {
-              endOfSegmentLocation: { segmentId: '' },
-              text: `\n${content}`,
-            },
-          },
-        ],
-      },
+      { values: rows },
     );
 
     return { success: true };

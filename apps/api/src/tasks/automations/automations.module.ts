@@ -12,6 +12,7 @@ import { AutomationScriptExecutorService } from './automation-script-executor.se
 import { AutomationWorkerDispatcherService } from './automation-worker-dispatcher.service';
 import { AutomationsService } from './automations.service';
 import { GoogleDocsService } from './google-docs.service';
+import { GoogleSheetsService } from './google-sheets.service';
 
 @Module({
   imports: [AuthModule, forwardRef(() => TasksModule), IntegrationPlatformModule],
@@ -25,6 +26,7 @@ import { GoogleDocsService } from './google-docs.service';
     AutomationScriptExecutorService,
     AutomationWorkerDispatcherService,
     GoogleDocsService,
+    GoogleSheetsService,
   ],
   exports: [AutomationsService, AutomationRuntimeService],
 })

@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockPost = vi.fn();
+const mockGet = vi.fn();
 
 vi.mock('@/lib/api-server', () => ({
   serverApi: {
     post: mockPost,
+    get: mockGet,
   },
 }));
 
@@ -15,7 +17,7 @@ const AUTOMATION_ID = 'aut_test';
 
 function getTools() {
   const tools = buildGoogleDocsTools({ taskId: TASK_ID, automationId: AUTOMATION_ID });
-  if (!tools.createGoogleDoc.execute || !tools.updateGoogleDoc.execute) {
+  if (!tools.createGoogleDoc.execute || !tools.updateGoogleDoc.execute || !tools.readGoogleDoc.execute) {
     throw new Error('execute not defined on tool');
   }
   return {
@@ -24,6 +26,9 @@ function getTools() {
     },
     updateGoogleDoc: tools.updateGoogleDoc as typeof tools.updateGoogleDoc & {
       execute: NonNullable<typeof tools.updateGoogleDoc.execute>;
+    },
+    readGoogleDoc: tools.readGoogleDoc as typeof tools.readGoogleDoc & {
+      execute: NonNullable<typeof tools.readGoogleDoc.execute>;
     },
   };
 }
@@ -109,6 +114,65 @@ describe('buildGoogleDocsTools', () => {
       );
 
       expect(result).toEqual({ success: false, error: 'Not found' });
+    });
+  });
+
+  describe('readGoogleDoc', () => {
+    const content = 'A'.repeat(10000);
+
+    it('returns first chunk with hasMore:true', async () => {
+      mockGet.mockResolvedValueOnce({
+        data: { documentId: 'doc_123', title: 'Evidence Report', content },
+        error: null,
+      });
+
+      const { readGoogleDoc } = getTools();
+      const result = await readGoogleDoc.execute({ documentId: 'doc_123', offset: 0 }, {} as never);
+
+      expect(mockGet).toHaveBeenCalledWith(
+        `/v1/tasks/${TASK_ID}/automations/${AUTOMATION_ID}/google-docs/doc_123`,
+      );
+      expect(result).toMatchObject({
+        title: 'Evidence Report',
+        offset: 0,
+        nextOffset: 4000,
+        totalChars: 10000,
+        hasMore: true,
+      });
+      expect((result as { chunk: string }).chunk).toHaveLength(4000);
+    });
+
+    it('returns middle chunk correctly', async () => {
+      mockGet.mockResolvedValueOnce({
+        data: { documentId: 'doc_123', title: 'Report', content },
+        error: null,
+      });
+
+      const { readGoogleDoc } = getTools();
+      const result = await readGoogleDoc.execute({ documentId: 'doc_123', offset: 4000 }, {} as never);
+
+      expect(result).toMatchObject({ offset: 4000, nextOffset: 8000, hasMore: true });
+    });
+
+    it('returns hasMore:false on final chunk', async () => {
+      mockGet.mockResolvedValueOnce({
+        data: { documentId: 'doc_123', title: 'Report', content },
+        error: null,
+      });
+
+      const { readGoogleDoc } = getTools();
+      const result = await readGoogleDoc.execute({ documentId: 'doc_123', offset: 8000 }, {} as never);
+
+      expect(result).toMatchObject({ offset: 8000, nextOffset: 10000, hasMore: false });
+    });
+
+    it('returns success:false with error when API fails', async () => {
+      mockGet.mockResolvedValueOnce({ data: null, error: 'Docs API error' });
+
+      const { readGoogleDoc } = getTools();
+      const result = await readGoogleDoc.execute({ documentId: 'doc_123', offset: 0 }, {} as never);
+
+      expect(result).toEqual({ success: false, error: 'Docs API error' });
     });
   });
 });
