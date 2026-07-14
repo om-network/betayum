@@ -16,7 +16,7 @@ import { z } from 'zod';
 import { buildGoogleDocsTools } from './google-docs-tools';
 import { buildGoogleSheetsTools } from './google-sheets-tools';
 import { buildReadRunOutputTool } from './read-run-output-tool';
-import { buildSystemPrompt, type GcpContext } from './system-prompt';
+import { buildSystemPrompt, type GcpContext, type GithubContext } from './system-prompt';
 
 export const maxDuration = 120;
 
@@ -81,7 +81,18 @@ export async function POST(req: Request) {
       : null;
 
     const hasGoogleWorkspace = !!(gcpConnection || googleWorkspaceConnection);
-    const systemPrompt = buildSystemPrompt(task, gcpContext, hasGoogleWorkspace);
+    const githubConnection = connections.find(
+      (c) => c.providerSlug === 'github' && c.status === 'active',
+    );
+    const githubContext: GithubContext = githubConnection
+      ? {
+          orgs: Array.isArray(githubConnection.variables?.orgs)
+            ? (githubConnection.variables.orgs as string[])
+            : [],
+        }
+      : null;
+
+    const systemPrompt = buildSystemPrompt(task, gcpContext, hasGoogleWorkspace, githubContext);
     const modelMessages = await convertToModelMessages(messages);
 
     const optionalTools = {

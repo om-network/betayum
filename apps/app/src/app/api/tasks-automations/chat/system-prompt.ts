@@ -3,10 +3,15 @@ export type GcpContext = {
   organizationId?: string;
 } | null;
 
+export type GithubContext = {
+  orgs: string[];
+} | null;
+
 export function buildSystemPrompt(
   task: { title?: string; description?: string } | null | undefined,
   gcpContext?: GcpContext,
   hasGoogleWorkspace?: boolean,
+  githubContext?: GithubContext,
 ) {
   const taskTitle = task?.title ?? 'Unknown task';
   const taskDescription = task?.description ?? '';
@@ -19,6 +24,17 @@ GCP INTEGRATION (connected):
 ${gcpContext.organizationId ? `- Organization ID: ${gcpContext.organizationId}` : ''}
 - Use Bearer token auth: Authorization: Bearer <token from os.environ["GCP_ACCESS_TOKEN"]>
 - Use read-only GCP REST APIs (cloudresourcemanager, iam, logging, compute, storage, etc.)
+- Always include a collectedAt timestamp in ISO 8601 format`
+    : '';
+
+  const githubSection = githubContext
+    ? `
+GITHUB INTEGRATION (connected):
+- GITHUB_TOKEN is pre-injected as an env var — do NOT use promptForSecret for GitHub credentials
+- Orgs: ${githubContext.orgs.length > 0 ? githubContext.orgs.join(', ') : 'discover at runtime via GET /user/orgs'}
+- Use Bearer token auth: Authorization: Bearer <token from os.environ["GITHUB_TOKEN"]>
+- Base URL: https://api.github.com — always set Accept: application/vnd.github.v3+json header
+- Use read-only GitHub REST APIs (repos, orgs, dependabot alerts, code scanning, branch protection, etc.)
 - Always include a collectedAt timestamp in ISO 8601 format`
     : '';
 
@@ -40,6 +56,7 @@ TASK:
 Title: ${taskTitle}
 ${taskDescription ? `Description: ${taskDescription}` : ''}
 ${gcpSection}
+${githubSection}
 ${googleWorkspaceSection}
 TO-DO LIST:
 At the start of every response, print your current to-do list in this format:
