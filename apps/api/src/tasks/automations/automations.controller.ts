@@ -28,8 +28,10 @@ import { AutomationRuntimeService } from './automation-runtime.service';
 import { AutomationsService } from './automations.service';
 import { GoogleDocsService } from './google-docs.service';
 import { GoogleSheetsService } from './google-sheets.service';
+import { AttachmentsService } from '../../attachments/attachments.service';
 import { AppendGoogleDocDto, CreateGoogleDocDto } from './dto/google-docs.dto';
 import { AppendGoogleSheetDto, CreateGoogleSheetDto } from './dto/google-sheets.dto';
+import { attachSheetAsCsv } from './sheet-attachment.util';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 import { AUTOMATION_OPERATIONS } from './schemas/automation-operations';
 import { CREATE_AUTOMATION_RESPONSES } from './schemas/create-automation.responses';
@@ -46,6 +48,7 @@ export class AutomationsController {
     private readonly tasksService: TasksService,
     private readonly googleDocsService: GoogleDocsService,
     private readonly googleSheetsService: GoogleSheetsService,
+    private readonly attachmentsService: AttachmentsService,
   ) {}
 
   @Get()
@@ -548,12 +551,23 @@ export class AutomationsController {
     @Body() body: CreateGoogleSheetDto,
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
-    return this.googleSheetsService.createSpreadsheet({
+    const sheet = await this.googleSheetsService.createSpreadsheet({
       organizationId,
       title: body.title,
       headers: body.headers,
       rows: body.rows,
     });
+    const attachedToTask = await attachSheetAsCsv({
+      attachmentsService: this.attachmentsService,
+      organizationId,
+      taskId,
+      automationId,
+      title: body.title,
+      spreadsheetUrl: sheet.spreadsheetUrl,
+      headers: body.headers,
+      rows: body.rows,
+    });
+    return { ...sheet, attachedToTask };
   }
 
   @Post(':automationId/google-sheets/:spreadsheetId/append')

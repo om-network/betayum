@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     const [taskResponse, automationResponse, connectionsResponse] = await Promise.all([
-      serverApi.get<{ title?: string; description?: string }>(`/v1/tasks/${taskId}`),
+      serverApi.get<{ title?: string; description?: string; approverId?: string }>(`/v1/tasks/${taskId}`),
       serverApi.get<{ automation: { allowedTools: string[] } }>(
         `/v1/tasks/${taskId}/automations/${automationId}`,
       ),
@@ -326,6 +326,30 @@ export async function POST(req: Request) {
                   writeS3Event(writer, { status: 'error', error: { message } });
                   throw error;
                 }
+              },
+            }),
+            submitTaskForReview: tool({
+              description:
+                'Submit the task for review after evidence has been collected and logged. Call this as the final step after populating the Google Sheet. If the task has no approver configured and none is provided, skip and report that.',
+              inputSchema: z.object({
+                approverId: z
+                  .string()
+                  .optional()
+                  .describe("Member ID of the approver (mem_...). Leave blank to use the task's existing approver."),
+              }),
+              execute: async ({ approverId }) => {
+                const effectiveApproverId = approverId ?? task?.approverId;
+                if (!effectiveApproverId) {
+                  return { success: false, skipped: true, reason: 'No approver configured on this task. Mention this in your report.' };
+                }
+                const result = await serverApi.post<{ task: { status: string } }>(
+                  `/v1/tasks/${taskId}/submit-for-review`,
+                  { approverId: effectiveApproverId },
+                );
+                if (result.error) {
+                  return { success: false, error: result.error };
+                }
+                return { success: true, status: result.data?.task?.status ?? 'in_review' };
               },
             }),
             ...enabledOptionalTools,

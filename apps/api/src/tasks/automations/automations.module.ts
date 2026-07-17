@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from '../../auth/auth.module';
 import { TasksModule } from '../tasks.module';
 import { IntegrationPlatformModule } from '../../integration-platform/integration-platform.module';
+import { AttachmentsModule } from '../../attachments/attachments.module';
 import { AutomationsController } from './automations.controller';
 import { AutomationRunsController } from './automation-runs.controller';
 import { AutomationAuditService } from './automation-audit.service';
@@ -15,7 +16,7 @@ import { GoogleDocsService } from './google-docs.service';
 import { GoogleSheetsService } from './google-sheets.service';
 
 @Module({
-  imports: [AuthModule, forwardRef(() => TasksModule), IntegrationPlatformModule],
+  imports: [AuthModule, forwardRef(() => TasksModule), IntegrationPlatformModule, AttachmentsModule],
   controllers: [AutomationsController, AutomationRunsController],
   providers: [
     AutomationsService,

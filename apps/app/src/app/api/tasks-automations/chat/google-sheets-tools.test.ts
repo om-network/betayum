@@ -44,6 +44,7 @@ describe('buildGoogleSheetsTools', () => {
         data: {
           spreadsheetId: 'sheet_123',
           spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/sheet_123',
+          attachedToTask: true,
         },
         error: null,
       });
@@ -70,6 +71,7 @@ describe('buildGoogleSheetsTools', () => {
         success: true,
         spreadsheetId: 'sheet_123',
         spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/sheet_123',
+        attachedToTask: true,
       });
     });
 

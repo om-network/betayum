@@ -27,7 +27,7 @@ export function buildGoogleSheetsTools({ taskId, automationId }: GoogleSheetsToo
         rows: z.array(z.array(cellValue)).describe('Data rows to populate the sheet'),
       }),
       execute: async ({ title, headers, rows }) => {
-        const result = await serverApi.post<{ spreadsheetId: string; spreadsheetUrl: string }>(
+        const result = await serverApi.post<{ spreadsheetId: string; spreadsheetUrl: string; attachedToTask: boolean }>(
           `/v1/tasks/${taskId}/automations/${automationId}/google-sheets`,
           { title, headers, rows },
         );
@@ -38,6 +38,7 @@ export function buildGoogleSheetsTools({ taskId, automationId }: GoogleSheetsToo
           success: true,
           spreadsheetId: result.data.spreadsheetId,
           spreadsheetUrl: result.data.spreadsheetUrl,
+          attachedToTask: result.data.attachedToTask ?? false,
         };
       },
     }),
