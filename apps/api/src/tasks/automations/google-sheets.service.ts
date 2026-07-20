@@ -62,13 +62,27 @@ export class GoogleSheetsService {
     }
   }
 
+  private assertGoogleSheetsApiPath(path: string): string {
+    if (!path.startsWith('/v4/spreadsheets/')) {
+      throw new BadRequestException('Invalid Google Sheets API path');
+    }
+
+    if (path.includes('://') || path.includes('..') || path.includes('#') || path.includes('\\')) {
+      throw new BadRequestException('Invalid Google Sheets API path');
+    }
+
+    return path;
+  }
+
   private async sheetsRequest<T>(
     path: string,
     method: string,
     token: string,
     body?: unknown,
   ): Promise<T> {
-    const res = await fetch(`https://sheets.googleapis.com${path}`, {
+    const safePath = this.assertGoogleSheetsApiPath(path);
+    const url = new URL(safePath, 'https://sheets.googleapis.com');
+    const res = await fetch(url.toString(), {
       method,
       headers: {
         Authorization: `Bearer ${token}`,
