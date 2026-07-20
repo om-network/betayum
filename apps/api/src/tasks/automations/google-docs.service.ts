@@ -78,6 +78,9 @@ export class GoogleDocsService {
     token: string,
     body?: unknown,
   ): Promise<T> {
+    if (new URL(url).origin !== 'https://docs.googleapis.com') {
+      throw new BadRequestException('Invalid request target');
+    }
     const res = await fetch(url, {
       method,
       headers: {
