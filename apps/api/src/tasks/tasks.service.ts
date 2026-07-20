@@ -314,6 +314,23 @@ export class TasksService {
     return runs;
   }
 
+  async getAutomationRunById(organizationId: string, taskId: string, runId: string) {
+    await this.verifyTaskAccess(organizationId, taskId);
+    const run = await db.evidenceAutomationRun.findFirst({
+      where: { id: runId, evidenceAutomation: { taskId } },
+      select: {
+        id: true,
+        status: true,
+        success: true,
+        output: true,
+        error: true,
+        createdAt: true,
+        completedAt: true,
+      },
+    });
+    return { run };
+  }
+
   /**
    * Get page options for the tasks overview page
    */

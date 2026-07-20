@@ -39,7 +39,6 @@ export default async function Page({
     }
   }
 
-  // Pass task info for client-side suggestion loading (non-blocking)
   const taskDescription = task.description || task.title;
 
   return (

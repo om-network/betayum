@@ -13,6 +13,10 @@ import {
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { buildGoogleDocsTools } from './google-docs-tools';
+import { buildGoogleSheetsTools } from './google-sheets-tools';
+import { buildReadRunOutputTool } from './read-run-output-tool';
+import { buildSystemPrompt, type GcpContext, type GithubContext } from './system-prompt';
 
 export const maxDuration = 120;
 
@@ -20,49 +24,6 @@ type StoreToS3Data = { status: 'uploading' | 'done' | 'error'; key?: string; err
 
 function writeS3Event(writer: { write: (chunk: never) => void }, data: StoreToS3Data) {
   (writer as { write: (chunk: unknown) => void }).write({ type: 'data-store-to-s3', data });
-}
-
-type GcpContext = {
-  projectIds: string[];
-  organizationId?: string;
-} | null;
-
-function buildSystemPrompt(
-  task: { title?: string; description?: string } | null | undefined,
-  gcpContext?: GcpContext,
-) {
-  const taskTitle = task?.title ?? 'Unknown task';
-  const taskDescription = task?.description ?? '';
-
-  const gcpSection = gcpContext
-    ? `
-GCP INTEGRATION (connected):
-- GCP_ACCESS_TOKEN is pre-injected as an env var — do NOT use promptForSecret for GCP credentials
-- Project IDs: ${gcpContext.projectIds.length > 0 ? gcpContext.projectIds.join(', ') : 'not yet configured — use promptForInfo to ask'}
-${gcpContext.organizationId ? `- Organization ID: ${gcpContext.organizationId}` : ''}
-- Use Bearer token auth: Authorization: Bearer <token from os.environ["GCP_ACCESS_TOKEN"]>
-- Use read-only GCP REST APIs (cloudresourcemanager, iam, logging, compute, storage, etc.)
-- Always include a collectedAt timestamp in ISO 8601 format`
-    : '';
-
-  return `You are an automation engineer. Your job is to immediately write and save a working Python evidence collection script — not to discuss or plan.
-
-TASK:
-Title: ${taskTitle}
-${taskDescription ? `Description: ${taskDescription}` : ''}
-${gcpSection}
-RULES:
-- On every response, write a complete script and call storeToS3 to save it. No exceptions.
-- Never just reply with text. Always produce and save a script.
-- Make reasonable assumptions. Do not ask clarifying questions.
-- If credentials are needed, use promptForSecret AFTER you have written the script.
-- Scripts use Python 3, the requests library, and os.environ for secrets.
-- Scripts must be read-only (GET requests only).
-- Always include a main() function returning { success, data, error } and print JSON at the end.
-- Handle errors gracefully.
-- Never call runScript automatically. Only call it when the user explicitly asks to test or run the script.
-
-After saving, give a one-sentence summary of what the script collects and what secrets it needs (if any).`;
 }
 
 export async function POST(req: Request) {
@@ -88,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     const [taskResponse, automationResponse, connectionsResponse] = await Promise.all([
-      serverApi.get<{ title?: string; description?: string }>(`/v1/tasks/${taskId}`),
+      serverApi.get<{ title?: string; description?: string; approverId?: string }>(`/v1/tasks/${taskId}`),
       serverApi.get<{ automation: { allowedTools: string[] } }>(
         `/v1/tasks/${taskId}/automations/${automationId}`,
       ),
@@ -104,6 +65,9 @@ export async function POST(req: Request) {
     const gcpConnection = connections.find(
       (c) => c.providerSlug === 'gcp' && c.status === 'active',
     );
+    const googleWorkspaceConnection = connections.find(
+      (c) => c.providerSlug === 'google-workspace' && c.status === 'active',
+    );
     const gcpContext: GcpContext = gcpConnection
       ? {
           projectIds: Array.isArray(gcpConnection.variables?.project_ids)
@@ -116,13 +80,25 @@ export async function POST(req: Request) {
         }
       : null;
 
-    const systemPrompt = buildSystemPrompt(task, gcpContext);
+    const hasGoogleWorkspace = !!(gcpConnection || googleWorkspaceConnection);
+    const githubConnection = connections.find(
+      (c) => c.providerSlug === 'github' && c.status === 'active',
+    );
+    const githubContext: GithubContext = githubConnection
+      ? {
+          orgs: Array.isArray(githubConnection.variables?.orgs)
+            ? (githubConnection.variables.orgs as string[])
+            : [],
+        }
+      : null;
+
+    const systemPrompt = buildSystemPrompt(task, gcpContext, hasGoogleWorkspace, githubContext);
     const modelMessages = await convertToModelMessages(messages);
 
     const optionalTools = {
       runScript: tool({
         description:
-          'Execute the current draft script as a test run. Only call this when the user explicitly asks to run or test the script. Do NOT call this automatically after saving.',
+          'Re-run the saved automation script (e.g., after fixing a bug or when the user asks to run again). Note: storeToS3 already starts a run automatically, so you only need this for explicit re-runs.',
         inputSchema: z.object({
           secretRefs: z
             .array(z.object({ name: z.string(), category: z.string().optional() }))
@@ -157,6 +133,24 @@ export async function POST(req: Request) {
             if (!run) return { success: false, error: 'Run not found' };
 
             if (run.status === 'completed' || run.status === 'failed') {
+              const serialized =
+                run.output === null || run.output === undefined
+                  ? ''
+                  : typeof run.output === 'string'
+                    ? run.output
+                    : JSON.stringify(run.output, null, 2);
+              const OUTPUT_LIMIT = 2000;
+              if (serialized.length > OUTPUT_LIMIT) {
+                return {
+                  success: run.success ?? false,
+                  output: serialized.slice(0, OUTPUT_LIMIT),
+                  truncated: true,
+                  totalChars: serialized.length,
+                  runId,
+                  note: 'Output truncated. Use readRunOutput with this runId and increasing offsets to read the full result.',
+                  error: run.error,
+                };
+              }
               return {
                 success: run.success ?? false,
                 output: run.output,
@@ -221,17 +215,27 @@ export async function POST(req: Request) {
             ),
           ) as Partial<typeof optionalTools>);
 
+    const googleDocsTools = hasGoogleWorkspace
+      ? buildGoogleDocsTools({ taskId, automationId })
+      : {};
+
+    const googleSheetsTools = hasGoogleWorkspace
+      ? buildGoogleSheetsTools({ taskId, automationId })
+      : {};
+
+    const readRunOutputTool = buildReadRunOutputTool({ taskId, automationId });
+
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
         const result = streamText({
-          model: openai('gpt-4o'),
+          model: openai('gpt-5'),
           system: systemPrompt,
           messages: modelMessages,
           stopWhen: stepCountIs(10),
           tools: {
             storeToS3: tool({
               description:
-                'Save the generated automation script. Call this when you have a complete Python script ready.',
+                'Save the generated automation script AND automatically run it. Call this when you have a complete Python script ready. The script will be saved and immediately executed — you will receive a runId to read the output with readRunOutput.',
               inputSchema: z.object({
                 content: z.string().describe('The complete Python script content'),
                 filename: z
@@ -239,8 +243,12 @@ export async function POST(req: Request) {
                   .optional()
                   .default('automation.py')
                   .describe('The filename for the script'),
+                secretRefs: z
+                  .array(z.object({ name: z.string(), category: z.string().optional() }))
+                  .optional()
+                  .describe('Secret references to inject as environment variables when running'),
               }),
-              execute: async ({ content }) => {
+              execute: async ({ content, secretRefs }) => {
                 writeS3Event(writer, { status: 'uploading' });
                 const key = `first-party://${orgId}/${taskId}/${automationId}/snapshots/${Date.now()}`;
 
@@ -251,7 +259,68 @@ export async function POST(req: Request) {
                   );
                   if (saveResult.error) throw new Error(saveResult.error);
                   writeS3Event(writer, { status: 'done', key });
-                  return { key, success: true };
+
+                  const triggerResult = await serverApi.post<{ run: { id: string } }>(
+                    `/v1/tasks/${taskId}/automations/${automationId}/draft-script/run`,
+                    { secretRefs },
+                  );
+
+                  if (triggerResult.error || !triggerResult.data?.run?.id) {
+                    return { key, success: true, runStarted: false, runError: triggerResult.error ?? 'Failed to start run' };
+                  }
+
+                  const runId = triggerResult.data.run.id;
+                  const deadline = Date.now() + 60_000;
+
+                  while (Date.now() < deadline) {
+                    await new Promise((r) => setTimeout(r, 2000));
+
+                    const pollResult = await serverApi.get<{
+                      run: { status: string; success: boolean | null; output: unknown; error: string | null };
+                    }>(`/v1/tasks/${taskId}/automations/runs/${runId}`);
+
+                    if (pollResult.error) {
+                      return { key, success: true, runStarted: true, runId, runError: pollResult.error };
+                    }
+
+                    const run = pollResult.data?.run;
+                    if (!run) {
+                      return { key, success: true, runStarted: true, runId, runError: 'Run not found during poll' };
+                    }
+
+                    if (run.status === 'completed' || run.status === 'failed') {
+                      const serialized =
+                        run.output === null || run.output === undefined
+                          ? ''
+                          : typeof run.output === 'string'
+                            ? run.output
+                            : JSON.stringify(run.output, null, 2);
+                      const OUTPUT_LIMIT = 2000;
+                      if (serialized.length > OUTPUT_LIMIT) {
+                        return {
+                          key,
+                          success: true,
+                          runId,
+                          runSuccess: run.success ?? false,
+                          output: serialized.slice(0, OUTPUT_LIMIT),
+                          truncated: true,
+                          totalChars: serialized.length,
+                          note: 'Output truncated. Use readRunOutput with this runId and increasing offsets to read the full result.',
+                          error: run.error,
+                        };
+                      }
+                      return {
+                        key,
+                        success: true,
+                        runId,
+                        runSuccess: run.success ?? false,
+                        output: run.output,
+                        error: run.error,
+                      };
+                    }
+                  }
+
+                  return { key, success: true, runStarted: true, runId, runError: 'Run timed out after 60 seconds' };
                 } catch (error) {
                   const message = error instanceof Error ? error.message : 'Failed to save script';
                   writeS3Event(writer, { status: 'error', error: { message } });
@@ -259,7 +328,34 @@ export async function POST(req: Request) {
                 }
               },
             }),
+            submitTaskForReview: tool({
+              description:
+                'Submit the task for review after evidence has been collected and logged. Call this as the final step after populating the Google Sheet. If the task has no approver configured and none is provided, skip and report that.',
+              inputSchema: z.object({
+                approverId: z
+                  .string()
+                  .optional()
+                  .describe("Member ID of the approver (mem_...). Leave blank to use the task's existing approver."),
+              }),
+              execute: async ({ approverId }) => {
+                const effectiveApproverId = approverId ?? task?.approverId;
+                if (!effectiveApproverId) {
+                  return { success: false, skipped: true, reason: 'No approver configured on this task. Mention this in your report.' };
+                }
+                const result = await serverApi.post<{ task: { status: string } }>(
+                  `/v1/tasks/${taskId}/submit-for-review`,
+                  { approverId: effectiveApproverId },
+                );
+                if (result.error) {
+                  return { success: false, error: result.error };
+                }
+                return { success: true, status: result.data?.task?.status ?? 'in_review' };
+              },
+            }),
             ...enabledOptionalTools,
+            ...googleDocsTools,
+            ...googleSheetsTools,
+            ...readRunOutputTool,
           },
         });
 

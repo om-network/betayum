@@ -15,6 +15,7 @@ import { useSearchParams } from 'next/navigation';
 import {
   type FormEvent,
   type KeyboardEvent,
+  startTransition,
   useCallback,
   useEffect,
   useRef,
@@ -217,7 +218,7 @@ export function Chat({
   const { chat, updateAutomationId, automationIdRef, autoTriggeredRef } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({
     chat,
-    experimental_throttle: 50,
+    experimental_throttle: 150,
   });
   const scriptUrl = useTaskAutomationStore((s) => s.scriptUrl);
   const setChatStatus = useTaskAutomationStore.getState().setChatStatus;
@@ -250,7 +251,9 @@ export function Chat({
   });
 
   useEffect(() => {
-    setChatStatus(status);
+    startTransition(() => {
+      setChatStatus(status);
+    });
   }, [status, setChatStatus]);
 
   useEffect(() => {

@@ -27,7 +27,7 @@ export function AutomationPageClient({
 }: Props) {
   const scriptUrl = useTaskAutomationStore((s) => s.scriptUrl);
   const { chat } = useSharedChatContext();
-  const { messages } = useChat<ChatUIMessage>({ chat, experimental_throttle: 50 });
+  const { messages } = useChat<ChatUIMessage>({ chat, experimental_throttle: 150 });
   const [suggestions, setSuggestions] = useState<
     {
       title: string;

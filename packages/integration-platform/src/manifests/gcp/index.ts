@@ -18,6 +18,9 @@ export const gcpManifest: IntegrationManifest = {
       tokenUrl: 'https://oauth2.googleapis.com/token',
       scopes: [
         'https://www.googleapis.com/auth/cloud-platform',
+        'https://www.googleapis.com/auth/documents',
+        'https://www.googleapis.com/auth/drive.file',
+        'https://www.googleapis.com/auth/spreadsheets',
         'openid',
         'email',
         'profile',
