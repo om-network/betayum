@@ -13,7 +13,7 @@ export async function register() {
     const port = process.env.PORT ?? "3000";
     setTimeout(() => {
       fetch(`http://localhost:${port}/org_warmup/tasks/tsk_warmup/automation/aut_warmup`).catch(() => {});
-    }, 2000);
+    }, 100);
   }
 }
 

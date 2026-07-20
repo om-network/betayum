@@ -53,6 +53,11 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
+    // Allow internal dev warmup requests to pass through so Turbopack compiles the route
+    if (process.env.NODE_ENV === 'development' && nextUrl.pathname.startsWith('/org_warmup/')) {
+      return response;
+    }
+
     // Allow unauthenticated access to invite routes
     if (nextUrl.pathname.startsWith('/invite/')) {
       return response;
