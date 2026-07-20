@@ -1,4 +1,4 @@
-import { BadGatewayException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CredentialVaultService } from '../../integration-platform/services/credential-vault.service';
 import { OAuthCredentialsService } from '../../integration-platform/services/oauth-credentials.service';
 import { ConnectionService } from '../../integration-platform/services/connection.service';
@@ -48,6 +48,18 @@ export class GoogleSheetsService {
     }
 
     return token;
+  }
+
+  private assertGoogleId(value: string, name: string): void {
+    if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+      throw new BadRequestException(`Invalid ${name} format`);
+    }
+  }
+
+  private assertA1Range(value: string): void {
+    if (!/^[A-Za-z0-9 :!.]{1,200}$/.test(value)) {
+      throw new BadRequestException('Invalid range format');
+    }
   }
 
   private async sheetsRequest<T>(
@@ -109,8 +121,10 @@ export class GoogleSheetsService {
     spreadsheetId: string;
     range?: string;
   }): Promise<{ spreadsheetId: string; values: (string | number)[][] }> {
+    this.assertGoogleId(spreadsheetId, 'spreadsheetId');
     const token = await this.resolveAccessToken(organizationId);
     const effectiveRange = range ?? 'A1:Z10000';
+    this.assertA1Range(effectiveRange);
 
     const result = await this.sheetsRequest<SheetsValuesResponse>(
       `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(effectiveRange)}`,
@@ -126,6 +140,7 @@ export class GoogleSheetsService {
     spreadsheetId: string;
     rows: CellRow[];
   }): Promise<{ success: true }> {
+    this.assertGoogleId(spreadsheetId, 'spreadsheetId');
     const token = await this.resolveAccessToken(organizationId);
 
     await this.sheetsRequest<unknown>(

@@ -1,4 +1,4 @@
-import { BadGatewayException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CredentialVaultService } from '../../integration-platform/services/credential-vault.service';
 import { OAuthCredentialsService } from '../../integration-platform/services/oauth-credentials.service';
 import { ConnectionService } from '../../integration-platform/services/connection.service';
@@ -66,6 +66,12 @@ export class GoogleDocsService {
     return token;
   }
 
+  private assertGoogleId(value: string, name: string): void {
+    if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+      throw new BadRequestException(`Invalid ${name} format`);
+    }
+  }
+
   private async docsRequest<T>(
     url: string,
     method: string,
@@ -131,6 +137,7 @@ export class GoogleDocsService {
     organizationId: string;
     documentId: string;
   }): Promise<{ documentId: string; title: string; content: string }> {
+    this.assertGoogleId(documentId, 'documentId');
     const token = await this.resolveAccessToken(organizationId);
 
     const doc = await this.docsRequest<DocsReadResponse>(
@@ -152,6 +159,7 @@ export class GoogleDocsService {
     documentId: string;
     content: string;
   }): Promise<{ success: true }> {
+    this.assertGoogleId(documentId, 'documentId');
     const token = await this.resolveAccessToken(organizationId);
 
     await this.docsRequest<unknown>(
