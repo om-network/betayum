@@ -63,15 +63,12 @@ export class GoogleSheetsService {
   }
 
   private async sheetsRequest<T>(
-    url: string,
+    path: string,
     method: string,
     token: string,
     body?: unknown,
   ): Promise<T> {
-    if (new URL(url).origin !== 'https://sheets.googleapis.com') {
-      throw new BadRequestException('Invalid request target');
-    }
-    const res = await fetch(url, {
+    const res = await fetch(`https://sheets.googleapis.com${path}`, {
       method,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -97,7 +94,7 @@ export class GoogleSheetsService {
     const token = await this.resolveAccessToken(organizationId);
 
     const created = await this.sheetsRequest<SheetsCreateResponse>(
-      'https://sheets.googleapis.com/v4/spreadsheets',
+      '/v4/spreadsheets',
       'POST',
       token,
       { properties: { title } },
@@ -107,7 +104,7 @@ export class GoogleSheetsService {
     const values: CellRow[] = [...(headers ? [headers] : []), ...rows];
 
     await this.sheetsRequest<unknown>(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:append?valueInputOption=RAW`,
+      `/v4/spreadsheets/${spreadsheetId}/values/A1:append?valueInputOption=RAW`,
       'POST',
       token,
       { values },
@@ -130,7 +127,7 @@ export class GoogleSheetsService {
     this.assertA1Range(effectiveRange);
 
     const result = await this.sheetsRequest<SheetsValuesResponse>(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(effectiveRange)}`,
+      `/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(effectiveRange)}`,
       'GET',
       token,
     );
@@ -147,7 +144,7 @@ export class GoogleSheetsService {
     const token = await this.resolveAccessToken(organizationId);
 
     await this.sheetsRequest<unknown>(
-      `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A1:append?valueInputOption=RAW`,
+      `/v4/spreadsheets/${spreadsheetId}/values/A1:append?valueInputOption=RAW`,
       'POST',
       token,
       { values: rows },

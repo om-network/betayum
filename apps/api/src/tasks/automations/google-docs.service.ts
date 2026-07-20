@@ -73,15 +73,12 @@ export class GoogleDocsService {
   }
 
   private async docsRequest<T>(
-    url: string,
+    path: string,
     method: string,
     token: string,
     body?: unknown,
   ): Promise<T> {
-    if (new URL(url).origin !== 'https://docs.googleapis.com') {
-      throw new BadRequestException('Invalid request target');
-    }
-    const res = await fetch(url, {
+    const res = await fetch(`https://docs.googleapis.com${path}`, {
       method,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -106,7 +103,7 @@ export class GoogleDocsService {
     const token = await this.resolveAccessToken(organizationId);
 
     const created = await this.docsRequest<DocsCreateResponse>(
-      'https://docs.googleapis.com/v1/documents',
+      '/v1/documents',
       'POST',
       token,
       { title },
@@ -115,7 +112,7 @@ export class GoogleDocsService {
     const { documentId } = created;
 
     await this.docsRequest<unknown>(
-      `https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`,
+      `/v1/documents/${documentId}:batchUpdate`,
       'POST',
       token,
       {
@@ -144,7 +141,7 @@ export class GoogleDocsService {
     const token = await this.resolveAccessToken(organizationId);
 
     const doc = await this.docsRequest<DocsReadResponse>(
-      `https://docs.googleapis.com/v1/documents/${documentId}`,
+      `/v1/documents/${documentId}`,
       'GET',
       token,
     );
@@ -166,7 +163,7 @@ export class GoogleDocsService {
     const token = await this.resolveAccessToken(organizationId);
 
     await this.docsRequest<unknown>(
-      `https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`,
+      `/v1/documents/${documentId}:batchUpdate`,
       'POST',
       token,
       {
