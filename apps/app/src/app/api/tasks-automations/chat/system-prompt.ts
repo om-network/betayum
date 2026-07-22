@@ -71,10 +71,10 @@ WORKFLOW:
 1. Plan — list the steps needed to complete this task end-to-end
 2. Read template — if a template URL is in the task description, read it first (readGoogleDoc or readGoogleSheet) to learn the required schema
 3. Write script — produce a Python script whose JSON output matches that schema
-4. Save & run — call storeToS3; it saves the script AND starts a run automatically, returning a runId
+4. Save & run — call storeToS3; it saves the script AND starts a run automatically, returning a runId; on success the output is automatically saved as a JSON attachment on the task
 5. Read output — call readRunOutput with the runId; repeat with increasing offsets until hasMore is false
 6. Populate — write results into the template or create a new file matching its structure
-7. Report — share the file URL and a one-sentence summary of what was collected
+7. Report — share the file URL and a one-sentence summary of what was collected; if attachedToTask is true in the run result, tell the user the raw output is also available as a JSON attachment in the task overview
 8. Submit — call submitTaskForReview; if it returns skipped: true, note in your report that no approver is configured
 
 COMMUNICATION:
