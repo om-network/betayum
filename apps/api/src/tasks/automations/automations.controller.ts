@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -583,9 +584,10 @@ export class AutomationsController {
     @Body() body: AppendGoogleSheetDto,
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    const safeSpreadsheetId = this.assertGoogleSpreadsheetId(spreadsheetId);
     return this.googleSheetsService.appendRows({
       organizationId,
-      spreadsheetId,
+      spreadsheetId: safeSpreadsheetId,
       rows: body.rows,
     });
   }
@@ -618,7 +620,16 @@ export class AutomationsController {
     @Query('range') range?: string,
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
-    return this.googleSheetsService.readValues({ organizationId, spreadsheetId, range });
+    const safeSpreadsheetId = this.assertGoogleSpreadsheetId(spreadsheetId);
+    return this.googleSheetsService.readValues({ organizationId, spreadsheetId: safeSpreadsheetId, range });
+  }
+
+  private assertGoogleSpreadsheetId(spreadsheetId: string): string {
+    if (!/^[a-zA-Z0-9_-]+$/.test(spreadsheetId)) {
+      throw new BadRequestException('Invalid spreadsheetId format');
+    }
+
+    return spreadsheetId;
   }
 
   private async resolveAutomationActor(
