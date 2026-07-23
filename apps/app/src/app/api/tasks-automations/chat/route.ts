@@ -22,6 +22,27 @@ export const maxDuration = 120;
 
 type StoreToS3Data = { status: 'uploading' | 'done' | 'error'; key?: string; error?: { message: string } };
 
+async function attachOutputToTask(
+  taskId: string,
+  output: unknown,
+  runId: string,
+): Promise<{ attachmentId?: string; attachedToTask: boolean }> {
+  try {
+    if (output === null || output === undefined) return { attachedToTask: false };
+    const serialized = typeof output === 'string' ? output : JSON.stringify(output, null, 2);
+    if (!serialized.trim()) return { attachedToTask: false };
+    const fileData = Buffer.from(serialized).toString('base64');
+    const result = await serverApi.post<{ id: string }>(
+      `/v1/tasks/${taskId}/attachments`,
+      { fileName: `automation-output-${runId}.json`, fileType: 'application/json', fileData },
+    );
+    if (result.error || !result.data?.id) return { attachedToTask: false };
+    return { attachedToTask: true, attachmentId: result.data.id };
+  } catch {
+    return { attachedToTask: false };
+  }
+}
+
 function writeS3Event(writer: { write: (chunk: never) => void }, data: StoreToS3Data) {
   (writer as { write: (chunk: unknown) => void }).write({ type: 'data-store-to-s3', data });
 }
@@ -141,6 +162,9 @@ export async function POST(req: Request) {
                     : JSON.stringify(run.output, null, 2);
               const OUTPUT_LIMIT = 2000;
               if (serialized.length > OUTPUT_LIMIT) {
+                const attachment = run.success
+                  ? await attachOutputToTask(taskId, run.output, runId)
+                  : { attachedToTask: false };
                 return {
                   success: run.success ?? false,
                   output: serialized.slice(0, OUTPUT_LIMIT),
@@ -149,13 +173,18 @@ export async function POST(req: Request) {
                   runId,
                   note: 'Output truncated. Use readRunOutput with this runId and increasing offsets to read the full result.',
                   error: run.error,
+                  ...attachment,
                 };
               }
+              const attachment = run.success
+                ? await attachOutputToTask(taskId, run.output, runId)
+                : { attachedToTask: false };
               return {
                 success: run.success ?? false,
                 output: run.output,
                 logs: run.logs,
                 error: run.error,
+                ...attachment,
               };
             }
           }
@@ -297,6 +326,9 @@ export async function POST(req: Request) {
                             : JSON.stringify(run.output, null, 2);
                       const OUTPUT_LIMIT = 2000;
                       if (serialized.length > OUTPUT_LIMIT) {
+                        const attachment = run.success
+                          ? await attachOutputToTask(taskId, run.output, runId)
+                          : { attachedToTask: false };
                         return {
                           key,
                           success: true,
@@ -307,8 +339,12 @@ export async function POST(req: Request) {
                           totalChars: serialized.length,
                           note: 'Output truncated. Use readRunOutput with this runId and increasing offsets to read the full result.',
                           error: run.error,
+                          ...attachment,
                         };
                       }
+                      const attachment = run.success
+                        ? await attachOutputToTask(taskId, run.output, runId)
+                        : { attachedToTask: false };
                       return {
                         key,
                         success: true,
@@ -316,6 +352,7 @@ export async function POST(req: Request) {
                         runSuccess: run.success ?? false,
                         output: run.output,
                         error: run.error,
+                        ...attachment,
                       };
                     }
                   }
