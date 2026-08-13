@@ -59,7 +59,7 @@ describe('TaskBody', () => {
     setMockPermissions({ task: ['read', 'update'] });
   });
 
-  it('disables attachment mutations for read-only users', () => {
+  it('disables attachment mutations but keeps previews available for read-only users', () => {
     mockCanUpdateTask.mockReturnValue(false);
     mockUseTaskAttachments.mockReturnValue({
       data: { data: [], status: 200 } as never,

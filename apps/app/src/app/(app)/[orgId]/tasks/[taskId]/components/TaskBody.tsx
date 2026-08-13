@@ -383,7 +383,7 @@ export function TaskBody({
                     <button
                       type="button"
                       onClick={() => handlePreviewClick(attachment)}
-                      disabled={!canUpdateTask || isBusy || isUploading}
+                      disabled={isBusy || isUploading}
                       className="max-w-[200px] truncate text-sm hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                       title={attachment.name}
                     >
@@ -395,7 +395,7 @@ export function TaskBody({
                     <button
                       type="button"
                       onClick={() => handleDeleteAttachment(attachment.id)}
-                      disabled={isBusy || isUploading}
+                      disabled={!canUpdateTask || isBusy || isUploading}
                       aria-label={`Delete ${attachment.name}`}
                       className="text-muted-foreground opacity-0 transition-opacity hover:text-destructive disabled:opacity-50 group-hover:opacity-100"
                     >
