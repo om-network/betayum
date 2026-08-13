@@ -1,5 +1,5 @@
 import { UserMenu } from '@/app/components/user-menu';
-import { Skeleton } from '@trycompai/ui/skeleton';
+import { Skeleton } from '@trycompai/design-system';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { BrandLogo } from './brand-logo';
