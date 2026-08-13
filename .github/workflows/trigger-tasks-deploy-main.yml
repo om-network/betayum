@@ -1,8 +1,8 @@
-name: Deploy to Trigger.dev (dev)
+name: Deploy to Trigger.dev (staging)
 on:
   push:
     branches:
-      - main
+      - develop
 
 permissions:
   contents: read
