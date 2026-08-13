@@ -55,10 +55,7 @@ import { FindingsService } from './findings.service';
 describe('FindingsService.create (target validator)', () => {
   const auditService = {};
   const notifier = { notifyFindingCreated: jest.fn() };
-  const svc = new FindingsService(
-    auditService as never,
-    notifier as never,
-  );
+  const svc = new FindingsService(auditService as never, notifier as never, {} as never);
   const baseDto = { content: 'Example finding' };
 
   beforeEach(() => {

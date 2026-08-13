@@ -77,7 +77,7 @@ describe('TimelinesService', () => {
       templateId: 'tml_1',
       cycleNumber: 2,
       status: 'ACTIVE',
-      startDate: '2026-01-01T00:00:00.000Z',
+      startDate: null,
       pausedAt: null,
       completedAt: null,
       phases: [
@@ -87,7 +87,7 @@ describe('TimelinesService', () => {
           orderIndex: 0,
           status: 'IN_PROGRESS',
           completionType: 'AUTO_POLICIES',
-          completedAt: null,
+          completedAt: null as string | null,
         },
         {
           id: 'p2',
