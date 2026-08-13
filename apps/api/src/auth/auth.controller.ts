@@ -100,7 +100,7 @@ export class AuthController {
 
   @Delete('invitations/:id')
   @UseGuards(PermissionGuard)
-  @RequirePermission('member', 'delete')
+  @RequirePermission('invitation', 'delete')
   @ApiOperation({ summary: 'Revoke a pending invitation' })
   @ApiParam({ name: 'id', description: 'Invitation ID' })
   async deleteInvitation(
