@@ -230,7 +230,6 @@ describe('AutomationsService', () => {
       automationId: 'aut_1',
       data: {
         scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v3.js',
-        scriptContent: null,
         changelog: 'Publish stable automation',
       },
     });
