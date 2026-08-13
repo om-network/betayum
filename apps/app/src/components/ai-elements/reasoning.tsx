@@ -23,7 +23,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
+import { Streamdown, type PluginConfig } from "streamdown";
 
 import { Shimmer } from "./shimmer";
 
@@ -204,8 +204,7 @@ export type ReasoningContentProps = ComponentProps<
   children: string;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const streamdownPlugins = { cjk, code, math } as any;
+const streamdownPlugins: PluginConfig = { cjk, code, math };
 
 export const ReasoningContent = memo(
   ({ className, children, ...props }: ReasoningContentProps) => (

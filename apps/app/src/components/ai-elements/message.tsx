@@ -28,7 +28,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Streamdown } from "streamdown";
+import { Streamdown, type PluginConfig } from "streamdown";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -319,8 +319,7 @@ export const MessageBranchPage = ({
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const streamdownPlugins = { cjk, code, math } as any;
+const streamdownPlugins: PluginConfig = { cjk, code, math };
 
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
