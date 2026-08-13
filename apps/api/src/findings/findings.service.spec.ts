@@ -5,6 +5,11 @@ jest.mock('@trycompai/company', () => ({
   toExternalEvidenceFormType: (v: string | null) => v,
 }));
 
+jest.mock('@trycompai/auth', () => ({
+  BUILT_IN_ROLE_OBLIGATIONS: {},
+  allRoles: {},
+}));
+
 const mockDb = {
   task: { findFirst: jest.fn() },
   evidenceSubmission: { findFirst: jest.fn(), findUnique: jest.fn() },
@@ -38,6 +43,10 @@ jest.mock('@db', () => ({
     medium: 'medium',
     high: 'high',
     critical: 'critical',
+  },
+  BackgroundCheckStatus: {
+    completed: 'completed',
+    completed_with_flags: 'completed_with_flags',
   },
 }));
 
