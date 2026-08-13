@@ -18,7 +18,6 @@ import { cn } from "@trycompai/ui/cn";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import {
   createContext,
@@ -321,7 +320,7 @@ export const MessageBranchPage = ({
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const streamdownPlugins = { cjk, code, math, mermaid } as any;
+const streamdownPlugins = { cjk, code, math } as any;
 
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (

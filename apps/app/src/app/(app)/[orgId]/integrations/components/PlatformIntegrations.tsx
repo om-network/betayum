@@ -193,7 +193,10 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
   const unifiedIntegrations = useMemo<UnifiedIntegration[]>(() => {
     const platformSortTier = (item: UnifiedIntegration & { type: 'platform' }): 0 | 1 | 2 => {
       const { provider, connection } = item;
-      const isComingSoon = provider.authType === 'oauth2' && provider.oauthConfigured === false;
+      const isComingSoon =
+        provider.id !== 'github' &&
+        provider.authType === 'oauth2' &&
+        provider.oauthConfigured === false;
       if (isComingSoon) return 2;
 
       const hasEstablishedConnection =
@@ -485,8 +488,13 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                     connection?.variables as Record<string, unknown> | null,
                   );
 
+                const githubBrowserLoginOnly =
+                  provider.id === 'github' &&
+                  provider.oauthConfigured === false;
                 const isComingSoon =
-                  provider.authType === 'oauth2' && provider.oauthConfigured === false;
+                  provider.id !== 'github' &&
+                  provider.authType === 'oauth2' &&
+                  provider.oauthConfigured === false;
 
                 /** Primary CTA is Connect / Set up — card still opens details on click; hide redundant “View details” row */
                 const showConnectOrSetup =
@@ -704,6 +712,19 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                 </Button>
                               )}
                             </div>
+                          ) : githubBrowserLoginOnly ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                router.push(`/${orgId}/integrations/${provider.id}`);
+                              }}
+                            >
+                              Set up VM login
+                            </Button>
                           ) : provider.authType === 'oauth2' &&
                             provider.oauthConfigured === false ? (
                             <Button size="sm" variant="outline" className="w-full" disabled>

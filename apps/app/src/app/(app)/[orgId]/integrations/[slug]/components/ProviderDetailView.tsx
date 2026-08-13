@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { AccountSettingsSheet } from './AccountSettingsSheet';
 import { getConnectionDisplayLabel } from './connection-display';
 import { EmptyStateOnboarding } from './EmptyStateOnboarding';
-import { GcpBrowserLogin } from './GcpBrowserLogin';
+import { BrowserLogin } from './GcpBrowserLogin';
 import { GcpProjectPicker } from './GcpProjectPicker';
 import { IntegrationEvidenceTasks, type IntegrationTaskTemplate } from './IntegrationEvidenceTasks';
 import { IntegrationProviderHero } from './IntegrationProviderHero';
@@ -30,6 +30,7 @@ interface ProviderDetailViewProps {
   taskTemplates: IntegrationTaskTemplate[];
   /** Server passes true when URL was ?success=true&provider=gcp (OAuth return) */
   gcpOAuthJustConnected?: boolean;
+  browserConnectionId?: string;
 }
 
 export function ProviderDetailView({
@@ -37,6 +38,7 @@ export function ProviderDetailView({
   initialConnections,
   taskTemplates,
   gcpOAuthJustConnected = false,
+  browserConnectionId,
 }: ProviderDetailViewProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const router = useRouter();
@@ -66,6 +68,12 @@ export function ProviderDetailView({
     }
     return activeConnections[0] ?? null;
   }, [selectedConnectionId, activeConnections]);
+  const browserLoginConnectionId =
+    selectedConnection?.status === 'active'
+      ? selectedConnection.id
+      : browserConnectionId;
+  const isGithubVmLoginOnly =
+    provider.id === 'github' && provider.oauthConfigured === false;
 
   const services = useMemo(
     () =>
@@ -266,13 +274,24 @@ export function ProviderDetailView({
           onSelectConnection={(id) => setSelectedConnectionId(id)}
           onOpenSettings={() => setSettingsOpen(true)}
           onAddAccount={() => void handleConnect()}
+          vmLoginOnly={isGithubVmLoginOnly}
         />
 
-        <IntegrationEvidenceTasks provider={provider} taskTemplates={taskTemplates} orgId={orgId} />
-
-        {provider.id === 'gcp' && selectedConnection?.status === 'active' && (
-          <GcpBrowserLogin connectionId={selectedConnection.id} />
+        {!isGithubVmLoginOnly && (
+          <IntegrationEvidenceTasks
+            provider={provider}
+            taskTemplates={taskTemplates}
+            orgId={orgId}
+          />
         )}
+
+        {(provider.id === 'gcp' || provider.id === 'github') &&
+          browserLoginConnectionId && (
+            <BrowserLogin
+              connectionId={browserLoginConnectionId}
+              providerName={provider.name}
+            />
+          )}
 
         {selectedConnectionRequiresReconnect && (
           <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 flex items-center justify-between gap-3">
@@ -290,7 +309,7 @@ export function ProviderDetailView({
         )}
 
         {/* Content: zero state OR findings */}
-        {!isConnected && (
+        {!isConnected && !isGithubVmLoginOnly && (
           <EmptyStateOnboarding
             provider={provider}
             orgId={orgId}

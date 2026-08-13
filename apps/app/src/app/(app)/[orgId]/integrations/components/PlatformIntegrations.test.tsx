@@ -29,8 +29,9 @@ const {
   mockUseVendors: vi.fn(),
 }));
 
-const { mockRouterPush, mockUseSearchParams } = vi.hoisted(() => ({
+const { mockRouterPush, mockRouterReplace, mockUseSearchParams } = vi.hoisted(() => ({
   mockRouterPush: vi.fn(),
+  mockRouterReplace: vi.fn(),
   mockUseSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 
@@ -91,7 +92,7 @@ vi.mock('next/link', () => ({
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org-1' }),
-  useRouter: () => ({ push: mockRouterPush }),
+  useRouter: () => ({ push: mockRouterPush, replace: mockRouterReplace }),
   useSearchParams: mockUseSearchParams,
 }));
 
@@ -194,6 +195,36 @@ describe('PlatformIntegrations', () => {
   });
 
   describe('Permission gating', () => {
+    it('keeps GitHub open for VM login when OAuth credentials are unavailable', () => {
+      setMockPermissions(ADMIN_PERMISSIONS);
+      mockUseIntegrationProviders.mockReturnValue({
+        providers: [
+          {
+            id: 'github',
+            name: 'GitHub',
+            description: 'Code hosting',
+            category: 'Development',
+            logoUrl: '/github.png',
+            authType: 'oauth2',
+            oauthConfigured: false,
+            isActive: true,
+            requiredVariables: [],
+            mappedTasks: [],
+            supportsMultipleConnections: false,
+          },
+        ],
+        isLoading: false,
+      });
+
+      render(<PlatformIntegrations {...defaultProps} />);
+
+      screen.getByRole('button', { name: 'Set up VM login' }).click();
+      expect(mockRouterPush).toHaveBeenCalledWith(
+        '/org-1/integrations/github',
+      );
+      expect(screen.queryByText('Coming Soon')).not.toBeInTheDocument();
+    });
+
     it('renders Connect button for platform providers when user has integration:create permission', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
 
@@ -404,7 +435,7 @@ describe('PlatformIntegrations', () => {
   });
 
   describe('Vendor-prioritized ordering', () => {
-    it('shows integrations from vendor list before non-vendor integrations', () => {
+    it('shows connected integrations before vendor-listed integrations', () => {
       mockUseIntegrationProviders.mockReturnValue({
         providers: [
           {
@@ -471,8 +502,8 @@ describe('PlatformIntegrations', () => {
         .map((heading) => heading.textContent?.trim())
         .filter(Boolean);
 
-      expect(integrationTitles[0]).toBe('Slack');
-      expect(integrationTitles[1]).toBe('GitHub');
+      expect(integrationTitles[0]).toBe('GitHub');
+      expect(integrationTitles[1]).toBe('Slack');
     });
   });
 });

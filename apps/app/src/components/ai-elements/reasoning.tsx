@@ -12,7 +12,6 @@ import { cn } from "@trycompai/ui/cn";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
 import { BrainIcon, ChevronDownIcon } from "lucide-react";
 import {
   createContext,
@@ -206,7 +205,7 @@ export type ReasoningContentProps = ComponentProps<
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const streamdownPlugins = { cjk, code, math, mermaid } as any;
+const streamdownPlugins = { cjk, code, math } as any;
 
 export const ReasoningContent = memo(
   ({ className, children, ...props }: ReasoningContentProps) => (

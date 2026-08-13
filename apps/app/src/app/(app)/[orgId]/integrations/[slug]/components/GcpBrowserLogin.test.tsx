@@ -2,7 +2,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
-import { GcpBrowserLogin } from './GcpBrowserLogin';
+import { BrowserLogin } from './GcpBrowserLogin';
 
 vi.mock('@/env.mjs', () => ({
   env: { NEXT_PUBLIC_API_URL: 'https://api.betayum.test' },
@@ -32,8 +32,9 @@ vi.mock('@novnc/novnc', () => ({
   },
 }));
 
-describe(GcpBrowserLogin.name, () => {
-  it('opens the organization desktop and saves the confirmed session', async () => {
+describe(BrowserLogin.name, () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(usePermissions).mockReturnValue({
       canAccessAuditorView: false,
       customPermissions: {},
@@ -42,8 +43,14 @@ describe(GcpBrowserLogin.name, () => {
       permissions: {},
       roles: ['owner'],
     });
+  });
+
+  it('opens the organization desktop and saves the confirmed session', async () => {
     vi.mocked(apiClient.get).mockResolvedValue({
-      data: { vmState: 'not_created', lastConfirmedAt: null },
+      data: {
+        vmState: 'not_created',
+        lastConfirmedAt: null,
+      },
       status: 200,
     });
     vi.mocked(apiClient.post)
@@ -68,10 +75,15 @@ describe(GcpBrowserLogin.name, () => {
         status: 201,
       });
 
-    render(<GcpBrowserLogin connectionId="icn_1" />);
+    render(<BrowserLogin connectionId="icn_2" providerName="GitHub" />);
+    expect(
+      screen.getByText("GitHub login saved in this organization's VM browser"),
+    ).toBeTruthy();
     fireEvent.click(await screen.findByRole('button', { name: 'Open desktop' }));
 
-    expect(await screen.findByLabelText('GCP browser desktop')).toBeTruthy();
+    expect(
+      await screen.findByLabelText('Organization browser desktop'),
+    ).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Save session' }));
 
     await waitFor(() => {
@@ -80,7 +92,8 @@ describe(GcpBrowserLogin.name, () => {
       );
     });
     await waitFor(() => {
-      expect(screen.queryByLabelText('GCP browser desktop')).toBeNull();
+      expect(screen.queryByLabelText('Organization browser desktop')).toBeNull();
     });
   });
+
 });

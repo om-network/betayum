@@ -11,6 +11,30 @@ import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
 import { validateFileContent } from '../utils/file-type-validation';
 
+const MIME_TYPES_BY_EXTENSION: Readonly<Record<string, string>> = {
+  avif: 'image/avif',
+  bmp: 'image/bmp',
+  csv: 'text/csv; charset=utf-8',
+  gif: 'image/gif',
+  jpeg: 'image/jpeg',
+  jpg: 'image/jpeg',
+  json: 'application/json; charset=utf-8',
+  log: 'text/plain; charset=utf-8',
+  md: 'text/markdown; charset=utf-8',
+  mp3: 'audio/mpeg',
+  mp4: 'video/mp4',
+  ogg: 'audio/ogg',
+  pdf: 'application/pdf',
+  png: 'image/png',
+  txt: 'text/plain; charset=utf-8',
+  wav: 'audio/wav',
+  webm: 'video/webm',
+  webp: 'image/webp',
+  xml: 'application/xml; charset=utf-8',
+  yaml: 'text/yaml; charset=utf-8',
+  yml: 'text/yaml; charset=utf-8',
+};
+
 @Injectable()
 export class AttachmentsService {
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
@@ -238,7 +262,10 @@ export class AttachmentsService {
       organizationId,
       key: attachment.url,
     });
-    const contentType = this.mimeTypeForAttachmentType(attachment.type);
+    const contentType = this.mimeTypeForAttachment(
+      attachment.type,
+      attachment.name,
+    );
     return { stream, contentType, fileName: attachment.name };
   }
 
@@ -468,7 +495,14 @@ export class AttachmentsService {
     return `${base}/v1/attachments/${attachmentId}/stream`;
   }
 
-  private mimeTypeForAttachmentType(type: AttachmentType | string): string {
+  private mimeTypeForAttachment(
+    type: AttachmentType | string,
+    fileName: string,
+  ): string {
+    const extension = fileName.split('.').pop()?.toLowerCase() ?? '';
+    const contentType = MIME_TYPES_BY_EXTENSION[extension];
+    if (contentType) return contentType;
+
     switch (type) {
       case AttachmentType.image: return 'image/png';
       case AttachmentType.video: return 'video/mp4';

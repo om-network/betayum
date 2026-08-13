@@ -96,7 +96,9 @@ describe('AttachmentsService object storage behavior', () => {
         }),
       }),
     );
-    expect(result.downloadUrl).toBe('https://signed.example.com/file');
+    expect(result.downloadUrl).toBe(
+      'http://localhost:3333/v1/attachments/att_123/stream',
+    );
   });
 
   it('generates download URLs and deletes attachments through object storage', async () => {
@@ -112,16 +114,11 @@ describe('AttachmentsService object storage behavior', () => {
     await expect(
       service.getAttachmentDownloadUrl('org_123', 'att_123'),
     ).resolves.toEqual({
-      downloadUrl: 'https://signed.example.com/file',
-      expiresIn: 900,
+      downloadUrl: 'http://localhost:3333/v1/attachments/att_123/stream',
+      expiresIn: 0,
     });
 
-    expect(objectStorage.getSignedObjectUrl).toHaveBeenCalledWith({
-      organizationId: 'org_123',
-      key: 'org_123/attachments/task/tsk_123/evidence.pdf',
-      action: 'read',
-      expiresInSeconds: 900,
-    });
+    expect(objectStorage.getSignedObjectUrl).not.toHaveBeenCalled();
 
     await expect(
       service.deleteAttachment('org_123', 'att_123'),
@@ -134,6 +131,35 @@ describe('AttachmentsService object storage behavior', () => {
       where: { id: 'att_123', organizationId: 'org_123' },
     });
   });
+
+  it.each([
+    ['evidence.jpg', 'image', 'image/jpeg'],
+    ['evidence.pdf', 'document', 'application/pdf'],
+    ['evidence.json', 'document', 'application/json; charset=utf-8'],
+    ['evidence.csv', 'document', 'text/csv; charset=utf-8'],
+  ])(
+    'streams %s with its browser-previewable content type',
+    async (name, type, expectedContentType) => {
+      mockDb.attachment.findFirst.mockResolvedValue({
+        id: 'att_123',
+        name,
+        type,
+        url: `org_123/attachments/task/tsk_123/${name}`,
+      });
+
+      const service = createService();
+      const result = await service.streamAttachmentContent(
+        'org_123',
+        'att_123',
+      );
+
+      expect(result.contentType).toBe(expectedContentType);
+      expect(objectStorage.streamObject).toHaveBeenCalledWith({
+        organizationId: 'org_123',
+        key: `org_123/attachments/task/tsk_123/${name}`,
+      });
+    },
+  );
 
   it('copies policy version PDFs through object storage', async () => {
     objectStorage.copyObject.mockResolvedValue({

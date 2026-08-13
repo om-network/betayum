@@ -18,17 +18,17 @@ model FindingException {
   connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   /// Normalized check identifier (e.g. "iam-no-mfa") — matches CloudFinding.checkKey.
-  checkId String
+  checkId    String
   /// Per-resource (e.g. user name, bucket name) — same source as CloudFinding.resourceId.
   resourceId String
 
   /// Required, min ~20 chars enforced at the service layer.
-  reason String
+  reason     String
   /// Optional free-text — e.g. "approved by CISO 2026-Q1".
   reviewedBy String?
   /// Optional. null = never expires. If set, getFindings re-introduces the
   /// finding to the active list on the first scan after this date.
-  expiresAt DateTime?
+  expiresAt  DateTime?
 
   markedById String
   markedAt   DateTime @default(now())
@@ -42,7 +42,6 @@ model FindingException {
   /// so the audit history lives in AuditLog rather than duplicate FindingException
   /// rows. Guarantees DB-level dedupe under concurrent mark-as-exception.
   @@unique([organizationId, connectionId, checkId, resourceId])
-
   @@index([organizationId])
   @@index([connectionId])
   @@index([expiresAt])
@@ -65,8 +64,8 @@ model FindingResolution {
   resourceId   String
   resourceType String?
 
-  resolvedAt       DateTime
-  resolutionMethod FindingResolutionMethod
+  resolvedAt          DateTime
+  resolutionMethod    FindingResolutionMethod
   /// Only set for `platform_fix`. Identifies the user who clicked Fix.
   resolvedById        String?
   /// Only set for `platform_fix`. Links to the successful RemediationAction.
@@ -77,7 +76,7 @@ model FindingResolution {
   resolvedFromRunId String
   detectedInRunId   String
   /// How long the finding was open before being resolved.
-  daysOpen Int?
+  daysOpen          Int?
 
   /// Back-relation: regressions that reference this as the prior fix.
   regressions FindingRegression[]
@@ -123,7 +122,7 @@ model FindingRegression {
   regressedAt     DateTime
   detectedInRunId String
   /// Days between the last resolution and this regression.
-  daysClean Int?
+  daysClean       Int?
 
   @@index([organizationId])
   @@index([connectionId])

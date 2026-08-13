@@ -1,13 +1,13 @@
 'use client';
 
-import { env } from '@/env.mjs';
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import { Badge, Button, Section } from '@trycompai/design-system';
 import { Checkmark, Close, Screen } from '@trycompai/design-system/icons';
-import { useEffect, useRef, useState } from 'react';
-import useSWR from 'swr';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import useSWR from 'swr';
+import { GcpBrowserDesktop } from './GcpBrowserDesktop';
 
 type VmState =
   | 'not_created'
@@ -40,69 +40,13 @@ interface BrowserViewerSession {
   error: string | null;
 }
 
-interface GcpBrowserLoginProps {
+interface BrowserLoginProps {
   connectionId: string;
+  providerName: string;
 }
 
 const POLL_INTERVAL_MS = 3_000;
-
-function buildWebSocketUrl(path: string): string {
-  const url = new URL(path, env.NEXT_PUBLIC_API_URL || 'http://localhost:3333');
-  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  return url.toString();
-}
-
-function BrowserDesktop({
-  websocketPath,
-  onDisconnected,
-}: {
-  websocketPath: string;
-  onDisconnected: () => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    let disposed = false;
-    let disconnect: (() => void) | undefined;
-
-    void import('@novnc/novnc')
-      .then(({ default: RFB }) => {
-        if (disposed) return;
-
-        const rfb = new RFB(container, buildWebSocketUrl(websocketPath));
-        rfb.scaleViewport = true;
-        rfb.resizeSession = false;
-        rfb.focusOnClick = true;
-        rfb.background = '#111827';
-        rfb.addEventListener('disconnect', (event) => {
-          if (!disposed && !event.detail.clean) onDisconnected();
-        });
-        disconnect = () => rfb.disconnect();
-      })
-      .catch(() => {
-        if (!disposed) onDisconnected();
-      });
-
-    return () => {
-      disposed = true;
-      disconnect?.();
-      container.replaceChildren();
-    };
-  }, [onDisconnected, websocketPath]);
-
-  return (
-    <div
-      ref={containerRef}
-      aria-label="GCP browser desktop"
-      className="h-[min(70vh,720px)] min-h-[360px] w-full overflow-hidden rounded-md border bg-gray-950 sm:min-h-[480px] [&_canvas]:max-h-full [&_canvas]:max-w-full"
-    />
-  );
-}
-
-export function GcpBrowserLogin({ connectionId }: GcpBrowserLoginProps) {
+export function BrowserLogin({ connectionId, providerName }: BrowserLoginProps) {
   const { hasPermission } = usePermissions();
   const canManage = hasPermission('integration', 'update');
   const [viewer, setViewer] = useState<BrowserViewerSession | null>(null);
@@ -208,7 +152,7 @@ export function GcpBrowserLogin({ connectionId }: GcpBrowserLoginProps) {
   return (
     <Section
       title="Browser login"
-      description="GCP console session for this organization"
+      description={`${providerName} login saved in this organization's VM browser`}
       actions={
         <Badge variant={connectionStatus?.lastConfirmedAt ? 'accent' : 'secondary'}>
           {connectionStatus?.lastConfirmedAt ? 'Session saved' : vmLabel}
@@ -223,17 +167,16 @@ export function GcpBrowserLogin({ connectionId }: GcpBrowserLoginProps) {
 
       {!viewer && (
         <div className="flex items-center justify-between gap-4 border-t py-4">
-          <p className="text-sm text-muted-foreground">
-            {connectionStatus?.lastConfirmedAt
-              ? `Last saved ${new Date(connectionStatus.lastConfirmedAt).toLocaleString()}`
-              : 'No browser session saved'}
-          </p>
+          <div>
+            <p className="text-sm font-medium">Browser session</p>
+            <p className="text-sm text-muted-foreground">
+              {connectionStatus?.lastConfirmedAt
+                ? `Last saved ${new Date(connectionStatus.lastConfirmedAt).toLocaleString()}`
+                : 'No browser session saved'}
+            </p>
+          </div>
           {canManage && (
-            <Button
-              onClick={() => void handleOpen()}
-              loading={starting}
-              iconLeft={<Screen />}
-            >
+            <Button onClick={() => void handleOpen()} loading={starting} iconLeft={<Screen />}>
               Open desktop
             </Button>
           )}
@@ -248,7 +191,7 @@ export function GcpBrowserLogin({ connectionId }: GcpBrowserLoginProps) {
 
       {isDesktopReady && viewer?.websocketPath && (
         <div className="space-y-3">
-          <BrowserDesktop
+          <GcpBrowserDesktop
             websocketPath={viewer.websocketPath}
             onDisconnected={handleDisconnected}
           />
@@ -256,11 +199,7 @@ export function GcpBrowserLogin({ connectionId }: GcpBrowserLoginProps) {
             <Button variant="outline" onClick={() => void handleCancel()} iconLeft={<Close />}>
               Cancel
             </Button>
-            <Button
-              onClick={() => void handleSave()}
-              loading={finishing}
-              iconLeft={<Checkmark />}
-            >
+            <Button onClick={() => void handleSave()} loading={finishing} iconLeft={<Checkmark />}>
               Save session
             </Button>
           </div>
