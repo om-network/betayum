@@ -44,6 +44,9 @@ export async function GET(
   if (!query.success) {
     return NextResponse.json({ message: 'Invalid run scope' }, { status: 400 });
   }
+  if (session.session?.activeOrganizationId !== query.data.orgId) {
+    return NextResponse.json({ message: 'Run scope does not match' }, { status: 403 });
+  }
 
   const automation = await serverApi.get(
     `/v1/tasks/${query.data.taskId}/automations/${query.data.automationId}`,
