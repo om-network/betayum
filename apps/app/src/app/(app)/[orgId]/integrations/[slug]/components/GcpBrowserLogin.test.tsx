@@ -2,6 +2,12 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
+import {
+  ADMIN_PERMISSIONS,
+  AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
+} from '@/test-utils/mocks/permissions';
 import { BrowserLogin } from './GcpBrowserLogin';
 
 vi.mock('@/env.mjs', () => ({
@@ -35,10 +41,11 @@ vi.mock('@novnc/novnc', () => ({
 describe(BrowserLogin.name, () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setMockPermissions(ADMIN_PERMISSIONS);
     vi.mocked(usePermissions).mockReturnValue({
       canAccessAuditorView: false,
       customPermissions: {},
-      hasPermission: () => true,
+      hasPermission: mockHasPermission,
       obligations: {},
       permissions: {},
       roles: ['owner'],
@@ -94,6 +101,23 @@ describe(BrowserLogin.name, () => {
     await waitFor(() => {
       expect(screen.queryByLabelText('Organization browser desktop')).toBeNull();
     });
+  });
+
+  it('hides desktop mutation actions for auditors while showing VM status and saved-session data', async () => {
+    setMockPermissions(AUDITOR_PERMISSIONS);
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        vmState: 'running',
+        lastConfirmedAt: '2026-07-29T04:00:00.000Z',
+      },
+      status: 200,
+    });
+
+    render(<BrowserLogin connectionId="icn_auditor" providerName="Google Cloud" />);
+
+    expect(await screen.findByText('Session saved')).toBeInTheDocument();
+    expect(screen.getByText(/Last saved/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open desktop' })).toBeNull();
   });
 
 });

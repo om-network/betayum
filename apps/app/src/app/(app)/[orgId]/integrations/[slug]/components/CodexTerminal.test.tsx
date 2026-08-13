@@ -2,6 +2,12 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
+import {
+  ADMIN_PERMISSIONS,
+  AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
+} from '@/test-utils/mocks/permissions';
 import { CodexTerminal } from './CodexTerminal';
 
 vi.mock('@/hooks/use-permissions', () => ({
@@ -26,11 +32,12 @@ describe(CodexTerminal.name, () => {
     vi.mocked(usePermissions).mockReturnValue({
       canAccessAuditorView: false,
       customPermissions: {},
-      hasPermission: () => true,
+      hasPermission: mockHasPermission,
       obligations: {},
       permissions: {},
       roles: ['owner'],
     });
+    setMockPermissions(ADMIN_PERMISSIONS);
   });
 
   it('opens Codex independently from the browser desktop', async () => {
@@ -90,5 +97,19 @@ describe(CodexTerminal.name, () => {
       );
     });
     expect(screen.queryByLabelText('Codex terminal viewport')).toBeNull();
+  });
+
+  it('hides session mutation actions for auditors while showing connection status', async () => {
+    setMockPermissions(AUDITOR_PERMISSIONS);
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: { codexStatus: 'connected' },
+      status: 200,
+    });
+
+    render(<CodexTerminal connectionId="icn_auditor" />);
+
+    expect(await screen.findByText('Connected')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open terminal' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Disconnect' })).toBeNull();
   });
 });
