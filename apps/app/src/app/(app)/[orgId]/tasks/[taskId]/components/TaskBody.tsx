@@ -25,6 +25,7 @@ import {
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 import { AttachmentPreviewDialog } from './AttachmentPreviewDialog';
 
 interface TaskBodyProps {
@@ -94,6 +95,8 @@ export function TaskBody({
 
   // Use API hooks for mutations
   const { uploadAttachment, getDownloadUrl, deleteAttachment } = useTaskAttachmentActions(taskId);
+  const { hasPermission } = usePermissions();
+  const canUpdateTask = hasPermission('task', 'update');
 
   // Extract attachments from SWR response
   const attachments = attachmentsData?.data || [];
@@ -108,7 +111,7 @@ export function TaskBody({
   // Process files (used by both file input and drag & drop)
   const processFiles = useCallback(
     async (files: FileList | File[]) => {
-      if (!files || files.length === 0) return;
+      if (!canUpdateTask || !files || files.length === 0) return;
       setIsUploading(true);
 
       // Blocked file extensions for security
@@ -185,7 +188,7 @@ export function TaskBody({
       refreshAttachments();
       resetState();
     },
-    [uploadAttachment, refreshAttachments],
+    [canUpdateTask, uploadAttachment, refreshAttachments],
   );
 
   const initiateUpload = useCallback((files: FileList | File[]) => {
@@ -281,6 +284,7 @@ export function TaskBody({
 
   const handleDeleteAttachment = useCallback(
     async (attachmentId: string) => {
+      if (!canUpdateTask) return;
       setBusyAttachmentId(attachmentId);
       try {
         await deleteAttachment(attachmentId);
@@ -294,7 +298,7 @@ export function TaskBody({
         setBusyAttachmentId(null);
       }
     },
-    [deleteAttachment, refreshAttachments],
+    [canUpdateTask, deleteAttachment, refreshAttachments],
   );
 
   return (
@@ -379,7 +383,7 @@ export function TaskBody({
                     <button
                       type="button"
                       onClick={() => handlePreviewClick(attachment)}
-                      disabled={isBusy || isUploading}
+                      disabled={!canUpdateTask || isBusy || isUploading}
                       className="max-w-[200px] truncate text-sm hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                       title={attachment.name}
                     >
@@ -411,7 +415,7 @@ export function TaskBody({
           <button
             type="button"
             onClick={triggerFileInput}
-            disabled={isUploading || !!busyAttachmentId}
+            disabled={!canUpdateTask || isUploading || !!busyAttachmentId}
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}

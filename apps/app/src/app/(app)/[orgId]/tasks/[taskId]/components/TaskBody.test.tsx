@@ -1,5 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setMockPermissions } from '@/test-utils/mocks/permissions';
+
+const { mockCanUpdateTask } = vi.hoisted(() => ({ mockCanUpdateTask: vi.fn(() => true) }));
+vi.mock('@/hooks/use-permissions', () => ({
+  usePermissions: () => ({ hasPermission: mockCanUpdateTask }),
+}));
 
 // Mock the task API hooks
 const mockRefreshAttachments = vi.fn();
@@ -49,6 +55,21 @@ const mockUseTaskAttachments = vi.mocked(useTaskAttachments);
 describe('TaskBody', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCanUpdateTask.mockReturnValue(true);
+    setMockPermissions({ task: ['read', 'update'] });
+  });
+
+  it('disables attachment mutations for read-only users', () => {
+    mockCanUpdateTask.mockReturnValue(false);
+    mockUseTaskAttachments.mockReturnValue({
+      data: { data: [], status: 200 } as never,
+      error: undefined,
+      isLoading: false,
+      mutate: mockRefreshAttachments,
+      isValidating: false,
+    });
+    render(<TaskBody taskId="tsk_123" />);
+    expect(screen.getByRole('button', { name: /drag and drop files here/i })).toBeDisabled();
   });
 
   it('should show upload dropzone even when attachments are loading', () => {
