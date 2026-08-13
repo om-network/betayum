@@ -26,7 +26,7 @@ describe('getBrandConfig', () => {
         hello: 'hello@betayum.com',
       },
       assets: {
-        logoUrl: 'https://cdn.betayum.com/logo.png',
+        logoUrl: undefined,
         opengraphImageUrl: 'https://cdn.betayum.com/opengraph-image.jpg',
       },
       compatibilityIdentifiers: {

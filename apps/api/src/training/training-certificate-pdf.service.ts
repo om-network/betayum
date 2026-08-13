@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { jsPDF } from 'jspdf';
+import { brandConfig } from '@trycompai/utils/brand';
 
 // Primary brand color (teal/green) - hsl(165, 100%, 15%)
 const PRIMARY_COLOR = { r: 0, g: 77, b: 61 };
 
-const COMP_AI_LOGO_URL = 'https://cdn.betayum.com/logo.png';
-
 const getLogoDataUrl = async (): Promise<string | null> => {
+  if (!brandConfig.assets.logoUrl) return null;
+
   try {
-    const response = await fetch(COMP_AI_LOGO_URL);
+    const response = await fetch(brandConfig.assets.logoUrl);
     if (!response.ok) {
       return null;
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
+import { BrandLogo } from '@/components/brand-logo';
 import Link from 'next/link';
 
 export function InviteStatusCard({
@@ -20,7 +20,7 @@ export function InviteStatusCard({
   return (
     <div className="bg-card relative w-full max-w-[480px] rounded-sm border p-10 shadow-lg">
       <div className="flex flex-col items-center gap-6 text-center">
-        <Icons.Logo />
+        <BrandLogo />
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         <p className="mx-auto max-w-[48ch] text-base leading-relaxed text-muted-foreground">
           {description}

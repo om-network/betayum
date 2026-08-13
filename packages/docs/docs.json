@@ -150,8 +150,8 @@
     }
   },
   "logo": {
-    "light": "/logo/compai-white.png",
-    "dark": "/logo/compai-dark.png"
+    "light": "/logo/betayum-wordmark-black.png",
+    "dark": "/logo/betayum-wordmark-white.png"
   },
   "navbar": {
     "links": [

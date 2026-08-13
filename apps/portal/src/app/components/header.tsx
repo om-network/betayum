@@ -1,15 +1,15 @@
 import { UserMenu } from '@/app/components/user-menu';
-import { Icons } from '@trycompai/ui/icons';
 import { Skeleton } from '@trycompai/ui/skeleton';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { BrandLogo } from './brand-logo';
 
 export async function Header() {
   return (
     <header className="border-border bg-background/70 sticky top-0 z-10 w-full border-b backdrop-blur-xl">
       <div className="flex w-full items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-3">
-          <Icons.Logo />
+          <BrandLogo />
           <span className="text-lg font-medium">Betayum - Employee Portal</span>
         </Link>
 

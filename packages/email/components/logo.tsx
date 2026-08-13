@@ -2,6 +2,8 @@ import { Img, Section } from '@react-email/components';
 import { brandConfig } from '@trycompai/utils/brand';
 
 export function Logo() {
+  if (!brandConfig.assets.logoUrl) return null;
+
   return (
     <Section className="mt-[32px]">
       <Img
