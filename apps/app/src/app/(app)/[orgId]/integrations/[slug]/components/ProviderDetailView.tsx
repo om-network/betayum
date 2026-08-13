@@ -125,6 +125,7 @@ export function ProviderDetailView({
 
   const handleToggleService = useCallback(
     async (serviceId: string, enabled: boolean): Promise<boolean> => {
+      if (!canUpdateIntegration) return false;
       setTogglingService(serviceId);
       try {
         await updateServices(serviceId, enabled);
@@ -139,7 +140,7 @@ export function ProviderDetailView({
         setTogglingService(null);
       }
     },
-    [updateServices, services],
+    [canUpdateIntegration, updateServices, services],
   );
 
   // OAuth return (?success=true): strip query, detect org/projects (NOT services yet — user must select projects first)
