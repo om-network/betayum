@@ -150,6 +150,96 @@ When testing with a deployed service-account identity, prefer impersonation:
 gcloud auth application-default login --impersonate-service-account SERVICE_ACCOUNT_EMAIL
 ```
 
+## Browser VM Foundation
+
+The organization browser-VM foundation is provisioned independently with
+`gcloud`; it is not part of this directory's Terraform state. The provisioner
+creates or updates:
+
+- A custom-mode browser VPC and private subnet.
+- Cloud Router and Cloud NAT for private VM package installation.
+- Firewall access from the API network tag to private noVNC port `6080`.
+- IAP-only SSH access for troubleshooting.
+- A private instance template that installs Chrome and FoxClocks.
+- A custom IAM role bound to the API runtime service account.
+- Direct VPC egress and `BROWSER_VM_*` variables on the API Cloud Run service.
+
+Run the validation and idempotent staging provisioner:
+
+```bash
+cd infra/gcp
+node check-browser-vm.mjs
+BETAYUM_GCP_PROJECT="centered-kiln-498405-h8" \
+  ./provision-browser-vm-foundation.sh
+```
+
+Defaults target the `staging` environment in `us-central1` and
+`us-central1-a`. Override them through `BETAYUM_ENVIRONMENT`,
+`BETAYUM_GCP_REGION`, and `BETAYUM_GCP_ZONE`. Cloud Run is left unchanged by
+default. Set `BETAYUM_CONFIGURE_CLOUD_RUN=true` only when the API is ready to
+use the private network and organization VM template.
+
+Creating the custom role requires `iam.roles.create`; binding it requires
+permission to update the project's IAM policy. An operator without those
+permissions can run with `BETAYUM_CONFIGURE_IAM=false`, then an IAM
+administrator can rerun the default command to finish the role and binding
+without creating an API revision.
+
+The API creates one VM per organization from the resulting template. Those
+instances have no external IP or service account. Their desktop path is:
+
+```text
+Browser noVNC client
+  -> authenticated API WebSocket
+  -> Cloud Run Direct VPC egress
+  -> VM private-ip:6080
+  -> x11vnc on VM localhost:5900
+```
+
+For a standalone FoxClocks prototype instead, use `create-browser-vm.sh`.
+Successful bootstrap writes `/var/lib/betayum-browser/foxclocks-ready` on the
+VM.
+
+### Local API testing
+
+Run the local API with GCP Application Default Credentials and the staging
+template:
+
+```bash
+export BROWSER_VM_GCP_PROJECT="centered-kiln-498405-h8"
+export BROWSER_VM_GCP_ZONE="us-central1-a"
+export BROWSER_VM_INSTANCE_TEMPLATE="projects/centered-kiln-498405-h8/global/instanceTemplates/betayum-staging-browser-2e75daf92314"
+export BROWSER_VM_LOCAL_VIEWER_URL="http://127.0.0.1:16080"
+```
+
+After the API creates an organization VM, open a second terminal and tunnel to
+its private noVNC listener:
+
+```bash
+BETAYUM_GCP_PROJECT="centered-kiln-498405-h8" \
+BETAYUM_BROWSER_VM_NAME="betayum-browser-INSTANCE_SUFFIX" \
+  ./open-browser-vm-tunnel.sh
+```
+
+Keep the tunnel running while using the local app. The override is accepted
+only outside `NODE_ENV=production` and only for loopback HTTP URLs. Deployed
+environments continue to connect directly to the VM's private address.
+
+The tunnel defaults to IAP. When the local account lacks IAP or external
+organization OS Login access, use:
+
+```bash
+BETAYUM_GCP_PROJECT="centered-kiln-498405-h8" \
+BETAYUM_BROWSER_VM_NAME="betayum-browser-INSTANCE_SUFFIX" \
+BETAYUM_BROWSER_VM_TUNNEL_MODE="external" \
+  ./open-browser-vm-tunnel.sh
+```
+
+External mode temporarily attaches an external IP and permits SSH only from
+the workstation's current public `/32`. It removes the IP, firewall rule,
+instance tag, and local OS Login override when the tunnel exits. noVNC remains
+available only through the local SSH port forward.
+
 ## Evidence
 
 Capture these artifacts for ISO-oriented deployment records:

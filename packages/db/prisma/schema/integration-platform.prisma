@@ -78,6 +78,7 @@ model IntegrationConnection {
   findingExceptions  FindingException[]
   findingResolutions FindingResolution[]
   findingRegressions FindingRegression[]
+  browserViewerSessions BrowserViewerSession[]
 
   @@index([organizationId])
   @@index([providerId])

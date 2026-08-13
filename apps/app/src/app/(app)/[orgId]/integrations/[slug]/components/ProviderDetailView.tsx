@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { AccountSettingsSheet } from './AccountSettingsSheet';
 import { getConnectionDisplayLabel } from './connection-display';
 import { EmptyStateOnboarding } from './EmptyStateOnboarding';
+import { GcpBrowserLogin } from './GcpBrowserLogin';
 import { GcpProjectPicker } from './GcpProjectPicker';
 import { IntegrationEvidenceTasks, type IntegrationTaskTemplate } from './IntegrationEvidenceTasks';
 import { IntegrationProviderHero } from './IntegrationProviderHero';
@@ -268,6 +269,10 @@ export function ProviderDetailView({
         />
 
         <IntegrationEvidenceTasks provider={provider} taskTemplates={taskTemplates} orgId={orgId} />
+
+        {provider.id === 'gcp' && selectedConnection?.status === 'active' && (
+          <GcpBrowserLogin connectionId={selectedConnection.id} />
+        )}
 
         {selectedConnectionRequiresReconnect && (
           <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 flex items-center justify-between gap-3">

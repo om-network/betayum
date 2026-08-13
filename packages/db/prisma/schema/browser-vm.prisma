@@ -1,0 +1,68 @@
+enum BrowserVmState {
+  provisioning
+  starting
+  running
+  stopping
+  stopped
+  error
+}
+
+enum BrowserViewerSessionStatus {
+  provisioning
+  ready
+  active
+  completed
+  cancelled
+  expired
+  failed
+}
+
+model OrganizationBrowserVm {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('bvm'::text)"))
+
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  projectId      String
+  zone           String
+  instanceName   String         @unique
+  instanceId     String?
+  internalIp     String?
+  state          BrowserVmState @default(provisioning)
+  operationName  String?
+  errorMessage   String?
+  lastActivityAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  viewerSessions BrowserViewerSession[]
+
+  @@index([state])
+  @@index([lastActivityAt])
+}
+
+model BrowserViewerSession {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('bvs'::text)"))
+
+  browserVmId String
+  browserVm   OrganizationBrowserVm @relation(fields: [browserVmId], references: [id], onDelete: Cascade)
+
+  connectionId String
+  connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  userId       String
+  leaseKey     String? @unique
+  status       BrowserViewerSessionStatus @default(provisioning)
+  expiresAt    DateTime
+  completedAt  DateTime?
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([browserVmId, status])
+  @@index([connectionId])
+  @@index([userId])
+  @@index([expiresAt])
+}

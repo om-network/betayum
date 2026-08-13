@@ -79,6 +79,7 @@ model Organization {
 
   // Browser Automation
   browserbaseContext BrowserbaseContext?
+  browserVm          OrganizationBrowserVm?
   fleetPolicyResults FleetPolicyResult[]
 
   // Findings
