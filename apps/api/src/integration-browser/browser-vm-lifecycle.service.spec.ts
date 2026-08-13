@@ -84,6 +84,11 @@ describe(BrowserVmLifecycleService.name, () => {
             status: { in: ['provisioning', 'ready', 'active'] },
           }),
         },
+        codexTerminalSessions: {
+          none: expect.objectContaining({
+            status: { in: ['provisioning', 'ready', 'active'] },
+          }),
+        },
       }),
     });
     expect(mockDb.organizationBrowserVm.update).toHaveBeenCalledWith({

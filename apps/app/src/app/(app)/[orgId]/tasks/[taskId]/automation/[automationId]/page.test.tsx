@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import type React from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from './page';
 
 const { serverApiGet } = vi.hoisted(() => ({
@@ -39,6 +39,10 @@ vi.mock('./lib/chat-context', () => ({
 }));
 
 describe('Automation page', () => {
+  beforeEach(() => {
+    serverApiGet.mockReset();
+  });
+
   it('renders without the removed enterprise license gate', async () => {
     delete process.env.ENTERPRISE_API_SECRET;
     serverApiGet.mockResolvedValue({
@@ -62,5 +66,33 @@ describe('Automation page', () => {
 
     expect(screen.getByText('Automation Builder')).toBeInTheDocument();
     expect(screen.queryByText('Enterprise Feature')).not.toBeInTheDocument();
+  });
+
+  it('loads an existing automation without requiring the stricter task endpoint', async () => {
+    serverApiGet.mockResolvedValue({
+      data: {
+        success: true,
+        automation: {
+          id: 'aut_1',
+          name: 'Code Changes - Evidence Collection',
+          taskId: 'tsk_1',
+        },
+      },
+      error: null,
+    });
+
+    render(
+      await Page({
+        params: Promise.resolve({
+          orgId: 'org_1',
+          taskId: 'tsk_1',
+          automationId: 'aut_1',
+        }),
+      }),
+    );
+
+    expect(serverApiGet).toHaveBeenCalledWith('/v1/tasks/tsk_1/automations/aut_1');
+    expect(serverApiGet).not.toHaveBeenCalledWith('/v1/tasks/tsk_1');
+    expect(screen.getByText('Automation Builder')).toBeInTheDocument();
   });
 });

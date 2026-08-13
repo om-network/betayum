@@ -16,7 +16,11 @@ const TASK_ID = 'tsk_test';
 const AUTOMATION_ID = 'aut_test';
 
 function getTools() {
-  const tools = buildGoogleSheetsTools({ taskId: TASK_ID, automationId: AUTOMATION_ID });
+  const tools = buildGoogleSheetsTools({
+    taskId: TASK_ID,
+    automationId: AUTOMATION_ID,
+    taskTitle: 'Access Review Log',
+  });
   if (!tools.createGoogleSheet.execute || !tools.updateGoogleSheet.execute || !tools.readGoogleSheet.execute) {
     throw new Error('execute not defined on tool');
   }
@@ -116,8 +120,11 @@ describe('buildGoogleSheetsTools', () => {
   });
 
   describe('updateGoogleSheet', () => {
-    it('returns success:true on append', async () => {
-      mockPost.mockResolvedValueOnce({ data: { success: true }, error: null });
+    it('reports that the edited sheet was attached to the task', async () => {
+      mockPost.mockResolvedValueOnce({
+        data: { success: true, attachedToTask: true },
+        error: null,
+      });
 
       const { updateGoogleSheet } = getTools();
       const result = await updateGoogleSheet.execute(
@@ -127,9 +134,12 @@ describe('buildGoogleSheetsTools', () => {
 
       expect(mockPost).toHaveBeenCalledWith(
         `/v1/tasks/${TASK_ID}/automations/${AUTOMATION_ID}/google-sheets/sheet_123/append`,
-        { rows: [['new_resource', 'roles/viewer', 'svc@example.com']] },
+        {
+          title: 'Access Review Log',
+          rows: [['new_resource', 'roles/viewer', 'svc@example.com']],
+        },
       );
-      expect(result).toEqual({ success: true });
+      expect(result).toEqual({ success: true, attachedToTask: true });
     });
 
     it('returns success:false with error when API fails', async () => {

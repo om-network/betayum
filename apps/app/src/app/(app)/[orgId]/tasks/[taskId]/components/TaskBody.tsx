@@ -1,19 +1,31 @@
 'use client';
 
-import { useTaskAttachmentActions, useTaskAttachments } from '@/hooks/use-tasks-api';
-import { Button } from '@trycompai/ui/button';
 import {
+  type Attachment,
+  useTaskAttachmentActions,
+  useTaskAttachments,
+} from '@/hooks/use-tasks-api';
+import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@trycompai/ui/dialog';
-import { Camera, FileIcon, FileText, ImageIcon, Loader2, Upload, X } from 'lucide-react';
+} from '@trycompai/design-system';
+import {
+  Camera,
+  Close,
+  Document,
+  Image as ImageIcon,
+  Renew,
+  Upload,
+} from '@trycompai/design-system/icons';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { AttachmentPreviewDialog } from './AttachmentPreviewDialog';
 
 interface TaskBodyProps {
   taskId: string;
@@ -51,6 +63,7 @@ export function TaskBody({
   const [isDragging, setIsDragging] = useState(false);
   const [showReminderDialog, setShowReminderDialog] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<FileList | File[] | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
 
   // Auto-resize function for textarea
   const autoResizeTextarea = useCallback(() => {
@@ -262,6 +275,10 @@ export function TaskBody({
     }
   };
 
+  const handlePreviewClick = (attachment: Attachment) => {
+    setPreviewAttachment(attachment);
+  };
+
   const handleDeleteAttachment = useCallback(
     async (attachmentId: string) => {
       setBusyAttachmentId(attachmentId);
@@ -351,40 +368,39 @@ export function TaskBody({
                     className={`inline-flex items-center gap-2 px-2.5 py-1.5 border rounded-md transition-all group ${getFileTypeStyles()} `}
                   >
                     {isPDF ? (
-                      <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                      <Document className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
                     ) : isImage ? (
                       <ImageIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
                     ) : isDoc ? (
-                      <FileText className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                      <Document className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
                     ) : (
-                      <FileIcon className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
+                      <Document className={`h-3.5 w-3.5 ${getFileIconColor()}`} />
                     )}
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={() => handleDownloadClick(attachment.id)}
+                    <button
+                      type="button"
+                      onClick={() => handlePreviewClick(attachment)}
                       disabled={isBusy || isUploading}
-                      className="h-auto p-0 text-sm max-w-[200px] truncate"
+                      className="max-w-[200px] truncate text-sm hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                       title={attachment.name}
                     >
                       {attachment.name}
-                    </Button>
+                    </button>
                     {uploadMonthYear && (
                       <span className="text-xs text-muted-foreground">({uploadMonthYear})</span>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
+                    <button
+                      type="button"
                       onClick={() => handleDeleteAttachment(attachment.id)}
                       disabled={isBusy || isUploading}
-                      className="h-auto w-auto p-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-transparent"
+                      aria-label={`Delete ${attachment.name}`}
+                      className="text-muted-foreground opacity-0 transition-opacity hover:text-destructive disabled:opacity-50 group-hover:opacity-100"
                     >
                       {isBusy ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Renew className="h-3 w-3 animate-spin" />
                       ) : (
-                        <X className="h-3 w-3" />
+                        <Close className="h-3 w-3" />
                       )}
-                    </Button>
+                    </button>
                   </div>
                 );
               })}
@@ -392,23 +408,21 @@ export function TaskBody({
           )}
 
           {/* Drag and drop zone - always visible */}
-          <Button
-            variant="outline"
+          <button
+            type="button"
             onClick={triggerFileInput}
             disabled={isUploading || !!busyAttachmentId}
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className="group w-full h-auto rounded-md border-dashed border-2 px-6 py-8 text-center transition-all hover:border-primary/50 hover:bg-accent/30"
-            style={{
-              borderColor: isDragging ? 'hsl(var(--primary))' : undefined,
-              backgroundColor: isDragging ? 'hsl(var(--accent))' : undefined,
-            }}
+            className={`group h-auto w-full rounded-md border-2 border-dashed px-6 py-8 text-center transition-all hover:border-primary/50 hover:bg-accent/30 disabled:cursor-not-allowed disabled:opacity-50 ${
+              isDragging ? 'border-primary bg-accent' : ''
+            }`}
           >
             <div className="flex flex-col items-center gap-3 pointer-events-none">
               {isUploading ? (
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <Renew className="h-8 w-8 animate-spin text-muted-foreground" />
               ) : (
                 <div className="rounded-full bg-muted/50 p-3 transition-colors group-hover:bg-primary/10">
                   <Upload className="h-6 w-6 text-muted-foreground transition-colors group-hover:text-primary" />
@@ -429,12 +443,19 @@ export function TaskBody({
                 )}
               </div>
             </div>
-          </Button>
+          </button>
         </div>
       </div>
 
+      <AttachmentPreviewDialog
+        attachment={previewAttachment}
+        isDownloading={busyAttachmentId === previewAttachment?.id}
+        onClose={() => setPreviewAttachment(null)}
+        onDownload={handleDownloadClick}
+      />
+
       <Dialog open={showReminderDialog} onOpenChange={(open) => !open && handleReminderClose()}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent size="md">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-primary/10 p-2">
@@ -442,9 +463,11 @@ export function TaskBody({
               </div>
               <DialogTitle>Screenshot Requirements</DialogTitle>
             </div>
-            <DialogDescription className="pt-2">
-              Ensure your organisation name is clearly visible within the screenshot.
-            </DialogDescription>
+            <div className="pt-2">
+              <DialogDescription>
+                Ensure your organisation name is clearly visible within the screenshot.
+              </DialogDescription>
+            </div>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Auditors require this to verify the source of the data; without it, evidence may be

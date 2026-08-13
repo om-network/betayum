@@ -4,6 +4,7 @@ import type { IncomingMessage } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
 import { auth, isTrustedOrigin } from '../auth/auth.server';
+import { isPrivateIpv4 } from './browser-vm-network.util';
 import { GcpComputeService } from './gcp-compute.service';
 
 const VIEWER_PATH =
@@ -140,7 +141,7 @@ export class BrowserVncProxyService {
       include: { browserVm: true },
     });
     const internalIp = viewerSession?.browserVm.internalIp;
-    if (!viewerSession || !internalIp || !this.isPrivateIpv4(internalIp)) {
+    if (!viewerSession || !internalIp || !isPrivateIpv4(internalIp)) {
       return null;
     }
 
@@ -218,19 +219,4 @@ export class BrowserVncProxyService {
     );
   }
 
-  private isPrivateIpv4(value: string): boolean {
-    const octets = value.split('.').map(Number);
-    if (
-      octets.length !== 4 ||
-      octets.some((octet) => !Number.isInteger(octet))
-    ) {
-      return false;
-    }
-    const [first, second] = octets;
-    return (
-      first === 10 ||
-      (first === 172 && second !== undefined && second >= 16 && second <= 31) ||
-      (first === 192 && second === 168)
-    );
-  }
 }

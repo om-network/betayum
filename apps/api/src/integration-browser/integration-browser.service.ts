@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { BrowserViewerSessionStatus, BrowserVmState, db } from '@db';
 import { BrowserVmLifecycleService } from './browser-vm-lifecycle.service';
+import { CodexStatusService } from './codex-status.service';
 import { GcpComputeService } from './gcp-compute.service';
 import { IntegrationBrowserAccessService } from './integration-browser-access.service';
 import type {
@@ -25,6 +26,7 @@ const PROVISIONING_TIMEOUT_MS = 10 * 60 * 1000;
 export class IntegrationBrowserService {
   constructor(
     private readonly access: IntegrationBrowserAccessService,
+    private readonly codexStatus: CodexStatusService,
     private readonly compute: GcpComputeService,
     private readonly vmLifecycle: BrowserVmLifecycleService,
   ) {}
@@ -36,10 +38,21 @@ export class IntegrationBrowserService {
     connectionId: string;
     organizationId: string;
   }): Promise<BrowserConnectionStatus> {
-    await this.access.requireGcpConnection({ connectionId, organizationId });
+    await this.access.requireBrowserConnection({
+      connectionId,
+      organizationId,
+    });
     const vm = await db.organizationBrowserVm.findUnique({
       where: { organizationId },
       select: {
+        id: true,
+        codexConfirmedAt: true,
+        codexSshConfiguredAt: true,
+        codexSshHostFingerprint: true,
+        codexSshPrivateKeyEncrypted: true,
+        codexSshPublicKey: true,
+        instanceName: true,
+        internalIp: true,
         state: true,
         viewerSessions: {
           where: {
@@ -52,8 +65,11 @@ export class IntegrationBrowserService {
         },
       },
     });
+    const codexStatus = await this.codexStatus.getStatus(vm);
 
     return {
+      codexConfirmedAt: vm?.codexConfirmedAt?.toISOString() ?? null,
+      codexStatus,
       vmState: vm?.state ?? 'not_created',
       lastConfirmedAt:
         vm?.viewerSessions[0]?.completedAt?.toISOString() ?? null,
@@ -69,7 +85,10 @@ export class IntegrationBrowserService {
     organizationId: string;
     userId: string;
   }): Promise<BrowserViewerSessionResponse> {
-    await this.access.requireGcpConnection({ connectionId, organizationId });
+    await this.access.requireBrowserConnection({
+      connectionId,
+      organizationId,
+    });
     const vm = await this.vmLifecycle.ensureVm(organizationId);
     const { claimed, session } = await this.access.claimViewerSession({
       browserVmId: vm.id,
@@ -272,4 +291,5 @@ export class IntegrationBrowserService {
     });
     return toBrowserViewerSessionResponse(session);
   }
+
 }

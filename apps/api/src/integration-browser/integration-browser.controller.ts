@@ -12,10 +12,12 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { SessionOnlyGuard } from '../auth/session-only.guard';
+import { CodexTerminalService } from './codex-terminal.service';
 import { IntegrationBrowserService } from './integration-browser.service';
 import type {
   BrowserConnectionStatus,
   BrowserViewerSessionResponse,
+  CodexTerminalSessionResponse,
 } from './integration-browser.types';
 
 @ApiTags('Integration Browser')
@@ -24,12 +26,13 @@ import type {
 @UseGuards(HybridAuthGuard, SessionOnlyGuard, PermissionGuard)
 export class IntegrationBrowserController {
   constructor(
+    private readonly codexTerminalService: CodexTerminalService,
     private readonly integrationBrowserService: IntegrationBrowserService,
   ) {}
 
   @Get('connections/:connectionId')
   @RequirePermission('integration', 'read')
-  @ApiOperation({ summary: 'Get organization browser status for GCP' })
+  @ApiOperation({ summary: 'Get organization browser status' })
   async getConnectionStatus(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -42,7 +45,7 @@ export class IntegrationBrowserController {
 
   @Post('connections/:connectionId/viewer-sessions')
   @RequirePermission('integration', 'update')
-  @ApiOperation({ summary: 'Open an interactive GCP browser session' })
+  @ApiOperation({ summary: 'Open an interactive browser session' })
   async createViewerSession(
     @Param('connectionId') connectionId: string,
     @OrganizationId() organizationId: string,
@@ -83,6 +86,68 @@ export class IntegrationBrowserController {
       organizationId,
       userId,
     });
+  }
+
+  @Post('connections/:connectionId/codex-sessions')
+  @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Open an interactive Codex terminal session' })
+  async createCodexSession(
+    @Param('connectionId') connectionId: string,
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+  ): Promise<CodexTerminalSessionResponse> {
+    return this.codexTerminalService.createSession({
+      connectionId,
+      organizationId,
+      userId,
+    });
+  }
+
+  @Get('codex-sessions/:sessionId')
+  @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Poll an interactive Codex terminal session' })
+  async getCodexSession(
+    @Param('sessionId') sessionId: string,
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+  ): Promise<CodexTerminalSessionResponse> {
+    return this.codexTerminalService.reconcileSession({
+      sessionId,
+      organizationId,
+      userId,
+    });
+  }
+
+  @Post('codex-sessions/:sessionId/logout')
+  @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Disconnect Codex from the organization VM' })
+  async logoutCodex(
+    @Param('sessionId') sessionId: string,
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+  ): Promise<{ success: true }> {
+    await this.codexTerminalService.logout({
+      sessionId,
+      organizationId,
+      userId,
+    });
+    return { success: true };
+  }
+
+  @Delete('codex-sessions/:sessionId')
+  @RequirePermission('integration', 'update')
+  @ApiOperation({ summary: 'Cancel an interactive Codex terminal session' })
+  async cancelCodexSession(
+    @Param('sessionId') sessionId: string,
+    @OrganizationId() organizationId: string,
+    @UserId() userId: string,
+  ): Promise<{ success: true }> {
+    await this.codexTerminalService.cancel({
+      sessionId,
+      organizationId,
+      userId,
+    });
+    return { success: true };
   }
 
   @Delete('viewer-sessions/:sessionId')

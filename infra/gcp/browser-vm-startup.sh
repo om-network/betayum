@@ -10,7 +10,7 @@ BROWSER_DATA_DIR="/var/lib/betayum-browser"
 CODEX_USER="betayum-codex"
 CODEX_HOME="/var/lib/betayum-codex"
 CHROME_POLICY_DIR="/etc/opt/chrome/policies/managed"
-BOOTSTRAP_VERSION="12"
+BOOTSTRAP_VERSION="14"
 BOOTSTRAP_MARKER="${BROWSER_DATA_DIR}/bootstrap-version"
 
 exec > >(tee -a /var/log/betayum-browser-bootstrap.log | logger -t betayum-browser-bootstrap -s 2>/dev/console) 2>&1
@@ -38,6 +38,9 @@ apt-get install --yes --no-install-recommends \
   novnc \
   jq \
   openssh-server \
+  python3-numpy \
+  python3-pil \
+  python3-scipy \
   websockify \
   x11vnc \
   xvfb
@@ -86,9 +89,27 @@ install -d -m 0700 -o "${CODEX_USER}" -g "${CODEX_USER}" \
   "${CODEX_HOME}"
 install -d -m 0700 -o "${CODEX_USER}" -g "${CODEX_USER}" \
   "${CODEX_HOME}/.agents/skills/agent-browser" \
+  "${CODEX_HOME}/.agents/skills/image-annotations" \
   "${CODEX_HOME}/runs"
 agent-browser skills get core --full \
   >"${CODEX_HOME}/.agents/skills/agent-browser/SKILL.md"
+cat >"${CODEX_HOME}/.agents/skills/image-annotations/SKILL.md" <<'EOF'
+---
+name: image-annotations
+description: Annotate final screenshots with callout rectangles, arrows, labels, and highlights.
+---
+
+# Image annotations
+
+Use this skill when a screenshot needs a reviewer-facing callout or highlight. Use Python 3
+with Pillow (PIL), numpy, and scipy. Always inspect the image dimensions before choosing pixel
+coordinates, and verify the first annotation locally before submitting it.
+
+Use rounded rectangles for areas and short leader arrows for small controls. Use orange `#FF9F1C`
+for neutral highlights and reserve red `#E63946` for bad or removed items. Keep labels short,
+place them close to the target, and preserve the screenshot's native resolution. Do not annotate
+progress or loading screenshots: annotations belong only on the final evidence set.
+EOF
 install -d -m 0755 "${CHROME_POLICY_DIR}"
 
 if [[ -f "${BROWSER_DATA_DIR}/codex/auth.json" ]] &&
@@ -250,6 +271,11 @@ PROMPT="$(jq -er '.prompt' "${REQUEST_FILE}")"
 EVIDENCE="$(jq -er '.evidenceDescription' "${REQUEST_FILE}")"
 cat >"${RUN_DIR}/instructions.txt" <<INSTRUCTIONS
 Read the agent-browser skill at /var/lib/betayum-codex/.agents/skills/agent-browser/SKILL.md.
+Read the image-annotations skill at /var/lib/betayum-codex/.agents/skills/image-annotations/SKILL.md
+for every final evidence screenshot. If the evidence target is a field, control, value, or changed
+region, annotate the final image with it; do not upload a raw screenshot when a callout would make
+the evidence clearer. Use Pillow, numpy, and scipy for annotation or diffing. Annotate only final
+evidence screenshots, never progress or loading states.
 Use shell commands in the form "agent-browser --session ${RUN_ID} --cdp 9222 <command>".
 First verify the connection with "agent-browser --session ${RUN_ID} --cdp 9222 get title".
 Do not use web search or HTTP requests to inspect localhost. Control only the existing
@@ -260,10 +286,18 @@ After opening it, wait on that same page and inspect its title, URL, or visible 
 it is ready. Do not reload or reopen the page because a wait, snapshot, or navigation command
 timed out. Do not wait for network idle on Google Cloud Console. Never kill or restart Chrome,
 its renderers, or agent-browser. After two consecutive failures on the same page, preserve the
-screenshots already captured and finish with a partial-results summary.
+current browser state and finish with a blocker summary, but submit no screenshots.
 Complete this browser task: ${PROMPT}
 Capture evidence for: ${EVIDENCE}
+This is strictly read-only evidence collection. Observe the existing state; do not change settings,
+enable services, edit resources, modify code, create configurations, remediate findings, or attempt
+to make a control pass. If evidence is missing or insufficient, leave the system unchanged and
+describe the observed gap in the final summary.
 Write PNG or JPEG screenshots directly under screenshots/. Do not create subdirectories.
+Treat screenshots/ as the final submission set. Capture screenshots there only after the requested
+page is fully loaded and the evidence is complete and ready for review. Never save progress,
+diagnostic, loading-state, or otherwise partial screenshots there. If the task cannot be completed,
+leave screenshots/ empty and explain the blocker in the text summary.
 Create no more than 10 screenshots. End with a concise text summary.
 INSTRUCTIONS
 

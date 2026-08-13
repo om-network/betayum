@@ -12,6 +12,13 @@ const mockDb = {
     findUniqueOrThrow: jest.fn(),
     updateMany: jest.fn(),
   },
+  codexTerminalSession: {
+    create: jest.fn(),
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    findUniqueOrThrow: jest.fn(),
+    updateMany: jest.fn(),
+  },
   integrationConnection: {
     findFirst: jest.fn(),
   },
@@ -19,6 +26,12 @@ const mockDb = {
 
 jest.mock('@db', () => ({
   BrowserViewerSessionStatus: {
+    provisioning: 'provisioning',
+    ready: 'ready',
+    active: 'active',
+    expired: 'expired',
+  },
+  CodexTerminalSessionStatus: {
     provisioning: 'provisioning',
     ready: 'ready',
     active: 'active',
@@ -34,6 +47,30 @@ import { IntegrationBrowserAccessService } from './integration-browser-access.se
 
 describe(IntegrationBrowserAccessService.name, () => {
   const service = new IntegrationBrowserAccessService();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('allows an active GitHub connection to use the organization browser', async () => {
+    mockDb.integrationConnection.findFirst.mockResolvedValue({ id: 'icn_github' });
+
+    await expect(
+      service.requireBrowserConnection({
+        connectionId: 'icn_github',
+        organizationId: 'org_1',
+      }),
+    ).resolves.toBeUndefined();
+    expect(mockDb.integrationConnection.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'icn_github',
+        organizationId: 'org_1',
+        status: 'active',
+        provider: { slug: { in: ['gcp', 'github'] } },
+      },
+      select: { id: true },
+    });
+  });
 
   it('claims the organization lease when no viewer is active', async () => {
     mockDb.browserViewerSession.findUnique.mockResolvedValue(null);

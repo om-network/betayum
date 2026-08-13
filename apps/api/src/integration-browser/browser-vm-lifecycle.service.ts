@@ -88,6 +88,12 @@ export class BrowserVmLifecycleService {
             expiresAt: { gt: new Date() },
           },
         },
+        codexTerminalSessions: {
+          none: {
+            status: { in: ['provisioning', 'ready', 'active'] },
+            expiresAt: { gt: new Date() },
+          },
+        },
       },
     });
     if (!vm) {

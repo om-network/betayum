@@ -9,7 +9,7 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from '@trycompai/design-system';
-import { CornerDownLeft } from 'lucide-react';
+import { Return } from '@trycompai/design-system/icons';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -108,7 +108,7 @@ function ChatInput({
                 <span className="flex items-center gap-1 text-xs">
                   {isMac ? '⌘' : 'Ctrl'}
                   <span className="text-[10px]">+</span>
-                  <CornerDownLeft className="size-3.5" />
+                  <Return className="size-3.5" />
                 </span>
               </InputGroupButton>
             </div>
@@ -209,13 +209,12 @@ export function Chat({
   orgId,
   taskId,
   taskName,
-  automationId,
   suggestions,
   isLoadingSuggestions = false,
 }: Props) {
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get('prompt') || '';
-  const { chat, updateAutomationId, automationIdRef, autoTriggeredRef } = useSharedChatContext();
+  const { assistantStatus, chat, updateAutomationId, automationIdRef } = useSharedChatContext();
   const { messages, sendMessage, status } = useChat<ChatUIMessage>({
     chat,
     experimental_throttle: 150,
@@ -256,14 +255,6 @@ export function Chat({
     });
   }, [status, setChatStatus]);
 
-  useEffect(() => {
-    if (autoTriggeredRef.current) return;
-    if (messages.length > 0) return;
-    if (isEphemeral) return;
-    autoTriggeredRef.current = true;
-    validateAndSubmitMessage('Build the automation script for this task.');
-  }, [isEphemeral, messages.length, validateAndSubmitMessage]);
-
   const hasMessages = messages.length > 0;
 
   return (
@@ -296,6 +287,16 @@ export function Chat({
       </PanelHeader>
 
       {/* Messages Area */}
+      {(assistantStatus === 'queued' || assistantStatus === 'running') && (
+        <div className="relative z-20 border-b px-4 py-2 text-sm text-muted-foreground">
+          Assistant is working in the background. You can safely close this page.
+        </div>
+      )}
+      {assistantStatus === 'waiting_for_input' && (
+        <div className="relative z-20 border-b px-4 py-2 text-sm text-muted-foreground">
+          Assistant is waiting for more information. Your next message will resume the run.
+        </div>
+      )}
       <div className="flex-1 min-h-0">
         <ChatContent
           hasMessages={hasMessages}

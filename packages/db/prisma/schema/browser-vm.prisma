@@ -17,29 +17,72 @@ enum BrowserViewerSessionStatus {
   failed
 }
 
+enum CodexTerminalSessionStatus {
+  provisioning
+  ready
+  active
+  completed
+  cancelled
+  expired
+  failed
+}
+
 model OrganizationBrowserVm {
   id String @id @default(dbgenerated("generate_prefixed_cuid('bvm'::text)"))
 
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  projectId      String
-  zone           String
-  instanceName   String         @unique
-  instanceId     String?
-  internalIp     String?
-  state          BrowserVmState @default(provisioning)
-  operationName  String?
-  errorMessage   String?
-  lastActivityAt DateTime?
+  projectId                   String
+  zone                        String
+  instanceName                String         @unique
+  instanceId                  String?
+  internalIp                  String?
+  state                       BrowserVmState @default(provisioning)
+  operationName               String?
+  errorMessage                String?
+  lastActivityAt              DateTime?
+  agentTokenEncrypted         Json?
+  agentConfiguredAt           DateTime?
+  codexConfirmedAt            DateTime?
+  codexSshPrivateKeyEncrypted Json?
+  codexSshPublicKey           String?
+  codexSshConfiguredAt        DateTime?
+  codexSshHostFingerprint     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  viewerSessions BrowserViewerSession[]
+  viewerSessions        BrowserViewerSession[]
+  codexTerminalSessions CodexTerminalSession[]
+  codexAutomationRuns   CodexAutomationRun[]
 
   @@index([state])
   @@index([lastActivityAt])
+}
+
+model CodexTerminalSession {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('cts'::text)"))
+
+  browserVmId String
+  browserVm   OrganizationBrowserVm @relation(fields: [browserVmId], references: [id], onDelete: Cascade)
+
+  connectionId String
+  connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  userId       String
+  leaseKey     String?                    @unique
+  status       CodexTerminalSessionStatus @default(provisioning)
+  expiresAt    DateTime
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([browserVmId, status])
+  @@index([connectionId])
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model BrowserViewerSession {
@@ -52,7 +95,7 @@ model BrowserViewerSession {
   connection   IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   userId       String
-  leaseKey     String? @unique
+  leaseKey     String?                    @unique
   status       BrowserViewerSessionStatus @default(provisioning)
   expiresAt    DateTime
   completedAt  DateTime?

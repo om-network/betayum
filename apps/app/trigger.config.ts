@@ -4,7 +4,7 @@ import { prismaExtension } from './customPrismaExtension';
 
 export default defineConfig({
   runtime: 'node-22',
-  project: 'proj_ixwgznsvcyqykqxcwnkp',
+  project: process.env.TRIGGER_PROJECT_ID ?? 'proj_rxaglrggzjmdjgexjhoz',
   logLevel: 'log',
   // PrismaInstrumentation was emitting a `prisma:client:operation` span for
   // every query, drowning out our own task logs. We rely on per-task
@@ -31,5 +31,9 @@ export default defineConfig({
       randomize: true,
     },
   },
-  dirs: ['./src/jobs', './src/trigger'],
+  // Trigger.dev permits one active development worker version per project and
+  // branch. The API and app use the same project, so the browser delegation
+  // tasks must be registered alongside the app queue tasks instead of running
+  // a second CLI that supersedes this worker.
+  dirs: ['./src/jobs', './src/trigger', '../api/src/trigger/tasks'],
 });

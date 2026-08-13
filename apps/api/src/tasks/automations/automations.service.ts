@@ -145,6 +145,7 @@ export class AutomationsService {
       },
       data: {
         ...rest,
+        ...(data.setupStatus !== undefined ? { setupStatusUpdatedAt: new Date() } : {}),
         ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
         ...(allowedTools !== undefined ? { allowedTools } : {}),
       },

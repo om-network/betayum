@@ -34,17 +34,33 @@ const SHEET_RESULT = {
 };
 
 function buildController(overrides?: {
-  sheetsCreateResult?: typeof SHEET_RESULT | Promise<never>;
-  attachmentResult?: { id: string } | Promise<never>;
+  sheetsCreateError?: Error;
+  sheetsAppendError?: Error;
+  sheetsReadResult?: { spreadsheetId: string; values: (string | number)[][] };
+  attachmentError?: Error;
 }) {
   const mockSheetsService = {
-    createSpreadsheet: jest.fn().mockResolvedValue(overrides?.sheetsCreateResult ?? SHEET_RESULT),
-    appendRows: jest.fn(),
-    readValues: jest.fn(),
+    createSpreadsheet: overrides?.sheetsCreateError
+      ? jest.fn().mockRejectedValue(overrides.sheetsCreateError)
+      : jest.fn().mockResolvedValue(SHEET_RESULT),
+    appendRows: overrides?.sheetsAppendError
+      ? jest.fn().mockRejectedValue(overrides.sheetsAppendError)
+      : jest.fn().mockResolvedValue({ success: true }),
+    readValues: jest.fn().mockResolvedValue(
+      overrides?.sheetsReadResult ?? {
+        spreadsheetId: SHEET_RESULT.spreadsheetId,
+        values: [
+          ['User', 'Role'],
+          ['alice@example.com', 'Admin'],
+        ],
+      },
+    ),
   } as unknown as GoogleSheetsService;
 
   const mockAttachmentsService = {
-    uploadAttachment: jest.fn().mockResolvedValue(overrides?.attachmentResult ?? { id: 'att_1' }),
+    uploadAttachment: overrides?.attachmentError
+      ? jest.fn().mockRejectedValue(overrides.attachmentError)
+      : jest.fn().mockResolvedValue({ id: 'att_1' }),
   } as unknown as AttachmentsService;
 
   const mockTasksService = { verifyTaskAccess: jest.fn().mockResolvedValue(undefined) };
@@ -82,7 +98,7 @@ describe('AutomationsController.createGoogleSheet', () => {
 
   it('returns attachedToTask:false but still returns sheet data when attachment upload fails', async () => {
     const { controller } = buildController({
-      attachmentResult: Promise.reject(new Error('S3 down')),
+      attachmentError: new Error('S3 down'),
     });
 
     const result = await controller.createGoogleSheet(
@@ -101,13 +117,79 @@ describe('AutomationsController.createGoogleSheet', () => {
 
   it('does not call uploadAttachment when sheet creation fails', async () => {
     const { controller, mockAttachmentsService } = buildController({
-      sheetsCreateResult: Promise.reject(new Error('Google API error')) as unknown as typeof SHEET_RESULT,
+      sheetsCreateError: new Error('Google API error'),
     });
 
     await expect(
       controller.createGoogleSheet('org_1', 'task_1', 'auto_1', { title: 'T', rows: [] }),
     ).rejects.toThrow('Google API error');
 
+    expect(mockAttachmentsService.uploadAttachment).not.toHaveBeenCalled();
+  });
+});
+
+describe('AutomationsController.appendGoogleSheet', () => {
+  it('attaches the updated spreadsheet to the task immediately after appending rows', async () => {
+    const { controller, mockSheetsService, mockAttachmentsService } =
+      buildController();
+
+    const result = await controller.appendGoogleSheet(
+      'org_1',
+      'task_1',
+      'auto_1',
+      'sheet_123',
+      { title: 'Access Review Log', rows: [['bob@example.com', 'Viewer']] },
+    );
+
+    expect(mockSheetsService.appendRows).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      spreadsheetId: 'sheet_123',
+      rows: [['bob@example.com', 'Viewer']],
+    });
+    expect(mockSheetsService.readValues).toHaveBeenCalledWith({
+      organizationId: 'org_1',
+      spreadsheetId: 'sheet_123',
+    });
+    expect(mockAttachmentsService.uploadAttachment).toHaveBeenCalledTimes(1);
+    expect(mockAttachmentsService.uploadAttachment).toHaveBeenCalledWith(
+      'org_1',
+      'task_1',
+      'task',
+      expect.objectContaining({ fileName: 'Access Review Log.csv' }),
+    );
+    expect(result).toEqual({ success: true, attachedToTask: true });
+  });
+
+  it('reports a failed attachment without failing the completed spreadsheet edit', async () => {
+    const { controller } = buildController({
+      attachmentError: new Error('S3 down'),
+    });
+
+    const result = await controller.appendGoogleSheet(
+      'org_1',
+      'task_1',
+      'auto_1',
+      'sheet_123',
+      { title: 'Access Review Log', rows: [['bob@example.com', 'Viewer']] },
+    );
+
+    expect(result).toEqual({ success: true, attachedToTask: false });
+  });
+
+  it('does not read or attach the spreadsheet when the edit fails', async () => {
+    const { controller, mockSheetsService, mockAttachmentsService } =
+      buildController({
+        sheetsAppendError: new Error('Google API error'),
+      });
+
+    await expect(
+      controller.appendGoogleSheet('org_1', 'task_1', 'auto_1', 'sheet_123', {
+        title: 'Access Review Log',
+        rows: [['bob@example.com', 'Viewer']],
+      }),
+    ).rejects.toThrow('Google API error');
+
+    expect(mockSheetsService.readValues).not.toHaveBeenCalled();
     expect(mockAttachmentsService.uploadAttachment).not.toHaveBeenCalled();
   });
 });

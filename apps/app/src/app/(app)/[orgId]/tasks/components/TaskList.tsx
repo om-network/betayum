@@ -57,6 +57,7 @@ export function TaskList({
       id: string;
       isEnabled: boolean;
       name: string;
+      setupStatus?: string | null;
       runs?: Array<{
         status: string;
         success: boolean | null;

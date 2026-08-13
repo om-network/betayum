@@ -44,9 +44,10 @@ export async function saveAutomationChatHistory({
   auditService: AutomationAuditService;
 }) {
   await findScopedAutomation({ organizationId, taskId, automationId });
+  const normalizedMessages = ensureUniqueMessageIds(messages);
   await db.evidenceAutomation.update({
     where: { id: automationId },
-    data: { chatHistory: JSON.stringify(messages) },
+    data: { chatHistory: JSON.stringify(normalizedMessages) },
   });
 
   if (actor) {
@@ -90,8 +91,41 @@ function parseChatHistory(chatHistory: string | null): unknown[] {
 
   try {
     const parsed: unknown = JSON.parse(chatHistory);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? ensureUniqueMessageIds(parsed) : [];
   } catch {
     return [];
   }
+}
+
+export function ensureUniqueMessageIds(messages: unknown[]): unknown[] {
+  const usedIds = new Set<string>();
+  const occurrences = new Map<string, number>();
+
+  return messages.map((message) => {
+    if (
+      typeof message !== 'object' ||
+      message === null ||
+      !('id' in message) ||
+      typeof message.id !== 'string'
+    ) {
+      return message;
+    }
+
+    const originalId = message.id;
+    let occurrence = (occurrences.get(originalId) ?? 0) + 1;
+    occurrences.set(originalId, occurrence);
+    if (!usedIds.has(originalId)) {
+      usedIds.add(originalId);
+      return message;
+    }
+
+    let uniqueId = `${originalId}--${occurrence}`;
+    while (usedIds.has(uniqueId)) {
+      occurrence += 1;
+      occurrences.set(originalId, occurrence);
+      uniqueId = `${originalId}--${occurrence}`;
+    }
+    usedIds.add(uniqueId);
+    return { ...message, id: uniqueId };
+  });
 }

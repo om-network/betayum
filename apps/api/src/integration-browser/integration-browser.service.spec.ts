@@ -26,12 +26,18 @@ jest.mock('@db', () => ({
     starting: 'starting',
     running: 'running',
   },
+  CodexTerminalSessionStatus: {
+    provisioning: 'provisioning',
+    ready: 'ready',
+    active: 'active',
+  },
   db: mockDb,
 }));
 
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { BrowserVmLifecycleService } from './browser-vm-lifecycle.service';
+import { CodexStatusService } from './codex-status.service';
 import { GcpComputeService } from './gcp-compute.service';
 import { IntegrationBrowserAccessService } from './integration-browser-access.service';
 import { IntegrationBrowserService } from './integration-browser.service';
@@ -39,13 +45,16 @@ import { IntegrationBrowserService } from './integration-browser.service';
 describe(IntegrationBrowserService.name, () => {
   const access = {
     claimViewerSession: jest.fn(),
-    requireGcpConnection: jest.fn(),
+    requireBrowserConnection: jest.fn(),
     requireViewerSession: jest.fn(),
   };
   const compute = {
     getInstance: jest.fn(),
     isViewerReady: jest.fn(),
     startInstance: jest.fn(),
+  };
+  const codex = {
+    getStatus: jest.fn(),
   };
   const lifecycle = { ensureVm: jest.fn() };
   let service: IntegrationBrowserService;
@@ -55,6 +64,7 @@ describe(IntegrationBrowserService.name, () => {
       providers: [
         IntegrationBrowserService,
         { provide: IntegrationBrowserAccessService, useValue: access },
+        { provide: CodexStatusService, useValue: codex },
         { provide: GcpComputeService, useValue: compute },
         { provide: BrowserVmLifecycleService, useValue: lifecycle },
       ],
@@ -115,6 +125,7 @@ describe(IntegrationBrowserService.name, () => {
         userId: 'usr_1',
       }),
     ).resolves.toEqual(expect.objectContaining({ status: 'ready' }));
+    expect(compute.isViewerReady).toHaveBeenCalledWith('10.80.0.4');
   });
 
   it('does not complete an expired viewer session', async () => {

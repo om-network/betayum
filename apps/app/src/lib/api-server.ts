@@ -34,6 +34,10 @@ async function call<T = unknown>(
   if (cookieHeader) {
     requestHeaders['Cookie'] = cookieHeader;
   }
+  for (const header of ['x-service-token', 'x-organization-id', 'x-user-id']) {
+    const value = headerStore.get(header);
+    if (value) requestHeaders[header] = value;
+  }
 
   try {
     const response = await fetch(`${baseUrl}${endpoint}`, {

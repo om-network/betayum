@@ -94,6 +94,9 @@ function makeAutomation({
     chatHistory: null,
     evaluationCriteria: null,
     scriptDraft: null,
+    setupStatus: null,
+    setupTask: null,
+    setupStatusUpdatedAt: null,
     allowedTools: [],
     taskId: 'tsk_1',
     runs: run

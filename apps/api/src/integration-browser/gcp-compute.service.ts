@@ -1,15 +1,25 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { GoogleAuth } from 'google-auth-library';
 import { z } from 'zod';
+import { isPrivateIpv4 } from './browser-vm-network.util';
 
 const computeOperationSchema = z.object({
   name: z.string(),
 });
 
 const localViewerUrlSchema = z.string().url();
+const localSshPortSchema = z.coerce.number().int().min(1024).max(65535);
 
 const computeInstanceSchema = z.object({
   id: z.string(),
+  metadata: z
+    .object({
+      fingerprint: z.string(),
+      items: z
+        .array(z.object({ key: z.string(), value: z.string().optional() }))
+        .default([]),
+    })
+    .optional(),
   name: z.string(),
   status: z.string(),
   networkInterfaces: z
@@ -26,6 +36,11 @@ export interface BrowserComputeInstance {
   internalIp: string | null;
   name: string;
   status: string;
+}
+
+export interface BrowserSshTarget {
+  host: string;
+  port: number;
 }
 
 @Injectable()
@@ -55,7 +70,15 @@ export class GcpComputeService {
     const response = await client.request({
       method: 'POST',
       url: url.toString(),
-      data: { name: instanceName },
+      data: {
+        name: instanceName,
+        serviceAccounts: [
+          {
+            email: `betayum-codex-${instanceName.slice(-16)}@${this.projectId}.iam.gserviceaccount.com`,
+            scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+          },
+        ],
+      },
     });
 
     return computeOperationSchema.parse(response.data).name;
@@ -94,8 +117,38 @@ export class GcpComputeService {
     return this.runInstanceAction({ instanceName, action: 'stop' });
   }
 
+  async setMetadataItem({
+    instanceName,
+    key,
+    value,
+  }: {
+    instanceName: string;
+    key: string;
+    value: string;
+  }): Promise<string> {
+    const client = await this.auth.getClient();
+    const instanceUrl = `${this.instancesBaseUrl()}/${encodeURIComponent(instanceName)}`;
+    const current = await client.request({ method: 'GET', url: instanceUrl });
+    const instance = computeInstanceSchema.parse(current.data);
+    if (!instance.metadata) {
+      throw new ServiceUnavailableException(
+        `Browser VM metadata is unavailable: ${instanceName}`,
+      );
+    }
+
+    const items = instance.metadata.items
+      .filter((item) => item.key !== key)
+      .concat({ key, value });
+    const response = await client.request({
+      method: 'POST',
+      url: `${instanceUrl}/setMetadata`,
+      data: { fingerprint: instance.metadata.fingerprint, items },
+    });
+    return computeOperationSchema.parse(response.data).name;
+  }
+
   async isViewerReady(internalIp: string): Promise<boolean> {
-    if (!this.isPrivateIpv4(internalIp)) {
+    if (!isPrivateIpv4(internalIp)) {
       return false;
     }
 
@@ -120,6 +173,29 @@ export class GcpComputeService {
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     url.pathname = '/websockify';
     return url.toString();
+  }
+
+  getSshTarget({ internalIp }: { internalIp: string }): BrowserSshTarget {
+    if (!isPrivateIpv4(internalIp)) {
+      throw new ServiceUnavailableException(
+        'Browser VM SSH target must use a private IPv4 address',
+      );
+    }
+
+    const host = process.env.BROWSER_VM_LOCAL_SSH_HOST;
+    const port = process.env.BROWSER_VM_LOCAL_SSH_PORT;
+    if ((!host && !port) || process.env.NODE_ENV === 'production') {
+      return { host: internalIp, port: 22 };
+    }
+
+    const loopbackHosts = new Set(['127.0.0.1', 'localhost', '::1']);
+    const parsedPort = localSshPortSchema.safeParse(port);
+    if (!host || !loopbackHosts.has(host) || !parsedPort.success) {
+      throw new ServiceUnavailableException(
+        'Browser VM local SSH target must use a loopback host and valid port',
+      );
+    }
+    return { host, port: parsedPort.data };
   }
 
   private async runInstanceAction({
@@ -152,15 +228,31 @@ export class GcpComputeService {
   }
 
   private getViewerBaseUrl({ internalIp }: { internalIp: string }): URL {
-    const override = process.env.BROWSER_VM_LOCAL_VIEWER_URL;
+    return this.getPrivateServiceBaseUrl({
+      internalIp,
+      localOverrideName: 'BROWSER_VM_LOCAL_VIEWER_URL',
+      privatePort: 6080,
+    });
+  }
+
+  private getPrivateServiceBaseUrl({
+    internalIp,
+    localOverrideName,
+    privatePort,
+  }: {
+    internalIp: string;
+    localOverrideName: string;
+    privatePort: number;
+  }): URL {
+    const override = process.env[localOverrideName];
     if (!override || process.env.NODE_ENV === 'production') {
-      return new URL(`http://${internalIp}:6080`);
+      return new URL(`http://${internalIp}:${privatePort}`);
     }
 
     const parsed = localViewerUrlSchema.safeParse(override);
     if (!parsed.success) {
       throw new ServiceUnavailableException(
-        'BROWSER_VM_LOCAL_VIEWER_URL must be a valid loopback HTTP URL',
+        `${localOverrideName} must be a valid loopback HTTP URL`,
       );
     }
 
@@ -173,7 +265,7 @@ export class GcpComputeService {
       url.password
     ) {
       throw new ServiceUnavailableException(
-        'BROWSER_VM_LOCAL_VIEWER_URL must be a loopback HTTP URL',
+        `${localOverrideName} must be a loopback HTTP URL`,
       );
     }
     return url;
@@ -208,4 +300,5 @@ export class GcpComputeService {
       (first === 192 && second === 168)
     );
   }
+
 }

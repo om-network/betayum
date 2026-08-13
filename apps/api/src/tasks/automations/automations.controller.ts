@@ -31,12 +31,17 @@ import { GoogleDocsService } from './google-docs.service';
 import { GoogleSheetsService } from './google-sheets.service';
 import { AttachmentsService } from '../../attachments/attachments.service';
 import { AppendGoogleDocDto, CreateGoogleDocDto } from './dto/google-docs.dto';
-import { AppendGoogleSheetDto, CreateGoogleSheetDto } from './dto/google-sheets.dto';
+import {
+  AppendGoogleSheetDto,
+  CreateGoogleSheetDto,
+} from './dto/google-sheets.dto';
 import { attachSheetAsCsv } from './sheet-attachment.util';
 import { UpdateAutomationDto } from './dto/update-automation.dto';
 import { AUTOMATION_OPERATIONS } from './schemas/automation-operations';
 import { CREATE_AUTOMATION_RESPONSES } from './schemas/create-automation.responses';
 import { UPDATE_AUTOMATION_RESPONSES } from './schemas/update-automation.responses';
+import { AutomationAssistantService } from './automation-assistant.service';
+import { SubmitAutomationAssistantMessageDto } from './dto/automation-assistant.dto';
 
 @ApiTags('Task Automations')
 @Controller({ path: 'tasks/:taskId/automations', version: '1' })
@@ -50,6 +55,7 @@ export class AutomationsController {
     private readonly googleDocsService: GoogleDocsService,
     private readonly googleSheetsService: GoogleSheetsService,
     private readonly attachmentsService: AttachmentsService,
+    private readonly automationAssistantService: AutomationAssistantService,
   ) {}
 
   @Get()
@@ -306,6 +312,47 @@ export class AutomationsController {
     });
   }
 
+  @Post(':automationId/assistant/messages')
+  @RequirePermission('task', 'update')
+  @ApiOperation({ summary: 'Queue a durable automation assistant message' })
+  async submitAssistantMessage(
+    @OrganizationId() organizationId: string,
+    @AuthContext() authContext: AuthContextType,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+    @Body() body: SubmitAutomationAssistantMessageDto,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    const actor = await this.resolveAutomationActor(
+      organizationId,
+      authContext,
+    );
+    return this.automationAssistantService.submitMessage({
+      automationId,
+      clientRequestId: body.clientRequestId,
+      organizationId,
+      requestedByUserId: actor.userId,
+      taskId,
+      text: body.text,
+    });
+  }
+
+  @Get(':automationId/assistant/run')
+  @RequirePermission('task', 'read')
+  @ApiOperation({ summary: 'Get durable automation assistant status' })
+  async getAssistantRun(
+    @OrganizationId() organizationId: string,
+    @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
+  ) {
+    await this.tasksService.verifyTaskAccess(organizationId, taskId);
+    return this.automationAssistantService.getRun({
+      automationId,
+      organizationId,
+      taskId,
+    });
+  }
+
   @Post(':automationId/runs')
   @RequirePermission('task', 'update')
   @ApiOperation({
@@ -503,7 +550,9 @@ export class AutomationsController {
 
   @Post(':automationId/google-docs')
   @RequirePermission('task', 'update')
-  @ApiOperation({ summary: 'Create a Google Doc and write evidence content into it' })
+  @ApiOperation({
+    summary: 'Create a Google Doc and write evidence content into it',
+  })
   @ApiParam({ name: 'taskId', description: 'Task ID' })
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
   async createGoogleDoc(
@@ -522,7 +571,9 @@ export class AutomationsController {
 
   @Post(':automationId/google-docs/:documentId/append')
   @RequirePermission('task', 'update')
-  @ApiOperation({ summary: 'Append evidence content to an existing Google Doc' })
+  @ApiOperation({
+    summary: 'Append evidence content to an existing Google Doc',
+  })
   @ApiParam({ name: 'taskId', description: 'Task ID' })
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
   @ApiParam({ name: 'documentId', description: 'Google Docs document ID' })
@@ -542,7 +593,9 @@ export class AutomationsController {
 
   @Post(':automationId/google-sheets')
   @RequirePermission('task', 'update')
-  @ApiOperation({ summary: 'Create a Google Spreadsheet and write evidence rows into it' })
+  @ApiOperation({
+    summary: 'Create a Google Spreadsheet and write evidence rows into it',
+  })
   @ApiParam({ name: 'taskId', description: 'Task ID' })
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
   async createGoogleSheet(
@@ -573,23 +626,53 @@ export class AutomationsController {
 
   @Post(':automationId/google-sheets/:spreadsheetId/append')
   @RequirePermission('task', 'update')
-  @ApiOperation({ summary: 'Append evidence rows to an existing Google Spreadsheet' })
+  @ApiOperation({
+    summary: 'Append evidence rows to an existing Google Spreadsheet',
+  })
   @ApiParam({ name: 'taskId', description: 'Task ID' })
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
-  @ApiParam({ name: 'spreadsheetId', description: 'Google Sheets spreadsheet ID' })
+  @ApiParam({
+    name: 'spreadsheetId',
+    description: 'Google Sheets spreadsheet ID',
+  })
   async appendGoogleSheet(
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
+    @Param('automationId') automationId: string,
     @Param('spreadsheetId') spreadsheetId: string,
     @Body() body: AppendGoogleSheetDto,
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
     const safeSpreadsheetId = this.assertGoogleSpreadsheetId(spreadsheetId);
-    return this.googleSheetsService.appendRows({
+    const result = await this.googleSheetsService.appendRows({
       organizationId,
       spreadsheetId: safeSpreadsheetId,
       rows: body.rows,
     });
+
+    let attachedToTask = false;
+    try {
+      const sheet = await this.googleSheetsService.readValues({
+        organizationId,
+        spreadsheetId: safeSpreadsheetId,
+      });
+      attachedToTask = await attachSheetAsCsv({
+        attachmentsService: this.attachmentsService,
+        organizationId,
+        taskId,
+        automationId,
+        title: body.title ?? `automation-${automationId}`,
+        spreadsheetUrl: `https://docs.google.com/spreadsheets/d/${safeSpreadsheetId}/edit`,
+        rows: sheet.values,
+      });
+    } catch (error) {
+      console.error(
+        `Failed to attach updated spreadsheet ${safeSpreadsheetId} to task ${taskId}:`,
+        error,
+      );
+    }
+
+    return { ...result, attachedToTask };
   }
 
   @Get(':automationId/google-docs/:documentId')
@@ -612,7 +695,10 @@ export class AutomationsController {
   @ApiOperation({ summary: 'Read values from a Google Spreadsheet' })
   @ApiParam({ name: 'taskId', description: 'Task ID' })
   @ApiParam({ name: 'automationId', description: 'Automation ID' })
-  @ApiParam({ name: 'spreadsheetId', description: 'Google Sheets spreadsheet ID' })
+  @ApiParam({
+    name: 'spreadsheetId',
+    description: 'Google Sheets spreadsheet ID',
+  })
   async readGoogleSheet(
     @OrganizationId() organizationId: string,
     @Param('taskId') taskId: string,
@@ -621,7 +707,11 @@ export class AutomationsController {
   ) {
     await this.tasksService.verifyTaskAccess(organizationId, taskId);
     const safeSpreadsheetId = this.assertGoogleSpreadsheetId(spreadsheetId);
-    return this.googleSheetsService.readValues({ organizationId, spreadsheetId: safeSpreadsheetId, range });
+    return this.googleSheetsService.readValues({
+      organizationId,
+      spreadsheetId: safeSpreadsheetId,
+      range,
+    });
   }
 
   private assertGoogleSpreadsheetId(spreadsheetId: string): string {
@@ -713,6 +803,10 @@ export class AutomationsController {
     @Param('taskId') taskId: string,
     @Param('runId') runId: string,
   ) {
-    return this.tasksService.getAutomationRunById(organizationId, taskId, runId);
+    return this.tasksService.getAutomationRunById(
+      organizationId,
+      taskId,
+      runId,
+    );
   }
 }
