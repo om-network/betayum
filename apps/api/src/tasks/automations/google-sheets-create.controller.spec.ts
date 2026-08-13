@@ -5,6 +5,16 @@ jest.mock('@db', () => ({
   AttachmentEntityType: { task: 'task' },
   AttachmentType: { document: 'document' },
   TaskFrequency: {},
+  AutomationSetupStatus: {
+    building: 'building',
+    ready: 'ready',
+    action_needed: 'action_needed',
+    failed: 'failed',
+  },
+  AutomationAssistantRunStatus: {
+    queued: 'queued',
+    running: 'running',
+  },
   BackgroundCheckStatus: {
     completed: 'completed',
     completed_with_flags: 'completed_with_flags',
