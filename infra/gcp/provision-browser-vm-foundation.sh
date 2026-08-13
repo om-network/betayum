@@ -157,7 +157,7 @@ if gcloud compute firewall-rules describe "${VIEWER_FIREWALL}" \
   --project="${PROJECT_ID}" >/dev/null 2>&1; then
   gcloud compute firewall-rules update "${VIEWER_FIREWALL}" \
     --project="${PROJECT_ID}" \
-    --rules=tcp:6080 \
+    --rules=tcp:22,tcp:6080 \
     --source-tags=betayum-api \
     --target-tags=betayum-browser-vm \
     --quiet
@@ -167,7 +167,7 @@ else
     --network="${NETWORK}" \
     --direction=INGRESS \
     --action=ALLOW \
-    --rules=tcp:6080 \
+    --rules=tcp:22,tcp:6080 \
     --source-tags=betayum-api \
     --target-tags=betayum-browser-vm \
     --quiet
@@ -212,7 +212,7 @@ else
     --no-address \
     --tags=betayum-browser-vm \
     --labels=component=browser-automation,purpose=organization-browser \
-    --metadata=enable-oslogin=TRUE \
+    --metadata=enable-oslogin=FALSE,block-project-ssh-keys=TRUE \
     --metadata-from-file="startup-script=${STARTUP_SCRIPT}" \
     --no-service-account \
     --no-scopes \
@@ -243,6 +243,7 @@ if [[ "${CONFIGURE_IAM}" == "true" ]]; then
       compute.instances.create \
       compute.instances.delete \
       compute.instances.get \
+      compute.instances.setMetadata \
       compute.instances.start \
       compute.instances.stop \
       compute.projects.get \

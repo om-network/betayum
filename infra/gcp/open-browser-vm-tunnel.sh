@@ -6,6 +6,9 @@ PROJECT_ID="${BETAYUM_GCP_PROJECT:?Set BETAYUM_GCP_PROJECT to the target GCP pro
 ZONE="${BETAYUM_GCP_ZONE:-us-central1-a}"
 INSTANCE_NAME="${BETAYUM_BROWSER_VM_NAME:-${1:-}}"
 LOCAL_PORT="${BETAYUM_BROWSER_VM_LOCAL_PORT:-16080}"
+LOCAL_SSH_PORT="${BETAYUM_BROWSER_VM_LOCAL_SSH_PORT:-16022}"
+LOCAL_API_PORT="${BETAYUM_LOCAL_API_PORT:-3333}"
+REMOTE_API_PORT="${BETAYUM_BROWSER_VM_REMOTE_API_PORT:-13333}"
 TUNNEL_MODE="${BETAYUM_BROWSER_VM_TUNNEL_MODE:-iap}"
 SSH_KEY_FILE="${BETAYUM_BROWSER_VM_SSH_KEY_FILE:-${HOME}/.ssh/betayum_browser_local}"
 LOCAL_TAG="${INSTANCE_NAME}-local-ssh"
@@ -20,6 +23,19 @@ fi
 if [[ ! "${LOCAL_PORT}" =~ ^[0-9]+$ ]] ||
   ((LOCAL_PORT < 1024 || LOCAL_PORT > 65535)); then
   printf 'BETAYUM_BROWSER_VM_LOCAL_PORT must be between 1024 and 65535.\n' >&2
+  exit 1
+fi
+if [[ ! "${LOCAL_SSH_PORT}" =~ ^[0-9]+$ ]] ||
+  ((LOCAL_SSH_PORT < 1024 || LOCAL_SSH_PORT > 65535)) ||
+  [[ "${LOCAL_SSH_PORT}" == "${LOCAL_PORT}" ]]; then
+  printf 'BETAYUM_BROWSER_VM_LOCAL_SSH_PORT must be a different port between 1024 and 65535.\n' >&2
+  exit 1
+fi
+if [[ ! "${LOCAL_API_PORT}" =~ ^[0-9]+$ ]] ||
+  ((LOCAL_API_PORT < 1024 || LOCAL_API_PORT > 65535)) ||
+  [[ ! "${REMOTE_API_PORT}" =~ ^[0-9]+$ ]] ||
+  ((REMOTE_API_PORT < 1024 || REMOTE_API_PORT > 65535)); then
+  printf 'Local and VM API ports must be between 1024 and 65535.\n' >&2
   exit 1
 fi
 
@@ -71,7 +87,7 @@ cleanup_external_access() {
   gcloud compute instances add-metadata "${INSTANCE_NAME}" \
     --project="${PROJECT_ID}" \
     --zone="${ZONE}" \
-    --metadata=enable-oslogin=TRUE \
+    --metadata="enable-oslogin=FALSE,block-project-ssh-keys=TRUE" \
     --quiet >/dev/null 2>&1 || true
   if [[ "${CREATED_ACCESS_CONFIG}" == "true" ]]; then
     gcloud compute instances delete-access-config "${INSTANCE_NAME}" \
@@ -104,7 +120,7 @@ else
   gcloud compute instances add-metadata "${INSTANCE_NAME}" \
     --project="${PROJECT_ID}" \
     --zone="${ZONE}" \
-    --metadata=enable-oslogin=FALSE \
+    --metadata="enable-oslogin=FALSE,block-project-ssh-keys=TRUE" \
     --quiet
   gcloud compute instances add-tags "${INSTANCE_NAME}" \
     --project="${PROJECT_ID}" \
@@ -157,6 +173,10 @@ fi
 printf 'Keep this process running while testing locally.\n'
 printf 'Set BROWSER_VM_LOCAL_VIEWER_URL=http://127.0.0.1:%s on the local API.\n' \
   "${LOCAL_PORT}"
+printf 'Set BROWSER_VM_LOCAL_SSH_HOST=127.0.0.1 on the local API.\n'
+printf 'Set BROWSER_VM_LOCAL_SSH_PORT=%s on the local API.\n' "${LOCAL_SSH_PORT}"
+printf 'Set CODEX_AUTOMATION_API_BASE_URL=http://127.0.0.1:%s on the local API.\n' \
+  "${REMOTE_API_PORT}"
 printf 'Direct noVNC URL: http://127.0.0.1:%s/vnc.html?autoconnect=true\n' \
   "${LOCAL_PORT}"
 
@@ -164,4 +184,9 @@ gcloud compute ssh "${INSTANCE_NAME}" \
   --project="${PROJECT_ID}" \
   --zone="${ZONE}" \
   "${SSH_ARGS[@]}" \
-  -- -N -L "127.0.0.1:${LOCAL_PORT}:${INTERNAL_IP}:6080"
+  -- \
+  -o ExitOnForwardFailure=yes \
+  -N \
+  -L "127.0.0.1:${LOCAL_PORT}:${INTERNAL_IP}:6080" \
+  -L "127.0.0.1:${LOCAL_SSH_PORT}:${INTERNAL_IP}:22" \
+  -R "127.0.0.1:${REMOTE_API_PORT}:127.0.0.1:${LOCAL_API_PORT}"

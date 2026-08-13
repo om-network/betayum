@@ -158,9 +158,11 @@ creates or updates:
 
 - A custom-mode browser VPC and private subnet.
 - Cloud Router and Cloud NAT for private VM package installation.
-- Firewall access from the API network tag to private noVNC port `6080`.
+- Firewall access from the API network tag to private SSH and noVNC ports
+  `22` and `6080`.
 - IAP-only SSH access for troubleshooting.
-- A private instance template that installs Chrome and FoxClocks.
+- A private instance template that installs Chrome, FoxClocks, a pinned Codex
+  CLI, and a restricted SSH account.
 - A custom IAM role bound to the API runtime service account.
 - Direct VPC egress and `BROWSER_VM_*` variables on the API Cloud Run service.
 
@@ -194,7 +196,18 @@ Browser noVNC client
   -> Cloud Run Direct VPC egress
   -> VM private-ip:6080
   -> x11vnc on VM localhost:5900
+
+Betayum API
+  -> authenticated Codex terminal WebSocket
+  -> per-organization SSH key
+  -> restricted SSH account on private-ip:22
+  -> fixed Codex terminal, status, and logout commands
 ```
+
+Codex credentials stay under `/var/lib/betayum-codex` on the VM. The API stores
+an encrypted per-organization SSH private key and publishes only its public key
+to instance metadata. The restricted account has no sudo access, forwarding,
+general shell, or graphical desktop terminal.
 
 For a standalone FoxClocks prototype instead, use `create-browser-vm.sh`.
 Successful bootstrap writes `/var/lib/betayum-browser/foxclocks-ready` on the
@@ -208,8 +221,11 @@ template:
 ```bash
 export BROWSER_VM_GCP_PROJECT="centered-kiln-498405-h8"
 export BROWSER_VM_GCP_ZONE="us-central1-a"
-export BROWSER_VM_INSTANCE_TEMPLATE="projects/centered-kiln-498405-h8/global/instanceTemplates/betayum-staging-browser-2e75daf92314"
+export BROWSER_VM_INSTANCE_TEMPLATE="projects/centered-kiln-498405-h8/global/instanceTemplates/TEMPLATE_PRINTED_BY_PROVISIONER"
 export BROWSER_VM_LOCAL_VIEWER_URL="http://127.0.0.1:16080"
+export BROWSER_VM_LOCAL_SSH_HOST="127.0.0.1"
+export BROWSER_VM_LOCAL_SSH_PORT="16022"
+export CODEX_AUTOMATION_API_BASE_URL="http://127.0.0.1:13333"
 ```
 
 After the API creates an organization VM, open a second terminal and tunnel to
@@ -222,8 +238,11 @@ BETAYUM_BROWSER_VM_NAME="betayum-browser-INSTANCE_SUFFIX" \
 ```
 
 Keep the tunnel running while using the local app. The override is accepted
-only outside `NODE_ENV=production` and only for loopback HTTP URLs. Deployed
-environments continue to connect directly to the VM's private address.
+only outside `NODE_ENV=production` and only for loopback viewer and SSH
+endpoints. Deployed environments continue to connect directly to the VM's
+private address. The tunnel also exposes the local API on VM loopback port
+`13333`, allowing the Codex worker to upload screenshots and complete runs
+without making the developer API public.
 
 The tunnel defaults to IAP. When the local account lacks IAP or external
 organization OS Login access, use:
@@ -237,8 +256,18 @@ BETAYUM_BROWSER_VM_TUNNEL_MODE="external" \
 
 External mode temporarily attaches an external IP and permits SSH only from
 the workstation's current public `/32`. It removes the IP, firewall rule,
-instance tag, and local OS Login override when the tunnel exits. noVNC remains
-available only through the local SSH port forward.
+instance tag, and temporary firewall rule when the tunnel exits. noVNC and the
+restricted Codex SSH endpoint remain available only through local port forwards
+at `127.0.0.1:16080` and `127.0.0.1:16022`.
+
+Upgrade an existing organization VM in place without replacing its persistent
+Chrome or Codex data:
+
+```bash
+BETAYUM_GCP_PROJECT="centered-kiln-498405-h8" \
+BETAYUM_BROWSER_VM_NAME="betayum-browser-INSTANCE_SUFFIX" \
+  ./upgrade-browser-vm.sh
+```
 
 ## Evidence
 

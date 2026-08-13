@@ -37,7 +37,7 @@ gcloud compute instances create "${INSTANCE_NAME}" \
   "${NETWORK_ARGS[@]}" \
   --tags="betayum-browser-vm" \
   --labels="component=browser-automation,purpose=foxclocks-poc" \
-  --metadata="enable-oslogin=FALSE" \
+  --metadata="enable-oslogin=FALSE,block-project-ssh-keys=TRUE" \
   --metadata-from-file="startup-script=${STARTUP_SCRIPT}" \
   --no-service-account \
   --no-scopes \
