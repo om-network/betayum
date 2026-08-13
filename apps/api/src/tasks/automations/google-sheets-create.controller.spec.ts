@@ -82,6 +82,7 @@ function buildController(overrides?: {
     {} as never,
     mockSheetsService,
     mockAttachmentsService,
+    {} as never,
   );
 
   return { controller, mockSheetsService, mockAttachmentsService, mockTasksService };

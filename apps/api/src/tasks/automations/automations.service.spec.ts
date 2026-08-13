@@ -92,6 +92,7 @@ describe('AutomationsService', () => {
   };
   const workerDispatcher = {
     enqueue: jest.fn(),
+    executor: jest.fn(),
   };
 
   beforeEach(() => {
@@ -107,7 +108,7 @@ describe('AutomationsService', () => {
       usageLimitsService as unknown as AutomationUsageLimitsService,
       secretsService as unknown as AutomationSecretsService,
       auditService as unknown as AutomationAuditService,
-      workerDispatcher,
+      workerDispatcher as unknown as import('./automation-worker-dispatcher.service').AutomationWorkerDispatcherService,
     );
   });
 
@@ -229,6 +230,7 @@ describe('AutomationsService', () => {
       automationId: 'aut_1',
       data: {
         scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v3.js',
+        scriptContent: null,
         changelog: 'Publish stable automation',
       },
     });
@@ -254,6 +256,7 @@ describe('AutomationsService', () => {
         evidenceAutomationId: 'aut_1',
         version: 3,
         scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v3.js',
+        scriptContent: null,
         changelog: 'Publish stable automation',
       },
     });
