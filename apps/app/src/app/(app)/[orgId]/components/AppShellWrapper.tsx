@@ -1,6 +1,5 @@
 'use client';
 
-import { updateSidebarState } from '@/actions/sidebar';
 import { LazyAssistantChat } from '@/components/ai/lazy-assistant-chat';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { NotificationBell } from '@/components/notifications/notification-bell';
@@ -50,7 +49,6 @@ import {
   ManageProtection,
   Settings,
 } from '@trycompai/design-system/icons';
-import { useAction } from 'next-safe-action/hooks';
 import { useTheme } from 'next-themes';
 import { BrandLogo } from '@/components/brand-logo';
 import Link from 'next/link';
@@ -135,20 +133,16 @@ function AppShellWrapperContent({
     setLogoVariant(resolvedTheme === 'light' ? 'dark' : 'light');
   }, [resolvedTheme]);
 
-  const { execute } = useAction(updateSidebarState, {
-    onError: () => {
-      setIsCollapsed(previousIsCollapsedRef.current);
-    },
-  });
-
   const handleSidebarOpenChange = useCallback(
     (open: boolean) => {
       const nextIsCollapsed = !open;
       previousIsCollapsedRef.current = isCollapsed;
       setIsCollapsed(nextIsCollapsed);
-      execute({ isCollapsed: nextIsCollapsed });
+      const expires = new Date();
+      expires.setFullYear(expires.getFullYear() + 1);
+      document.cookie = `sidebar-collapsed=${JSON.stringify(nextIsCollapsed)};path=/;expires=${expires.toUTCString()}`;
     },
-    [execute, isCollapsed, setIsCollapsed],
+    [isCollapsed, setIsCollapsed],
   );
 
   const searchGroups = getAppShellSearchGroups({
