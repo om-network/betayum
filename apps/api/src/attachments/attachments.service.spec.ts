@@ -34,6 +34,7 @@ describe('AttachmentsService object storage behavior', () => {
   const objectStorage: jest.Mocked<ObjectStorage> = {
     uploadObject: jest.fn(),
     streamObject: jest.fn(),
+    getObjectMetadata: jest.fn(),
     copyObject: jest.fn(),
     deleteObject: jest.fn(),
     getSignedObjectUrl: jest.fn(),

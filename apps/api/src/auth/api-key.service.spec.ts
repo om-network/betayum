@@ -114,7 +114,13 @@ describe('ApiKeyService', () => {
         salt: string;
         organizationId: string;
         scopes: string[];
-      } | null = null;
+      } = {
+        key: '',
+        keyPrefix: '',
+        salt: '',
+        organizationId: '',
+        scopes: [],
+      };
 
       mockDb.apiKey.create.mockImplementation(
         async ({
@@ -143,16 +149,21 @@ describe('ApiKeyService', () => {
       ]);
 
       expect(persistedData).not.toBeNull();
-      expect(persistedData?.key).toMatch(/^scrypt:v1:[a-f0-9]{64}$/);
-      expect(persistedData?.salt).toMatch(/^[a-f0-9]{32}$/);
+      expect(persistedData).toEqual(
+        expect.objectContaining({
+          key: expect.stringMatching(/^scrypt:v1:[a-f0-9]{64}$/),
+          salt: expect.stringMatching(/^[a-f0-9]{32}$/),
+        }),
+      );
+      const persisted = persistedData;
       expect(created.key).toMatch(/^comp_[a-f0-9]{64}$/);
 
       mockDb.apiKey.findMany.mockResolvedValueOnce([
         {
           id: 'apk_1',
           name: 'CI key',
-          key: persistedData?.key,
-          salt: persistedData?.salt,
+          key: persisted.key,
+          salt: persisted.salt,
           organizationId: 'org_1',
           scopes: ['risk:read'],
         },
