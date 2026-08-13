@@ -8,11 +8,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@trycompai/ui/collapsible";
-import { cn } from "@trycompai/ui/cn";
+import { cn } from "@trycompai/design-system/cn";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
-import { BrainIcon, ChevronDownIcon } from "lucide-react";
+import { ChevronDown, Idea } from "@trycompai/design-system/icons";
 import {
   createContext,
   memo,
@@ -183,9 +183,9 @@ export const ReasoningTrigger = memo(
       >
         {children ?? (
           <>
-            <BrainIcon className="size-4" />
+            <Idea className="size-4" />
             {getThinkingMessage(isStreaming, duration)}
-            <ChevronDownIcon
+            <ChevronDown
               className={cn(
                 "size-4 transition-transform",
                 isOpen ? "rotate-180" : "rotate-0"

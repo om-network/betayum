@@ -14,11 +14,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@trycompai/ui/tooltip";
-import { cn } from "@trycompai/ui/cn";
+import { cn } from "@trycompai/design-system/cn";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@trycompai/design-system/icons";
 import {
   createContext,
   memo,
@@ -268,7 +268,7 @@ export const MessageBranchPrevious = ({
       variant="ghost"
       {...props}
     >
-      {children ?? <ChevronLeftIcon size={14} />}
+      {children ?? <ChevronLeft size={14} />}
     </Button>
   );
 };
@@ -291,7 +291,7 @@ export const MessageBranchNext = ({
       variant="ghost"
       {...props}
     >
-      {children ?? <ChevronRightIcon size={14} />}
+      {children ?? <ChevronRight size={14} />}
     </Button>
   );
 };

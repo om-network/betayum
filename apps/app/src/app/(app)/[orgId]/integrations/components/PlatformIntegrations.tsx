@@ -22,16 +22,16 @@ import {
 import { Skeleton } from '@trycompai/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import {
-  AlertCircle,
-  AlertTriangle,
   ArrowRight,
-  CheckCircle2,
-  Loader2,
+  CheckmarkFilled,
+  Flash,
   Plug,
-  Settings2,
-  Sparkles,
-  Zap,
-} from 'lucide-react';
+  Renew,
+  SettingsAdjust,
+  WarningAlt,
+  Warning,
+  AiGenerate,
+} from '@trycompai/design-system/icons';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -556,12 +556,12 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                               <CardTitle className="text-base font-semibold flex items-center gap-2">
                                 {provider.name}
                                 {isConnected && !needsConfiguration && (
-                                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                                  <CheckmarkFilled className="h-4 w-4 text-primary" />
                                 )}
                                 {needsConfiguration && (
-                                  <AlertTriangle className="h-4 w-4 text-warning" />
+                                  <WarningAlt className="h-4 w-4 text-warning" />
                                 )}
-                                {hasError && <AlertCircle className="h-4 w-4 text-destructive" />}
+                                {hasError && <Warning className="h-4 w-4 text-destructive" />}
                               </CardTitle>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <p className="text-xs text-muted-foreground">{provider.category}</p>
@@ -582,7 +582,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                 handleOpenProviderSettings(provider);
                               }}
                             >
-                              <Settings2 className="h-4 w-4" />
+                              <SettingsAdjust className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
@@ -703,7 +703,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                 >
                                   {isConnecting ? (
                                     <>
-                                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                      <Renew className="h-3 w-3 mr-2 animate-spin" />
                                       Reconnecting...
                                     </>
                                   ) : (
@@ -743,7 +743,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                             >
                               {isConnecting ? (
                                 <>
-                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                  <Renew className="h-3 w-3 mr-2 animate-spin" />
                                   Connecting...
                                 </>
                               ) : provider.authType === 'oauth2' ? (
@@ -825,7 +825,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
             <div className="max-w-xl mx-auto space-y-6">
               <div className="space-y-3">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10">
-                  <Sparkles className="w-8 h-8 text-primary" />
+                  <AiGenerate className="w-8 h-8 text-primary" />
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold text-foreground">Just ask the agent</h3>
@@ -963,7 +963,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                     </p>
                     {selectedCustomIntegration.setupHint && (
                       <div className="flex items-start gap-2 pt-2 border-t border-border/50">
-                        <CheckCircle2 className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <CheckmarkFilled className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                         <p className="text-xs text-muted-foreground">
                           <span className="font-medium text-foreground">Typically requires:</span>{' '}
                           {selectedCustomIntegration.setupHint}
@@ -977,7 +977,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="w-4 h-4 text-primary" />
+                        <AiGenerate className="w-4 h-4 text-primary" />
                       </div>
                       <h4 className="text-base font-semibold text-foreground">Example Prompts</h4>
                     </div>
@@ -1000,7 +1000,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Zap className="w-4 h-4 text-primary" />
+                      <Flash className="w-4 h-4 text-primary" />
                     </div>
                     <h4 className="text-base font-semibold text-foreground">Relevant Tasks</h4>
                   </div>
