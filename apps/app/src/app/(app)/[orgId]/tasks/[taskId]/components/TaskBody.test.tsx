@@ -1,6 +1,6 @@
+import { setMockPermissions } from '@/test-utils/mocks/permissions';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { setMockPermissions } from '@/test-utils/mocks/permissions';
 
 const { mockCanUpdateTask } = vi.hoisted(() => ({ mockCanUpdateTask: vi.fn(() => true) }));
 vi.mock('@/hooks/use-permissions', () => ({
@@ -62,14 +62,29 @@ describe('TaskBody', () => {
   it('disables attachment mutations but keeps previews available for read-only users', () => {
     mockCanUpdateTask.mockReturnValue(false);
     mockUseTaskAttachments.mockReturnValue({
-      data: { data: [], status: 200 } as never,
+      data: {
+        data: [
+          {
+            id: 'att_123',
+            name: 'evidence.json',
+            type: 'document',
+            createdAt: '2026-07-24T00:00:00.000Z',
+          },
+        ],
+        status: 200,
+      } as never,
       error: undefined,
       isLoading: false,
       mutate: mockRefreshAttachments,
       isValidating: false,
     });
     render(<TaskBody taskId="tsk_123" />);
+    const attachmentButton = screen.getByRole('button', { name: 'evidence.json' });
+    expect(attachmentButton).toBeEnabled();
+    fireEvent.click(attachmentButton);
+    expect(screen.getByText('Previewing evidence.json')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /drag and drop files here/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete evidence.json' })).toBeDisabled();
   });
 
   it('should show upload dropzone even when attachments are loading', () => {
