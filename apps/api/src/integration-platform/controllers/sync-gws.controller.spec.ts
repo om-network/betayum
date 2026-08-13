@@ -47,7 +47,7 @@ jest.mock('@trycompai/integration-platform', () => {
 });
 
 const mockFetch = jest.fn();
-global.fetch = mockFetch;
+global.fetch = mockFetch as unknown as typeof fetch;
 
 const mockedDb = db as jest.Mocked<typeof db>;
 
@@ -144,6 +144,8 @@ describe('SyncController - Google Workspace employees', () => {
     mockOAuthCredentials.getCredentials.mockResolvedValue({
       clientId: 'client-id',
       clientSecret: 'client-secret',
+      scopes: [],
+      source: 'organization',
     });
 
     mockCredentialVault.refreshOAuthTokens.mockResolvedValue('new-token');
