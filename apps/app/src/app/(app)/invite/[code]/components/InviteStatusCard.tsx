@@ -1,7 +1,7 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
 import { BrandLogo } from '@/components/brand-logo';
+import { Button } from '@trycompai/design-system';
 import Link from 'next/link';
 
 export function InviteStatusCard({
@@ -28,9 +28,11 @@ export function InviteStatusCard({
         {children}
         {primaryHref && primaryLabel && (
           <Link href={primaryHref} className="w-full">
-            <Button className="w-full" size="sm">
-              {primaryLabel}
-            </Button>
+            <div className="w-full">
+              <Button size="sm" width="full">
+                {primaryLabel}
+              </Button>
+            </div>
           </Link>
         )}
       </div>

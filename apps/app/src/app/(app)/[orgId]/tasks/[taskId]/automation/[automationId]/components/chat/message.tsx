@@ -1,4 +1,4 @@
-import { UserIcon } from 'lucide-react';
+import { User as UserIcon } from '@trycompai/design-system/icons';
 import Image from 'next/image';
 import { createContext, memo, useContext, useEffect, useMemo, useState } from 'react';
 import { MessagePart } from './message-part';
