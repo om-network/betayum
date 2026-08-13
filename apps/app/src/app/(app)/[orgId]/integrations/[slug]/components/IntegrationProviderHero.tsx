@@ -16,6 +16,7 @@ type HeroProps = {
   onOpenSettings: () => void;
   onAddAccount: () => void;
   vmLoginOnly?: boolean;
+  canUpdate?: boolean;
 };
 
 export function IntegrationProviderHero({
@@ -27,6 +28,7 @@ export function IntegrationProviderHero({
   onOpenSettings,
   onAddAccount,
   vmLoginOnly = false,
+  canUpdate = true,
 }: HeroProps) {
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-muted/30 via-background to-muted/20 dark:from-muted/10 dark:via-background dark:to-muted/5">
@@ -150,6 +152,7 @@ export function IntegrationProviderHero({
                               variant="ghost"
                               size="xs"
                               onClick={onAddAccount}
+                              disabled={!canUpdate}
                               iconLeft={<Add size={12} />}
                               aria-label="Add another account"
                             >

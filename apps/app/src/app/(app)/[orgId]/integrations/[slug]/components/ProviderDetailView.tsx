@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/use-permissions';
 import { AccountSettingsSheet } from './AccountSettingsSheet';
 import { getConnectionDisplayLabel } from './connection-display';
 import { EmptyStateOnboarding } from './EmptyStateOnboarding';
@@ -45,6 +46,8 @@ export function ProviderDetailView({
   const searchParams = useSearchParams();
   const { connections: allConnections, refresh: refreshConnections } = useIntegrationConnections();
   const { startOAuth } = useIntegrationMutations();
+  const { hasPermission } = usePermissions();
+  const canUpdateIntegration = hasPermission('integration', 'update');
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reconnectDialogOpen, setReconnectDialogOpen] = useState(false);
@@ -222,6 +225,7 @@ export function ProviderDetailView({
   }, [isCloudProvider, isConnected, selectedConnection, refreshServices, provider.id]);
 
   const handleConnect = useCallback(async () => {
+    if (!canUpdateIntegration) return;
     if (provider.authType === 'oauth2') {
       const redirectUrl = `${window.location.origin}/${orgId}/integrations/${provider.id}?success=true&settings=true`;
       const result = await startOAuth(provider.id, redirectUrl);
@@ -235,7 +239,7 @@ export function ProviderDetailView({
       // For non-OAuth, show the inline add-account form
       setShowAddAccount(true);
     }
-  }, [provider, orgId, startOAuth]);
+  }, [canUpdateIntegration, provider, orgId, startOAuth]);
 
   useEffect(() => {
     if (!selectedConnection?.id || settingsQueryHandledRef.current) return;
@@ -274,6 +278,7 @@ export function ProviderDetailView({
           onSelectConnection={(id) => setSelectedConnectionId(id)}
           onOpenSettings={() => setSettingsOpen(true)}
           onAddAccount={() => void handleConnect()}
+          canUpdate={canUpdateIntegration}
           vmLoginOnly={isGithubVmLoginOnly}
         />
 
@@ -302,7 +307,7 @@ export function ProviderDetailView({
                 keep scans and remediation fully reliable.
               </p>
             </div>
-            <Button size="sm" variant="outline" onClick={() => setReconnectDialogOpen(true)}>
+            <Button size="sm" variant="outline" disabled={!canUpdateIntegration} onClick={() => setReconnectDialogOpen(true)}>
               Reconnect
             </Button>
           </div>
