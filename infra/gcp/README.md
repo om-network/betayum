@@ -131,6 +131,30 @@ Insert secret values after the Secret Manager shells exist, then set
 `latest` secret versions. Cloud Run revisions will not be usable until required
 secrets and Cloud Build substitutions are in place.
 
+### External Staging Cutover Runbook
+
+This is an operator runbook only; it is not executed by Terraform or this
+repository change.
+
+1. Create `betayum-staging-service-token-trigger` in Secret Manager with one
+   identical value for the staging API, app, and Trigger project.
+2. Initialize Trigger project `proj_rxaglrggzjmdjgexjhoz` in its staging
+   environment with the staging database, API, app, and auth URLs; the shared
+   service token; revalidation secret; and the existing Trigger credentials.
+   Verify that the GitHub secret `TRIGGER_ACCESS_TOKEN` is present and valid.
+3. Migrate the current literal API `ENCRYPTION_KEY` unchanged into
+   `betayum-staging-encryption-key`; do not rotate it during this cutover.
+4. Run the browser foundation with
+   `BETAYUM_CONFIGURE_CLOUD_RUN=true` after reviewing the proposed changes.
+5. Merge `develop` only after approval. Let Cloud Build run the database
+   migration, deployment, and smoke checks.
+6. Deploy the consolidated Trigger worker afterward, using the same staging
+   service-token value and the initialized staging configuration.
+
+Do not run these steps as part of Terraform validation or a local build. Apply
+the reviewed Terraform configuration before the Cloud Build deployment, then
+let Cloud Build own the subsequent image and runtime environment rollout.
+
 For Cloud SQL environments, set `DATABASE_URL` to use the mounted Unix socket,
 for example:
 
