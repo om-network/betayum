@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const mockGetSession = vi.fn();
-const mockServerGet = vi.fn();
+const { mockGetSession, mockServerGet } = vi.hoisted(() => ({
+  mockGetSession: vi.fn(),
+  mockServerGet: vi.fn(),
+}));
 vi.mock('@/utils/auth', () => ({ auth: { api: { getSession: mockGetSession } } }));
 vi.mock('@/lib/api-server', () => ({ serverApi: { get: mockServerGet } }));
 vi.mock('next/headers', () => ({ headers: vi.fn(async () => new Headers()) }));
