@@ -667,7 +667,9 @@ export class AutomationsController {
       });
     } catch (error) {
       console.error(
-        `Failed to attach updated spreadsheet ${safeSpreadsheetId} to task ${taskId}:`,
+        'Failed to attach updated spreadsheet %s to task %s:',
+        safeSpreadsheetId,
+        taskId,
         error,
       );
     }
