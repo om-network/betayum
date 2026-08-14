@@ -83,11 +83,18 @@ function buildAwsFixScript(actions: string[]): string | null {
 }
 
 function isAzureError(error: string): boolean {
-  return (
-    error.includes('AuthorizationFailed') ||
-    error.includes('management.azure.com') ||
-    error.includes('does not have authorization')
-  );
+  if (error.includes('AuthorizationFailed') || error.includes('does not have authorization')) {
+    return true;
+  }
+
+  const urls = error.match(/https?:\/\/[^\s'"]+/gi) ?? [];
+  return urls.some((rawUrl) => {
+    try {
+      return new URL(rawUrl).hostname === 'management.azure.com';
+    } catch {
+      return false;
+    }
+  });
 }
 
 function isAllowedHostname(hostname: string, allowedDomain: string): boolean {
