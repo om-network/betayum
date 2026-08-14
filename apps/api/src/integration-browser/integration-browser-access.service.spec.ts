@@ -53,7 +53,9 @@ describe(IntegrationBrowserAccessService.name, () => {
   });
 
   it('allows an active GitHub connection to use the organization browser', async () => {
-    mockDb.integrationConnection.findFirst.mockResolvedValue({ id: 'icn_github' });
+    mockDb.integrationConnection.findFirst.mockResolvedValue({
+      id: 'icn_github',
+    });
 
     await expect(
       service.requireBrowserConnection({

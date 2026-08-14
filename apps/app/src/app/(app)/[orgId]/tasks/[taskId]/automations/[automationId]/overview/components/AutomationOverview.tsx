@@ -1,8 +1,8 @@
 'use client';
 
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
+import { SchedulePicker } from '@/components/schedule-picker';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
-import { Button } from '@trycompai/ui/button';
 import type {
   EvidenceAutomation,
   EvidenceAutomationRun,
@@ -12,7 +12,6 @@ import type {
 } from '@db';
 import {
   Breadcrumb,
-  Button as DSButton,
   HStack,
   PageLayout,
   Section,
@@ -24,17 +23,17 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
+import { Button } from '@trycompai/ui/button';
 import { Code2, Loader2, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import {
   executeAutomationScript,
   toggleAutomationEnabled,
 } from '../../../../automation/[automationId]/actions/task-automation-actions';
 import { DeleteAutomationDialog } from '../../../../automation/[automationId]/components/AutomationSettingsDialogs';
-import { SchedulePicker } from '@/components/schedule-picker';
 import { useTaskAutomation } from '../../../../automation/[automationId]/hooks/use-task-automation';
 import { AutomationRunsCard } from '../../../../components/AutomationRunsCard';
 import { useAutomationRuns } from '../hooks/use-automation-runs';
@@ -174,33 +173,30 @@ export function AutomationOverview({
         });
         const runId = result.data?.runId || `pending-${Date.now()}`;
         const now = new Date();
-        mutateRuns(
-          (currentRuns) => {
-            const pendingRun: RunWithAutomationName = {
-              id: runId,
-              evidenceAutomationId: automation.id,
-              taskId,
-              status: 'pending',
-              success: null,
-              output: null,
-              error: null,
-              version: selectedVersion,
-              evaluationStatus: null,
-              evaluationReason: null,
-              createdAt: now,
-              updatedAt: now,
-              completedAt: null,
-              startedAt: now,
-              logs: null,
-              runDuration: null,
-              triggeredBy: 'manual',
-              evidenceAutomation: { name: automation.name },
-            };
-            const existing = Array.isArray(currentRuns) ? currentRuns : [];
-            return [pendingRun, ...existing];
-          },
-          false,
-        );
+        mutateRuns((currentRuns) => {
+          const pendingRun: RunWithAutomationName = {
+            id: runId,
+            evidenceAutomationId: automation.id,
+            taskId,
+            status: 'pending',
+            success: null,
+            output: null,
+            error: null,
+            version: selectedVersion,
+            evaluationStatus: null,
+            evaluationReason: null,
+            createdAt: now,
+            updatedAt: now,
+            completedAt: null,
+            startedAt: now,
+            logs: null,
+            runDuration: null,
+            triggeredBy: 'manual',
+            evidenceAutomation: { name: automation.name },
+          };
+          const existing = Array.isArray(currentRuns) ? currentRuns : [];
+          return [pendingRun, ...existing];
+        }, false);
       } else {
         toast.error(result.error || 'Failed to start test');
       }
@@ -324,7 +320,9 @@ export function AutomationOverview({
                       <HStack gap="md" align="center">
                         <div>
                           <HStack gap="sm" align="center">
-                            <Text size="sm" weight="medium">v{v.version}</Text>
+                            <Text size="sm" weight="medium">
+                              v{v.version}
+                            </Text>
                             {isLatest && (
                               <span className="text-[10px] px-1.5 py-0 rounded-full bg-primary/10 text-primary font-medium">
                                 Latest
@@ -332,11 +330,15 @@ export function AutomationOverview({
                             )}
                           </HStack>
                           {v.changelog && (
-                            <Text size="xs" variant="muted">{v.changelog}</Text>
+                            <Text size="xs" variant="muted">
+                              {v.changelog}
+                            </Text>
                           )}
                           <Text size="xs" variant="muted">
                             {new Date(v.createdAt).toLocaleDateString(undefined, {
-                              month: 'short', day: 'numeric', year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
                             })}
                           </Text>
                         </div>
@@ -366,7 +368,9 @@ export function AutomationOverview({
             ) : (
               <div className="py-8">
                 <Stack gap="sm" align="center">
-                  <Text size="sm" variant="muted">No versions published yet</Text>
+                  <Text size="sm" variant="muted">
+                    No versions published yet
+                  </Text>
                 </Stack>
               </div>
             )}
@@ -381,7 +385,9 @@ export function AutomationOverview({
               <Stack gap="lg">
                 <HStack justify="between" align="center">
                   <Stack gap="none">
-                    <Text size="sm" weight="medium">Enable Automation</Text>
+                    <Text size="sm" weight="medium">
+                      Enable Automation
+                    </Text>
                     <Text size="xs" variant="muted">
                       When enabled, this automation will run on its configured schedule
                     </Text>
@@ -397,7 +403,9 @@ export function AutomationOverview({
 
                 <HStack justify="between" align="center">
                   <Stack gap="none">
-                    <Text size="sm" weight="medium">Schedule</Text>
+                    <Text size="sm" weight="medium">
+                      Schedule
+                    </Text>
                     <Text size="xs" variant="muted">
                       How often this automation runs
                     </Text>
@@ -415,7 +423,9 @@ export function AutomationOverview({
 
                 <HStack justify="between" align="center">
                   <Stack gap="none">
-                    <Text size="sm" weight="medium">Delete Automation</Text>
+                    <Text size="sm" weight="medium">
+                      Delete Automation
+                    </Text>
                     <Text size="xs" variant="muted">
                       Permanently delete this automation and all its versions
                     </Text>
@@ -441,7 +451,6 @@ export function AutomationOverview({
         onOpenChange={setDeleteDialogOpen}
         onSuccess={mutateAutomation}
       />
-
     </PageLayout>
   );
 }

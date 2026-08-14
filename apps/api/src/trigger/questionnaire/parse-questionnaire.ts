@@ -137,7 +137,8 @@ async function extractContentFromAttachment(
   );
   const base64Data = buffer.toString('base64');
 
-  const fileType = attachment.type === 'image' ? 'image/png' : 'application/pdf';
+  const fileType =
+    attachment.type === 'image' ? 'image/png' : 'application/pdf';
 
   const content = await extractContentFromFile(
     base64Data,
@@ -158,9 +159,7 @@ async function extractContentFromS3Key(
   const questionnaireBucket = getQuestionnaireUploadBucketName();
 
   if (!questionnaireBucket) {
-    throw new Error(
-      'Questionnaire upload bucket is not configured.',
-    );
+    throw new Error('Questionnaire upload bucket is not configured.');
   }
 
   const buffer = await readObjectStreamToBuffer(

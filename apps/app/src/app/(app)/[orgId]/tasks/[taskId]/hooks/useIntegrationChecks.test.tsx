@@ -56,10 +56,7 @@ describe('useIntegrationChecks', () => {
     vi.clearAllMocks();
   });
 
-  const mockInitialLoad = (
-    checks: ReturnType<typeof makeCheck>[],
-    runs: unknown[] = [],
-  ) => {
+  const mockInitialLoad = (checks: ReturnType<typeof makeCheck>[], runs: unknown[] = []) => {
     fetchMock.mockImplementation((url: string) => {
       if (url.includes('/checks')) {
         return Promise.resolve(
@@ -82,10 +79,9 @@ describe('useIntegrationChecks', () => {
       makeCheck({ checkId: 'b', isDisabledForTask: true }),
     ]);
 
-    const { result } = renderHook(
-      () => useIntegrationChecks({ taskId: TASK_ID, orgId: ORG_ID }),
-      { wrapper },
-    );
+    const { result } = renderHook(() => useIntegrationChecks({ taskId: TASK_ID, orgId: ORG_ID }), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -97,10 +93,9 @@ describe('useIntegrationChecks', () => {
   it('disconnectCheckFromTask POSTs to the disconnect endpoint and updates the cache', async () => {
     mockInitialLoad([makeCheck({ checkId: 'branch_protection' })]);
 
-    const { result } = renderHook(
-      () => useIntegrationChecks({ taskId: TASK_ID, orgId: ORG_ID }),
-      { wrapper },
-    );
+    const { result } = renderHook(() => useIntegrationChecks({ taskId: TASK_ID, orgId: ORG_ID }), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -108,9 +103,7 @@ describe('useIntegrationChecks', () => {
     // (SWR revalidates after mutate).
     fetchMock.mockImplementation((url: string) => {
       if (url.includes('/checks/disconnect')) {
-        return Promise.resolve(
-          createJsonResponse({ success: true, disabled: true }),
-        );
+        return Promise.resolve(createJsonResponse({ success: true, disabled: true }));
       }
       if (url.includes('/checks?')) {
         return Promise.resolve(
@@ -132,10 +125,7 @@ describe('useIntegrationChecks', () => {
     });
 
     await act(async () => {
-      await result.current.disconnectCheckFromTask(
-        'icn_1',
-        'branch_protection',
-      );
+      await result.current.disconnectCheckFromTask('icn_1', 'branch_protection');
     });
 
     // Verify the POST was sent
@@ -151,28 +141,21 @@ describe('useIntegrationChecks', () => {
     });
 
     // Cache should reflect the updated state
-    await waitFor(() =>
-      expect(result.current.checks[0]!.isDisabledForTask).toBe(true),
-    );
+    await waitFor(() => expect(result.current.checks[0]!.isDisabledForTask).toBe(true));
   });
 
   it('reconnectCheckToTask POSTs to the reconnect endpoint and updates the cache', async () => {
-    mockInitialLoad([
-      makeCheck({ checkId: 'branch_protection', isDisabledForTask: true }),
-    ]);
+    mockInitialLoad([makeCheck({ checkId: 'branch_protection', isDisabledForTask: true })]);
 
-    const { result } = renderHook(
-      () => useIntegrationChecks({ taskId: TASK_ID, orgId: ORG_ID }),
-      { wrapper },
-    );
+    const { result } = renderHook(() => useIntegrationChecks({ taskId: TASK_ID, orgId: ORG_ID }), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     fetchMock.mockImplementation((url: string) => {
       if (url.includes('/checks/reconnect')) {
-        return Promise.resolve(
-          createJsonResponse({ success: true, disabled: false }),
-        );
+        return Promise.resolve(createJsonResponse({ success: true, disabled: false }));
       }
       if (url.includes('/checks?')) {
         return Promise.resolve(
@@ -202,26 +185,21 @@ describe('useIntegrationChecks', () => {
     );
     expect(reconnectCall).toBeTruthy();
 
-    await waitFor(() =>
-      expect(result.current.checks[0]!.isDisabledForTask).toBe(false),
-    );
+    await waitFor(() => expect(result.current.checks[0]!.isDisabledForTask).toBe(false));
   });
 
   it('throws and rolls back optimistic updates when the disconnect request fails', async () => {
     mockInitialLoad([makeCheck({ checkId: 'branch_protection' })]);
 
-    const { result } = renderHook(
-      () => useIntegrationChecks({ taskId: TASK_ID, orgId: ORG_ID }),
-      { wrapper },
-    );
+    const { result } = renderHook(() => useIntegrationChecks({ taskId: TASK_ID, orgId: ORG_ID }), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     fetchMock.mockImplementation((url: string) => {
       if (url.includes('/checks/disconnect')) {
-        return Promise.resolve(
-          createJsonResponse({ message: 'Server exploded' }, 500),
-        );
+        return Promise.resolve(createJsonResponse({ message: 'Server exploded' }, 500));
       }
       if (url.includes('/checks?')) {
         return Promise.resolve(
@@ -239,16 +217,11 @@ describe('useIntegrationChecks', () => {
 
     await expect(
       act(async () => {
-        await result.current.disconnectCheckFromTask(
-          'icn_1',
-          'branch_protection',
-        );
+        await result.current.disconnectCheckFromTask('icn_1', 'branch_protection');
       }),
     ).rejects.toThrow();
 
     // Cache should have rolled back
-    await waitFor(() =>
-      expect(result.current.checks[0]!.isDisabledForTask).toBe(false),
-    );
+    await waitFor(() => expect(result.current.checks[0]!.isDisabledForTask).toBe(false));
   });
 });

@@ -13,15 +13,6 @@ import {
 } from '@/hooks/use-findings-api';
 import { usePermissions } from '@/hooks/use-permissions';
 import { FindingArea, FindingSeverity, FindingType } from '@db';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@trycompai/ui/form';
-import { useMediaQuery } from '@trycompai/ui/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -42,6 +33,8 @@ import {
   SheetTitle,
   Textarea,
 } from '@trycompai/design-system';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -135,16 +128,15 @@ export function CreateFindingSheet({
   // Detect which frameworks the org has enabled so we can auto-select the
   // Framework dropdown when there's only one (common case: org has adopted
   // SOC 2 only).
-  const { data: frameworksData } = useApiSWR<unknown>(
-    '/v1/frameworks?includeScores=false',
-    { refreshInterval: 0 },
-  );
+  const { data: frameworksData } = useApiSWR<unknown>('/v1/frameworks?includeScores=false', {
+    refreshInterval: 0,
+  });
   const orgFrameworkTypes = useMemo<FindingType[]>(() => {
     const payload = (frameworksData as { data?: unknown })?.data;
     const list = Array.isArray(payload)
       ? payload
       : Array.isArray((payload as { data?: unknown })?.data)
-        ? ((payload as { data: unknown[] }).data)
+        ? (payload as { data: unknown[] }).data
         : [];
     const types = new Set<FindingType>();
     for (const raw of list) {
@@ -215,7 +207,7 @@ export function CreateFindingSheet({
           content: values.content,
           templateId: values.templateId?.startsWith('default_')
             ? undefined
-            : values.templateId ?? undefined,
+            : (values.templateId ?? undefined),
         };
 
         const targetId = values.targetId?.trim();
@@ -255,9 +247,7 @@ export function CreateFindingSheet({
         form.reset();
         onSuccess?.();
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : 'Failed to create finding',
-        );
+        toast.error(error instanceof Error ? error.message : 'Failed to create finding');
       } finally {
         setIsSubmitting(false);
       }
@@ -322,9 +312,7 @@ export function CreateFindingSheet({
                 value={field.value}
                 onValueChange={(v) => field.onChange(v as FindingSeverity)}
               >
-                <SelectTrigger>
-                  {capitalizeSeverity(field.value)}
-                </SelectTrigger>
+                <SelectTrigger>{capitalizeSeverity(field.value)}</SelectTrigger>
                 <SelectContent>
                   {(['low', 'medium', 'high', 'critical'] as FindingSeverity[]).map((s) => (
                     <SelectItem key={s} value={s}>
@@ -389,9 +377,7 @@ export function CreateFindingSheet({
                   <SelectItem value="none">No template — custom finding</SelectItem>
                   {Object.entries(groupedTemplates).map(([category, tpls]) => (
                     <SelectGroup key={category}>
-                      <SelectLabel>
-                        {FINDING_CATEGORY_LABELS[category] || category}
-                      </SelectLabel>
+                      <SelectLabel>{FINDING_CATEGORY_LABELS[category] || category}</SelectLabel>
                       {tpls.map((template) => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.title}
@@ -475,10 +461,7 @@ function TargetPicker({
     return (
       <div className="w-full">
         <label className="text-sm font-medium">Area</label>
-        <Select
-          value={value || FindingArea.people}
-          onValueChange={(v) => onChange(v ?? '')}
-        >
+        <Select value={value || FindingArea.people} onValueChange={(v) => onChange(v ?? '')}>
           <SelectTrigger>
             {AREA_OPTIONS.find((a) => a.value === (value || FindingArea.people))?.label}
           </SelectTrigger>
@@ -524,10 +507,7 @@ function EntityPicker({
     return endpointForKind(kind);
   }, [kind, endpointOverrides]);
   const { data } = useApiSWR<unknown>(endpoint, { refreshInterval: 0 });
-  const options = useMemo<Option[]>(
-    () => extractOptions(kind, data),
-    [kind, data],
-  );
+  const options = useMemo<Option[]>(() => extractOptions(kind, data), [kind, data]);
 
   return (
     <div className="w-full">
@@ -539,7 +519,11 @@ function EntityPicker({
           </span>
         </SelectTrigger>
         <SelectContent>
-          {options.length === 0 && <SelectItem value="__none" disabled>No options</SelectItem>}
+          {options.length === 0 && (
+            <SelectItem value="__none" disabled>
+              No options
+            </SelectItem>
+          )}
           {options.map((opt) => (
             <SelectItem key={opt.id} value={opt.id}>
               {opt.label}
@@ -572,10 +556,7 @@ function endpointForKind(kind: Exclude<TargetKind, 'area'>): string | null {
   }
 }
 
-function extractOptions(
-  kind: Exclude<TargetKind, 'area'>,
-  data: unknown,
-): Option[] {
+function extractOptions(kind: Exclude<TargetKind, 'area'>, data: unknown): Option[] {
   if (!data) return [];
   // `useApiSWR` wraps responses as { data: T }. Different endpoints return
   // T as either an array, a { data: [...] } envelope, or a { data: { data: [...] } }
@@ -584,13 +565,11 @@ function extractOptions(
   const list = Array.isArray(payload)
     ? payload
     : Array.isArray((payload as { data?: unknown })?.data)
-      ? ((payload as { data: unknown[] }).data)
+      ? (payload as { data: unknown[] }).data
       : Array.isArray(
             ((payload as { data?: { data?: unknown } })?.data as { data?: unknown })?.data,
           )
-        ? (
-            (payload as { data: { data: unknown[] } }).data.data
-          )
+        ? (payload as { data: { data: unknown[] } }).data.data
         : [];
 
   return list
@@ -601,8 +580,7 @@ function extractOptions(
       if (kind === 'evidenceFormType') {
         const type = typeof item.type === 'string' ? item.type : null;
         if (!type) return null;
-        const title =
-          (typeof item.title === 'string' && item.title) || type;
+        const title = (typeof item.title === 'string' && item.title) || type;
         return { id: type, label: title };
       }
 
@@ -610,9 +588,7 @@ function extractOptions(
       if (!id) return null;
 
       if (kind === 'member') {
-        const user = item.user as
-          | { name?: string; email?: string }
-          | undefined;
+        const user = item.user as { name?: string; email?: string } | undefined;
         return { id, label: user?.name || user?.email || id };
       }
 

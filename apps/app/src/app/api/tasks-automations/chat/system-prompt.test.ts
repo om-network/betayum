@@ -45,7 +45,9 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('Only the LLM chooses the automation outcome');
     expect(prompt).toContain('Scripts must never choose or emit the outcome or task status');
     expect(prompt).toContain('Every outcome submits the task as in_review');
-    expect(prompt).toContain('including when the evidence demonstrates that the control does not pass');
+    expect(prompt).toContain(
+      'including when the evidence demonstrates that the control does not pass',
+    );
     expect(prompt).toContain('full reviewer remarks');
   });
 

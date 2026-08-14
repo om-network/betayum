@@ -16,9 +16,7 @@ function normalizeTitle(title: string): string {
   return title.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-export function getAutomationProvider(
-  title: string,
-): AutomationProvider | null {
+export function getAutomationProvider(title: string): AutomationProvider | null {
   return AUTOMATABLE_TASKS[normalizeTitle(title)] ?? null;
 }
 

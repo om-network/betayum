@@ -36,7 +36,11 @@ export function useRoles({ initialData }: UseRolesOptions = {}) {
 
   const roles = Array.isArray(data) ? data : [];
 
-  const createRole = async (body: { name: string; permissions: Record<string, string[]>; obligations?: Record<string, boolean> }) => {
+  const createRole = async (body: {
+    name: string;
+    permissions: Record<string, string[]>;
+    obligations?: Record<string, boolean>;
+  }) => {
     const response = await apiClient.post<CustomRole>('/v1/roles', body);
     if (response.error) throw new Error(response.error);
     await mutate();
@@ -45,7 +49,11 @@ export function useRoles({ initialData }: UseRolesOptions = {}) {
 
   const updateRole = async (
     id: string,
-    body: { name: string; permissions: Record<string, string[]>; obligations?: Record<string, boolean> },
+    body: {
+      name: string;
+      permissions: Record<string, string[]>;
+      obligations?: Record<string, boolean>;
+    },
   ) => {
     const response = await apiClient.patch<CustomRole>(`/v1/roles/${id}`, body);
     if (response.error) throw new Error(response.error);

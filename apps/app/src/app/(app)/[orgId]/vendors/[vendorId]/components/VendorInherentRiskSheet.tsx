@@ -1,7 +1,6 @@
 'use client';
 
 import { InherentRiskForm } from '@/app/(app)/[orgId]/vendors/[vendorId]/forms/risks/InherentRiskForm';
-import { useMediaQuery } from '@trycompai/ui/hooks';
 import { Impact, Likelihood } from '@db';
 import {
   Drawer,
@@ -15,6 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@trycompai/design-system';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { useQueryState } from 'nuqs';
 
 export function VendorInherentRiskSheet({

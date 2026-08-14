@@ -6,8 +6,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   },
   "exports": {
     ".": {
@@ -16,12 +16,11 @@
       "require": "./dist/index.js"
     }
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "private": true,
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
@@ -31,5 +30,6 @@
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "types": "./dist/index.d.ts"
 }

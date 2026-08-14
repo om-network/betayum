@@ -55,26 +55,16 @@ export class AdminOrgTimelinesController {
     @Param('id') id: string,
     @Body() dto: ActivateTimelineDto,
   ) {
-    return this.timelinesService.activate(
-      id,
-      orgId,
-      new Date(dto.startDate),
-    );
+    return this.timelinesService.activate(id, orgId, new Date(dto.startDate));
   }
 
   @Post(':orgId/timelines/:id/pause')
-  async pause(
-    @Param('orgId') orgId: string,
-    @Param('id') id: string,
-  ) {
+  async pause(@Param('orgId') orgId: string, @Param('id') id: string) {
     return this.timelinesService.pauseTimeline(id, orgId);
   }
 
   @Post(':orgId/timelines/:id/resume')
-  async resume(
-    @Param('orgId') orgId: string,
-    @Param('id') id: string,
-  ) {
+  async resume(@Param('orgId') orgId: string, @Param('id') id: string) {
     return this.timelinesService.resumeTimeline(id, orgId);
   }
 
@@ -92,7 +82,7 @@ export class AdminOrgTimelinesController {
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
       datesPinned: dto.datesPinned,
-      completionType: dto.completionType as PhaseCompletionType | undefined,
+      completionType: dto.completionType,
       locksTimelineOnComplete: dto.locksTimelineOnComplete,
     });
   }
@@ -108,7 +98,7 @@ export class AdminOrgTimelinesController {
       description: dto.description,
       orderIndex: dto.orderIndex,
       durationWeeks: dto.durationWeeks,
-      completionType: dto.completionType as PhaseCompletionType | undefined,
+      completionType: dto.completionType,
     });
   }
 
@@ -132,18 +122,12 @@ export class AdminOrgTimelinesController {
   }
 
   @Post(':orgId/timelines/:id/next-cycle')
-  async startNextCycle(
-    @Param('orgId') orgId: string,
-    @Param('id') id: string,
-  ) {
+  async startNextCycle(@Param('orgId') orgId: string, @Param('id') id: string) {
     return this.timelinesService.startNextCycle(id, orgId);
   }
 
   @Post(':orgId/timelines/:id/reset')
-  async resetTimeline(
-    @Param('orgId') orgId: string,
-    @Param('id') id: string,
-  ) {
+  async resetTimeline(@Param('orgId') orgId: string, @Param('id') id: string) {
     return this.timelinesService.resetInstance(id, orgId);
   }
 
@@ -167,10 +151,7 @@ export class AdminOrgTimelinesController {
   }
 
   @Delete(':orgId/timelines/:id')
-  async deleteTimeline(
-    @Param('orgId') orgId: string,
-    @Param('id') id: string,
-  ) {
+  async deleteTimeline(@Param('orgId') orgId: string, @Param('id') id: string) {
     return this.timelinesService.deleteInstance(id, orgId);
   }
 

@@ -6,8 +6,7 @@ export const azureManifest: IntegrationManifest = {
   description:
     'Read-only monitoring of security posture, identity, network, and compliance in Microsoft Azure',
   category: 'Cloud',
-  logoUrl:
-    'https://img.logo.dev/azure.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
+  logoUrl: 'https://img.logo.dev/azure.com?token=pk_AZatYxV5QDSfWpRDaBxzRQ',
   docsUrl: 'https://docs.microsoft.com/en-us/azure/defender-for-cloud/',
   supportsMultipleConnections: true,
   isActive: true,
@@ -15,10 +14,8 @@ export const azureManifest: IntegrationManifest = {
   auth: {
     type: 'oauth2',
     config: {
-      authorizeUrl:
-        'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
-      tokenUrl:
-        'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+      authorizeUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+      tokenUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
       scopes: [
         'https://management.azure.com/user_impersonation',
         'offline_access',
@@ -63,19 +60,97 @@ Our integration only makes read-only API calls for security scanning.`,
   capabilities: ['checks'],
 
   services: [
-    { id: 'defender', name: 'Microsoft Defender for Cloud', description: 'Cloud security posture management and threat protection', enabledByDefault: true, implemented: true },
-    { id: 'entra-id', name: 'Microsoft Entra ID', description: 'Identity and access management monitoring', enabledByDefault: false, implemented: true },
-    { id: 'policy', name: 'Azure Policy', description: 'Resource compliance and governance policy evaluation', enabledByDefault: false, implemented: true },
-    { id: 'key-vault', name: 'Key Vault', description: 'Secret, key, and certificate management monitoring', enabledByDefault: false, implemented: true },
-    { id: 'monitor', name: 'Azure Monitor', description: 'Activity logs and diagnostic settings audit', enabledByDefault: false, implemented: true },
-    { id: 'network-watcher', name: 'Network Watcher', description: 'Network security group and flow log monitoring', enabledByDefault: false, implemented: true },
-    { id: 'storage-account', name: 'Storage Accounts', description: 'HTTPS enforcement, public access, TLS version, and encryption checks', enabledByDefault: false, implemented: true },
-    { id: 'sql-database', name: 'SQL Database', description: 'Auditing, TDE, firewall rules, and public access checks', enabledByDefault: false, implemented: true },
-    { id: 'virtual-machine', name: 'Virtual Machines', description: 'Disk encryption, managed identity, and secure boot checks', enabledByDefault: false, implemented: true },
-    { id: 'app-service', name: 'App Service', description: 'HTTPS enforcement, TLS, managed identity, and remote debugging checks', enabledByDefault: false, implemented: true },
-    { id: 'aks', name: 'AKS', description: 'Kubernetes RBAC, network policies, private cluster, and auto-upgrade checks', enabledByDefault: false, implemented: true },
-    { id: 'container-registry', name: 'Container Registry', description: 'Admin user, content trust, public access, and retention policy checks', enabledByDefault: false, implemented: true },
-    { id: 'cosmos-db', name: 'Cosmos DB', description: 'Public access, key-based auth, failover, and backup configuration checks', enabledByDefault: false, implemented: true },
+    {
+      id: 'defender',
+      name: 'Microsoft Defender for Cloud',
+      description: 'Cloud security posture management and threat protection',
+      enabledByDefault: true,
+      implemented: true,
+    },
+    {
+      id: 'entra-id',
+      name: 'Microsoft Entra ID',
+      description: 'Identity and access management monitoring',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'policy',
+      name: 'Azure Policy',
+      description: 'Resource compliance and governance policy evaluation',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'key-vault',
+      name: 'Key Vault',
+      description: 'Secret, key, and certificate management monitoring',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'monitor',
+      name: 'Azure Monitor',
+      description: 'Activity logs and diagnostic settings audit',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'network-watcher',
+      name: 'Network Watcher',
+      description: 'Network security group and flow log monitoring',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'storage-account',
+      name: 'Storage Accounts',
+      description: 'HTTPS enforcement, public access, TLS version, and encryption checks',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'sql-database',
+      name: 'SQL Database',
+      description: 'Auditing, TDE, firewall rules, and public access checks',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'virtual-machine',
+      name: 'Virtual Machines',
+      description: 'Disk encryption, managed identity, and secure boot checks',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'app-service',
+      name: 'App Service',
+      description: 'HTTPS enforcement, TLS, managed identity, and remote debugging checks',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'aks',
+      name: 'AKS',
+      description: 'Kubernetes RBAC, network policies, private cluster, and auto-upgrade checks',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'container-registry',
+      name: 'Container Registry',
+      description: 'Admin user, content trust, public access, and retention policy checks',
+      enabledByDefault: false,
+      implemented: true,
+    },
+    {
+      id: 'cosmos-db',
+      name: 'Cosmos DB',
+      description: 'Public access, key-based auth, failover, and backup configuration checks',
+      enabledByDefault: false,
+      implemented: true,
+    },
   ],
 
   variables: [

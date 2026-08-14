@@ -291,5 +291,4 @@ export class IntegrationBrowserService {
     });
     return toBrowserViewerSessionResponse(session);
   }
-
 }

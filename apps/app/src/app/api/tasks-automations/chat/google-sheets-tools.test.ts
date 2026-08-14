@@ -21,7 +21,11 @@ function getTools() {
     automationId: AUTOMATION_ID,
     taskTitle: 'Access Review Log',
   });
-  if (!tools.createGoogleSheet.execute || !tools.updateGoogleSheet.execute || !tools.readGoogleSheet.execute) {
+  if (
+    !tools.createGoogleSheet.execute ||
+    !tools.updateGoogleSheet.execute ||
+    !tools.readGoogleSheet.execute
+  ) {
     throw new Error('execute not defined on tool');
   }
   return {
@@ -95,17 +99,17 @@ describe('buildGoogleSheetsTools', () => {
       mockPost.mockResolvedValueOnce({ data: {}, error: null });
 
       const { createGoogleSheet } = getTools();
-      const result = await createGoogleSheet.execute(
-        { title: 'Test', rows: [] },
-        {} as never,
-      );
+      const result = await createGoogleSheet.execute({ title: 'Test', rows: [] }, {} as never);
 
       expect(result).toEqual({ success: false, error: 'Failed to create spreadsheet' });
     });
 
     it('accepts mixed string and number row values', async () => {
       mockPost.mockResolvedValueOnce({
-        data: { spreadsheetId: 'sheet_456', spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/sheet_456' },
+        data: {
+          spreadsheetId: 'sheet_456',
+          spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/sheet_456',
+        },
         error: null,
       });
 

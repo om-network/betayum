@@ -2,6 +2,17 @@
 
 import { useDnsStatus } from '@/hooks/use-dns-status';
 import { useDomain } from '@/hooks/use-domain';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Alert, AlertDescription } from '@trycompai/design-system';
+import {
+  CheckmarkFilled,
+  Copy,
+  Launch,
+  Renew,
+  WarningFilled,
+} from '@trycompai/design-system/icons';
 import { Button } from '@trycompai/ui/button';
 import {
   Card,
@@ -14,11 +25,6 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
-import { Alert, AlertDescription } from '@trycompai/design-system';
-import { CheckmarkFilled, Copy, Launch, Renew, WarningFilled } from '@trycompai/design-system/icons';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { usePermissions } from '@/hooks/use-permissions';
-import { useTrustPortalSettings } from '@/hooks/use-trust-portal-settings';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -49,8 +55,7 @@ export function TrustPortalDomain({
   vercelVerification: string | null;
   orgId: string;
 }) {
-  const { data: domainStatus, isLoading: domainStatusLoading } =
-    useDomain(initialDomain);
+  const { data: domainStatus, isLoading: domainStatusLoading } = useDomain(initialDomain);
 
   const verificationInfo = useMemo(() => {
     const data = domainStatus?.data;
@@ -97,8 +102,7 @@ export function TrustPortalDomain({
 
   const vercelReportsMisconfigured =
     vercelMisconfigured === true ||
-    (domainStatus?.data?.misconfigured === true &&
-      vercelMisconfigured !== false);
+    (domainStatus?.data?.misconfigured === true && vercelMisconfigured !== false);
 
   const { hasPermission } = usePermissions();
   const canUpdate = hasPermission('trust', 'update');
@@ -118,7 +122,8 @@ export function TrustPortalDomain({
     try {
       const result = await submitCustomDomain(data.domain);
       if (result && typeof result === 'object' && 'success' in result && result.success === false) {
-        const errorMsg = 'error' in result ? (result.error as string) : 'Failed to update custom domain.';
+        const errorMsg =
+          'error' in result ? (result.error as string) : 'Failed to update custom domain.';
         toast.error(errorMsg);
         return;
       }
@@ -206,19 +211,21 @@ export function TrustPortalDomain({
                           disabled={!canUpdate}
                         />
                       </FormControl>
-                      {field.value === initialDomain && initialDomain !== '' && !isEffectivelyVerified && (
-                        <Button
-                          type="button"
-                          className="md:max-w-[300px]"
-                          onClick={handleCheckDnsRecord}
-                          disabled={isCheckingDns}
-                        >
-                          {isCheckingDns ? (
-                            <Renew size={16} className="mr-1 animate-spin" />
-                          ) : null}
-                          Check DNS record
-                        </Button>
-                      )}
+                      {field.value === initialDomain &&
+                        initialDomain !== '' &&
+                        !isEffectivelyVerified && (
+                          <Button
+                            type="button"
+                            className="md:max-w-[300px]"
+                            onClick={handleCheckDnsRecord}
+                            disabled={isCheckingDns}
+                          >
+                            {isCheckingDns ? (
+                              <Renew size={16} className="mr-1 animate-spin" />
+                            ) : null}
+                            Check DNS record
+                          </Button>
+                        )}
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -233,9 +240,9 @@ export function TrustPortalDomain({
                       <Alert variant="warning">
                         <AlertDescription>
                           This domain is linked to another Vercel account. To use it with this
-                          project, add a {verificationInfo.type} record at{' '}
-                          {verificationInfo.domain} to verify ownership. You can remove the record
-                          after verification is complete.{' '}
+                          project, add a {verificationInfo.type} record at {verificationInfo.domain}{' '}
+                          to verify ownership. You can remove the record after verification is
+                          complete.{' '}
                           <a
                             href="https://vercel.com/docs/domains/troubleshooting#misconfigured-domain-issues"
                             target="_blank"
@@ -250,8 +257,9 @@ export function TrustPortalDomain({
                       <Alert variant="warning">
                         <AlertDescription>
                           Vercel reports this domain is still misconfigured. The CNAME value must
-                          match exactly: <code className="font-mono">{cnameTarget ?? 'unknown'}</code>. Update it at
-                          your DNS provider and try again.
+                          match exactly:{' '}
+                          <code className="font-mono">{cnameTarget ?? 'unknown'}</code>. Update it
+                          at your DNS provider and try again.
                         </AlertDescription>
                       </Alert>
                     )}
@@ -313,9 +321,7 @@ export function TrustPortalDomain({
                                     variant="ghost"
                                     size="icon"
                                     type="button"
-                                    onClick={() =>
-                                      cnameTarget && handleCopy(cnameTarget, 'Value')
-                                    }
+                                    onClick={() => cnameTarget && handleCopy(cnameTarget, 'Value')}
                                     disabled={!cnameTarget}
                                     className="h-6 w-6 shrink-0"
                                   >
@@ -401,7 +407,9 @@ export function TrustPortalDomain({
                                       variant="ghost"
                                       size="icon"
                                       type="button"
-                                      onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Value')}
+                                      onClick={() =>
+                                        handleCopy(effectiveVercelTxtValue || '', 'Value')
+                                      }
                                       className="h-6 w-6 shrink-0"
                                     >
                                       <Copy size={16} />
@@ -535,12 +543,16 @@ export function TrustPortalDomain({
                               <div>
                                 <div className="mb-1 font-medium">Value:</div>
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="min-w-0 break-all">{effectiveVercelTxtValue}</span>
+                                  <span className="min-w-0 break-all">
+                                    {effectiveVercelTxtValue}
+                                  </span>
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     type="button"
-                                    onClick={() => handleCopy(effectiveVercelTxtValue || '', 'Value')}
+                                    onClick={() =>
+                                      handleCopy(effectiveVercelTxtValue || '', 'Value')
+                                    }
                                     className="h-6 w-6 shrink-0"
                                   >
                                     <Copy size={16} />
@@ -560,15 +572,8 @@ export function TrustPortalDomain({
             <div className="text-muted-foreground text-xs">
               Configure a custom domain for your trust portal.
             </div>
-            <Button
-              type="submit"
-              disabled={
-                !canUpdate || isUpdatingDomain || isCheckingDns
-              }
-            >
-              {isUpdatingDomain ? (
-                <Renew size={16} className="mr-1 animate-spin" />
-              ) : null}
+            <Button type="submit" disabled={!canUpdate || isUpdatingDomain || isCheckingDns}>
+              {isUpdatingDomain ? <Renew size={16} className="mr-1 animate-spin" /> : null}
               Save
             </Button>
           </CardFooter>

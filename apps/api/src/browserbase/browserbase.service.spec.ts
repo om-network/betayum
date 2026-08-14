@@ -25,7 +25,9 @@ jest.mock('@db', () => ({
 jest.mock('@/app/object-storage', () => ({
   objectStorage: {
     uploadObject: jest.fn(),
-    getSignedObjectUrl: jest.fn().mockResolvedValue('https://storage.example.com/signed'),
+    getSignedObjectUrl: jest
+      .fn()
+      .mockResolvedValue('https://storage.example.com/signed'),
   },
 }));
 

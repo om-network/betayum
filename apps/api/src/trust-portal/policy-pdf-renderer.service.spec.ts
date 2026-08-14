@@ -658,9 +658,7 @@ describe('PolicyPdfRendererService', () => {
                                   content: [
                                     {
                                       type: 'paragraph',
-                                      content: [
-                                        { type: 'text', text: 'Beta' },
-                                      ],
+                                      content: [{ type: 'text', text: 'Beta' }],
                                     },
                                   ],
                                 },

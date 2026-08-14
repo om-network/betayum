@@ -1,8 +1,8 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { useControls } from '@/app/(app)/[orgId]/controls/hooks/useControls';
 import { usePermissions } from '@/hooks/use-permissions';
+import { apiClient } from '@/lib/api-client';
 import {
   Button,
   Checkbox,
@@ -36,10 +36,7 @@ export function LinkExistingControlSheet({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const mappedSet = useMemo(
-    () => new Set(alreadyMappedControlIds),
-    [alreadyMappedControlIds],
-  );
+  const mappedSet = useMemo(() => new Set(alreadyMappedControlIds), [alreadyMappedControlIds]);
   const options = useMemo(
     () => controls.filter((c) => !mappedSet.has(c.id)),
     [controls, mappedSet],
@@ -73,9 +70,7 @@ export function LinkExistingControlSheet({
       setIsOpen(false);
       router.refresh();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to link controls',
-      );
+      toast.error(error instanceof Error ? error.message : 'Failed to link controls');
     } finally {
       setIsSubmitting(false);
     }
@@ -83,11 +78,7 @@ export function LinkExistingControlSheet({
 
   return (
     <>
-      <Button
-        size="sm"
-        iconLeft={<LinkIcon size={16} />}
-        onClick={() => setIsOpen(true)}
-      >
+      <Button size="sm" iconLeft={<LinkIcon size={16} />} onClick={() => setIsOpen(true)}>
         Link Control
       </Button>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -122,10 +113,7 @@ export function LinkExistingControlSheet({
                   </label>
                 ))}
                 <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={selected.size === 0 || isSubmitting}
-                  >
+                  <Button onClick={handleSubmit} disabled={selected.size === 0 || isSubmitting}>
                     Link {selected.size || ''} Control
                     {selected.size === 1 ? '' : 's'}
                   </Button>

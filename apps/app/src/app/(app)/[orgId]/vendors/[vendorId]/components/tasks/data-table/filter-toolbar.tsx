@@ -1,9 +1,15 @@
 'use client';
 
+import type { TaskStatus, User } from '@db';
 import { Button } from '@trycompai/ui/button';
 import { Input } from '@trycompai/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
-import type { TaskStatus, User } from '@db';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { XIcon } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 

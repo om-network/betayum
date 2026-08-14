@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -22,16 +22,12 @@ vi.mock('@trycompai/ui/hooks', () => ({
 
 // Mock the CreateVendorForm component
 vi.mock('./create-vendor-form', () => ({
-  CreateVendorForm: () => (
-    <div data-testid="create-vendor-form">Create Vendor Form</div>
-  ),
+  CreateVendorForm: () => <div data-testid="create-vendor-form">Create Vendor Form</div>,
 }));
 
 // Mock design system components
 vi.mock('@trycompai/design-system', () => ({
-  Button: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
-  ),
+  Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
   Sheet: ({ children }: any) => <div>{children}</div>,
   SheetContent: ({ children }: any) => <div>{children}</div>,
   SheetHeader: ({ children }: any) => <div>{children}</div>,
@@ -89,21 +85,15 @@ describe('CreateVendorSheet', () => {
   it('renders the Add Vendor button when user has vendor:create permission', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
 
-    render(
-      <CreateVendorSheet assignees={mockAssignees} organizationId="org-1" />,
-    );
+    render(<CreateVendorSheet assignees={mockAssignees} organizationId="org-1" />);
 
-    expect(
-      screen.getByRole('button', { name: /add vendor/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add vendor/i })).toBeInTheDocument();
   });
 
   it('renders trigger with correct text for vendor:create permission only', () => {
     setMockPermissions({ vendor: ['create'] });
 
-    render(
-      <CreateVendorSheet assignees={mockAssignees} organizationId="org-1" />,
-    );
+    render(<CreateVendorSheet assignees={mockAssignees} organizationId="org-1" />);
 
     expect(screen.getByText('Add Vendor')).toBeInTheDocument();
   });

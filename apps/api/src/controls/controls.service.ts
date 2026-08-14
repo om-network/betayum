@@ -99,7 +99,11 @@ export class ControlsService {
     frameworkInstanceId?: string,
   ) {
     if (frameworkInstanceId) {
-      return this.findOneForFramework(controlId, organizationId, frameworkInstanceId);
+      return this.findOneForFramework(
+        controlId,
+        organizationId,
+        frameworkInstanceId,
+      );
     }
 
     const control = await db.control.findUnique({
@@ -129,9 +133,7 @@ export class ControlsService {
     const tasks = control.tasks || [];
     const controlDocumentTypes = control.controlDocumentTypes || [];
 
-    const formTypes = controlDocumentTypes.map(
-      (d) => d.formType,
-    );
+    const formTypes = controlDocumentTypes.map((d) => d.formType);
     const notRelevantSettings =
       formTypes.length > 0
         ? await db.evidenceFormSetting.findMany({
@@ -180,12 +182,10 @@ export class ControlsService {
       ...control,
       policies,
       tasks,
-      controlDocumentTypes: controlDocumentTypes.map(
-        (documentType) => ({
-          ...documentType,
-          isNotRelevant: notRelevantFormTypes.has(documentType.formType),
-        }),
-      ),
+      controlDocumentTypes: controlDocumentTypes.map((documentType) => ({
+        ...documentType,
+        isNotRelevant: notRelevantFormTypes.has(documentType.formType),
+      })),
       submissionCountsByFormType,
       progress: {
         total: totalItems,
@@ -276,7 +276,9 @@ export class ControlsService {
       }
     }
 
-    const policyCompleted = policies.filter((p) => p.status === 'published').length;
+    const policyCompleted = policies.filter(
+      (p) => p.status === 'published',
+    ).length;
     const taskCompleted = tasks.filter(
       (t) => t.status === 'done' || t.status === 'not_relevant',
     ).length;

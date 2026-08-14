@@ -187,14 +187,14 @@ describe('computePeopleScore', () => {
 
   it('counts every member as complete when all members are exempt', async () => {
     (mockDb.backgroundCheckRequest.findMany as jest.Mock).mockResolvedValue([]);
-    (mockDb.member.findMany as jest.Mock).mockImplementation(async (args: {
-      where?: { backgroundCheckExempt?: boolean };
-    }) => {
-      if (args?.where?.backgroundCheckExempt === true) {
-        return [{ id: 'mem_1' }, { id: 'mem_2' }];
-      }
-      return [];
-    });
+    (mockDb.member.findMany as jest.Mock).mockImplementation(
+      async (args: { where?: { backgroundCheckExempt?: boolean } }) => {
+        if (args?.where?.backgroundCheckExempt === true) {
+          return [{ id: 'mem_1' }, { id: 'mem_2' }];
+        }
+        return [];
+      },
+    );
 
     const score = await computePeopleScore({
       organizationId: 'org_1',

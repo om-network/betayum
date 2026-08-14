@@ -1,7 +1,7 @@
 'use client';
 
 import { useApiSWR } from '@/hooks/use-api-swr';
-import { WarningAlt, Close } from '@trycompai/design-system/icons';
+import { Close, WarningAlt } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -17,17 +17,16 @@ interface PendingResponse {
 
 export function OffboardingBanner() {
   const params = useParams<{ orgId: string }>();
-  const { data, error } = useApiSWR<PendingResponse>(
-    '/v1/offboarding-checklist/pending',
-  );
+  const { data, error } = useApiSWR<PendingResponse>('/v1/offboarding-checklist/pending');
   const members = data?.data?.members ?? [];
   const [dismissed, setDismissed] = useState(false);
 
   if (error || dismissed || members.length === 0) return null;
 
-  const link = members.length === 1
-    ? `/${params.orgId}/people/${members[0].memberId}?tab=offboarding`
-    : `/${params.orgId}/people`;
+  const link =
+    members.length === 1
+      ? `/${params.orgId}/people/${members[0].memberId}?tab=offboarding`
+      : `/${params.orgId}/people`;
 
   return (
     <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">

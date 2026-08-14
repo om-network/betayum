@@ -263,7 +263,7 @@ describe('TasksController', () => {
     it('should use getApiKeyActorUserId for API key auth', async () => {
       const apiKeyAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
         isApiKey: true,
         authType: 'api-key',
       };
@@ -391,7 +391,7 @@ describe('TasksController', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const noUserAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
       };
 
       await expect(
@@ -767,7 +767,7 @@ describe('TasksController', () => {
     it('should use getApiKeyActorUserId for API key auth', async () => {
       const apiKeyAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
         isApiKey: true,
         authType: 'api-key',
       };
@@ -841,7 +841,7 @@ describe('TasksController', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const noUserAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
       };
 
       await expect(
@@ -880,7 +880,7 @@ describe('TasksController', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const noUserAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
       };
 
       await expect(
@@ -909,7 +909,7 @@ describe('TasksController', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const noUserAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
       };
 
       await expect(

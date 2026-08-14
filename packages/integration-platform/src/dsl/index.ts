@@ -1,40 +1,40 @@
 // DSL Engine — Declarative check and sync definitions
-export { interpretDeclarativeCheck, interpretDeclarativeSync } from './interpreter';
 export { evaluateCondition, evaluateOperator, resolvePath } from './expression-evaluator';
+export { interpretDeclarativeCheck, interpretDeclarativeSync } from './interpreter';
 export { interpolate, interpolateTemplate } from './template-engine';
 export { validateIntegrationDefinition, type ValidationResult } from './validate';
 
 // Types
 export type {
-  DSLStep,
-  FetchStep,
-  FetchPagesStep,
-  ForEachStep,
   AggregateStep,
   BranchStep,
-  EmitStep,
-  CodeStep,
   CheckDefinition,
-  SyncEmployee,
-  SyncDefinition,
-  Condition,
-  FieldCondition,
-  LogicalCondition,
+  CodeStep,
   ComparisonOperator,
-  ResultTemplate,
-  PaginationConfig,
+  Condition,
+  DSLStep,
   DynamicIntegrationDefinition,
+  EmitStep,
+  FetchPagesStep,
+  FetchStep,
+  FieldCondition,
+  ForEachStep,
+  LogicalCondition,
+  PaginationConfig,
+  ResultTemplate,
+  SyncDefinition,
+  SyncEmployee,
 } from './types';
 
 // Zod schemas
 export {
-  DSLStepSchema,
   CheckDefinitionSchema,
-  SyncEmployeeSchema,
-  SyncDefinitionSchema,
-  DynamicIntegrationDefinitionSchema,
-  ConditionSchema,
-  ResultTemplateSchema,
-  PaginationConfigSchema,
   CodeStepSchema,
+  ConditionSchema,
+  DSLStepSchema,
+  DynamicIntegrationDefinitionSchema,
+  PaginationConfigSchema,
+  ResultTemplateSchema,
+  SyncDefinitionSchema,
+  SyncEmployeeSchema,
 } from './types';

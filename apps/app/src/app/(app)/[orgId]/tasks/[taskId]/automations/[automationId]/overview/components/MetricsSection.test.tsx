@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MetricsSection } from './MetricsSection';
 
@@ -14,7 +15,6 @@ describe('MetricsSection (SALE-49)', () => {
   });
 
   it('uses an SSR-safe placeholder for schedule + next run (defers date formatting to post-mount)', () => {
-    const { renderToString } = require('react-dom/server') as typeof import('react-dom/server');
     vi.setSystemTime(new Date('2026-04-16T07:00:00Z'));
     const html = renderToString(
       <MetricsSection
@@ -37,7 +37,7 @@ describe('MetricsSection (SALE-49)', () => {
     expect(nextRunCell?.[1]).toBe('—');
   });
 
-  it('labels the daily schedule with the user\'s timezone (not UTC)', async () => {
+  it("labels the daily schedule with the user's timezone (not UTC)", async () => {
     vi.setSystemTime(new Date('2026-04-16T07:00:00Z'));
     render(
       <MetricsSection

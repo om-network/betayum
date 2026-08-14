@@ -32,9 +32,7 @@ import { PhaseCompletionType } from '@db';
   }),
 )
 export class AdminTimelineTemplatesController {
-  constructor(
-    private readonly templatesService: TimelinesTemplatesService,
-  ) {}
+  constructor(private readonly templatesService: TimelinesTemplatesService) {}
 
   @Get()
   async findAll() {
@@ -80,7 +78,7 @@ export class AdminTimelineTemplatesController {
       groupLabel: dto.groupLabel,
       orderIndex: dto.orderIndex,
       defaultDurationWeeks: dto.defaultDurationWeeks,
-      completionType: dto.completionType as PhaseCompletionType | undefined,
+      completionType: dto.completionType,
       locksTimelineOnComplete: dto.locksTimelineOnComplete,
     });
   }
@@ -97,7 +95,7 @@ export class AdminTimelineTemplatesController {
       groupLabel: dto.groupLabel,
       orderIndex: dto.orderIndex,
       defaultDurationWeeks: dto.defaultDurationWeeks,
-      completionType: dto.completionType as PhaseCompletionType | undefined,
+      completionType: dto.completionType,
       locksTimelineOnComplete: dto.locksTimelineOnComplete,
     });
   }

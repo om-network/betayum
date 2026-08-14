@@ -1,7 +1,7 @@
 import 'server-only';
 
-import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
 import { db } from '@db/server';
+import { BUILT_IN_ROLE_OBLIGATIONS } from '@trycompai/auth';
 import {
   type UserPermissions,
   canAccessApp,
@@ -51,9 +51,7 @@ async function filterMembersByPermission<T extends MemberWithRole>(
         .filter((r) => r.permissions)
         .map((r) => {
           const parsed =
-            typeof r.permissions === 'string'
-              ? JSON.parse(r.permissions)
-              : r.permissions;
+            typeof r.permissions === 'string' ? JSON.parse(r.permissions) : r.permissions;
           return [r.name, parsed as Record<string, string[]>];
         }),
     );
@@ -101,9 +99,8 @@ export async function filterComplianceMembers<T extends MemberWithRole>(
     });
     obligationMap = Object.fromEntries(
       dbRoles.map((r) => {
-        const obligations = typeof r.obligations === 'string'
-          ? JSON.parse(r.obligations)
-          : (r.obligations || {});
+        const obligations =
+          typeof r.obligations === 'string' ? JSON.parse(r.obligations) : r.obligations || {};
         return [r.name, obligations as Record<string, boolean>];
       }),
     );

@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  FileSpreadsheet,
-  FileText,
-  FileText as FileTextIcon,
-} from 'lucide-react';
+import { FileSpreadsheet, FileText, FileText as FileTextIcon } from 'lucide-react';
 
 export function QuestionnaireSidebar() {
   return (
@@ -53,4 +49,3 @@ export function QuestionnaireSidebar() {
     </div>
   );
 }
-

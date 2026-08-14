@@ -3,14 +3,6 @@
 import { useApi } from '@/hooks/use-api';
 import { useCommentActions } from '@/hooks/use-comments-api';
 import { useMentionableMembers } from '@/hooks/use-mentionable-members';
-import { Button } from '@trycompai/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@trycompai/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import type { JSONContent } from '@tiptap/react';
 import {
   AlertDialog,
@@ -25,6 +17,14 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@trycompai/design-system';
+import { Button } from '@trycompai/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@trycompai/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
 import {
   AlertTriangle,
   FileIcon,
@@ -88,7 +88,12 @@ interface CommentItemProps {
   entityType: string;
 }
 
-export function CommentItem({ comment, refreshComments, readOnly = false, entityType }: CommentItemProps) {
+export function CommentItem({
+  comment,
+  refreshComments,
+  readOnly = false,
+  entityType,
+}: CommentItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState<JSONContent | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);

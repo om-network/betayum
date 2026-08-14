@@ -3,7 +3,7 @@
 import { Text } from '@trycompai/design-system';
 import { Checkmark } from '@trycompai/design-system/icons';
 import { motion } from 'motion/react';
-import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
 
@@ -65,16 +65,8 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
       if (seen.has(id)) continue;
       seen.add(id);
 
-      const linkKeywords = [
-        'trust',
-        'privacy',
-        'terms',
-        'security overview',
-        'soc 2 report',
-      ];
-      const isLink = linkKeywords.some((kw) =>
-        name.toLowerCase().includes(kw),
-      );
+      const linkKeywords = ['trust', 'privacy', 'terms', 'security overview', 'soc 2 report'];
+      const isLink = linkKeywords.some((kw) => name.toLowerCase().includes(kw));
       findings.push({ label: name, kind: isLink ? 'link' : 'cert', id, url });
     }
   }
@@ -83,10 +75,7 @@ function parseFindings(messages: ResearchMessage[]): Finding[] {
 }
 
 /** Build scan path using measured pixel positions relative to grid. */
-function buildScanPath(
-  pendingIndices: number[],
-  centers: Array<{ x: number; y: number }>,
-) {
+function buildScanPath(pendingIndices: number[], centers: Array<{ x: number; y: number }>) {
   const tops: string[] = [];
   const lefts: string[] = [];
   const times: number[] = [];
@@ -94,9 +83,7 @@ function buildScanPath(
   // Grid indices: 0=TL, 1=TR, 2=BL, 3=BR
   // Clockwise visual order: TL(0) → TR(1) → BR(3) → BL(2)
   const clockwiseOrder = [0, 1, 3, 2];
-  const pending = clockwiseOrder.filter(
-    (i) => pendingIndices.includes(i) && centers[i],
-  );
+  const pending = clockwiseOrder.filter((i) => pendingIndices.includes(i) && centers[i]);
   if (pending.length === 0) return { tops, lefts, times };
 
   const n = pending.length;
@@ -192,8 +179,7 @@ function ScanningGlass({
         const val = (v: unknown) => Number.parseFloat(String(v));
         const top = val(latest.top);
         const left = val(latest.left);
-        if (Number.isNaN(top) || Number.isNaN(left) || centers.length === 0)
-          return;
+        if (Number.isNaN(top) || Number.isNaN(left) || centers.length === 0) return;
         let closest = -1;
         let minDist = Number.POSITIVE_INFINITY;
         for (let i = 0; i < centers.length; i++) {
@@ -210,22 +196,9 @@ function ScanningGlass({
         }
       }}
     >
-      <svg
-        width="36"
-        height="36"
-        viewBox="0 0 36 36"
-        fill="none"
-        className="drop-shadow-md"
-      >
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" className="drop-shadow-md">
         <circle cx="15" cy="15" r="14" className="fill-primary/10" />
-        <circle
-          cx="15"
-          cy="15"
-          r="10"
-          className="stroke-primary"
-          strokeWidth="2"
-          fill="none"
-        />
+        <circle cx="15" cy="15" r="10" className="stroke-primary" strokeWidth="2" fill="none" />
         <circle cx="15" cy="15" r="6" className="fill-primary/[0.06]" />
         <line
           x1="23"
@@ -292,9 +265,7 @@ function CategoryCard({
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-              color === 'success'
-                ? 'bg-success/10 text-success'
-                : 'bg-primary/10 text-primary'
+              color === 'success' ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'
             }`}
           >
             {items.length} found
@@ -311,7 +282,9 @@ function CategoryCard({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, duration: 0.25 }}
               className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-success/[0.06] text-card-foreground ${item.url ? 'cursor-pointer hover:bg-success/[0.12] transition-colors' : ''}`}
-              onClick={item.url ? () => window.open(item.url, '_blank', 'noopener,noreferrer') : undefined}
+              onClick={
+                item.url ? () => window.open(item.url, '_blank', 'noopener,noreferrer') : undefined
+              }
             >
               <Checkmark size={10} className="text-success shrink-0" />
               <span className="truncate max-w-[200px]">{item.label}</span>
@@ -337,9 +310,7 @@ function CategoryCard({
                   {item.label}
                 </a>
               ) : (
-                <span className="text-xs text-muted-foreground truncate block">
-                  {item.label}
-                </span>
+                <span className="text-xs text-muted-foreground truncate block">{item.label}</span>
               )}
             </motion.div>
           ))}
@@ -355,11 +326,7 @@ function CategoryCard({
   );
 }
 
-export function VendorResearchFeed({
-  messages,
-  isActive,
-  vendorName,
-}: VendorResearchFeedProps) {
+export function VendorResearchFeed({ messages, isActive, vendorName }: VendorResearchFeedProps) {
   const findings = useMemo(() => parseFindings(messages), [messages]);
   const [activeCard, setActiveCard] = useState(-1);
   const handleCardChange = useCallback((index: number) => {
@@ -403,7 +370,8 @@ export function VendorResearchFeed({
           </Text>
           {isActive && (
             <Text size="xs" variant="muted">
-              This may take 1-10 minutes depending on the vendor. You can leave this page, we'll notify you when it's done.
+              This may take 1-10 minutes depending on the vendor. You can leave this page, we'll
+              notify you when it's done.
             </Text>
           )}
         </div>

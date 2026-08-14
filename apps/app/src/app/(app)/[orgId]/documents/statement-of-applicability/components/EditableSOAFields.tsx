@@ -1,15 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { Button } from '@trycompai/design-system';
-import { Textarea } from '@trycompai/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@trycompai/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@trycompai/ui/dialog';
-import { X, Loader2, Edit2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
+import { Textarea } from '@trycompai/ui/textarea';
+import { Edit2, Loader2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useSOADocument } from '../hooks/useSOADocument';
 import { ApplicableReadOnlyDisplay, ApplicableSwatchRow } from './ApplicableSwatch';
@@ -253,9 +253,7 @@ export function EditableSOAFields({
             className="min-h-[120px]"
             required
           />
-          {error && (
-            <p className="text-xs text-destructive">{error}</p>
-          )}
+          {error && <p className="text-xs text-destructive">{error}</p>}
           <DialogFooter className="gap-2">
             <Button
               variant="ghost"
@@ -264,10 +262,7 @@ export function EditableSOAFields({
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleJustificationSave}
-              disabled={isSaving}
-            >
+            <Button onClick={handleJustificationSave} disabled={isSaving}>
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

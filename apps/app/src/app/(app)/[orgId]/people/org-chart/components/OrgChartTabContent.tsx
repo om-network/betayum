@@ -2,8 +2,8 @@
 
 import { useTeamMembers } from '../../all/hooks/useTeamMembers';
 import { useOrgChart } from '../hooks/useOrgChart';
-import { OrgChartContent } from './OrgChartContent';
 import type { OrgChartMember } from '../types';
+import { OrgChartContent } from './OrgChartContent';
 
 interface OrgChartTabContentProps {
   organizationId: string;

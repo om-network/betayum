@@ -1,9 +1,9 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
+import { Spinner } from '@trycompai/design-system';
 import { Button } from '@trycompai/ui/button';
 import { Icons } from '@trycompai/ui/icons';
-import { Spinner } from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';
 

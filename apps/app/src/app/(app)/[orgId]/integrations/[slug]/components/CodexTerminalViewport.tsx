@@ -28,78 +28,74 @@ export function CodexTerminalViewport({
     let disposed = false;
     let dispose: (() => void) | undefined;
 
-    void Promise.all([
-      import('@xterm/xterm'),
-      import('@xterm/addon-fit'),
-    ]).then(([{ Terminal }, { FitAddon }]) => {
-      if (disposed) return;
+    void Promise.all([import('@xterm/xterm'), import('@xterm/addon-fit')]).then(
+      ([{ Terminal }, { FitAddon }]) => {
+        if (disposed) return;
 
-      const terminal = new Terminal({
-        cursorBlink: true,
-        fontFamily:
-          'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-        fontSize: 14,
-        theme: {
-          background: '#111827',
-          foreground: '#f3f4f6',
-          cursor: '#22c55e',
-          selectionBackground: '#374151',
-        },
-      });
-      const fitAddon = new FitAddon();
-      terminal.loadAddon(fitAddon);
-      terminal.open(container);
+        const terminal = new Terminal({
+          cursorBlink: true,
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+          fontSize: 14,
+          theme: {
+            background: '#111827',
+            foreground: '#f3f4f6',
+            cursor: '#22c55e',
+            selectionBackground: '#374151',
+          },
+        });
+        const fitAddon = new FitAddon();
+        terminal.loadAddon(fitAddon);
+        terminal.open(container);
 
-      const socket = new WebSocket(buildWebSocketUrl(websocketPath));
-      socket.binaryType = 'arraybuffer';
-      const sendResize = () => {
-        if (socket.readyState !== WebSocket.OPEN) return;
-        socket.send(
-          JSON.stringify({
-            type: 'resize',
-            cols: terminal.cols,
-            rows: terminal.rows,
-          }),
-        );
-      };
-      const resizeObserver = new ResizeObserver(() => {
-        fitAddon.fit();
-        sendResize();
-      });
-      resizeObserver.observe(container);
+        const socket = new WebSocket(buildWebSocketUrl(websocketPath));
+        socket.binaryType = 'arraybuffer';
+        const sendResize = () => {
+          if (socket.readyState !== WebSocket.OPEN) return;
+          socket.send(
+            JSON.stringify({
+              type: 'resize',
+              cols: terminal.cols,
+              rows: terminal.rows,
+            }),
+          );
+        };
+        const resizeObserver = new ResizeObserver(() => {
+          fitAddon.fit();
+          sendResize();
+        });
+        resizeObserver.observe(container);
 
-      const input = terminal.onData((data) => {
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.send(new TextEncoder().encode(data));
-        }
-      });
-      socket.addEventListener('open', () => {
-        fitAddon.fit();
-        sendResize();
-        terminal.focus();
-      });
-      socket.addEventListener('message', (event) => {
-        if (event.data instanceof ArrayBuffer) {
-          terminal.write(new Uint8Array(event.data));
-          return;
-        }
-        if (event.data instanceof Blob) {
-          void event.data
-            .arrayBuffer()
-            .then((data) => terminal.write(new Uint8Array(data)));
-        }
-      });
-      socket.addEventListener('close', () => {
-        if (!disposed) onDisconnected();
-      });
+        const input = terminal.onData((data) => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(new TextEncoder().encode(data));
+          }
+        });
+        socket.addEventListener('open', () => {
+          fitAddon.fit();
+          sendResize();
+          terminal.focus();
+        });
+        socket.addEventListener('message', (event) => {
+          if (event.data instanceof ArrayBuffer) {
+            terminal.write(new Uint8Array(event.data));
+            return;
+          }
+          if (event.data instanceof Blob) {
+            void event.data.arrayBuffer().then((data) => terminal.write(new Uint8Array(data)));
+          }
+        });
+        socket.addEventListener('close', () => {
+          if (!disposed) onDisconnected();
+        });
 
-      dispose = () => {
-        resizeObserver.disconnect();
-        input.dispose();
-        socket.close();
-        terminal.dispose();
-      };
-    });
+        dispose = () => {
+          resizeObserver.disconnect();
+          input.dispose();
+          socket.close();
+          terminal.dispose();
+        };
+      },
+    );
 
     return () => {
       disposed = true;

@@ -137,26 +137,30 @@ describe('TimelinesService', () => {
       people: { total: 5, completed: 5 },
     });
 
-    lifecycle.completePhase.mockImplementation(async (_instanceId: string, phaseId: string) => {
-      const phase = timelineState.phases.find((p) => p.id === phaseId);
-      if (!phase) return cloneTimeline(timelineState);
+    lifecycle.completePhase.mockImplementation(
+      async (_instanceId: string, phaseId: string) => {
+        const phase = timelineState.phases.find((p) => p.id === phaseId);
+        if (!phase) return cloneTimeline(timelineState);
 
-      phase.status = 'COMPLETED';
-      phase.completedAt = '2026-01-10T00:00:00.000Z';
+        phase.status = 'COMPLETED';
+        phase.completedAt = '2026-01-10T00:00:00.000Z';
 
-      const nextPending = timelineState.phases.find((p) => p.status === 'PENDING');
-      if (nextPending) {
-        const allPriorComplete = timelineState.phases
-          .filter((p) => p.orderIndex < nextPending.orderIndex)
-          .every((p) => p.status === 'COMPLETED');
+        const nextPending = timelineState.phases.find(
+          (p) => p.status === 'PENDING',
+        );
+        if (nextPending) {
+          const allPriorComplete = timelineState.phases
+            .filter((p) => p.orderIndex < nextPending.orderIndex)
+            .every((p) => p.status === 'COMPLETED');
 
-        if (allPriorComplete) {
-          nextPending.status = 'IN_PROGRESS';
+          if (allPriorComplete) {
+            nextPending.status = 'IN_PROGRESS';
+          }
         }
-      }
 
-      return cloneTimeline(timelineState);
-    });
+        return cloneTimeline(timelineState);
+      },
+    );
 
     await service.reconcileAutoPhasesForOrganization(orgId);
     const result = await service.findAllForOrganization(orgId);
@@ -273,12 +277,14 @@ describe('TimelinesService', () => {
     (mockDb.timelineInstance.findMany as jest.Mock).mockImplementation(() =>
       Promise.resolve([cloneTimeline(timelineState)]),
     );
-    (mockDb.timelinePhase.update as jest.Mock).mockImplementation(async ({ where, data }: any) => {
-      const phase = timelineState.phases.find((p) => p.id === where.id);
-      if (!phase) return null;
-      Object.assign(phase, data);
-      return phase;
-    });
+    (mockDb.timelinePhase.update as jest.Mock).mockImplementation(
+      async ({ where, data }: any) => {
+        const phase = timelineState.phases.find((p) => p.id === where.id);
+        if (!phase) return null;
+        Object.assign(phase, data);
+        return phase;
+      },
+    );
     (getOverviewScores as jest.Mock).mockResolvedValue({
       policies: { total: 10, published: 8 },
       tasks: { total: 1, done: 1 },
@@ -618,7 +624,9 @@ describe('TimelinesService', () => {
       include: { phases: { orderBy: { orderIndex: 'asc' } } },
     });
     expect(createSpy).not.toHaveBeenCalled();
-    expect(result).toEqual(expect.objectContaining({ id: 'tli_3', cycleNumber: 3 }));
+    expect(result).toEqual(
+      expect.objectContaining({ id: 'tli_3', cycleNumber: 3 }),
+    );
   });
 
   it('checks for existing next cycle within the same track only', async () => {
@@ -678,23 +686,25 @@ describe('TimelinesService', () => {
 
     jest.spyOn(service, 'findOne').mockResolvedValue({
       id: 'tli_1',
-      phases: [
-        { id: 'p1' },
-        { id: 'p2' },
-      ],
+      phases: [{ id: 'p1' }, { id: 'p2' }],
     } as any);
 
     const tx = {
       timelinePhase: { update: jest.fn() },
       timelineInstance: { update: jest.fn() },
     };
-    (mockDb.$transaction as jest.Mock).mockImplementation(async (fn: any) => fn(tx));
+    (mockDb.$transaction as jest.Mock).mockImplementation(async (fn: any) =>
+      fn(tx),
+    );
 
     const refreshed = { id: 'tli_1', status: 'DRAFT' };
-    jest.spyOn(service, 'findOne').mockResolvedValueOnce({
-      id: 'tli_1',
-      phases: [{ id: 'p1' }, { id: 'p2' }],
-    } as any).mockResolvedValueOnce(refreshed as any);
+    jest
+      .spyOn(service, 'findOne')
+      .mockResolvedValueOnce({
+        id: 'tli_1',
+        phases: [{ id: 'p1' }, { id: 'p2' }],
+      } as any)
+      .mockResolvedValueOnce(refreshed as any);
 
     const result = await service.resetInstance('tli_1', 'org_1');
 
@@ -746,7 +756,7 @@ describe('TimelinesService', () => {
       .mockResolvedValue(undefined);
     const findAllSpy = jest
       .spyOn(service, 'findAllForOrganization')
-      .mockResolvedValue([] as any);
+      .mockResolvedValue([]);
 
     await service.recreateAllForOrganization('org_1');
 

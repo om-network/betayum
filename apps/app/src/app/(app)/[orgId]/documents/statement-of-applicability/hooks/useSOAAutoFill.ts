@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { toast } from 'sonner';
 import { env } from '@/env.mjs';
+import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 interface UseSOAAutoFillProps {
   questions: Array<{
@@ -20,10 +20,27 @@ interface UseSOAAutoFillProps {
   onUpdate: (payload?: { total?: number; answered?: number }) => void;
 }
 
-export function useSOAAutoFill({ questions, documentId, organizationId, onUpdate }: UseSOAAutoFillProps) {
+export function useSOAAutoFill({
+  questions,
+  documentId,
+  organizationId,
+  onUpdate,
+}: UseSOAAutoFillProps) {
   const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [questionStatuses, setQuestionStatuses] = useState<Map<string, 'pending' | 'processing' | 'completed' | 'failed' | 'insufficient_data'>>(new Map());
-  const [processedResults, setProcessedResults] = useState<Map<string, { isApplicable: boolean | null; justification: string | null; success: boolean; insufficientData?: boolean }>>(new Map());
+  const [questionStatuses, setQuestionStatuses] = useState<
+    Map<string, 'pending' | 'processing' | 'completed' | 'failed' | 'insufficient_data'>
+  >(new Map());
+  const [processedResults, setProcessedResults] = useState<
+    Map<
+      string,
+      {
+        isApplicable: boolean | null;
+        justification: string | null;
+        success: boolean;
+        insufficientData?: boolean;
+      }
+    >
+  >(new Map());
   const isAutoFillProcessStartedRef = useRef(false);
 
   const triggerAutoFill = async () => {
@@ -89,7 +106,7 @@ export function useSOAAutoFill({ questions, documentId, organizationId, onUpdate
                 // Answer received for a question
                 const isSuccess = data.success && data.isApplicable !== null;
                 const isInsufficientData = data.insufficientData === true;
-                
+
                 setQuestionStatuses((prev) => {
                   const newStatuses = new Map(prev);
                   if (isInsufficientData) {
@@ -143,4 +160,3 @@ export function useSOAAutoFill({ questions, documentId, organizationId, onUpdate
     triggerAutoFill,
   };
 }
-

@@ -5,11 +5,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TrustPortalSwitch } from './portal-settings/components/TrustPortalSwitch';
 
-export default async function TrustPage({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
+export default async function TrustPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
   const [settingsRes, customLinksRes, vendorsRes, certificatesRes, documentsRes] =
@@ -26,13 +22,9 @@ export default async function TrustPage({
     ]);
 
   const settings = settingsRes.data as any;
-  const customLinks = Array.isArray(customLinksRes.data)
-    ? customLinksRes.data
-    : [];
+  const customLinks = Array.isArray(customLinksRes.data) ? customLinksRes.data : [];
   const vendors = Array.isArray(vendorsRes.data) ? vendorsRes.data : [];
-  const certificateResources = Array.isArray(certificatesRes.data)
-    ? certificatesRes.data
-    : [];
+  const certificateResources = Array.isArray(certificatesRes.data) ? certificatesRes.data : [];
   const documents = Array.isArray(documentsRes.data) ? documentsRes.data : [];
 
   // Map compliance resources to fileName props
@@ -67,9 +59,7 @@ export default async function TrustPage({
   };
 
   for (const resource of certificateResources) {
-    const propKey = resource?.framework
-      ? API_FRAMEWORK_TO_PROP[resource.framework]
-      : undefined;
+    const propKey = resource?.framework ? API_FRAMEWORK_TO_PROP[resource.framework] : undefined;
     if (propKey) {
       certificateFiles[propKey] = resource.fileName ?? null;
     }

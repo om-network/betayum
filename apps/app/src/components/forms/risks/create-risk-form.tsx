@@ -3,7 +3,6 @@
 import { createRiskSchema } from '@/actions/schema';
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useRiskActions } from '@/hooks/use-risks';
-import { Button } from '@trycompai/ui/button';
 import type { Member, User } from '@db';
 import { Departments, RiskCategory } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,6 +22,7 @@ import {
   Textarea,
 } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
+import { Button } from '@trycompai/ui/button';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';

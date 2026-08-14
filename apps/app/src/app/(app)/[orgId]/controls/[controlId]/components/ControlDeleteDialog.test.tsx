@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   NO_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
@@ -51,11 +51,8 @@ vi.mock('@trycompai/ui/button', () => ({
 }));
 
 vi.mock('@trycompai/ui/dialog', () => ({
-  Dialog: ({ children, open }: any) =>
-    open ? <div data-testid="dialog">{children}</div> : null,
-  DialogContent: ({ children }: any) => (
-    <div data-testid="dialog-content">{children}</div>
-  ),
+  Dialog: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
+  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
   DialogDescription: ({ children }: any) => <p>{children}</p>,
   DialogFooter: ({ children }: any) => <div>{children}</div>,
   DialogHeader: ({ children }: any) => <div>{children}</div>,
@@ -143,9 +140,7 @@ describe('ControlDeleteDialog', () => {
       render(<ControlDeleteDialog {...defaultProps} />);
 
       expect(screen.getByText('Delete Control')).toBeInTheDocument();
-      expect(
-        screen.getByText(/are you sure you want to delete this control/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/are you sure you want to delete this control/i)).toBeInTheDocument();
     });
 
     it('renders the cancel button that is always enabled', () => {
@@ -160,9 +155,7 @@ describe('ControlDeleteDialog', () => {
     it('does not render when isOpen is false', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
 
-      render(
-        <ControlDeleteDialog {...defaultProps} isOpen={false} />,
-      );
+      render(<ControlDeleteDialog {...defaultProps} isOpen={false} />);
 
       expect(screen.queryByText('Delete Control')).not.toBeInTheDocument();
     });

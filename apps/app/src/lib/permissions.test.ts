@@ -63,7 +63,6 @@ describe('canAccessRoute', () => {
     const permissions: UserPermissions = {};
     expect(canAccessRoute(permissions, 'nonexistent-route')).toBe(true);
   });
-
 });
 
 describe('getDefaultRoute', () => {
@@ -180,9 +179,7 @@ describe('canAccessAuditorView', () => {
     // the custom role is something like "ReadOnlyViewer" without audit, the
     // tab stays hidden even though the merged permissions would pass.
     const customRolePerms: UserPermissions = { evidence: ['read'] };
-    expect(canAccessAuditorView('owner,ReadOnlyViewer', customRolePerms)).toBe(
-      false,
-    );
+    expect(canAccessAuditorView('owner,ReadOnlyViewer', customRolePerms)).toBe(false);
   });
 
   it('hides when role string is empty / null / undefined', () => {

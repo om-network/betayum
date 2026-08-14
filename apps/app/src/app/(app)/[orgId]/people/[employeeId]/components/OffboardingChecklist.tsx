@@ -96,8 +96,7 @@ export function OffboardingChecklist({
         description="Track tasks required to complete this offboarding."
       >
         <Text variant="muted">
-          No checklist items configured. Add items in the offboarding checklist
-          settings.
+          No checklist items configured. Add items in the offboarding checklist settings.
         </Text>
       </Section>
     );

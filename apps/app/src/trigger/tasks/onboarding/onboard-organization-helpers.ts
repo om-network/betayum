@@ -1,3 +1,4 @@
+import { applyMitigationPlanFields } from '@/lib/strategy-descriptions';
 import { createGatewayProvider } from '@ai-sdk/gateway';
 import {
   Departments,
@@ -14,18 +15,9 @@ import {
 import { db } from '@db/server';
 import { logger, metadata, tasks } from '@trigger.dev/sdk';
 import { generateObject, jsonSchema } from 'ai';
-
-const gateway = createGatewayProvider({
-  baseURL: process.env.AI_GATEWAY_BASE_URL,
-});
-const ONBOARDING_MODEL = 'google/gemini-3-flash' as const;
 import axios from 'axios';
 import { z } from 'zod';
 import type { researchVendor } from '../scrape/research';
-import {
-  applyMitigationPlanFields,
-  mirrorActiveDescriptionIntoMap,
-} from '@/lib/strategy-descriptions';
 import { buildCitationsHeading } from './build-citations-heading';
 import { RISK_MITIGATION_PROMPT } from './prompts/risk-mitigation';
 import {
@@ -35,6 +27,11 @@ import {
   type MitigationCitation,
 } from './select-mitigation-citations';
 import { updatePolicy } from './update-policy';
+
+const gateway = createGatewayProvider({
+  baseURL: process.env.AI_GATEWAY_BASE_URL,
+});
+const ONBOARDING_MODEL = 'google/gemini-3-flash' as const;
 
 type VendorForRiskAssessmentTrigger = {
   id: string;
@@ -364,7 +361,6 @@ function combineSentencesWithCitations({
   ].join('\n');
 }
 
-
 /**
  * Revalidates the organization path for cache busting
  */
@@ -437,11 +433,9 @@ type CustomVendorEntry = {
  * Parses all selected vendors from context
  * Returns the full list of all vendors (from software field) and custom vendor URL map
  */
-function parseAllSelectedVendors(
-  questionsAndAnswers: ContextItem[],
-): { 
-  allVendorNames: string[]; 
-  customVendors: CustomVendorEntry[]; 
+function parseAllSelectedVendors(questionsAndAnswers: ContextItem[]): {
+  allVendorNames: string[];
+  customVendors: CustomVendorEntry[];
   urlMap: Map<string, string>;
 } {
   const allVendorNames: string[] = [];
@@ -455,7 +449,10 @@ function parseAllSelectedVendors(
 
   if (softwareEntry && softwareEntry.answer) {
     // Parse comma-separated vendor names
-    const names = softwareEntry.answer.split(',').map((n) => n.trim()).filter(Boolean);
+    const names = softwareEntry.answer
+      .split(',')
+      .map((n) => n.trim())
+      .filter(Boolean);
     allVendorNames.push(...names);
   }
 
@@ -495,7 +492,11 @@ export async function extractVendorsFromContext(
   questionsAndAnswers: ContextItem[],
 ): Promise<VendorData[]> {
   // Parse all selected vendors from context
-  const { allVendorNames, customVendors, urlMap: customVendorUrls } = parseAllSelectedVendors(questionsAndAnswers);
+  const {
+    allVendorNames,
+    customVendors,
+    urlMap: customVendorUrls,
+  } = parseAllSelectedVendors(questionsAndAnswers);
 
   // Create a set of custom vendor names for quick lookup
   const customVendorNameSet = new Set(customVendors.map((v) => v.name.toLowerCase()));
@@ -510,8 +511,14 @@ export async function extractVendorsFromContext(
           items: {
             type: 'object',
             properties: {
-              vendor_name: { type: 'string', description: 'The official company name (e.g. "Anthropic", not "Claude")' },
-              original_name: { type: 'string', description: 'The name as it appeared in the user input (e.g. "Claude")' },
+              vendor_name: {
+                type: 'string',
+                description: 'The official company name (e.g. "Anthropic", not "Claude")',
+              },
+              original_name: {
+                type: 'string',
+                description: 'The name as it appeared in the user input (e.g. "Claude")',
+              },
               vendor_website: { type: 'string' },
               vendor_description: { type: 'string' },
               category: { type: 'string', enum: Object.values(VendorCategory) },
@@ -544,13 +551,13 @@ export async function extractVendorsFromContext(
       '',
       'INHERENT RISK SCORING — read carefully and apply consistently.',
       '',
-      'You are estimating inherent risk from the user\'s onboarding answers ONLY. You do not have access to the vendor\'s public security posture (certifications, breach history, etc.) — a separate research step fills that in later. Score conservatively from the SIGNALS in the user\'s answers, not from your own knowledge of the vendor.',
+      "You are estimating inherent risk from the user's onboarding answers ONLY. You do not have access to the vendor's public security posture (certifications, breach history, etc.) — a separate research step fills that in later. Score conservatively from the SIGNALS in the user's answers, not from your own knowledge of the vendor.",
       '',
-      'Default both probability and impact to MIDDLE (possible × moderate → ~5/10) unless a signal in the user\'s answers tells you otherwise. Only deviate when the answers explicitly point to a higher or lower band.',
+      "Default both probability and impact to MIDDLE (possible × moderate → ~5/10) unless a signal in the user's answers tells you otherwise. Only deviate when the answers explicitly point to a higher or lower band.",
       '',
       'Signals that LOWER inherent_probability:',
       '- The user describes the vendor as a managed service they trust for similar infra elsewhere',
-      '- The user says they\'ve completed their own due diligence (SOC 2 review, security questionnaire) on this vendor',
+      "- The user says they've completed their own due diligence (SOC 2 review, security questionnaire) on this vendor",
       '- The vendor is mentioned only as a passive utility (e.g. analytics for marketing pages, no customer data)',
       'Signals that RAISE inherent_probability:',
       '- The user describes ongoing concerns or past incidents with the vendor',
@@ -566,9 +573,9 @@ export async function extractVendorsFromContext(
       '- The vendor processes PHI, payments, source code, auth secrets, or PII at scale',
       '- The user says they cannot easily replace the vendor',
       '',
-      'When the user simply NAMES the vendor with no further context, you have NO signal — return (possible, moderate). Do not infer risk from the vendor\'s name or your prior knowledge of the company; the research step will refine the score later with actual posture data.',
+      "When the user simply NAMES the vendor with no further context, you have NO signal — return (possible, moderate). Do not infer risk from the vendor's name or your prior knowledge of the company; the research step will refine the score later with actual posture data.",
       '',
-      'residual_probability / residual_impact: default to the same level as inherent. Only LOWER residual when the user\'s answers describe their OWN compensating controls (their own MFA enforcement, network segmentation, data encryption at rest, etc.) — NOT the vendor\'s controls.',
+      "residual_probability / residual_impact: default to the same level as inherent. Only LOWER residual when the user's answers describe their OWN compensating controls (their own MFA enforcement, network segmentation, data encryption at rest, etc.) — NOT the vendor's controls.",
     ].join('\n'),
     prompt: questionsAndAnswers.map((q) => `${q.question}\n${q.answer}`).join('\n'),
   });
@@ -604,14 +611,14 @@ export async function extractVendorsFromContext(
     if (!extractedVendorNames.has(vendorName.toLowerCase())) {
       const isCustom = customVendorNameSet.has(vendorName.toLowerCase());
       const customUrl = customVendorUrls.get(vendorName.toLowerCase());
-      
+
       logger.info(`Adding vendor not extracted by AI: ${vendorName} (custom: ${isCustom})`);
-      
+
       // Create a vendor entry with default risk values
       vendors.push({
         vendor_name: vendorName,
         vendor_website: customUrl || '',
-        vendor_description: isCustom 
+        vendor_description: isCustom
           ? `Custom vendor added during onboarding`
           : `Vendor selected during onboarding`,
         category: VendorCategory.other,
@@ -620,7 +627,7 @@ export async function extractVendorsFromContext(
         residual_probability: Likelihood.possible,
         residual_impact: Impact.moderate,
       });
-      
+
       // Add to extracted set to avoid duplicates
       extractedVendorNames.add(vendorName.toLowerCase());
     }
@@ -698,9 +705,7 @@ ${formatCitationsBlock(citations)}`;
     data: applyMitigationPlanFields({
       plan: finalText,
       currentStrategy:
-        typeof vendor.treatmentStrategy === 'string'
-          ? vendor.treatmentStrategy
-          : 'mitigate',
+        typeof vendor.treatmentStrategy === 'string' ? vendor.treatmentStrategy : 'mitigate',
       currentDescription: vendor.treatmentStrategyDescription ?? null,
       currentMap: vendor.strategyDescriptions,
     }),
@@ -773,9 +778,11 @@ export async function createVendorsFromData(
         },
         select: { website: true },
       });
-      
+
       if (globalVendor?.website) {
-        logger.info(`Enriched vendor ${vendor.vendor_name} with website from GlobalVendors: ${globalVendor.website}`);
+        logger.info(
+          `Enriched vendor ${vendor.vendor_name} with website from GlobalVendors: ${globalVendor.website}`,
+        );
         websiteToUse = globalVendor.website;
       }
     }
@@ -812,10 +819,13 @@ export async function createVendorsFromData(
       website: vendor.website ?? null,
     }));
 
-  logger.info(`Created ${newlyCreatedVendors.length} new vendors out of ${createdVendors.length} total`, {
-    newlyCreated: newlyCreatedVendors.map((v) => v.name),
-    existing: createdVendors.filter((v) => existingVendorIds.has(v.id)).map((v) => v.name),
-  });
+  logger.info(
+    `Created ${newlyCreatedVendors.length} new vendors out of ${createdVendors.length} total`,
+    {
+      newlyCreated: newlyCreatedVendors.map((v) => v.name),
+      existing: createdVendors.filter((v) => existingVendorIds.has(v.id)).map((v) => v.name),
+    },
+  );
 
   // Update metadata with all real IDs and mark as created (will be marked as assessing after all are created)
   createdVendors.forEach((vendor) => {
@@ -886,8 +896,8 @@ async function triggerVendorRiskAssessmentsViaApi(params: {
         vendors: vendors.map((v) => {
           const sanitized = sanitizeWebsite(v.website, v.name);
           return {
-          vendorId: v.id,
-          vendorName: v.name,
+            vendorId: v.id,
+            vendorName: v.name,
             // Only include vendorWebsite if it's a valid URL (undefined triggers @IsOptional)
             ...(sanitized && { vendorWebsite: sanitized }),
           };

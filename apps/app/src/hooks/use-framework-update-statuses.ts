@@ -1,7 +1,7 @@
 'use client';
 
-import useSWR from 'swr';
 import { apiClient } from '@/lib/api-client';
+import useSWR from 'swr';
 
 export const FRAMEWORK_UPDATE_STATUSES_KEY = '/v1/frameworks/update-statuses';
 

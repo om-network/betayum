@@ -1,10 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { usePermissions } from '@/hooks/use-permissions';
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR } from '@/hooks/use-api-swr';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   Button,
   Dialog,
@@ -24,6 +22,8 @@ import {
   Textarea,
 } from '@trycompai/design-system';
 import { Add, TrashCan } from '@trycompai/design-system/icons';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface TemplateItem {
   id: string;
@@ -47,32 +47,21 @@ export function OffboardingChecklistSettings() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const handleToggleEnabled = async ({
-    item,
-    next,
-  }: {
-    item: TemplateItem;
-    next: boolean;
-  }) => {
+  const handleToggleEnabled = async ({ item, next }: { item: TemplateItem; next: boolean }) => {
     mutate(
       (current) => {
         if (!current) return current;
         return {
           ...current,
           data: Array.isArray(current.data)
-            ? current.data.map((i) =>
-                i.id === item.id ? { ...i, isEnabled: next } : i,
-              )
+            ? current.data.map((i) => (i.id === item.id ? { ...i, isEnabled: next } : i))
             : current.data,
         };
       },
       { revalidate: false },
     );
 
-    const res = await patch(
-      `${TEMPLATE_ENDPOINT}/${item.id}`,
-      { isEnabled: next },
-    );
+    const res = await patch(`${TEMPLATE_ENDPOINT}/${item.id}`, { isEnabled: next });
 
     if (res.error) {
       mutate();
@@ -83,32 +72,21 @@ export function OffboardingChecklistSettings() {
     toast.success(next ? 'Checklist item enabled' : 'Checklist item disabled');
   };
 
-  const handleToggleEvidence = async ({
-    item,
-    next,
-  }: {
-    item: TemplateItem;
-    next: boolean;
-  }) => {
+  const handleToggleEvidence = async ({ item, next }: { item: TemplateItem; next: boolean }) => {
     mutate(
       (current) => {
         if (!current) return current;
         return {
           ...current,
           data: Array.isArray(current.data)
-            ? current.data.map((i) =>
-                i.id === item.id ? { ...i, evidenceRequired: next } : i,
-              )
+            ? current.data.map((i) => (i.id === item.id ? { ...i, evidenceRequired: next } : i))
             : current.data,
         };
       },
       { revalidate: false },
     );
 
-    const res = await patch(
-      `${TEMPLATE_ENDPOINT}/${item.id}`,
-      { evidenceRequired: next },
-    );
+    const res = await patch(`${TEMPLATE_ENDPOINT}/${item.id}`, { evidenceRequired: next });
 
     if (res.error) {
       mutate();
@@ -116,9 +94,7 @@ export function OffboardingChecklistSettings() {
       return;
     }
 
-    toast.success(
-      next ? 'Evidence now required' : 'Evidence no longer required',
-    );
+    toast.success(next ? 'Evidence now required' : 'Evidence no longer required');
   };
 
   const handleDelete = async ({ item }: { item: TemplateItem }) => {
@@ -232,9 +208,7 @@ function ChecklistItemCard({
               id={`evidence-${item.id}`}
               checked={item.evidenceRequired}
               disabled={!canUpdate || !item.isEnabled}
-              onCheckedChange={(next) =>
-                onToggleEvidence({ item, next: Boolean(next) })
-              }
+              onCheckedChange={(next) => onToggleEvidence({ item, next: Boolean(next) })}
               aria-label={`Evidence required for ${item.title}`}
             />
           </HStack>
@@ -244,9 +218,7 @@ function ChecklistItemCard({
         <Switch
           checked={item.isEnabled}
           disabled={!canUpdate}
-          onCheckedChange={(next) =>
-            onToggleEnabled({ item, next: Boolean(next) })
-          }
+          onCheckedChange={(next) => onToggleEnabled({ item, next: Boolean(next) })}
           aria-label={`Enable ${item.title}`}
         />
         {!item.isDefault && canUpdate && (
@@ -264,11 +236,7 @@ function ChecklistItemCard({
   );
 }
 
-function AddChecklistItemDialog({
-  onCreated,
-}: {
-  onCreated: () => void;
-}) {
+function AddChecklistItemDialog({ onCreated }: { onCreated: () => void }) {
   const { post } = useApi();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -333,16 +301,12 @@ function AddChecklistItemDialog({
             <Switch
               id="checklist-evidence"
               checked={evidenceRequired}
-              onCheckedChange={(next) =>
-                setEvidenceRequired(Boolean(next))
-              }
+              onCheckedChange={(next) => setEvidenceRequired(Boolean(next))}
             />
           </HStack>
         </Stack>
         <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>
-            Cancel
-          </DialogClose>
+          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
           <Button type="submit" disabled={saving || !title.trim()}>
             {saving ? 'Creating...' : 'Create'}
           </Button>

@@ -1,8 +1,7 @@
 'use client';
 
 import { useApi } from '@/hooks/use-api';
-import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import type { Departments, Member, User } from '@db';
+import type { Member, User } from '@db';
 import {
   Button,
   Calendar,
@@ -19,6 +18,7 @@ import {
   Stack,
 } from '@trycompai/design-system';
 import { Calendar as CalendarIcon } from '@trycompai/design-system/icons';
+import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
 import { format } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -74,7 +74,14 @@ export const EmployeeDetails = ({
       (offboardDate?.toISOString() ?? null) !==
       (employee.offboardDate ? new Date(employee.offboardDate).toISOString() : null);
 
-    return nameChanged || jobTitleChanged || departmentChanged || statusChanged || onboardDateChanged || offboardDateChanged;
+    return (
+      nameChanged ||
+      jobTitleChanged ||
+      departmentChanged ||
+      statusChanged ||
+      onboardDateChanged ||
+      offboardDateChanged
+    );
   }, [name, jobTitle, department, status, onboardDate, offboardDate, employee]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -163,13 +170,7 @@ export const EmployeeDetails = ({
             {/* Email Field (read-only) */}
             <Stack gap="sm">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={employee.user.email ?? ''}
-                disabled
-                readOnly
-              />
+              <Input id="email" type="email" value={employee.user.email ?? ''} disabled readOnly />
             </Stack>
 
             {/* Job Title Field */}

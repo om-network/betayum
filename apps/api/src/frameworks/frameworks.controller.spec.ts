@@ -22,7 +22,6 @@ jest.mock('@trycompai/auth', () => ({
   ownerAc: {},
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { FrameworksController } from './frameworks.controller';
@@ -99,7 +98,10 @@ describe('FrameworksController', () => {
       const result = await controller.findAll('org_1');
 
       expect(result).toEqual({ data: mockData, count: 2 });
-      expect(service.findAll).toHaveBeenCalledWith('org_1', { includeControls: false, includeScores: false });
+      expect(service.findAll).toHaveBeenCalledWith('org_1', {
+        includeControls: false,
+        includeScores: false,
+      });
     });
 
     it('should return empty list when no frameworks', async () => {
@@ -162,7 +164,12 @@ describe('FrameworksController', () => {
     it('should return update status with { data }', async () => {
       const mockStatus = {
         currentVersion: { id: 'fvr_1', version: '1.0.0' },
-        latestVersion: { id: 'fvr_2', version: '2.0.0', publishedAt: new Date(), releaseNotes: null },
+        latestVersion: {
+          id: 'fvr_2',
+          version: '2.0.0',
+          publishedAt: new Date(),
+          releaseNotes: null,
+        },
         updateAvailable: true,
       };
       mockService.getUpdateStatus.mockResolvedValue(mockStatus);
@@ -181,9 +188,9 @@ describe('FrameworksController', () => {
         new NotFoundException('Framework instance not found'),
       );
 
-      await expect(controller.getUpdateStatus('org_1', 'missing')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.getUpdateStatus('org_1', 'missing'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -193,9 +200,25 @@ describe('FrameworksController', () => {
         fromVersion: { id: 'fvr_1', version: '1.0.0' },
         toVersion: { id: 'fvr_2', version: '2.0.0' },
         releaseNotes: 'New features',
-        controls: { added: [], archived: [], updatedApplied: [], updatedPreserved: [] },
-        tasks: { added: [], archived: [], updatedApplied: [], updatedPreserved: [] },
-        policies: { added: [], archived: [], updatedApplied: [], updatedPreserved: [], draftAddedForPublished: [] },
+        controls: {
+          added: [],
+          archived: [],
+          updatedApplied: [],
+          updatedPreserved: [],
+        },
+        tasks: {
+          added: [],
+          archived: [],
+          updatedApplied: [],
+          updatedPreserved: [],
+        },
+        policies: {
+          added: [],
+          archived: [],
+          updatedApplied: [],
+          updatedPreserved: [],
+          draftAddedForPublished: [],
+        },
         requirements: { added: [], removed: [], updated: [] },
       };
       mockService.getUpdatePreview.mockResolvedValue(mockPreview);
@@ -214,9 +237,9 @@ describe('FrameworksController', () => {
         new NotFoundException('No update available'),
       );
 
-      await expect(controller.getUpdatePreview('org_1', 'fi_1')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.getUpdatePreview('org_1', 'fi_1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -224,7 +247,11 @@ describe('FrameworksController', () => {
     const mockAuthContext = { userId: 'usr_1', organizationId: 'org_1' };
 
     it('should delegate to syncService and return { data: result }', async () => {
-      const mockResult = { kind: 'synced', frameworkInstanceId: 'fi_1', syncOperationId: 'fso_1' };
+      const mockResult = {
+        kind: 'synced',
+        frameworkInstanceId: 'fi_1',
+        syncOperationId: 'fso_1',
+      };
       mockSyncService.sync.mockResolvedValue(mockResult);
 
       const result = await controller.syncFramework(
@@ -287,7 +314,12 @@ describe('FrameworksController', () => {
       );
 
       await expect(
-        controller.rollbackFramework('org_1', 'fi_1', { syncOperationId: 'fso_missing' }, mockAuthContext as never),
+        controller.rollbackFramework(
+          'org_1',
+          'fi_1',
+          { syncOperationId: 'fso_missing' },
+          mockAuthContext as never,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });

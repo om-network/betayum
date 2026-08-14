@@ -1,14 +1,9 @@
 'use client';
 
-import { Button } from '@trycompai/design-system';
-import {
-  ArrowRight,
-  Checkmark,
-  Document,
-  Download,
-} from '@trycompai/design-system/icons';
-import { useRouter } from 'next/navigation';
 import type { PentestRun } from '@/lib/security/penetration-tests-client';
+import { Button } from '@trycompai/design-system';
+import { ArrowRight, Checkmark, Document, Download } from '@trycompai/design-system/icons';
+import { useRouter } from 'next/navigation';
 import { formatReportDate } from '../lib';
 import { StatusPill } from './StatusPill';
 
@@ -28,8 +23,7 @@ export function LatestAssessment({
   onDownloadPdf,
 }: LatestAssessmentProps) {
   const router = useRouter();
-  const durationMs =
-    new Date(run.updatedAt).getTime() - new Date(run.createdAt).getTime();
+  const durationMs = new Date(run.updatedAt).getTime() - new Date(run.createdAt).getTime();
   return (
     <section className="rounded-[var(--radius)] border-2 border-border bg-card p-5">
       <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
@@ -54,9 +48,7 @@ export function LatestAssessment({
         <button
           type="button"
           onClick={() =>
-            router.push(
-              `/${orgId}/security/penetration-tests/${encodeURIComponent(run.id)}`,
-            )
+            router.push(`/${orgId}/security/penetration-tests/${encodeURIComponent(run.id)}`)
           }
           className="ml-auto font-mono text-[11px] text-muted-foreground hover:text-foreground"
         >
@@ -67,13 +59,7 @@ export function LatestAssessment({
   );
 }
 
-export function RecentScansSection({
-  orgId,
-  runs,
-}: {
-  orgId: string;
-  runs: PentestRun[];
-}) {
+export function RecentScansSection({ orgId, runs }: { orgId: string; runs: PentestRun[] }) {
   const router = useRouter();
   if (runs.length === 0) return null;
   return (
@@ -87,16 +73,12 @@ export function RecentScansSection({
             key={run.id}
             type="button"
             onClick={() =>
-              router.push(
-                `/${orgId}/security/penetration-tests/${encodeURIComponent(run.id)}`,
-              )
+              router.push(`/${orgId}/security/penetration-tests/${encodeURIComponent(run.id)}`)
             }
             className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted"
           >
             <StatusPill status={run.status} />
-            <span className="flex-1 truncate font-mono text-sm">
-              {displayHost(run.targetUrl)}
-            </span>
+            <span className="flex-1 truncate font-mono text-sm">{displayHost(run.targetUrl)}</span>
             <span className="font-mono text-[11px] text-muted-foreground">
               {relativeTime(run.updatedAt)}
             </span>
@@ -123,30 +105,20 @@ export function StaleCoverageSection({
       </div>
       {stale.length === 0 ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Checkmark
-            className="h-3.5 w-3.5"
-            style={{ color: 'var(--pt-sev-low-fg)' }}
-          />
+          <Checkmark className="h-3.5 w-3.5" style={{ color: 'var(--pt-sev-low-fg)' }} />
           All targets scanned in the last 14 days.
         </div>
       ) : (
         <div className="divide-y divide-border rounded-[var(--radius)] border border-border">
           {stale.map(({ targetUrl, lastScanAt }) => (
-            <div
-              key={targetUrl}
-              className="flex items-center gap-3 px-4 py-2.5"
-            >
-              <span className="flex-1 truncate font-mono text-sm">
-                {displayHost(targetUrl)}
-              </span>
+            <div key={targetUrl} className="flex items-center gap-3 px-4 py-2.5">
+              <span className="flex-1 truncate font-mono text-sm">{displayHost(targetUrl)}</span>
               <span className="font-mono text-[11px] text-muted-foreground">
                 {lastScanAt ? `last ${relativeTime(lastScanAt)}` : 'never'}
               </span>
               <button
                 type="button"
-                onClick={() =>
-                  router.push(`/${orgId}/security/penetration-tests/new`)
-                }
+                onClick={() => router.push(`/${orgId}/security/penetration-tests/new`)}
                 className="rounded border border-border px-2 py-1 font-mono text-[11px] hover:bg-muted"
               >
                 Scan now
@@ -168,22 +140,17 @@ export function uniqueTargets(runs: readonly PentestRun[]): string[] {
 export function mostRecent(runs: readonly PentestRun[]): PentestRun | null {
   if (runs.length === 0) return null;
   return [...runs].sort(
-    (a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
   )[0]!;
 }
 
 export function sortByUpdatedDesc(runs: readonly PentestRun[]): PentestRun[] {
   return [...runs].sort(
-    (a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
   );
 }
 
-export function countWithin(
-  runs: readonly PentestRun[],
-  windowMs: number,
-): number {
+export function countWithin(runs: readonly PentestRun[], windowMs: number): number {
   const cutoff = Date.now() - windowMs;
   return runs.filter((r) => new Date(r.updatedAt).getTime() >= cutoff).length;
 }
@@ -197,9 +164,7 @@ export function computeStaleTargets(
     .map((targetUrl) => {
       const targetRuns = runs.filter((r) => r.targetUrl === targetUrl);
       const lastScan = mostRecent(targetRuns);
-      const ageMs = lastScan
-        ? now - new Date(lastScan.updatedAt).getTime()
-        : Infinity;
+      const ageMs = lastScan ? now - new Date(lastScan.updatedAt).getTime() : Infinity;
       return {
         targetUrl,
         lastScanAt: lastScan?.updatedAt ?? null,

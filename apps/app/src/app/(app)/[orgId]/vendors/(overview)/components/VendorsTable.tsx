@@ -4,7 +4,7 @@ import { OnboardingLoadingAnimation } from '@/components/onboarding-loading-anim
 import { RiskScoreBadge } from '@/components/risks/RiskScoreBadge';
 import { VendorStatus } from '@/components/vendor-status';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useVendors, useVendorActions, type Vendor } from '@/hooks/use-vendors';
+import { useVendorActions, useVendors, type Vendor } from '@/hooks/use-vendors';
 import { getRiskScore } from '@/lib/risk-score';
 import {
   interpolatedResidualScore,
@@ -405,10 +405,7 @@ export function VendorsTable({
   }, [mergedVendors, searchQuery, sort]);
 
   // Calculate pageCount from filtered data and paginate
-  const filteredPageCount = Math.max(
-    1,
-    Math.ceil(filteredAndSortedVendors.length / perPage),
-  );
+  const filteredPageCount = Math.max(1, Math.ceil(filteredAndSortedVendors.length / perPage));
 
   const startIndex = (page - 1) * perPage;
   const paginatedVendors = filteredAndSortedVendors.slice(startIndex, startIndex + perPage);
@@ -641,7 +638,9 @@ export function VendorsTable({
                     </TableCell>
                     <TableCell>
                       {vendor.status === 'not_assessed' ? (
-                        <Text variant="muted" size="sm">—</Text>
+                        <Text variant="muted" size="sm">
+                          —
+                        </Text>
                       ) : (
                         <RiskScoreBadge
                           likelihood={vendor.inherentProbability}
@@ -651,7 +650,9 @@ export function VendorsTable({
                     </TableCell>
                     <TableCell>
                       {vendor.status === 'not_assessed' ? (
-                        <Text variant="muted" size="sm">—</Text>
+                        <Text variant="muted" size="sm">
+                          —
+                        </Text>
                       ) : (
                         // Show the current (interpolated) score that
                         // reflects how far the linked tasks have driven

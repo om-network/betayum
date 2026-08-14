@@ -14,7 +14,9 @@ describe('buildCsv', () => {
   });
 
   it('wraps fields containing a comma in double quotes', () => {
-    expect(buildCsv(undefined, [['hello, world', 'ok']])).toBe('"hello, world",ok');
+    expect(buildCsv(undefined, [['hello, world', 'ok']])).toBe(
+      '"hello, world",ok',
+    );
   });
 
   it('wraps fields containing a double quote and escapes inner quotes', () => {
@@ -22,7 +24,9 @@ describe('buildCsv', () => {
   });
 
   it('wraps fields containing a newline in double quotes', () => {
-    expect(buildCsv(undefined, [['line1\nline2', 'ok']])).toBe('"line1\nline2",ok');
+    expect(buildCsv(undefined, [['line1\nline2', 'ok']])).toBe(
+      '"line1\nline2",ok',
+    );
   });
 
   it('wraps fields containing a carriage return in double quotes', () => {
@@ -42,7 +46,10 @@ describe('buildCsv', () => {
   });
 
   it('joins multiple rows with CRLF', () => {
-    const csv = buildCsv(undefined, [['a', 'b'], ['c', 'd']]);
+    const csv = buildCsv(undefined, [
+      ['a', 'b'],
+      ['c', 'd'],
+    ]);
     expect(csv).toBe('a,b\r\nc,d');
   });
 });
@@ -69,21 +76,37 @@ describe('attachSheetAsCsv', () => {
   });
 
   it('calls uploadAttachment with correct entityType and taskId, returns true on success', async () => {
-    mockUploadAttachment.mockResolvedValue({ id: 'att_1', name: 'My Sheet.csv' });
+    mockUploadAttachment.mockResolvedValue({
+      id: 'att_1',
+      name: 'My Sheet.csv',
+    });
 
     const result = await attachSheetAsCsv(baseArgs);
 
     expect(result).toBe(true);
     expect(mockUploadAttachment).toHaveBeenCalledTimes(1);
 
-    const [orgId, entityId, entityType, dto] = mockUploadAttachment.mock.calls[0] as [string, string, AttachmentEntityType, { fileName: string; fileType: string; fileData: string; description: string }];
+    const [orgId, entityId, entityType, dto] = mockUploadAttachment.mock
+      .calls[0] as [
+      string,
+      string,
+      AttachmentEntityType,
+      {
+        fileName: string;
+        fileType: string;
+        fileData: string;
+        description: string;
+      },
+    ];
     expect(orgId).toBe('org_1');
     expect(entityId).toBe('task_1');
     expect(entityType).toBe('task');
     expect(dto.fileName).toBe('My Sheet.csv');
     expect(dto.fileType).toBe('text/csv');
     expect(dto.description).toContain('auto_1');
-    expect(dto.description).toContain('https://docs.google.com/spreadsheets/d/abc/edit');
+    expect(dto.description).toContain(
+      'https://docs.google.com/spreadsheets/d/abc/edit',
+    );
 
     const decoded = Buffer.from(dto.fileData, 'base64').toString('utf-8');
     expect(decoded).toBe('Name,Status\r\nalice,ok');
@@ -103,7 +126,12 @@ describe('attachSheetAsCsv', () => {
 
     await attachSheetAsCsv({ ...baseArgs, title: 'My/Sheet:2024' });
 
-    const [, , , dto] = mockUploadAttachment.mock.calls[0] as [string, string, AttachmentEntityType, { fileName: string }];
+    const [, , , dto] = mockUploadAttachment.mock.calls[0] as [
+      string,
+      string,
+      AttachmentEntityType,
+      { fileName: string },
+    ];
     expect(dto.fileName).not.toMatch(/[/:\\]/);
     expect(dto.fileName).toMatch(/\.csv$/);
   });
@@ -114,7 +142,12 @@ describe('attachSheetAsCsv', () => {
 
     await attachSheetAsCsv({ ...baseArgs, title: longTitle });
 
-    const [, , , dto] = mockUploadAttachment.mock.calls[0] as [string, string, AttachmentEntityType, { fileName: string }];
+    const [, , , dto] = mockUploadAttachment.mock.calls[0] as [
+      string,
+      string,
+      AttachmentEntityType,
+      { fileName: string },
+    ];
     expect(dto.fileName.length).toBeLessThanOrEqual(255);
     expect(dto.fileName).toMatch(/\.csv$/);
   });
@@ -125,7 +158,12 @@ describe('attachSheetAsCsv', () => {
 
     await attachSheetAsCsv({ ...baseArgs, spreadsheetUrl: longUrl });
 
-    const [, , , dto] = mockUploadAttachment.mock.calls[0] as [string, string, AttachmentEntityType, { description?: string }];
+    const [, , , dto] = mockUploadAttachment.mock.calls[0] as [
+      string,
+      string,
+      AttachmentEntityType,
+      { description?: string },
+    ];
     expect((dto.description ?? '').length).toBeLessThanOrEqual(500);
   });
 
@@ -134,7 +172,12 @@ describe('attachSheetAsCsv', () => {
 
     await attachSheetAsCsv({ ...baseArgs, headers: undefined });
 
-    const [, , , dto] = mockUploadAttachment.mock.calls[0] as [string, string, AttachmentEntityType, { fileData: string }];
+    const [, , , dto] = mockUploadAttachment.mock.calls[0] as [
+      string,
+      string,
+      AttachmentEntityType,
+      { fileData: string },
+    ];
     const decoded = Buffer.from(dto.fileData, 'base64').toString('utf-8');
     expect(decoded).toBe('alice,ok');
   });

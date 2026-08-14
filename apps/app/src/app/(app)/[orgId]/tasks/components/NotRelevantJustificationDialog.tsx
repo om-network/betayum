@@ -46,8 +46,8 @@ export function NotRelevantJustificationDialog({
         <DialogHeader>
           <DialogTitle>Mark as Not Relevant</DialogTitle>
           <DialogDescription>
-            Please provide a reason for marking {taskLabel} as not relevant.
-            Auditors may review this justification during an audit.
+            Please provide a reason for marking {taskLabel} as not relevant. Auditors may review
+            this justification during an audit.
           </DialogDescription>
         </DialogHeader>
 
@@ -66,10 +66,7 @@ export function NotRelevantJustificationDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={!justification.trim()}
-          >
+          <Button onClick={handleConfirm} disabled={!justification.trim()}>
             Mark as Not Relevant
           </Button>
         </DialogFooter>

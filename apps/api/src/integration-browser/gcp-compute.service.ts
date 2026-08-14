@@ -300,5 +300,4 @@ export class GcpComputeService {
       (first === 192 && second === 168)
     );
   }
-
 }

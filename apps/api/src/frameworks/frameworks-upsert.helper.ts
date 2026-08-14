@@ -20,7 +20,7 @@ function sanitizeJsonContent(
     'set' in arr[0] &&
     Array.isArray(arr[0].set)
   ) {
-    arr = arr[0].set as Prisma.JsonValue[];
+    arr = arr[0].set;
   }
 
   // JsonValue and InputJsonValue are runtime-identical; only difference
@@ -281,10 +281,14 @@ export async function upsertOrgFrameworkStructure({
   );
 
   const requirementMapEntries: Prisma.RequirementMapCreateManyInput[] = [];
-  const controlDocumentTypeEntries: Prisma.ControlDocumentTypeCreateManyInput[] = [];
-  const frameworkControlPolicyEntries: Prisma.FrameworkControlPolicyLinkCreateManyInput[] = [];
-  const frameworkControlTaskEntries: Prisma.FrameworkControlTaskLinkCreateManyInput[] = [];
-  const frameworkControlDocumentTypeEntries: Prisma.FrameworkControlDocumentTypeLinkCreateManyInput[] = [];
+  const controlDocumentTypeEntries: Prisma.ControlDocumentTypeCreateManyInput[] =
+    [];
+  const frameworkControlPolicyEntries: Prisma.FrameworkControlPolicyLinkCreateManyInput[] =
+    [];
+  const frameworkControlTaskEntries: Prisma.FrameworkControlTaskLinkCreateManyInput[] =
+    [];
+  const frameworkControlDocumentTypeEntries: Prisma.FrameworkControlDocumentTypeLinkCreateManyInput[] =
+    [];
   const controlTemplateById = new Map(controlTemplates.map((c) => [c.id, c]));
 
   for (const relation of groupedRelations) {
@@ -349,9 +353,11 @@ export async function upsertOrgFrameworkStructure({
     // documentTypes so the new org starts with the same evidence form types
     // the published version specified. Skip duplicates against existing rows
     // via the unique constraint at create time.
-    const documentTypes = relation.documentTypes.length > 0
-      ? relation.documentTypes
-      : (controlTemplateById.get(relation.controlTemplateId)?.documentTypes ?? []);
+    const documentTypes =
+      relation.documentTypes.length > 0
+        ? relation.documentTypes
+        : (controlTemplateById.get(relation.controlTemplateId)?.documentTypes ??
+          []);
     for (const formType of documentTypes) {
       controlDocumentTypeEntries.push({ controlId, formType });
       frameworkControlDocumentTypeEntries.push({

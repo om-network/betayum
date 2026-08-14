@@ -1,11 +1,11 @@
 'use client';
 
-import { Card } from '@trycompai/ui';
 import { Button } from '@trycompai/design-system';
-import { ChevronUp, ChevronDown } from '@trycompai/design-system/icons';
+import { ChevronDown, ChevronUp } from '@trycompai/design-system/icons';
+import { Card } from '@trycompai/ui';
 import type { SOAFieldSavePayload, SOATableAnswerData } from './EditableSOAFields';
-import { SOATableRow } from './SOATableRow';
 import { SOAMobileRow } from './SOAMobileRow';
+import { SOATableRow } from './SOATableRow';
 
 export type { SOATableAnswerData };
 
@@ -142,10 +142,15 @@ export function SOATable({
 
 function getColumnWidth(colName: string): string {
   switch (colName) {
-    case 'isApplicable': return '15%';
-    case 'title': return '20%';
-    case 'control_objective': return '35%';
-    case 'justification': return '30%';
-    default: return '20%';
+    case 'isApplicable':
+      return '15%';
+    case 'title':
+      return '20%';
+    case 'control_objective':
+      return '35%';
+    case 'justification':
+      return '30%';
+    default:
+      return '20%';
   }
 }

@@ -1,7 +1,7 @@
 'use server';
 
-import { auth as triggerAuth, tasks } from '@trigger.dev/sdk';
 import { auth } from '@/utils/auth';
+import { tasks, auth as triggerAuth } from '@trigger.dev/sdk';
 import { headers } from 'next/headers';
 
 interface PreviewInput {

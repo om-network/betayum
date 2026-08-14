@@ -46,11 +46,7 @@ export function RunHistory({ runs }: RunHistoryProps) {
           </p>
           <div className="space-y-2">
             {dateRuns.map((run, index) => (
-              <RunItem
-                key={run.id}
-                run={run}
-                isLatest={index === 0 && date === firstDateKey}
-              />
+              <RunItem key={run.id} run={run} isLatest={index === 0 && date === firstDateKey} />
             ))}
           </div>
         </div>
@@ -67,5 +63,3 @@ export function RunHistory({ runs }: RunHistoryProps) {
     </div>
   );
 }
-
-

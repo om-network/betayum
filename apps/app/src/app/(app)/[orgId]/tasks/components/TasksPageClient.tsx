@@ -1,6 +1,7 @@
 'use client';
 
 import { UpdateOrganizationEvidenceApproval } from '@/components/forms/organization/update-organization-evidence-approval';
+import { usePermissions } from '@/hooks/use-permissions';
 import { downloadAllEvidenceZip } from '@/lib/evidence-download';
 import type { Member, Task, User } from '@db';
 import {
@@ -22,7 +23,6 @@ import { Add, ArrowDown } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useTasks } from '../hooks/useTasks';
-import { usePermissions } from '@/hooks/use-permissions';
 import type { FrameworkInstanceForTasks } from '../types';
 import { AutomationTaskOverview } from './AutomationTaskOverview';
 import { CreateTaskSheet } from './CreateTaskSheet';
@@ -153,11 +153,7 @@ export function TasksPageClient({
           evidenceApprovalEnabled={evidenceApprovalEnabled}
           afterAnalytics={
             <div className="space-y-4">
-              <AutomationTaskOverview
-                orgId={orgId}
-                tasks={tasks}
-                onRefresh={mutateTasks}
-              />
+              <AutomationTaskOverview orgId={orgId} tasks={tasks} onRefresh={mutateTasks} />
               <div className="w-fit">
                 <TabsList variant="underline">
                   <TabsTrigger value="evidence-list">Overview</TabsTrigger>

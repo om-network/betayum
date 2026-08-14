@@ -36,10 +36,7 @@ const OPEN: Record<string, string> = { '{': '}', '[': ']' };
  *  - string literals with `\"` escapes (so braces inside strings
  *    don't affect depth counting)
  */
-export function findBalancedEnd(
-  text: string,
-  start: number,
-): number | null {
+export function findBalancedEnd(text: string, start: number): number | null {
   const openCh = text[start];
   if (openCh !== '{' && openCh !== '[') return null;
 
@@ -96,10 +93,7 @@ export function extractJsonSegments(text: string): Segment[] {
         const raw = text.slice(i, end + 1);
         try {
           const parsed: unknown = JSON.parse(raw);
-          if (
-            parsed !== null &&
-            (typeof parsed === 'object' || Array.isArray(parsed))
-          ) {
+          if (parsed !== null && (typeof parsed === 'object' || Array.isArray(parsed))) {
             if (buffer.length > 0) {
               segments.push({ type: 'text', value: buffer });
               buffer = '';

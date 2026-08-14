@@ -90,11 +90,9 @@ describe('AttachmentsController', () => {
         fileName: 'Access Review Log — 2026-07-22.csv',
       });
 
-      await controller.streamAttachment(
-        'org_123',
-        'att_abc123',
-        { setHeader } as unknown as Response,
-      );
+      await controller.streamAttachment('org_123', 'att_abc123', {
+        setHeader,
+      } as unknown as Response);
 
       expect(setHeader).toHaveBeenCalledWith(
         'Content-Disposition',

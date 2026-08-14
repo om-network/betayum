@@ -47,7 +47,9 @@ export function ReportCover() {
       >
         PENETRATION TEST REPORT
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 4, fontSize: 7, color: '#333' }}>
+      <div
+        style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 4, fontSize: 7, color: '#333' }}
+      >
         <Meta label="Assessment Period" value="May 5, 2026 — May 5, 2026" />
         <Meta label="Report Date" value="May 5, 2026" />
         <Meta label="Version" value="1.0" />

@@ -491,7 +491,10 @@ export class AttachmentsService {
   }
 
   private getProxyUrl(attachmentId: string): string {
-    const base = (process.env.BASE_URL ?? 'http://localhost:3333').replace(/\/$/, '');
+    const base = (process.env.BASE_URL ?? 'http://localhost:3333').replace(
+      /\/$/,
+      '',
+    );
     return `${base}/v1/attachments/${attachmentId}/stream`;
   }
 
@@ -504,11 +507,16 @@ export class AttachmentsService {
     if (contentType) return contentType;
 
     switch (type) {
-      case AttachmentType.image: return 'image/png';
-      case AttachmentType.video: return 'video/mp4';
-      case AttachmentType.audio: return 'audio/mpeg';
-      case AttachmentType.document: return 'application/octet-stream';
-      default: return 'application/octet-stream';
+      case AttachmentType.image:
+        return 'image/png';
+      case AttachmentType.video:
+        return 'video/mp4';
+      case AttachmentType.audio:
+        return 'audio/mpeg';
+      case AttachmentType.document:
+        return 'application/octet-stream';
+      default:
+        return 'application/octet-stream';
     }
   }
 

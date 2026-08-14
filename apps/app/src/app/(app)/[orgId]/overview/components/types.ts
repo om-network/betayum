@@ -1,8 +1,8 @@
 import type { FrameworkInstance, IntegrationResult, Policy, Task } from '@db';
 
 export type {
-  FrameworkInstanceWithControls,
   FrameworkInstanceWithComplianceScore,
+  FrameworkInstanceWithControls,
 } from '@/lib/types/framework';
 
 export interface ComplianceScoresProps {

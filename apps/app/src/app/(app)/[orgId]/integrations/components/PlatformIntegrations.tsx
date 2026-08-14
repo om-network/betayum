@@ -9,6 +9,17 @@ import {
 } from '@/hooks/use-integration-platform';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useVendors } from '@/hooks/use-vendors';
+import {
+  AiGenerate,
+  ArrowRight,
+  CheckmarkFilled,
+  Flash,
+  Plug,
+  Renew,
+  SettingsAdjust,
+  Warning,
+  WarningAlt,
+} from '@trycompai/design-system/icons';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
@@ -21,17 +32,6 @@ import {
 } from '@trycompai/ui/dialog';
 import { Skeleton } from '@trycompai/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
-import {
-  ArrowRight,
-  CheckmarkFilled,
-  Flash,
-  Plug,
-  Renew,
-  SettingsAdjust,
-  WarningAlt,
-  Warning,
-  AiGenerate,
-} from '@trycompai/design-system/icons';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -489,8 +489,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                   );
 
                 const githubBrowserLoginOnly =
-                  provider.id === 'github' &&
-                  provider.oauthConfigured === false;
+                  provider.id === 'github' && provider.oauthConfigured === false;
                 const isComingSoon =
                   provider.id !== 'github' &&
                   provider.authType === 'oauth2' &&

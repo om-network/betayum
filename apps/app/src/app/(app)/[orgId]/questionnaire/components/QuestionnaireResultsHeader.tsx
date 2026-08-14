@@ -15,13 +15,13 @@ import {
   InputGroupInput,
 } from '@trycompai/design-system';
 import { Flash, Search } from '@trycompai/design-system/icons';
+import { Button as CompButton } from '@trycompai/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
-import { Button as CompButton } from '@trycompai/ui/button';
 import {
   ChevronDown,
   Download,

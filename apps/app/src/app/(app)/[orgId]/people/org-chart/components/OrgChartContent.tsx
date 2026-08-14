@@ -2,10 +2,10 @@
 
 import type { Edge, Node } from '@xyflow/react';
 
+import type { OrgChartMember } from '../types';
 import { OrgChartEditor } from './OrgChartEditor';
 import { OrgChartEmptyState } from './OrgChartEmptyState';
 import { OrgChartImageView } from './OrgChartImageView';
-import type { OrgChartMember } from '../types';
 
 interface OrgChartData {
   id: string;
@@ -28,12 +28,7 @@ export function OrgChartContent({ chartData, members }: OrgChartContentProps) {
   }
 
   if (chartData.type === 'uploaded' && chartData.signedImageUrl) {
-    return (
-      <OrgChartImageView
-        imageUrl={chartData.signedImageUrl}
-        chartName={chartData.name}
-      />
-    );
+    return <OrgChartImageView imageUrl={chartData.signedImageUrl} chartName={chartData.name} />;
   }
 
   if (chartData.type === 'uploaded') {

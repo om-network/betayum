@@ -290,8 +290,7 @@ export class EvidenceExportService {
       perAutomationSubfolders,
     } = params;
 
-    const typePrefix =
-      automation.type === 'app_automation' ? 'app' : 'custom';
+    const typePrefix = automation.type === 'app_automation' ? 'app' : 'custom';
     const automationName = sanitizeFilename(automation.name);
     const idSuffix = automation.id.slice(-8);
 

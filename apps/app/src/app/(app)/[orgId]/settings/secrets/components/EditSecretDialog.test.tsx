@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
@@ -89,9 +89,7 @@ describe('EditSecretDialog permission gating', () => {
 
   it('enables Update Secret button when user has organization:update permission', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(
-      <EditSecretDialog secret={sampleSecret} open={true} onOpenChange={vi.fn()} />,
-    );
+    render(<EditSecretDialog secret={sampleSecret} open={true} onOpenChange={vi.fn()} />);
 
     const updateButton = screen.getByRole('button', { name: /update secret/i });
     expect(updateButton).not.toBeDisabled();
@@ -99,9 +97,7 @@ describe('EditSecretDialog permission gating', () => {
 
   it('disables Update Secret button when user lacks organization:update permission', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
-    render(
-      <EditSecretDialog secret={sampleSecret} open={true} onOpenChange={vi.fn()} />,
-    );
+    render(<EditSecretDialog secret={sampleSecret} open={true} onOpenChange={vi.fn()} />);
 
     const updateButton = screen.getByRole('button', { name: /update secret/i });
     expect(updateButton).toBeDisabled();
@@ -109,9 +105,7 @@ describe('EditSecretDialog permission gating', () => {
 
   it('disables Update Secret button when user has no permissions', () => {
     setMockPermissions({});
-    render(
-      <EditSecretDialog secret={sampleSecret} open={true} onOpenChange={vi.fn()} />,
-    );
+    render(<EditSecretDialog secret={sampleSecret} open={true} onOpenChange={vi.fn()} />);
 
     const updateButton = screen.getByRole('button', { name: /update secret/i });
     expect(updateButton).toBeDisabled();
@@ -128,9 +122,7 @@ describe('EditSecretDialog permission gating', () => {
 
   it('displays Edit Secret title and secret name in form', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
-    render(
-      <EditSecretDialog secret={sampleSecret} open={true} onOpenChange={vi.fn()} />,
-    );
+    render(<EditSecretDialog secret={sampleSecret} open={true} onOpenChange={vi.fn()} />);
 
     expect(screen.getByText('Edit Secret')).toBeInTheDocument();
   });

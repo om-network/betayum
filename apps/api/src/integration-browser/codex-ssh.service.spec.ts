@@ -22,9 +22,7 @@ describe(CodexSshService.name, () => {
   const compute = {
     setMetadataItem: jest.fn(),
   };
-  const service = new CodexSshService(
-    compute as unknown as GcpComputeService,
-  );
+  const service = new CodexSshService(compute as unknown as GcpComputeService);
 
   beforeEach(() => {
     jest.clearAllMocks();

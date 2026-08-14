@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -27,9 +27,7 @@ vi.mock('../forms/risks/create-risk-form', () => ({
 
 // Mock design system components
 vi.mock('@trycompai/design-system', () => ({
-  Button: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
-  ),
+  Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
   Sheet: ({ children }: any) => <div>{children}</div>,
   SheetContent: ({ children }: any) => <div>{children}</div>,
   SheetHeader: ({ children }: any) => <div>{children}</div>,
@@ -66,9 +64,7 @@ describe('CreateRiskSheet', () => {
   it('returns null when user lacks risk:create permission', () => {
     setMockPermissions({});
 
-    const { container } = render(
-      <CreateRiskSheet assignees={mockAssignees} />,
-    );
+    const { container } = render(<CreateRiskSheet assignees={mockAssignees} />);
 
     expect(container.innerHTML).toBe('');
   });
@@ -76,9 +72,7 @@ describe('CreateRiskSheet', () => {
   it('returns null for auditor without risk:create permission', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
 
-    const { container } = render(
-      <CreateRiskSheet assignees={mockAssignees} />,
-    );
+    const { container } = render(<CreateRiskSheet assignees={mockAssignees} />);
 
     expect(container.innerHTML).toBe('');
   });
@@ -88,9 +82,7 @@ describe('CreateRiskSheet', () => {
 
     render(<CreateRiskSheet assignees={mockAssignees} />);
 
-    expect(
-      screen.getByRole('button', { name: /create risk/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create risk/i })).toBeInTheDocument();
   });
 
   it('renders trigger with correct text for admin permissions', () => {

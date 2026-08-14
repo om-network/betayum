@@ -1,12 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   NO_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
@@ -40,9 +40,7 @@ vi.mock('@trycompai/ui/button', () => ({
 }));
 
 vi.mock('@trycompai/ui/dialog', () => ({
-  DialogContent: ({ children }: any) => (
-    <div data-testid="dialog-content">{children}</div>
-  ),
+  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
   DialogDescription: ({ children }: any) => <p>{children}</p>,
   DialogFooter: ({ children }: any) => <div>{children}</div>,
   DialogHeader: ({ children }: any) => <div>{children}</div>,
@@ -152,9 +150,7 @@ describe('AddFrameworkModal', () => {
       render(<AddFrameworkModal {...defaultProps} />);
 
       expect(screen.getByText('Add Frameworks')).toBeInTheDocument();
-      expect(
-        screen.getByText(/select the compliance frameworks/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/select the compliance frameworks/i)).toBeInTheDocument();
     });
 
     it('renders available framework cards', () => {
@@ -169,16 +165,9 @@ describe('AddFrameworkModal', () => {
     it('shows empty state when no frameworks available', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
 
-      render(
-        <AddFrameworkModal
-          {...defaultProps}
-          availableFrameworks={[]}
-        />,
-      );
+      render(<AddFrameworkModal {...defaultProps} availableFrameworks={[]} />);
 
-      expect(
-        screen.getByText(/all available frameworks are already enabled/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/all available frameworks are already enabled/i)).toBeInTheDocument();
     });
 
     it('disables "Add Selected" button when nothing is selected even with permissions', () => {

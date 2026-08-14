@@ -2,9 +2,36 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { PolicyEditor } from '@/components/editor/policy-editor';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useChat } from '@ai-sdk/react';
+import {
+  PolicyStatus,
+  type Member,
+  type PolicyDisplayFormat,
+  type PolicyVersion,
+  type User,
+} from '@db';
+import type { JSONContent, Editor as TipTapEditor } from '@tiptap/react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  Label,
+  Section,
+  Stack,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@trycompai/design-system';
+import { MagicWand } from '@trycompai/design-system/icons';
 import { Badge } from '@trycompai/ui/badge';
-import { useMediaQuery } from '@trycompai/ui/hooks';
 import {
   Dialog,
   DialogContent,
@@ -19,46 +46,32 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
-import { validateAndFixTipTapContent, SuggestionsExtension } from '@trycompai/ui/editor';
-import { PolicyStatus, type Member, type PolicyDisplayFormat, type PolicyVersion, type User } from '@db';
-import type { JSONContent, Editor as TipTapEditor } from '@tiptap/react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  Button,
-  HStack,
-  Label,
-  Section,
-  Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@trycompai/design-system';
-import { Close, MagicWand } from '@trycompai/design-system/icons';
+import { SuggestionsExtension, validateAndFixTipTapContent } from '@trycompai/ui/editor';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { DefaultChatTransport } from 'ai';
 import { format } from 'date-fns';
-import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight, FileText, Trash2, Upload } from 'lucide-react';
+import {
+  ArrowDownUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { usePolicy } from '../../hooks/usePolicy';
-import { usePolicyVersions } from '../../hooks/usePolicyVersions';
-import { usePermissions } from '@/hooks/use-permissions';
 import { PdfViewer } from '../../components/PdfViewer';
 import { PublishVersionDialog } from '../../components/PublishVersionDialog';
-import type { PolicyChatUIMessage } from '../types';
-import { PolicyAiAssistant } from './ai/policy-ai-assistant';
+import { usePolicy } from '../../hooks/usePolicy';
+import { usePolicyVersions } from '../../hooks/usePolicyVersions';
 import { useSuggestions } from '../hooks/use-suggestions';
 import { buildPositionMap } from '../lib/build-position-map';
+import type { PolicyChatUIMessage } from '../types';
 import { InlineEditBubble } from './ai/inline-edit-bubble';
 import { markdownToTipTapJSON } from './ai/markdown-utils';
+import { PolicyAiAssistant } from './ai/policy-ai-assistant';
 
 import { SuggestionsTopBar } from './ai/suggestions-top-bar';
 
@@ -230,7 +243,8 @@ export function PolicyContentManager({
         onAccept: (id: string) => suggestionCallbacksRef.current.onAccept(id),
         onReject: (id: string) => suggestionCallbacksRef.current.onReject(id),
         onEditClick: (id: string) => suggestionCallbacksRef.current.onEditClick(id),
-        onFeedbackSubmit: (id: string, feedback: string) => suggestionCallbacksRef.current.onFeedbackSubmit(id, feedback),
+        onFeedbackSubmit: (id: string, feedback: string) =>
+          suggestionCallbacksRef.current.onFeedbackSubmit(id, feedback),
         onFeedbackCancel: () => suggestionCallbacksRef.current.onFeedbackCancel(),
         markdownToJSON: markdownToTipTapJSON,
       }),
@@ -303,7 +317,7 @@ export function PolicyContentManager({
   useEffect(() => {
     // Don't reset if we're waiting for a pending version switch
     if (pendingVersionSwitch) return;
-    
+
     // If the currently viewed version no longer exists, switch to current version
     const viewedVersionExists = versions.some((v) => v.id === viewingVersion);
     if (!viewedVersionExists) {
@@ -400,7 +414,7 @@ export function PolicyContentManager({
 
       // If we deleted the selected version, switch to another one
       if (viewingVersion === versionToDelete.id) {
-        const remainingVersions = versions.filter(v => v.id !== versionToDelete.id);
+        const remainingVersions = versions.filter((v) => v.id !== versionToDelete.id);
         setViewingVersion(currentVersionId ?? remainingVersions[0]?.id ?? '');
       }
 
@@ -458,7 +472,13 @@ export function PolicyContentManager({
 
     // For draft/needs_review, can publish the current version
     return policyStatus === PolicyStatus.draft || policyStatus === PolicyStatus.needs_review;
-  }, [canPublishPolicy, isPendingApproval, isViewingPendingVersion, policyStatus, isViewingActiveVersion]);
+  }, [
+    canPublishPolicy,
+    isPendingApproval,
+    isViewingPendingVersion,
+    policyStatus,
+    isViewingActiveVersion,
+  ]);
 
   // Content to display is always currentContent (editable)
   const displayContent = useMemo(() => {
@@ -496,10 +516,7 @@ export function PolicyContentManager({
   // the most recent completed proposal across the entire conversation so that
   // starting a new streaming response doesn't cause the card to vanish.
 
-  const latestCompletedProposal = useMemo(
-    () => getLatestCompletedProposal(messages),
-    [messages],
-  );
+  const latestCompletedProposal = useMemo(() => getLatestCompletedProposal(messages), [messages]);
 
   // The last fully-completed, non-dismissed proposal the user can act on.
   // Clear dismissedProposalKey when a new proposal arrives so it's not blocked.
@@ -682,7 +699,9 @@ export function PolicyContentManager({
                             const pinnedVersions = [
                               publishedVersion,
                               // Only add pending if it's different from published
-                              pendingVersion && pendingVersion.id !== publishedVersion?.id ? pendingVersion : null,
+                              pendingVersion && pendingVersion.id !== publishedVersion?.id
+                                ? pendingVersion
+                                : null,
                             ].filter(Boolean) as PolicyVersionWithPublisher[];
                             return pinnedVersions.map((version) => {
                               const isActive = version.id === currentVersionId;
@@ -878,39 +897,54 @@ export function PolicyContentManager({
                   Create new version
                 </Button>
               )}
-              {!isVersionReadOnly && canUpdatePolicy && aiAssistantEnabled && activeTab === 'EDITOR' && (
-                <Button
-                  variant={showAiAssistant ? 'default' : 'outline'}
-                  size="default"
-                  onClick={() => setShowAiAssistant((prev) => !prev)}
-                  iconLeft={<MagicWand size={16} />}
-                >
-                  AI Assistant
-                </Button>
-              )}
+              {!isVersionReadOnly &&
+                canUpdatePolicy &&
+                aiAssistantEnabled &&
+                activeTab === 'EDITOR' && (
+                  <Button
+                    variant={showAiAssistant ? 'default' : 'outline'}
+                    size="default"
+                    onClick={() => setShowAiAssistant((prev) => !prev)}
+                    iconLeft={<MagicWand size={16} />}
+                  >
+                    AI Assistant
+                  </Button>
+                )}
             </div>
           </div>
 
           {/* Mobile/tablet and medium desktop: AI assistant above the editor */}
-          {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && !isWideDesktop && (
-            <div className="h-[400px]">
-              <PolicyAiAssistant
-                messages={messages}
-                status={status}
-                errorMessage={chatErrorMessage}
-                sendMessage={sendMessage}
-                stop={stopChat}
-                close={() => setShowAiAssistant(false)}
-              />
-            </div>
-          )}
+          {aiAssistantEnabled &&
+            showAiAssistant &&
+            !isVersionReadOnly &&
+            activeTab === 'EDITOR' &&
+            !isWideDesktop && (
+              <div className="h-[400px]">
+                <PolicyAiAssistant
+                  messages={messages}
+                  status={status}
+                  errorMessage={chatErrorMessage}
+                  sendMessage={sendMessage}
+                  stop={stopChat}
+                  close={() => setShowAiAssistant(false)}
+                />
+              </div>
+            )}
 
           <div
             className={
-              showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex flex-row items-start gap-6' : ''
+              showAiAssistant && aiAssistantEnabled && isWideDesktop
+                ? 'flex flex-row items-start gap-6'
+                : ''
             }
           >
-            <div className={showAiAssistant && aiAssistantEnabled && isWideDesktop ? 'flex-[7] min-w-0 max-h-[calc(100dvh-24rem)] overflow-y-auto' : 'w-full'}>
+            <div
+              className={
+                showAiAssistant && aiAssistantEnabled && isWideDesktop
+                  ? 'flex-[7] min-w-0 max-h-[calc(100dvh-24rem)] overflow-y-auto'
+                  : 'w-full'
+              }
+            >
               <Stack gap="sm">
                 <TabsContent value="EDITOR">
                   {suggestions.isActive && (
@@ -970,20 +1004,23 @@ export function PolicyContentManager({
             </div>
 
             {/* Wide desktop (1536px+): AI assistant side panel */}
-            {aiAssistantEnabled && showAiAssistant && !isVersionReadOnly && activeTab === 'EDITOR' && isWideDesktop && (
-              <div className="flex-[3] min-w-[320px] sticky top-0 h-[calc(100dvh-24rem)]">
-                <PolicyAiAssistant
-                  messages={messages}
-                  status={status}
-                  errorMessage={chatErrorMessage}
-                  sendMessage={sendMessage}
-                  stop={stopChat}
-                  close={() => setShowAiAssistant(false)}
-                />
-              </div>
-            )}
+            {aiAssistantEnabled &&
+              showAiAssistant &&
+              !isVersionReadOnly &&
+              activeTab === 'EDITOR' &&
+              isWideDesktop && (
+                <div className="flex-[3] min-w-[320px] sticky top-0 h-[calc(100dvh-24rem)]">
+                  <PolicyAiAssistant
+                    messages={messages}
+                    status={status}
+                    errorMessage={chatErrorMessage}
+                    sendMessage={sendMessage}
+                    stop={stopChat}
+                    close={() => setShowAiAssistant(false)}
+                  />
+                </div>
+              )}
           </div>
-
         </Stack>
       </Tabs>
 

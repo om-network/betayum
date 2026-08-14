@@ -1,6 +1,5 @@
 'use client';
 
-import { useMediaQuery } from '@trycompai/ui/hooks';
 import {
   Drawer,
   DrawerContent,
@@ -13,6 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@trycompai/design-system';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CreateNewPolicyForm } from '../forms/policies/create-new-policy';
 

@@ -96,9 +96,7 @@ describe('FindingsTab', () => {
     render(<FindingsTab orgId="org_test" />);
 
     await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledWith(
-        '/v1/admin/organizations/org_test/findings',
-      );
+      expect(mockGet).toHaveBeenCalledWith('/v1/admin/organizations/org_test/findings');
     });
   });
 });

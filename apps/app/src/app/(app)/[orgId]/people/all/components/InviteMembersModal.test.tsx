@@ -38,8 +38,16 @@ describe('InviteMembersModal', () => {
     mockApiGet.mockResolvedValueOnce({
       data: {
         customRoles: [
-          { id: 'role_1', name: 'Pentest admin', permissions: { pentest: ['create', 'read', 'delete'] } },
-          { id: 'role_2', name: 'Compliance lead', permissions: { control: ['create', 'read', 'update'] } },
+          {
+            id: 'role_1',
+            name: 'Pentest admin',
+            permissions: { pentest: ['create', 'read', 'delete'] },
+          },
+          {
+            id: 'role_2',
+            name: 'Compliance lead',
+            permissions: { control: ['create', 'read', 'update'] },
+          },
         ],
       },
     });

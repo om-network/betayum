@@ -1,7 +1,6 @@
 'use client';
 
 import { usePermissions } from '@/hooks/use-permissions';
-import { useMediaQuery } from '@trycompai/ui/hooks';
 import type { Member, User } from '@db';
 import {
   Button,
@@ -16,6 +15,7 @@ import {
   SheetTitle,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { useCallback, useState } from 'react';
 import { CreateRisk } from '../forms/risks/create-risk-form';
 

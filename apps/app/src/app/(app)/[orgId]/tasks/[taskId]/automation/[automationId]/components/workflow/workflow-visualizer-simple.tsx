@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { EvidenceAutomationVersion } from '@db';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -18,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
-import { EvidenceAutomationVersion } from '@db';
 import { Code, Loader2, RotateCcw, Upload, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';

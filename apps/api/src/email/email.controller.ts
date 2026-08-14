@@ -47,7 +47,8 @@ export class EmailController {
   @HttpCode(200)
   @RequirePermission('email', 'send')
   @ApiOperation({
-    summary: 'Send a batch of emails via the centralized Trigger task (internal)',
+    summary:
+      'Send a batch of emails via the centralized Trigger task (internal)',
   })
   @ApiResponse({ status: 200, description: 'Batch email task triggered' })
   async sendBatchEmail(@Body() dto: SendBatchEmailDto) {

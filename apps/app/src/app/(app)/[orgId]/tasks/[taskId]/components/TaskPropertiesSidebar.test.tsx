@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Add useParams to the global next/navigation mock
 vi.mock('next/navigation', async (importOriginal) => {
@@ -59,7 +59,15 @@ vi.mock('@/hooks/use-organization-members', () => ({
 const propertySelectorCalls: Array<{ label: string; disabled: boolean }> = [];
 
 vi.mock('./PropertySelector', () => ({
-  PropertySelector: ({ disabled, trigger, value }: { disabled?: boolean; trigger: React.ReactNode; value?: string | null }) => {
+  PropertySelector: ({
+    disabled,
+    trigger,
+    value,
+  }: {
+    disabled?: boolean;
+    trigger: React.ReactNode;
+    value?: string | null;
+  }) => {
     // We capture the disabled prop by rendering it as a data attribute
     return (
       <div data-testid="property-selector" data-disabled={disabled ? 'true' : 'false'}>

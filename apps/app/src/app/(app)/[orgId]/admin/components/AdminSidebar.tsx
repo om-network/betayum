@@ -14,7 +14,11 @@ export function AdminSidebar({ orgId }: AdminSidebarProps) {
   const items = [
     { id: 'organizations', label: 'Organizations', path: `/${orgId}/admin/organizations` },
     { id: 'integrations', label: 'Integrations', path: `/${orgId}/admin/integrations` },
-    { id: 'timeline-templates', label: 'Timeline Templates', path: `/${orgId}/admin/timeline-templates` },
+    {
+      id: 'timeline-templates',
+      label: 'Timeline Templates',
+      path: `/${orgId}/admin/timeline-templates`,
+    },
   ];
 
   const isPathActive = (path: string) => pathname.startsWith(path);
@@ -23,9 +27,7 @@ export function AdminSidebar({ orgId }: AdminSidebarProps) {
     <AppShellNav>
       {items.map((item) => (
         <Link key={item.id} href={item.path}>
-          <AppShellNavItem isActive={isPathActive(item.path)}>
-            {item.label}
-          </AppShellNavItem>
+          <AppShellNavItem isActive={isPathActive(item.path)}>{item.label}</AppShellNavItem>
         </Link>
       ))}
     </AppShellNav>

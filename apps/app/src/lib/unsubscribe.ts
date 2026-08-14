@@ -50,4 +50,3 @@ export function getUnsubscribeUrl(email: string): string {
   const baseUrl = getBaseUrl();
   return `${baseUrl}/unsubscribe/preferences?email=${encodeURIComponent(email)}&token=${token}`;
 }
-

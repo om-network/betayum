@@ -31,10 +31,7 @@ export default async function RiskPage({ searchParams, params }: PageProps) {
   }
 
   const assignees = (peopleResult.data?.data ?? [])
-    .filter(
-      (p: any) =>
-        !p.deactivated && !['employee', 'contractor'].includes(p.role),
-    )
+    .filter((p: any) => !p.deactivated && !['employee', 'contractor'].includes(p.role))
     .map((p: any) => ({
       id: p.id,
       role: p.role,

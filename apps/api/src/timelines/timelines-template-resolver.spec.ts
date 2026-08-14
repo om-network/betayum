@@ -102,7 +102,9 @@ describe('timelines-template-resolver', () => {
       },
     };
 
-    (mockDb.$transaction as jest.Mock).mockImplementation(async (fn: any) => fn(tx));
+    (mockDb.$transaction as jest.Mock).mockImplementation(async (fn: any) =>
+      fn(tx),
+    );
 
     await createInstanceFromTemplate({
       organizationId: 'org_1',
@@ -118,7 +120,7 @@ describe('timelines-template-resolver', () => {
             groupLabel: null,
             orderIndex: 0,
             defaultDurationWeeks: 4,
-            completionType: 'MANUAL' as any,
+            completionType: 'MANUAL',
             locksTimelineOnComplete: true,
           },
           {
@@ -128,7 +130,7 @@ describe('timelines-template-resolver', () => {
             groupLabel: null,
             orderIndex: 1,
             defaultDurationWeeks: 4,
-            completionType: 'MANUAL' as any,
+            completionType: 'MANUAL',
             locksTimelineOnComplete: false,
           },
         ],

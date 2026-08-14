@@ -2,14 +2,14 @@
 
 import * as React from 'react';
 
+import { Card, HStack, Text } from '@trycompai/design-system';
+import { UserMultiple } from '@trycompai/design-system/icons';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@trycompai/ui/chart';
-import { Card, HStack, Text } from '@trycompai/design-system';
-import { UserMultiple } from '@trycompai/design-system/icons';
 import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 interface AssigneeData {

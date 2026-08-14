@@ -1,5 +1,6 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@trycompai/ui/button';
 import { Drawer, DrawerContent, DrawerTitle } from '@trycompai/ui/drawer';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
@@ -8,7 +9,6 @@ import { Input } from '@trycompai/ui/input';
 import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@trycompai/ui/sheet';
 import { Textarea } from '@trycompai/ui/textarea';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRightIcon, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
@@ -359,7 +359,6 @@ export function CreateControlSheet({
                 <X className="h-5 w-5" />
               </Button>
             </SheetHeader>
-            
 
             <div className="flex-1 overflow-y-auto min-h-0">
               <div className="px-2 pb-6">{controlForm}</div>
@@ -367,11 +366,7 @@ export function CreateControlSheet({
 
             {/* Fixed Footer with Submit Button */}
             <div className="border-t bg-background p-4 flex justify-end shrink-0">
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                onClick={form.handleSubmit(onSubmit)}
-              >
+              <Button type="submit" disabled={isSubmitting} onClick={form.handleSubmit(onSubmit)}>
                 <div className="flex items-center justify-center">
                   Create Control
                   <ArrowRightIcon className="ml-2 h-4 w-4" />
@@ -394,11 +389,7 @@ export function CreateControlSheet({
 
         {/* Fixed Footer with Submit Button */}
         <div className="border-t bg-background p-4 flex justify-end shrink-0">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            onClick={form.handleSubmit(onSubmit)}
-          >
+          <Button type="submit" disabled={isSubmitting} onClick={form.handleSubmit(onSubmit)}>
             <div className="flex items-center justify-center">
               Create Control
               <ArrowRightIcon className="ml-2 h-4 w-4" />

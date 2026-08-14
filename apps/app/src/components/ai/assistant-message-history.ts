@@ -27,18 +27,18 @@ export function uiMessagesToAssistantStoredMessages({
   return messages.flatMap((message) => {
     if (message.role !== 'user' && message.role !== 'assistant') return [];
 
-      const text = message.parts
-        .map((part) => (part.type === 'text' ? part.text : ''))
-        .filter(Boolean)
-        .join('\n\n');
+    const text = message.parts
+      .map((part) => (part.type === 'text' ? part.text : ''))
+      .filter(Boolean)
+      .join('\n\n');
 
-      if (text.trim().length === 0) return [];
+    if (text.trim().length === 0) return [];
 
-      return {
-        id: message.id,
-        role: message.role,
-        text,
-        createdAt,
-      };
-    });
+    return {
+      id: message.id,
+      role: message.role,
+      text,
+      createdAt,
+    };
+  });
 }

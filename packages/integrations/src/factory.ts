@@ -114,11 +114,7 @@ handlers.set('aws', {
   processCredentials: async (encryptedSettings, decrypt) => {
     const decrypted = await decryptSettings(encryptedSettings, decrypt);
     const region = typeof decrypted.region === 'string' ? decrypted.region : undefined;
-    const regions = Array.isArray(decrypted.regions)
-      ? decrypted.regions
-      : region
-        ? [region]
-        : [];
+    const regions = Array.isArray(decrypted.regions) ? decrypted.regions : region ? [region] : [];
     return {
       region,
       regions,

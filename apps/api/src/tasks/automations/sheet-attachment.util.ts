@@ -6,7 +6,10 @@ type CellRow = (string | number)[];
 
 const logger = new Logger('SheetAttachmentUtil');
 
-export function buildCsv(headers: CellRow | undefined, rows: CellRow[]): string {
+export function buildCsv(
+  headers: CellRow | undefined,
+  rows: CellRow[],
+): string {
   const allRows: CellRow[] = [...(headers ? [headers] : []), ...rows];
   return allRows.map(csvRow).join('\r\n');
 }
@@ -19,7 +22,12 @@ function csvField(value: string | number): string {
   if (typeof value === 'number') {
     return String(value);
   }
-  if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
+  if (
+    value.includes(',') ||
+    value.includes('"') ||
+    value.includes('\n') ||
+    value.includes('\r')
+  ) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;

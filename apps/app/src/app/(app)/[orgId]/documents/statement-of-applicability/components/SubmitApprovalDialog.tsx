@@ -1,5 +1,7 @@
 'use client';
 
+import { SelectAssignee } from '@/components/SelectAssignee';
+import type { Member, User } from '@db';
 import { Button } from '@trycompai/design-system';
 import {
   Dialog,
@@ -9,8 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@trycompai/ui/dialog';
-import { SelectAssignee } from '@/components/SelectAssignee';
-import type { Member, User } from '@db';
 
 interface SubmitApprovalDialogProps {
   open: boolean;

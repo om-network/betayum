@@ -1,13 +1,13 @@
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import {
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   mockHasPermission,
   setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import { CodexTerminal } from './CodexTerminal';
 
 vi.mock('@/hooks/use-permissions', () => ({
@@ -50,8 +50,7 @@ describe(CodexTerminal.name, () => {
         id: 'cts_1',
         status: 'ready',
         expiresAt: '2026-07-30T04:00:00.000Z',
-        websocketPath:
-          '/v1/integration-browser/codex-sessions/cts_1/terminal',
+        websocketPath: '/v1/integration-browser/codex-sessions/cts_1/terminal',
         error: null,
       },
       status: 201,
@@ -77,8 +76,7 @@ describe(CodexTerminal.name, () => {
           id: 'cts_logout',
           status: 'ready',
           expiresAt: '2026-07-30T04:00:00.000Z',
-          websocketPath:
-            '/v1/integration-browser/codex-sessions/cts_logout/terminal',
+          websocketPath: '/v1/integration-browser/codex-sessions/cts_logout/terminal',
           error: null,
         },
         status: 201,

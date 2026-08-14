@@ -1,5 +1,5 @@
 jest.mock('@/app/object-storage', () => {
-  const actual = jest.requireActual('@/app/object-storage') as typeof import('@/app/object-storage');
+  const actual = jest.requireActual('@/app/object-storage');
 
   return {
     ...actual,
@@ -75,7 +75,10 @@ describe('knowledge base object storage operations', () => {
 
   it('generates signed URLs and deletes through object storage', async () => {
     await expect(
-      generateDownloadUrl('org_123/knowledge-base-documents/doc.pdf', 'doc.pdf'),
+      generateDownloadUrl(
+        'org_123/knowledge-base-documents/doc.pdf',
+        'doc.pdf',
+      ),
     ).resolves.toEqual({ signedUrl: 'https://signed.example.com/file' });
 
     expect(mockObjectStorage.getSignedObjectUrl).toHaveBeenCalledWith({

@@ -1,7 +1,7 @@
 import 'server-only';
 
-import { Index } from '@upstash/vector';
 import { env } from '@/env.mjs';
+import { Index } from '@upstash/vector';
 
 if (!env.UPSTASH_VECTOR_REST_URL || !env.UPSTASH_VECTOR_REST_TOKEN) {
   console.warn(
@@ -9,10 +9,10 @@ if (!env.UPSTASH_VECTOR_REST_URL || !env.UPSTASH_VECTOR_REST_TOKEN) {
   );
 }
 
-export const vectorIndex = env.UPSTASH_VECTOR_REST_URL && env.UPSTASH_VECTOR_REST_TOKEN
-  ? new Index({
-      url: env.UPSTASH_VECTOR_REST_URL,
-      token: env.UPSTASH_VECTOR_REST_TOKEN,
-    })
-  : null;
-
+export const vectorIndex =
+  env.UPSTASH_VECTOR_REST_URL && env.UPSTASH_VECTOR_REST_TOKEN
+    ? new Index({
+        url: env.UPSTASH_VECTOR_REST_URL,
+        token: env.UPSTASH_VECTOR_REST_TOKEN,
+      })
+    : null;

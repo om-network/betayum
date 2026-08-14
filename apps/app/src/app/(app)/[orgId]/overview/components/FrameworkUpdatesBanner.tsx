@@ -30,64 +30,60 @@ export function FrameworkUpdatesBanner() {
 
   return (
     <div className="mx-auto w-full max-w-[1200px] pb-8">
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <div className="rounded-lg border bg-card">
-        <div className="flex items-center justify-between rounded-t-lg bg-secondary px-4 py-3">
-          <HStack gap="3" align="center">
-            <div className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <Upgrade size={16} />
-            </div>
-            <Text size="sm" weight="medium">
-              {count} framework {count === 1 ? 'update' : 'updates'} available
-            </Text>
-            <Badge variant="default">NEW</Badge>
-          </HStack>
-          <CollapsibleTrigger className="flex cursor-pointer items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            {open ? `Hide ${count}` : `Show ${count}`}
-            <ChevronUp
-              size={16}
-              className={`transition-transform ${open ? '' : 'rotate-180'}`}
-            />
-          </CollapsibleTrigger>
-        </div>
-
-        <CollapsibleContent>
-          <div className="border-t">
-            {statuses.map((status, index) => (
-              <div
-                key={status.frameworkInstanceId}
-                className={`flex items-center justify-between px-4 py-3 ${
-                  index < count - 1 ? 'border-b' : ''
-                }`}
-              >
-                <HStack gap="4" align="center">
-                  <Text size="sm" weight="medium">
-                    {status.frameworkName ?? 'Framework'}
-                  </Text>
-                  <Text size="sm" variant="muted">
-                    v{status.currentVersion?.version ?? '—'} → v
-                    {status.latestVersion?.version}
-                  </Text>
-                </HStack>
-                {canUpdate && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      router.push(
-                        `/${orgId}/frameworks/${status.frameworkInstanceId}/review-update`,
-                      )
-                    }
-                  >
-                    Review update
-                  </Button>
-                )}
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <div className="rounded-lg border bg-card">
+          <div className="flex items-center justify-between rounded-t-lg bg-secondary px-4 py-3">
+            <HStack gap="3" align="center">
+              <div className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                <Upgrade size={16} />
               </div>
-            ))}
+              <Text size="sm" weight="medium">
+                {count} framework {count === 1 ? 'update' : 'updates'} available
+              </Text>
+              <Badge variant="default">NEW</Badge>
+            </HStack>
+            <CollapsibleTrigger className="flex cursor-pointer items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {open ? `Hide ${count}` : `Show ${count}`}
+              <ChevronUp size={16} className={`transition-transform ${open ? '' : 'rotate-180'}`} />
+            </CollapsibleTrigger>
           </div>
-        </CollapsibleContent>
-      </div>
-    </Collapsible>
+
+          <CollapsibleContent>
+            <div className="border-t">
+              {statuses.map((status, index) => (
+                <div
+                  key={status.frameworkInstanceId}
+                  className={`flex items-center justify-between px-4 py-3 ${
+                    index < count - 1 ? 'border-b' : ''
+                  }`}
+                >
+                  <HStack gap="4" align="center">
+                    <Text size="sm" weight="medium">
+                      {status.frameworkName ?? 'Framework'}
+                    </Text>
+                    <Text size="sm" variant="muted">
+                      v{status.currentVersion?.version ?? '—'} → v{status.latestVersion?.version}
+                    </Text>
+                  </HStack>
+                  {canUpdate && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        router.push(
+                          `/${orgId}/frameworks/${status.frameworkInstanceId}/review-update`,
+                        )
+                      }
+                    >
+                      Review update
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
     </div>
   );
 }

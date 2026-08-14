@@ -1,9 +1,5 @@
 'use client';
 
-import { Badge } from '@trycompai/ui/badge';
-import { Button } from '@trycompai/ui/button';
-import { Card } from '@trycompai/ui';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,8 +14,29 @@ import {
   InputGroupInput,
 } from '@trycompai/design-system';
 import { Close, Search } from '@trycompai/design-system/icons';
+import { Card } from '@trycompai/ui';
+import { Badge } from '@trycompai/ui/badge';
+import { Button } from '@trycompai/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { formatDistanceToNow } from 'date-fns';
-import { Building2, CheckCircle2, ChevronLeft, ChevronRight, FileSpreadsheet, FileText, Filter, Globe2, Loader2, Trash2 } from 'lucide-react';
+import {
+  Building2,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  FileSpreadsheet,
+  FileText,
+  Filter,
+  Globe2,
+  Loader2,
+  Trash2,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -46,7 +63,10 @@ interface QuestionnaireHistoryProps {
   orgId: string;
 }
 
-export function QuestionnaireHistory({ questionnaires: initialQuestionnaires, orgId }: QuestionnaireHistoryProps) {
+export function QuestionnaireHistory({
+  questionnaires: initialQuestionnaires,
+  orgId,
+}: QuestionnaireHistoryProps) {
   const router = useRouter();
   const filterSectionRef = useRef<HTMLDivElement>(null);
 
@@ -79,16 +99,16 @@ export function QuestionnaireHistory({ questionnaires: initialQuestionnaires, or
     return (
       <Card>
         <div className="flex flex-col items-center justify-center gap-3 py-12 px-6 text-center">
-            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-              <FileText className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">No questionnaires yet</p>
-              <p className="text-xs text-muted-foreground">
-                Create your first questionnaire to see it here
-              </p>
-            </div>
+          <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+            <FileText className="h-6 w-6 text-muted-foreground" />
           </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">No questionnaires yet</p>
+            <p className="text-xs text-muted-foreground">
+              Create your first questionnaire to see it here
+            </p>
+          </div>
+        </div>
       </Card>
     );
   }
@@ -120,14 +140,19 @@ export function QuestionnaireHistory({ questionnaires: initialQuestionnaires, or
           )}
         </div>
 
-        <div className="relative animate-in fade-in duration-500 ease-out" style={{ animationDelay: '50ms' }}>
+        <div
+          className="relative animate-in fade-in duration-500 ease-out"
+          style={{ animationDelay: '50ms' }}
+        >
           <Select
             value={sourceFilter}
-            onValueChange={(value) => handleSourceFilterChange(value as 'all' | 'internal' | 'external')}
+            onValueChange={(value) =>
+              handleSourceFilterChange(value as 'all' | 'internal' | 'external')
+            }
           >
             <SelectTrigger className="h-9 w-[180px] bg-background border-border/50 hover:border-border shadow-xs transition-colors">
               <div className="flex items-center gap-2">
-                <Filter className="h-3.5 w-3.5 text-muted-foreground mr-1"/>
+                <Filter className="h-3.5 w-3.5 text-muted-foreground mr-1" />
                 <SelectValue />
               </div>
             </SelectTrigger>
@@ -174,7 +199,9 @@ export function QuestionnaireHistory({ questionnaires: initialQuestionnaires, or
             <div className="space-y-1">
               <p className="text-sm font-medium text-foreground">No questionnaires found</p>
               <p className="text-xs text-muted-foreground">
-                {searchQuery ? 'Try a different search term' : 'Create your first questionnaire to see it here'}
+                {searchQuery
+                  ? 'Try a different search term'
+                  : 'Create your first questionnaire to see it here'}
               </p>
             </div>
           </div>
@@ -187,7 +214,7 @@ export function QuestionnaireHistory({ questionnaires: initialQuestionnaires, or
               className="animate-in fade-in duration-500 ease-out"
               style={{
                 animationDelay: `${index * 50}ms`,
-                animationFillMode: 'backwards'
+                animationFillMode: 'backwards',
               }}
             >
               <QuestionnaireHistoryItem
@@ -220,7 +247,10 @@ export function QuestionnaireHistory({ questionnaires: initialQuestionnaires, or
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center gap-2 animate-in fade-in duration-500 ease-out" style={{ animationDelay: '50ms' }}>
+          <div
+            className="flex items-center gap-2 animate-in fade-in duration-500 ease-out"
+            style={{ animationDelay: '50ms' }}
+          >
             <Button
               variant="outline"
               size="icon"
@@ -266,7 +296,9 @@ function QuestionnaireHistoryItem({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
 
-  const answeredCount = questionnaire.questions.filter((q: { answer: string | null }) => q.answer).length;
+  const answeredCount = questionnaire.questions.filter(
+    (q: { answer: string | null }) => q.answer,
+  ).length;
   const totalQuestions = questionnaire.questions.length;
   const isParsing = questionnaire.status === 'parsing';
   const FileIcon = getFileIcon(questionnaire.filename);
@@ -289,7 +321,11 @@ function QuestionnaireHistoryItem({
       toast.success('Questionnaire deleted successfully');
       setIsDeleteDialogOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'An error occurred while deleting the questionnaire');
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'An error occurred while deleting the questionnaire',
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -310,11 +346,13 @@ function QuestionnaireHistoryItem({
         onClick={handleItemClick}
       >
         <div className="flex items-center gap-4 p-4">
-          <div className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
-            isParsing
-              ? 'bg-muted'
-              : 'bg-gradient-to-br from-primary/10 via-primary/5 to-transparent'
-          }`}>
+          <div
+            className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
+              isParsing
+                ? 'bg-muted'
+                : 'bg-gradient-to-br from-primary/10 via-primary/5 to-transparent'
+            }`}
+          >
             {isParsing ? (
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             ) : (
@@ -352,34 +390,36 @@ function QuestionnaireHistoryItem({
                         </span>
                       </div>
                       {totalQuestions > 0 && (
-                        <div className={`min-w-32 inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 transition-colors ${
-                          isCompleted
-                            ? 'bg-green-500/10 ring-1 ring-green-500/20'
-                            : 'bg-muted/50'
-                        }`}>
-                          <span className={`text-[10px] font-medium uppercase tracking-wide ${
-                            isCompleted ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'
-                          }`}>
+                        <div
+                          className={`min-w-32 inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 transition-colors ${
+                            isCompleted ? 'bg-green-500/10 ring-1 ring-green-500/20' : 'bg-muted/50'
+                          }`}
+                        >
+                          <span
+                            className={`text-[10px] font-medium uppercase tracking-wide ${
+                              isCompleted
+                                ? 'text-green-700 dark:text-green-400'
+                                : 'text-muted-foreground'
+                            }`}
+                          >
                             {isCompleted ? 'Complete' : 'Answered'}
                           </span>
-                          <span className={`font-semibold tabular-nums ${
-                            isCompleted ? 'text-green-700 dark:text-green-400' : 'text-foreground'
-                          }`}>
+                          <span
+                            className={`font-semibold tabular-nums ${
+                              isCompleted ? 'text-green-700 dark:text-green-400' : 'text-foreground'
+                            }`}
+                          >
                             {answeredCount}/{totalQuestions}
                           </span>
                         </div>
                       )}
                       {questionnaire.source === 'external' ? (
-                        <Badge
-                          className="gap-1 px-2 py-0.5 text-[10px] font-medium bg-blue-400/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 ring-1 ring-blue-500/20"
-                        >
+                        <Badge className="gap-1 px-2 py-0.5 text-[10px] font-medium bg-blue-400/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20 ring-1 ring-blue-500/20">
                           <Globe2 className="h-2.5 w-2.5" />
                           Trust Center
                         </Badge>
                       ) : (
-                        <Badge
-                          className="gap-1 px-2 py-0.5 text-[10px] font-medium bg-primary/10 text-primary hover:bg-primary/20 ring-1 ring-primary/20"
-                        >
+                        <Badge className="gap-1 px-2 py-0.5 text-[10px] font-medium bg-primary/10 text-primary hover:bg-primary/20 ring-1 ring-primary/20">
                           <Building2 className="h-2.5 w-2.5" />
                           Dashboard
                         </Badge>

@@ -218,5 +218,4 @@ export class BrowserVncProxyService {
       `HTTP/1.1 ${status} ${message}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`,
     );
   }
-
 }

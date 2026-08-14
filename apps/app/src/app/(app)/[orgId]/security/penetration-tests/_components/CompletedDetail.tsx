@@ -1,16 +1,12 @@
 'use client';
 
-import { Button } from '@trycompai/design-system';
-import {
-  Document,
-  Download,
-  Renew,
-} from '@trycompai/design-system/icons';
 import type {
   PentestAgentEvent,
   PentestIssue,
   PentestRun,
 } from '@/lib/security/penetration-tests-client';
+import { Button } from '@trycompai/design-system';
+import { Document, Download, Renew } from '@trycompai/design-system/icons';
 import { formatReportDate } from '../lib';
 import { AgentActivityLog } from './AgentActivityLog';
 import { CleanReportLayout } from './CleanReportLayout';
@@ -47,14 +43,10 @@ export function CompletedDetail({
         <header className="space-y-3 pb-3">
           <div className="flex items-center gap-3">
             <StatusPill status="completed" findingCount={issues.length} />
-            <span className="font-mono text-xs text-muted-foreground">
-              {run.id}
-            </span>
+            <span className="font-mono text-xs text-muted-foreground">{run.id}</span>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="truncate text-[26px] font-medium tracking-[-0.02em]">
-              {run.targetUrl}
-            </h1>
+            <h1 className="truncate text-[26px] font-medium tracking-[-0.02em]">{run.targetUrl}</h1>
             <div className="flex items-center gap-2">
               {/* Markdown/PDF only show in the header when there are
                   findings — for clean runs the "Attach to audit" CTA in
@@ -62,11 +54,7 @@ export function CompletedDetail({
                   action, so a second pair here is duplicative. */}
               {!isClean ? (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onDownloadMarkdown}
-                  >
+                  <Button variant="outline" size="sm" onClick={onDownloadMarkdown}>
                     <Document className="h-3.5 w-3.5" />
                     Markdown
                   </Button>

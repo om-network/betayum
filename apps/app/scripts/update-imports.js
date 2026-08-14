@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
 import { globSync } from 'glob';
+import fs from 'node:fs';
 
 console.log('🔄 Updating database imports to use local client...');
 

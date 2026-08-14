@@ -99,9 +99,7 @@ describe('DeviceDetails compliance badge', () => {
         onClose={vi.fn()}
       />,
     );
-    expect(
-      screen.getByRole('button', { name: /What does Stale mean\?/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /What does Stale mean\?/i })).toBeInTheDocument();
   });
 
   it('renders the stale-explainer tooltip trigger when daysSinceLastCheckIn is null (never reported)', () => {
@@ -115,9 +113,7 @@ describe('DeviceDetails compliance badge', () => {
         onClose={vi.fn()}
       />,
     );
-    expect(
-      screen.getByRole('button', { name: /What does Stale mean\?/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /What does Stale mean\?/i })).toBeInTheDocument();
   });
 
   it('does not render the stale-explainer tooltip trigger for a compliant device', () => {
@@ -154,10 +150,7 @@ describe('DeviceDetails revoke action', () => {
 
   it('does not render when hasActiveAgentSession is false', () => {
     render(
-      <DeviceDetails
-        device={makeDevice({ hasActiveAgentSession: false })}
-        onClose={vi.fn()}
-      />,
+      <DeviceDetails device={makeDevice({ hasActiveAgentSession: false })} onClose={vi.fn()} />,
     );
     expect(screen.queryByTestId('revoke-dialog')).toBeNull();
   });

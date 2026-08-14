@@ -62,11 +62,9 @@ export function UpdateRiskOverview({
         status: data.status,
       });
       toast.success('Risk updated successfully');
-      globalMutate(
-        (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
-        undefined,
-        { revalidate: true },
-      );
+      globalMutate((key) => Array.isArray(key) && key[0]?.includes('/v1/risks'), undefined, {
+        revalidate: true,
+      });
     } catch {
       toast.error('Failed to update risk');
     } finally {
@@ -75,7 +73,11 @@ export function UpdateRiskOverview({
   };
 
   const formatCategory = (category: string) =>
-    category.toLowerCase().split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    category
+      .toLowerCase()
+      .split('_')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -96,11 +98,15 @@ export function UpdateRiskOverview({
             <Label>Status</Label>
             <Select
               value={form.watch('status')}
-              onValueChange={(value) => form.setValue('status', value as RiskStatus, { shouldDirty: true })}
+              onValueChange={(value) =>
+                form.setValue('status', value as RiskStatus, { shouldDirty: true })
+              }
               disabled={!canUpdate}
             >
               <SelectTrigger>
-                {form.watch('status') && <StatusIndicator status={form.watch('status') as RiskStatus} />}
+                {form.watch('status') && (
+                  <StatusIndicator status={form.watch('status') as RiskStatus} />
+                )}
               </SelectTrigger>
               <SelectContent>
                 {Object.values(RiskStatus).map((status) => (
@@ -116,12 +122,12 @@ export function UpdateRiskOverview({
             <Label>Category</Label>
             <Select
               value={form.watch('category')}
-              onValueChange={(value) => form.setValue('category', value as RiskCategory, { shouldDirty: true })}
+              onValueChange={(value) =>
+                form.setValue('category', value as RiskCategory, { shouldDirty: true })
+              }
               disabled={!canUpdate}
             >
-              <SelectTrigger>
-                {formatCategory(form.watch('category') || '')}
-              </SelectTrigger>
+              <SelectTrigger>{formatCategory(form.watch('category') || '')}</SelectTrigger>
               <SelectContent>
                 {Object.values(RiskCategory).map((category) => (
                   <SelectItem key={category} value={category}>
@@ -136,12 +142,12 @@ export function UpdateRiskOverview({
             <Label>Department</Label>
             <Select
               value={form.watch('department')}
-              onValueChange={(value) => form.setValue('department', value as Departments, { shouldDirty: true })}
+              onValueChange={(value) =>
+                form.setValue('department', value as Departments, { shouldDirty: true })
+              }
               disabled={!canUpdate}
             >
-              <SelectTrigger>
-                {(form.watch('department') || '').toUpperCase()}
-              </SelectTrigger>
+              <SelectTrigger>{(form.watch('department') || '').toUpperCase()}</SelectTrigger>
               <SelectContent>
                 {Object.values(Departments).map((department) => (
                   <SelectItem key={department} value={department}>
@@ -155,7 +161,11 @@ export function UpdateRiskOverview({
 
         {canUpdate && (
           <HStack justify="end">
-            <Button type="submit" disabled={!form.formState.isDirty || isSubmitting} loading={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={!form.formState.isDirty || isSubmitting}
+              loading={isSubmitting}
+            >
               Save
             </Button>
           </HStack>

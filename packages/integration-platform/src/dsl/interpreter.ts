@@ -1,20 +1,20 @@
-import type { CheckContext, IntegrationCheck, FindingSeverity } from '../types';
-import type {
-  DSLStep,
-  CheckDefinition,
-  SyncDefinition,
-  SyncEmployee,
-  FetchStep,
-  FetchPagesStep,
-  ForEachStep,
-  AggregateStep,
-  BranchStep,
-  EmitStep,
-  CodeStep,
-} from './types';
-import { SyncEmployeeSchema } from './types';
+import type { CheckContext, FindingSeverity, IntegrationCheck } from '../types';
 import { evaluateCondition, evaluateOperator, resolvePath } from './expression-evaluator';
 import { interpolate, interpolateTemplate } from './template-engine';
+import type {
+  AggregateStep,
+  BranchStep,
+  CheckDefinition,
+  CodeStep,
+  DSLStep,
+  EmitStep,
+  FetchPagesStep,
+  FetchStep,
+  ForEachStep,
+  SyncDefinition,
+  SyncEmployee,
+} from './types';
+import { SyncEmployeeSchema } from './types';
 
 /**
  * Converts a declarative CheckDefinition (JSON DSL) into an IntegrationCheck
@@ -92,9 +92,7 @@ export function interpretDeclarativeSync(opts: {
       const raw = resolvePath(scope, employeesPath);
 
       if (!Array.isArray(raw)) {
-        throw new Error(
-          `Sync definition did not produce an array at scope.${employeesPath}`,
-        );
+        throw new Error(`Sync definition did not produce an array at scope.${employeesPath}`);
       }
 
       const employees: SyncEmployee[] = [];
@@ -159,14 +157,10 @@ async function executeFetch(
 ): Promise<void> {
   const path = interpolate(step.path, scope);
   const params = step.params
-    ? Object.fromEntries(
-        Object.entries(step.params).map(([k, v]) => [k, interpolate(v, scope)]),
-      )
+    ? Object.fromEntries(Object.entries(step.params).map(([k, v]) => [k, interpolate(v, scope)]))
     : undefined;
   const headers = step.headers
-    ? Object.fromEntries(
-        Object.entries(step.headers).map(([k, v]) => [k, interpolate(v, scope)]),
-      )
+    ? Object.fromEntries(Object.entries(step.headers).map(([k, v]) => [k, interpolate(v, scope)]))
     : undefined;
 
   ctx.log(`Fetching ${path}`);
@@ -193,9 +187,10 @@ async function executeFetch(
     };
 
     // Set Content-Type header for form encoding
-    const bodyHeaders = step.bodyEncoding === 'form'
-      ? { 'Content-Type': 'application/x-www-form-urlencoded', ...headers }
-      : headers;
+    const bodyHeaders =
+      step.bodyEncoding === 'form'
+        ? { 'Content-Type': 'application/x-www-form-urlencoded', ...headers }
+        : headers;
 
     if (method === 'GET') {
       data = await ctx.fetch(path, { params, headers });
@@ -240,9 +235,7 @@ async function executeFetchPages(
 ): Promise<void> {
   const path = interpolate(step.path, scope);
   const params = step.params
-    ? Object.fromEntries(
-        Object.entries(step.params).map(([k, v]) => [k, interpolate(v, scope)]),
-      )
+    ? Object.fromEntries(Object.entries(step.params).map(([k, v]) => [k, interpolate(v, scope)]))
     : undefined;
 
   ctx.log(`Fetching pages from ${path}`);
@@ -307,7 +300,9 @@ async function executeFetchPages(
       throw error;
     }
     scope[step.as] = [];
-    ctx.warn(`FetchPages failed for ${path}: ${error instanceof Error ? error.message : String(error)}`);
+    ctx.warn(
+      `FetchPages failed for ${path}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -356,9 +351,7 @@ async function executeForEach(
     }
 
     // Evaluate all conditions (AND logic)
-    const allPass = step.conditions.every((condition) =>
-      evaluateCondition(condition, childScope),
-    );
+    const allPass = step.conditions.every((condition) => evaluateCondition(condition, childScope));
 
     const resourceId = String(resolvePath(childScope, step.resourceIdPath) ?? 'unknown');
 
@@ -472,11 +465,7 @@ async function executeAggregate(
 
   // Evaluate threshold condition
   const childScope = { ...scope, _result: result };
-  const passes = evaluateOperator(
-    step.condition.operator,
-    result,
-    step.condition.value,
-  );
+  const passes = evaluateOperator(step.condition.operator, result, step.condition.value);
 
   ctx.log(`Aggregate ${step.operation} on ${step.collection}: ${result}`);
 
@@ -487,7 +476,11 @@ async function executeAggregate(
       description: tmpl.description || '',
       resourceType: tmpl.resourceType || step.collection,
       resourceId: tmpl.resourceId || step.collection,
-      evidence: tmpl.evidence || { operation: step.operation, result, checkedAt: new Date().toISOString() },
+      evidence: tmpl.evidence || {
+        operation: step.operation,
+        result,
+        checkedAt: new Date().toISOString(),
+      },
     });
   } else {
     const tmpl = interpolateTemplate(step.onFail, childScope);
@@ -516,7 +509,7 @@ async function executeBranch(
 
   ctx.log(`Branch condition evaluated to ${result}`);
 
-  const stepsToRun = result ? step.then : (step.else || []);
+  const stepsToRun = result ? step.then : step.else || [];
 
   for (const s of stepsToRun) {
     await executeStep(s, scope, ctx, defaultSeverity);
@@ -565,9 +558,7 @@ async function executeCode(
   ctx: CheckContext,
   _defaultSeverity: FindingSeverity,
 ): Promise<void> {
-  const codePreview = step.code.length > 100
-    ? step.code.slice(0, 100) + '...'
-    : step.code;
+  const codePreview = step.code.length > 100 ? step.code.slice(0, 100) + '...' : step.code;
   ctx.log(`Executing code step: ${codePreview.replace(/\n/g, ' ').trim()}`);
 
   const scopeKeysBefore = Object.keys(scope);

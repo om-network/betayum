@@ -1,5 +1,6 @@
 'use client';
 
+import { Task } from '@db';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -9,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@trycompai/ui/dialog';
-import { Task } from '@db';
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

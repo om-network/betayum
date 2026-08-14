@@ -1,7 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import {
+  setAdminOrgFeatureFlag,
+  useAdminOrgFeatureFlags,
+  type AdminOrgFeatureFlag,
+} from '@/hooks/use-admin-feature-flags';
 import {
   Badge,
   Button,
@@ -15,11 +18,8 @@ import {
   Text,
 } from '@trycompai/design-system';
 import { Renew, Search } from '@trycompai/design-system/icons';
-import {
-  setAdminOrgFeatureFlag,
-  useAdminOrgFeatureFlags,
-  type AdminOrgFeatureFlag,
-} from '@/hooks/use-admin-feature-flags';
+import { useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 interface FeatureFlagsTabProps {
   orgId: string;
@@ -35,9 +35,7 @@ export function FeatureFlagsTab({ orgId }: FeatureFlagsTabProps) {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return flags;
     return flags.filter(
-      (f) =>
-        f.key.toLowerCase().includes(q) ||
-        f.description?.toLowerCase().includes(q),
+      (f) => f.key.toLowerCase().includes(q) || f.description?.toLowerCase().includes(q),
     );
   }, [flags, searchTerm]);
 
@@ -48,11 +46,9 @@ export function FeatureFlagsTab({ orgId }: FeatureFlagsTabProps) {
     const previous = flags;
 
     // Optimistic update — don't revalidate (PostHog has write-propagation lag).
-    mutate(
-      (prev) =>
-        (prev ?? []).map((f) => (f.key === flag.key ? { ...f, enabled } : f)),
-      { revalidate: false },
-    );
+    mutate((prev) => (prev ?? []).map((f) => (f.key === flag.key ? { ...f, enabled } : f)), {
+      revalidate: false,
+    });
 
     try {
       await setAdminOrgFeatureFlag({ orgId, flagKey: flag.key, enabled });
@@ -89,9 +85,7 @@ export function FeatureFlagsTab({ orgId }: FeatureFlagsTabProps) {
     return (
       <Stack gap="xs">
         <Text weight="semibold">Failed to load feature flags</Text>
-        <Text variant="muted">
-          {error instanceof Error ? error.message : 'Unknown error'}
-        </Text>
+        <Text variant="muted">{error instanceof Error ? error.message : 'Unknown error'}</Text>
       </Stack>
     );
   }
@@ -123,12 +117,7 @@ export function FeatureFlagsTab({ orgId }: FeatureFlagsTabProps) {
             />
           </InputGroup>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          loading={refreshing}
-        >
+        <Button variant="outline" size="sm" onClick={handleRefresh} loading={refreshing}>
           <Renew />
           Refresh from PostHog
         </Button>
@@ -142,10 +131,7 @@ export function FeatureFlagsTab({ orgId }: FeatureFlagsTabProps) {
               key={flag.key}
               size="lg"
               label={flag.key}
-              description={
-                flag.description ||
-                (flag.active ? undefined : 'Inactive in PostHog')
-              }
+              description={flag.description || (flag.active ? undefined : 'Inactive in PostHog')}
             >
               <div className="flex items-center gap-2">
                 {!flag.active && <Badge variant="outline">Inactive</Badge>}

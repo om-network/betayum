@@ -29,9 +29,7 @@ const isGcpConfigured = Boolean(
     process.env.APP_GCP_ORG_ASSETS_BUCKET,
   ),
 );
-const storageProviderLabel = isGcpConfigured
-  ? 'Google Cloud Storage'
-  : 'AWS S3';
+const storageProviderLabel = isGcpConfigured ? 'Google Cloud Storage' : 'AWS S3';
 const storageRegion =
   firstDefined(process.env.APP_GCP_REGION, process.env.APP_AWS_REGION) ||
   (isGcpConfigured ? 'auto' : 'us-east-1');
@@ -85,9 +83,7 @@ let s3ClientInstance: S3Client | null = null;
 
 try {
   if (!storageAccessKeyId || !storageSecretAccessKey) {
-    throw new Error(
-      `[Storage] ${storageProviderLabel} credentials or configuration missing.`,
-    );
+    throw new Error(`[Storage] ${storageProviderLabel} credentials or configuration missing.`);
   }
 
   s3ClientInstance = createStorageClient();
@@ -198,8 +194,7 @@ export async function getFleetAgent({ os }: { os: SupportedOS }) {
     throw new Error('Object storage client not configured');
   }
 
-  const fleetBucketName =
-    normalizeEnvValue(process.env.FLEET_AGENT_BUCKET_NAME) ?? BUCKET_NAME;
+  const fleetBucketName = normalizeEnvValue(process.env.FLEET_AGENT_BUCKET_NAME) ?? BUCKET_NAME;
 
   if (!fleetBucketName) {
     throw new Error('FLEET_AGENT_BUCKET_NAME is not defined.');

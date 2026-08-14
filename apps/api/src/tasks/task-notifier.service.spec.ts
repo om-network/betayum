@@ -117,8 +117,8 @@ describe('TaskNotifierService', () => {
         organizationId: 'org_1',
         taskId: 'tsk_1',
         taskTitle: '2FA',
-        oldStatus: 'done' as never,
-        newStatus: 'todo' as never,
+        oldStatus: 'done',
+        newStatus: 'todo',
         changedByUserId: actor.id,
       });
 
@@ -143,8 +143,8 @@ describe('TaskNotifierService', () => {
         organizationId: 'org_1',
         taskId: 'tsk_1',
         taskTitle: '2FA',
-        oldStatus: 'done' as never,
-        newStatus: 'todo' as never,
+        oldStatus: 'done',
+        newStatus: 'todo',
         changedByUserId: actor.id,
       });
 
@@ -175,8 +175,8 @@ describe('TaskNotifierService', () => {
         organizationId: 'org_1',
         taskId: 'tsk_1',
         taskTitle: '2FA',
-        oldStatus: 'done' as never,
-        newStatus: 'todo' as never,
+        oldStatus: 'done',
+        newStatus: 'todo',
         changedByUserId: actor.id,
       });
 
@@ -207,8 +207,8 @@ describe('TaskNotifierService', () => {
         organizationId: 'org_1',
         taskId: 'tsk_1',
         taskTitle: '2FA',
-        oldStatus: 'done' as never,
-        newStatus: 'todo' as never,
+        oldStatus: 'done',
+        newStatus: 'todo',
         changedByUserId: actor.id,
       });
 
@@ -234,8 +234,8 @@ describe('TaskNotifierService', () => {
         organizationId: 'org_1',
         taskId: 'tsk_1',
         taskTitle: '2FA',
-        oldStatus: 'done' as never,
-        newStatus: 'todo' as never,
+        oldStatus: 'done',
+        newStatus: 'todo',
         changedByUserId: actor.id,
       });
 
@@ -264,8 +264,8 @@ describe('TaskNotifierService', () => {
         organizationId: 'org_1',
         taskId: 'tsk_1',
         taskTitle: '2FA',
-        oldStatus: 'done' as never,
-        newStatus: 'todo' as never,
+        oldStatus: 'done',
+        newStatus: 'todo',
         changedByUserId: actor.id,
       });
 
@@ -293,7 +293,7 @@ describe('TaskNotifierService', () => {
       await service.notifyBulkStatusChange({
         organizationId: 'org_1',
         taskIds: ['tsk_1', 'tsk_2', 'tsk_3'],
-        newStatus: 'done' as never,
+        newStatus: 'done',
         changedByUserId: actor.id,
       });
 
@@ -333,7 +333,7 @@ describe('TaskNotifierService', () => {
       await service.notifyBulkStatusChange({
         organizationId: 'org_1',
         taskIds: ['tsk_1', 'tsk_2'],
-        newStatus: 'done' as never,
+        newStatus: 'done',
         changedByUserId: actor.id,
       });
 
@@ -362,7 +362,7 @@ describe('TaskNotifierService', () => {
       await service.notifyBulkStatusChange({
         organizationId: 'org_1',
         taskIds: ['tsk_1', 'tsk_2'],
-        newStatus: 'done' as never,
+        newStatus: 'done',
         changedByUserId: actor.id,
       });
 

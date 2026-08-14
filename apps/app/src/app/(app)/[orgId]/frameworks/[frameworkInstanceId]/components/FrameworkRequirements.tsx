@@ -1,5 +1,16 @@
 'use client';
 
+import type { StatusType } from '@/components/status-indicator';
+import {
+  type EvidenceSubmissionInfo,
+  type RequirementArtifactCounts,
+  getControlProgressPercent,
+  getControlStatus,
+  getRequirementArtifactCounts,
+  getRequirementCompliancePercent,
+  getRequirementStatus,
+} from '@/lib/control-compliance';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import type { Control, FrameworkEditorRequirement, Task } from '@db';
 import {
   Badge,
@@ -20,17 +31,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
-import {
-  type EvidenceSubmissionInfo,
-  type RequirementArtifactCounts,
-  getControlProgressPercent,
-  getControlStatus,
-  getRequirementArtifactCounts,
-  getRequirementCompliancePercent,
-  getRequirementStatus,
-} from '@/lib/control-compliance';
-import type { StatusType } from '@/components/status-indicator';
 
 interface RequirementItem extends FrameworkEditorRequirement {
   mappedControlsCount: number;
@@ -145,7 +145,9 @@ export function FrameworkRequirements({
           <InputGroupInput
             placeholder="Search requirements..."
             value={searchTerm}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(event.target.value)}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+              setSearchTerm(event.target.value)
+            }
           />
         </InputGroup>
       </div>
@@ -208,10 +210,7 @@ export function FrameworkRequirements({
                     <span className="text-sm">{identifier || '—'}</span>
                   </TableCell>
                   <TableCell>
-                    <span
-                      className="block max-w-[280px] truncate text-sm"
-                      title={item.name}
-                    >
+                    <span className="block max-w-[280px] truncate text-sm" title={item.name}>
                       {item.name}
                     </span>
                   </TableCell>
@@ -251,7 +250,8 @@ export function FrameworkRequirements({
                   <TableCell>
                     <div className="tabular-nums">
                       <Text size="sm" variant="muted">
-                        {item.artifactCounts.policies.completed}/{item.artifactCounts.policies.total}
+                        {item.artifactCounts.policies.completed}/
+                        {item.artifactCounts.policies.total}
                       </Text>
                     </div>
                   </TableCell>
@@ -265,7 +265,8 @@ export function FrameworkRequirements({
                   <TableCell>
                     <div className="tabular-nums">
                       <Text size="sm" variant="muted">
-                        {item.artifactCounts.documents.completed}/{item.artifactCounts.documents.total}
+                        {item.artifactCounts.documents.completed}/
+                        {item.artifactCounts.documents.total}
                       </Text>
                     </div>
                   </TableCell>

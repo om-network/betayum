@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '@db';
-import { AiDescriptionService, DESCRIPTION_MODEL_VERSION } from './ai-description.service';
+import {
+  AiDescriptionService,
+  DESCRIPTION_MODEL_VERSION,
+} from './ai-description.service';
 import type { CheckDescription } from './ai-description.prompt';
 import { buildProviderPassthroughDescription } from './check-definition-provider-passthrough';
 import { computeSourceHash, normalizeCheckId } from './check-definition.utils';
@@ -30,7 +33,6 @@ export interface CheckDescriptionRequest {
   /** Raw evidence — used for GCP/Azure passthrough only. */
   evidence: Record<string, unknown> | null;
 }
-
 
 @Injectable()
 export class CheckDefinitionService {
@@ -235,5 +237,4 @@ export class CheckDefinitionService {
 
     return { ...generated, source: 'ai' };
   }
-
 }

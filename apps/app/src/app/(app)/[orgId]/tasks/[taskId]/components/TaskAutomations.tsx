@@ -1,7 +1,7 @@
 'use client';
 
-import { api } from '@/lib/api-client';
 import { ScheduleSummary } from '@/components/schedule-summary';
+import { api } from '@/lib/api-client';
 import { downloadAutomationPDF } from '@/lib/evidence-download';
 import { EvidenceAutomation, EvidenceAutomationRun } from '@db';
 import { Button, HStack, Section, Stack, Text } from '@trycompai/design-system';
@@ -81,7 +81,13 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
   if (automations.length === 0) {
     return (
       <Section title="Custom Automations" description="Build AI-powered automations for this task">
-        <Button variant="outline" size="lg" iconLeft={<Add />} onClick={handleCreateAutomation} loading={isCreating}>
+        <Button
+          variant="outline"
+          size="lg"
+          iconLeft={<Add />}
+          onClick={handleCreateAutomation}
+          loading={isCreating}
+        >
           Create Automation
         </Button>
       </Section>
@@ -172,7 +178,13 @@ export const TaskAutomations = ({ automations, isManualTask = false }: TaskAutom
         })}
 
         {!isManualTask && (
-          <Button variant="outline" size="lg" iconLeft={<Add />} onClick={handleCreateAutomation} loading={isCreating}>
+          <Button
+            variant="outline"
+            size="lg"
+            iconLeft={<Add />}
+            onClick={handleCreateAutomation}
+            loading={isCreating}
+          >
             Create Automation
           </Button>
         )}

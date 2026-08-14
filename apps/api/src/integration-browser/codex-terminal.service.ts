@@ -3,11 +3,7 @@ import {
   ConflictException,
   Injectable,
 } from '@nestjs/common';
-import {
-  BrowserVmState,
-  CodexTerminalSessionStatus,
-  db,
-} from '@db';
+import { BrowserVmState, CodexTerminalSessionStatus, db } from '@db';
 import { BrowserVmLifecycleService } from './browser-vm-lifecycle.service';
 import { CodexSshService } from './codex-ssh.service';
 import { GcpComputeService } from './gcp-compute.service';
@@ -46,14 +42,13 @@ export class CodexTerminalService {
       organizationId,
     });
     const vm = await this.vmLifecycle.ensureVm(organizationId);
-    const { claimed, session } =
-      await this.access.claimCodexTerminalSession({
-        browserVmId: vm.id,
-        connectionId,
-        organizationId,
-        userId,
-        expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
-      });
+    const { claimed, session } = await this.access.claimCodexTerminalSession({
+      browserVmId: vm.id,
+      connectionId,
+      organizationId,
+      userId,
+      expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
+    });
     if (!claimed) {
       if (session.userId === userId && session.connectionId === connectionId) {
         return this.reconcileSession({
@@ -140,10 +135,7 @@ export class CodexTerminalService {
         data: { codexConfirmedAt: connected ? new Date() : null },
       });
     } catch {
-      if (
-        Date.now() - session.createdAt.getTime() >
-        PROVISIONING_TIMEOUT_MS
-      ) {
+      if (Date.now() - session.createdAt.getTime() > PROVISIONING_TIMEOUT_MS) {
         return this.failSession({
           sessionId,
           message: 'Codex terminal provisioning timed out',

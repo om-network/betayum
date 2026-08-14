@@ -14,9 +14,7 @@ function outputHasAttachment(output: unknown): boolean {
   );
 }
 
-export function hasAttachedAutomationEvidence(
-  messages: readonly UIMessage[],
-): boolean {
+export function hasAttachedAutomationEvidence(messages: readonly UIMessage[]): boolean {
   return messages.some((message) =>
     message.parts.some((part) => {
       if (!isRecord(part)) return false;

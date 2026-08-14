@@ -41,9 +41,7 @@ export default async function TasksPage({
   const { orgId } = await params;
 
   const [tasksRes, membersRes, optionsRes] = await Promise.all([
-    serverApi.get<{ data: TaskWithRelations[]; count: number }>(
-      '/v1/tasks?includeRelations=true',
-    ),
+    serverApi.get<{ data: TaskWithRelations[]; count: number }>('/v1/tasks?includeRelations=true'),
     serverApi.get<{
       data: (Member & { user: User })[];
       count: number;
@@ -70,20 +68,18 @@ export default async function TasksPage({
   // Filter members: exclude those with only employee/contractor roles (no app access)
   // Auditors and anyone with owner/admin can still be assigned
   const members = allMembers.filter((m) => {
-    const roles = m.role
-      ?.split(',')
-      .map((r) => r.trim())
-      .filter(Boolean) ?? [];
+    const roles =
+      m.role
+        ?.split(',')
+        .map((r) => r.trim())
+        .filter(Boolean) ?? [];
     return roles.some((r) => ['owner', 'admin', 'auditor'].includes(r));
   });
 
   // Read tab preference from cookie
   const cookieStore = await cookies();
   const savedView = cookieStore.get(`task-view-preference-${orgId}`)?.value;
-  const activeTab =
-    savedView === 'categories' || savedView === 'list'
-      ? savedView
-      : 'categories';
+  const activeTab = savedView === 'categories' || savedView === 'list' ? savedView : 'categories';
 
   return (
     <TasksPageClient

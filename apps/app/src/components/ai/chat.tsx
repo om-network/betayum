@@ -5,24 +5,17 @@ import { apiClient } from '@/lib/api-client';
 import { useActiveOrganization, useSession } from '@/utils/auth-client';
 import { useChat } from '@ai-sdk/react';
 import { Button } from '@trycompai/design-system';
-import {
-  DefaultChatTransport,
-  lastAssistantMessageIsCompleteWithToolCalls,
-} from 'ai';
 import type { UIMessage } from 'ai';
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { useParams } from 'next/navigation';
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AssistantComposer } from './assistant-composer';
 import { AssistantConversation } from './assistant-conversation';
+import type { AssistantStoredMessage } from './assistant-message-history';
 import {
   assistantStoredMessagesToUiMessages,
   uiMessagesToAssistantStoredMessages,
 } from './assistant-message-history';
-import type { AssistantStoredMessage } from './assistant-message-history';
 
 const API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
@@ -66,23 +59,15 @@ export function Chat() {
     credentials: 'include',
   });
 
-  const {
-    messages,
-    sendMessage,
-    error,
-    status,
-    stop,
-    setMessages,
-    regenerate,
-    clearError,
-  } = useChat({
-    id:
-      resolvedOrganizationId && userId
-        ? `assistant-chat:v1:${resolvedOrganizationId}:${userId}`
-        : undefined,
-    transport,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-  });
+  const { messages, sendMessage, error, status, stop, setMessages, regenerate, clearError } =
+    useChat({
+      id:
+        resolvedOrganizationId && userId
+          ? `assistant-chat:v1:${resolvedOrganizationId}:${userId}`
+          : undefined,
+      transport,
+      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    });
 
   const isLoading = status === 'streaming' || status === 'submitted';
 
@@ -153,13 +138,10 @@ export function Chat() {
 
     const delayMs = isLoading ? 300 : 0;
     const timeout = window.setTimeout(() => {
-      void apiClient.call(
-        '/v1/assistant-chat/history',
-        {
-          method: 'PUT',
-          body: JSON.stringify({ messages: storedMessages }),
-        },
-      );
+      void apiClient.call('/v1/assistant-chat/history', {
+        method: 'PUT',
+        body: JSON.stringify({ messages: storedMessages }),
+      });
     }, delayMs);
 
     return () => window.clearTimeout(timeout);
@@ -173,21 +155,16 @@ export function Chat() {
       const snapshot = latestSnapshotRef.current;
       if (!snapshot || snapshot.messages.length === 0) return;
 
-      void apiClient.call(
-        '/v1/assistant-chat/history',
-        {
-          method: 'PUT',
-          body: JSON.stringify({ messages: snapshot.messages }),
-          keepalive: true,
-        },
-      );
+      void apiClient.call('/v1/assistant-chat/history', {
+        method: 'PUT',
+        body: JSON.stringify({ messages: snapshot.messages }),
+        keepalive: true,
+      });
     };
   }, [resolvedOrganizationId, userId]);
 
   const isStreaming = status === 'streaming';
-  const firstName = isMounted
-    ? session?.user?.name?.split(' ').at(0) ?? ''
-    : '';
+  const firstName = isMounted ? (session?.user?.name?.split(' ').at(0) ?? '') : '';
 
   const handleSubmitMessage = () => {
     if (!input.trim()) return;

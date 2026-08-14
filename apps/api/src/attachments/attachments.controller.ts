@@ -88,10 +88,7 @@ export class AttachmentsController {
         attachmentId,
       );
     res.setHeader('Content-Type', contentType);
-    res.setHeader(
-      'Content-Disposition',
-      buildContentDisposition(fileName),
-    );
+    res.setHeader('Content-Disposition', buildContentDisposition(fileName));
     stream.pipe(res);
   }
 }

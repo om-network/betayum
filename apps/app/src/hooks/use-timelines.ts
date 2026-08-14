@@ -71,8 +71,7 @@ export function useTimelines(options?: UseTimelinesOptions) {
   const { data, error, isLoading, mutate } = useSWR(
     timelinesKey(),
     async () => {
-      const response =
-        await apiClient.get<TimelinesApiResponse>('/v1/timelines');
+      const response = await apiClient.get<TimelinesApiResponse>('/v1/timelines');
       if (response.error) throw new Error(response.error);
       if (!response.data?.data) return [];
       return response.data.data;
@@ -98,9 +97,7 @@ export function useTimeline(id: string | null) {
   const { data, error, isLoading, mutate } = useSWR(
     id ? timelineKey(id) : null,
     async () => {
-      const response = await apiClient.get<Timeline>(
-        `/v1/timelines/${id}`,
-      );
+      const response = await apiClient.get<Timeline>(`/v1/timelines/${id}`);
       if (response.error) throw new Error(response.error);
       return response.data ?? null;
     },
@@ -124,9 +121,7 @@ export async function markPhaseReadyForReview({
   timelineId: string;
   phaseId: string;
 }) {
-  const response = await apiClient.post(
-    `/v1/timelines/${timelineId}/phases/${phaseId}/ready`,
-  );
+  const response = await apiClient.post(`/v1/timelines/${timelineId}/phases/${phaseId}/ready`);
   if (response.error) throw new Error(response.error);
   return response.data;
 }

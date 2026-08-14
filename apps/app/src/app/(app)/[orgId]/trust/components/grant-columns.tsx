@@ -1,10 +1,9 @@
 'use client';
 
 import type { AccessGrant } from '@/hooks/use-access-requests';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
-import type { ColumnDef } from '@tanstack/react-table';
-import { Mail } from 'lucide-react';
 
 export type GrantTableRow = AccessGrant;
 
@@ -47,11 +46,7 @@ export function buildGrantColumns({
         return (
           <Badge
             variant={
-              status === 'active'
-                ? 'default'
-                : status === 'revoked'
-                  ? 'destructive'
-                  : 'secondary'
+              status === 'active' ? 'default' : status === 'revoked' ? 'destructive' : 'secondary'
             }
             className="capitalize"
           >
@@ -66,9 +61,7 @@ export function buildGrantColumns({
       header: 'Expires',
       cell: ({ row }) => {
         return (
-          <span className="text-sm">
-            {new Date(row.original.expiresAt).toLocaleDateString()}
-          </span>
+          <span className="text-sm">{new Date(row.original.expiresAt).toLocaleDateString()}</span>
         );
       },
     },
@@ -81,9 +74,7 @@ export function buildGrantColumns({
           return <span className="text-muted-foreground text-sm">—</span>;
         }
         return (
-          <span className="text-sm">
-            {new Date(row.original.revokedAt).toLocaleDateString()}
-          </span>
+          <span className="text-sm">{new Date(row.original.revokedAt).toLocaleDateString()}</span>
         );
       },
     },

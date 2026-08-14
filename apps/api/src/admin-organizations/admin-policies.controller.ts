@@ -85,7 +85,7 @@ export class AdminPoliciesController {
           `Invalid status. Must be one of: ${Object.values(PolicyStatus).join(', ')}`,
         );
       }
-      updateData.status = body.status as PolicyStatus;
+      updateData.status = body.status;
     }
 
     if (body.department !== undefined) {
@@ -96,7 +96,7 @@ export class AdminPoliciesController {
           `Invalid department. Must be one of: ${Object.values(Departments).join(', ')}`,
         );
       }
-      updateData.department = body.department as Departments;
+      updateData.department = body.department;
     }
 
     if (body.frequency !== undefined) {
@@ -108,8 +108,7 @@ export class AdminPoliciesController {
           `Invalid frequency. Must be one of: ${Object.values(Frequency).join(', ')}`,
         );
       }
-      updateData.frequency =
-        body.frequency === null ? null : (body.frequency as Frequency);
+      updateData.frequency = body.frequency === null ? null : body.frequency;
     }
 
     if (Object.keys(updateData).length === 0) {

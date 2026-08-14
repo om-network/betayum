@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type SwrShape = {
@@ -31,13 +31,7 @@ vi.mock('sonner', () => ({
 }));
 
 vi.mock('@trycompai/ui/button', () => ({
-  Button: ({
-    children,
-    onClick,
-  }: {
-    children: React.ReactNode;
-    onClick?: () => void;
-  }) => (
+  Button: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
     <button type="button" onClick={onClick}>
       {children}
     </button>
@@ -170,9 +164,7 @@ describe('HistoryTab', () => {
     expect(screen.getByText('Fixed via platform')).toBeInTheDocument();
     expect(screen.getByText('Fixed externally')).toBeInTheDocument();
     expect(screen.getByText('Resource deleted')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Public marketing bucket/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Public marketing bucket/i)).toBeInTheDocument();
     expect(screen.getByText(/CISO 2026-Q1/i)).toBeInTheDocument();
   });
 
@@ -187,14 +179,10 @@ describe('HistoryTab', () => {
     deleteMock.mockResolvedValueOnce({ error: null });
 
     render(<HistoryTab connectionId="icn_aws" />);
-    fireEvent.click(
-      screen.getByRole('button', { name: /Remove exception/i }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /Remove exception/i }));
     await Promise.resolve();
     await Promise.resolve();
-    expect(deleteMock).toHaveBeenCalledWith(
-      '/v1/cloud-security/exceptions/fex_1',
-    );
+    expect(deleteMock).toHaveBeenCalledWith('/v1/cloud-security/exceptions/fex_1');
     expect(mutate).toHaveBeenCalled();
   });
 
@@ -207,8 +195,6 @@ describe('HistoryTab', () => {
       mutate: () => undefined,
     });
     render(<HistoryTab connectionId="icn_aws" />);
-    expect(
-      screen.queryByRole('button', { name: /Remove exception/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Remove exception/i })).not.toBeInTheDocument();
   });
 });

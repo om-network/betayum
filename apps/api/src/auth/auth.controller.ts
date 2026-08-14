@@ -8,7 +8,13 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
-import { ApiExcludeController, ApiOperation, ApiParam, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import {
+  ApiExcludeController,
+  ApiOperation,
+  ApiParam,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
 import { db } from '@db';
 import { OrganizationId } from './auth-context.decorator';
 import { PermissionGuard } from './permission.guard';

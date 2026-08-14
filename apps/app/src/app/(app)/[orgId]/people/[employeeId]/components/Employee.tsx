@@ -152,9 +152,7 @@ export function Employee({
             {backgroundCheckStepEnabled && (
               <TabsTrigger value="background-check">Background Check</TabsTrigger>
             )}
-            {employee.offboardDate && (
-              <TabsTrigger value="offboarding">Offboarding</TabsTrigger>
-            )}
+            {employee.offboardDate && <TabsTrigger value="offboarding">Offboarding</TabsTrigger>}
           </TabsList>
           <TabsContent value="details">
             <EmployeeDetails employee={employee} canEdit={canEdit} />

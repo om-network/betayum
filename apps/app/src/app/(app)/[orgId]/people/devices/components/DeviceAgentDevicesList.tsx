@@ -1,5 +1,7 @@
 'use client';
 
+import { usePeopleActions } from '@/hooks/use-people-api';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   Badge,
   Button,
@@ -36,16 +38,10 @@ import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
-import { usePeopleActions } from '@/hooks/use-people-api';
-import { usePermissions } from '@/hooks/use-permissions';
-import type { DeviceWithChecks } from '../types';
-import {
-  buildDevicesCsv,
-  devicesCsvFilename,
-  downloadDevicesCsv,
-} from '../lib/devices-csv';
-import { DeviceDetails } from './DeviceDetails';
 import { RemoveDeviceAlert } from '../../all/components/RemoveDeviceAlert';
+import { buildDevicesCsv, devicesCsvFilename, downloadDevicesCsv } from '../lib/devices-csv';
+import type { DeviceWithChecks } from '../types';
+import { DeviceDetails } from './DeviceDetails';
 
 export interface DeviceAgentDevicesListProps {
   devices: DeviceWithChecks[];
@@ -100,8 +96,12 @@ function UserNameCell({ device, orgId }: { device: DeviceWithChecks; orgId: stri
   if (!memberId) {
     return (
       <div className="flex flex-col">
-        <Text size="sm" weight="medium">{device.user.name}</Text>
-        <Text size="xs" variant="muted">{device.user.email}</Text>
+        <Text size="sm" weight="medium">
+          {device.user.name}
+        </Text>
+        <Text size="xs" variant="muted">
+          {device.user.email}
+        </Text>
       </div>
     );
   }
@@ -115,7 +115,9 @@ function UserNameCell({ device, orgId }: { device: DeviceWithChecks; orgId: stri
       >
         {device.user.name}
       </Link>
-      <Text size="xs" variant="muted">{device.user.email}</Text>
+      <Text size="xs" variant="muted">
+        {device.user.email}
+      </Text>
     </div>
   );
 }
@@ -174,9 +176,7 @@ function CheckBadges({ device }: { device: DeviceWithChecks }) {
   );
 }
 
-export const DeviceAgentDevicesList = ({
-  devices,
-}: DeviceAgentDevicesListProps) => {
+export const DeviceAgentDevicesList = ({ devices }: DeviceAgentDevicesListProps) => {
   const { orgId } = useParams<{ orgId: string }>();
   const { removeDeviceAgent } = usePeopleActions();
   const { hasPermission } = usePermissions();
@@ -315,9 +315,7 @@ export const DeviceAgentDevicesList = ({
                   <div className="flex items-center gap-2">
                     <span
                       className={`inline-block h-2 w-2 shrink-0 rounded-full ${
-                        isDeviceOnline(device.lastCheckIn)
-                          ? 'bg-green-500'
-                          : 'bg-gray-300'
+                        isDeviceOnline(device.lastCheckIn) ? 'bg-green-500' : 'bg-gray-300'
                       }`}
                       title={isDeviceOnline(device.lastCheckIn) ? 'Online' : 'Offline'}
                     />

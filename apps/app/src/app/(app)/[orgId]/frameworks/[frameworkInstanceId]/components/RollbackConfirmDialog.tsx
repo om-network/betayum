@@ -1,5 +1,6 @@
 'use client';
 
+import type { SyncHistoryItem } from '@/types/framework-versioning';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,7 +12,6 @@ import {
   AlertDialogTitle,
   Text,
 } from '@trycompai/design-system';
-import type { SyncHistoryItem } from '@/types/framework-versioning';
 
 interface RollbackConfirmDialogProps {
   open: boolean;
@@ -34,20 +34,17 @@ export function RollbackConfirmDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            Roll back to v{item.fromVersion.version}?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Roll back to v{item.fromVersion.version}?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will revert the sync from v{item.fromVersion.version} to
-            v{item.toVersion.version}. Items added by that sync will be
-            removed, archived items will be restored, and any content edits
-            you made since the sync will be kept.
+            This will revert the sync from v{item.fromVersion.version} to v{item.toVersion.version}.
+            Items added by that sync will be removed, archived items will be restored, and any
+            content edits you made since the sync will be kept.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <Text size="sm" variant="muted">
-          Rollback will be blocked if any task created by the sync has been
-          completed, or if any policy created by the sync has been published.
+          Rollback will be blocked if any task created by the sync has been completed, or if any
+          policy created by the sync has been published.
         </Text>
 
         <AlertDialogFooter>

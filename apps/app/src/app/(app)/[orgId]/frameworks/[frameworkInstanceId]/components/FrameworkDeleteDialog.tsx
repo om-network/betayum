@@ -1,5 +1,9 @@
 'use client';
 
+import { useFrameworks } from '@/hooks/use-frameworks';
+import { usePermissions } from '@/hooks/use-permissions';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@trycompai/design-system';
 import { TrashCan } from '@trycompai/design-system/icons';
 import {
@@ -11,15 +15,11 @@ import {
   DialogTitle,
 } from '@trycompai/ui/dialog';
 import { Form } from '@trycompai/ui/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { usePermissions } from '@/hooks/use-permissions';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
-import { useFrameworks } from '@/hooks/use-frameworks';
 
 const formSchema = z.object({
   comment: z.string().optional(),

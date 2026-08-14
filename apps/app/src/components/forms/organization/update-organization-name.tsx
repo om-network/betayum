@@ -3,6 +3,7 @@
 import { organizationNameSchema } from '@/actions/schema';
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { usePermissions } from '@/hooks/use-permissions';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@trycompai/ui/button';
 import {
   Card,
@@ -14,7 +15,6 @@ import {
 } from '@trycompai/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -87,10 +87,11 @@ export function UpdateOrganizationName({ organizationName }: { organizationName:
             <div className="text-muted-foreground text-xs">
               {'Please use 32 characters at maximum.'}
             </div>
-            <Button type="submit" disabled={isSubmitting || !hasPermission('organization', 'update')}>
-              {isSubmitting ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              ) : null}
+            <Button
+              type="submit"
+              disabled={isSubmitting || !hasPermission('organization', 'update')}
+            >
+              {isSubmitting ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
               {'Save'}
             </Button>
           </CardFooter>

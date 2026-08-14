@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-  Sheet,
-  SheetContent,
-} from '@trycompai/design-system';
+import { Drawer, DrawerContent, DrawerTitle, Sheet, SheetContent } from '@trycompai/design-system';
 import { useMediaQuery } from '@trycompai/ui/hooks';
 
 import '@/styles/editor.css';

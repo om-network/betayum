@@ -31,7 +31,12 @@ export function buildPositionMap(doc: ProseMirrorNode): PositionMap {
     if (node.type.name === 'heading') {
       const level = (node.attrs.level as number) || 1;
       const text = extractText(node);
-      entries.push({ type: 'heading', markdown: '#'.repeat(level) + ' ' + text, from: nodeFrom, to: nodeTo });
+      entries.push({
+        type: 'heading',
+        markdown: '#'.repeat(level) + ' ' + text,
+        from: nodeFrom,
+        to: nodeTo,
+      });
     } else if (node.type.name === 'paragraph') {
       const text = extractText(node);
       entries.push({ type: 'paragraph', markdown: text, from: nodeFrom, to: nodeTo });

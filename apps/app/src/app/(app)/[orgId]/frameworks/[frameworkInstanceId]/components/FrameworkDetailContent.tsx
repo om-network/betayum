@@ -212,10 +212,7 @@ export function FrameworkDetailContent({
         </TabsContent>
 
         <TabsContent value="history">
-          <SyncHistorySection
-            frameworkInstanceId={frameworkInstanceId}
-            permissions={permissions}
-          />
+          <SyncHistorySection frameworkInstanceId={frameworkInstanceId} permissions={permissions} />
         </TabsContent>
       </PageLayout>
 

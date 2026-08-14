@@ -2,9 +2,6 @@
 
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import { Input } from '@trycompai/ui/input';
-import { Label } from '@trycompai/ui/label';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +14,9 @@ import {
   AlertDialogTrigger,
   Button,
 } from '@trycompai/design-system';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import { Input } from '@trycompai/ui/input';
+import { Label } from '@trycompai/ui/label';
 import { Loader2 } from 'lucide-react';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
@@ -94,9 +94,7 @@ export function DeleteOrganization({
                   disabled={value !== 'delete' || isSubmitting}
                   variant="destructive"
                 >
-                  {isSubmitting ? (
-                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  ) : null}
+                  {isSubmitting ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
                   {'Delete'}
                 </AlertDialogAction>
               </AlertDialogFooter>

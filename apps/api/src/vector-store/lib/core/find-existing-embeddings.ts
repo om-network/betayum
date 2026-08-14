@@ -181,7 +181,7 @@ export async function findAllOrganizationEmbeddings(
     ];
     const orgResults = results
       .filter((result) => {
-        const metadata = result.metadata as Record<string, unknown> | undefined;
+        const metadata = result.metadata;
         return (
           metadata?.organizationId === organizationId &&
           validSourceTypes.includes(metadata?.sourceType as string)

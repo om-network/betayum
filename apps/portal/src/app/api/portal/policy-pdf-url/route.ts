@@ -1,5 +1,5 @@
 import { auth } from '@/app/lib/auth';
-import { BUCKET_NAME, s3Client, getSignedUrl } from '@/utils/s3';
+import { BUCKET_NAME, getSignedUrl, s3Client } from '@/utils/s3';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { db } from '@db/server';
 import { type NextRequest, NextResponse } from 'next/server';
@@ -83,9 +83,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, url: signedUrl });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Could not retrieve PDF.' },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, error: 'Could not retrieve PDF.' }, { status: 500 });
   }
 }

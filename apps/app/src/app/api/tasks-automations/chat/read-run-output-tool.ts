@@ -37,8 +37,7 @@ export function buildReadRunOutputTool({ taskId, automationId }: ReadRunOutputPa
           return { error: 'Run has no output' };
         }
 
-        const serialized =
-          typeof output === 'string' ? output : JSON.stringify(output, null, 2);
+        const serialized = typeof output === 'string' ? output : JSON.stringify(output, null, 2);
         const totalChars = serialized.length;
         const safeOffset = Math.min(offset, totalChars);
         const chunk = serialized.slice(safeOffset, safeOffset + CHUNK_SIZE);

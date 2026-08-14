@@ -1,5 +1,6 @@
 'use client';
 
+import { Comments } from '@/components/comments/Comments';
 import {
   FINDING_SEVERITY_CONFIG,
   FINDING_STATUS_CONFIG,
@@ -8,11 +9,6 @@ import {
   type Finding,
   type FindingHistoryEntry,
 } from '@/hooks/use-findings-api';
-
-function capitalize(s: string) {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-}
-import { Comments } from '@/components/comments/Comments';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useSession } from '@/utils/auth-client';
 import { FindingSeverity, FindingStatus } from '@db';
@@ -45,6 +41,10 @@ import { Copy } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+
+function capitalize(s: string) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
 
 interface FindingDetailSheetProps {
   finding: Finding | null;
@@ -119,14 +119,10 @@ const LEGACY_SCOPE_LABELS: Record<string, string> = {
  * so owners/admins can see where the finding was originally filed — otherwise
  * legacy people-scope findings all look identical under `area='people'`.
  */
-function legacyScopeLabelFromHistory(
-  history: FindingHistoryEntry[] | undefined,
-): string | null {
+function legacyScopeLabelFromHistory(history: FindingHistoryEntry[] | undefined): string | null {
   if (!history || history.length === 0) return null;
   // History comes back newest-first; the creation entry is the oldest one.
-  const createdEntry = [...history]
-    .reverse()
-    .find((e) => e.data?.action === 'created');
+  const createdEntry = [...history].reverse().find((e) => e.data?.action === 'created');
   const scope = createdEntry?.data?.findingScope;
   if (!scope) return null;
   return LEGACY_SCOPE_LABELS[scope] ?? scope;
@@ -191,9 +187,7 @@ export function FindingDetailSheet({
   if (!finding) return null;
 
   const href = targetHref(finding, organizationId);
-  const history: FindingHistoryEntry[] = Array.isArray(historyData?.data)
-    ? historyData.data
-    : [];
+  const history: FindingHistoryEntry[] = Array.isArray(historyData?.data) ? historyData.data : [];
   const legacyScopeLabel = legacyScopeLabelFromHistory(history);
 
   const contentChanged = canEditContent && content !== finding.content;
@@ -201,8 +195,7 @@ export function FindingDetailSheet({
     contentChanged ||
     status !== finding.status ||
     severity !== finding.severity ||
-    (status === FindingStatus.needs_revision &&
-      revisionNote !== (finding.revisionNote ?? ''));
+    (status === FindingStatus.needs_revision && revisionNote !== (finding.revisionNote ?? ''));
 
   const handleSave = async () => {
     setSaving(true);
@@ -211,18 +204,13 @@ export function FindingDetailSheet({
         content: contentChanged ? content : undefined,
         status: status !== finding.status ? status : undefined,
         severity: severity !== finding.severity ? severity : undefined,
-        revisionNote:
-          status === FindingStatus.needs_revision
-            ? revisionNote || null
-            : undefined,
+        revisionNote: status === FindingStatus.needs_revision ? revisionNote || null : undefined,
       });
       toast.success('Finding updated');
       onSaved?.();
       onOpenChange(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to update finding',
-      );
+      toast.error(error instanceof Error ? error.message : 'Failed to update finding');
     } finally {
       setSaving(false);
     }
@@ -237,9 +225,7 @@ export function FindingDetailSheet({
       onDeleted?.();
       onOpenChange(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to delete finding',
-      );
+      toast.error(error instanceof Error ? error.message : 'Failed to delete finding');
     } finally {
       setDeleting(false);
     }
@@ -288,9 +274,7 @@ export function FindingDetailSheet({
               {legacyScopeLabel && (
                 <p className="text-xs text-muted-foreground">
                   Originally logged against{' '}
-                  <span className="font-medium text-foreground">
-                    {legacyScopeLabel}
-                  </span>
+                  <span className="font-medium text-foreground">{legacyScopeLabel}</span>
                 </p>
               )}
               {href && (
@@ -306,11 +290,7 @@ export function FindingDetailSheet({
             <Stack gap="xs">
               <label className="text-sm font-medium">Content</label>
               {canEditContent ? (
-                <Textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={6}
-                />
+                <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={6} />
               ) : (
                 <p className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 text-sm text-balance">
                   {finding.content}
@@ -319,50 +299,48 @@ export function FindingDetailSheet({
             </Stack>
 
             <HStack gap="sm">
-              <div className="flex-1"><Stack gap="xs">
-                <label className="text-sm font-medium">Severity</label>
-                <Select
-                  value={severity}
-                  onValueChange={(v) =>
-                    v && setSeverity(v as FindingSeverity)
-                  }
-                  disabled={!canUpdate}
-                >
-                  <SelectTrigger>
-                    {FINDING_SEVERITY_CONFIG[severity].label}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SEVERITY_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {capitalize(s)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Stack></div>
-              <div className="flex-1"><Stack gap="xs">
-                <label className="text-sm font-medium">Status</label>
-                <Select
-                  value={status}
-                  onValueChange={(v) => v && setStatus(v as FindingStatus)}
-                  disabled={!canUpdate}
-                >
-                  <SelectTrigger>
-                    {FINDING_STATUS_CONFIG[status].label}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allowedStatusOptions({
-                      current: status,
-                      isAuditor,
-                      isPlatformAdmin,
-                    }).map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {FINDING_STATUS_CONFIG[s].label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Stack></div>
+              <div className="flex-1">
+                <Stack gap="xs">
+                  <label className="text-sm font-medium">Severity</label>
+                  <Select
+                    value={severity}
+                    onValueChange={(v) => v && setSeverity(v as FindingSeverity)}
+                    disabled={!canUpdate}
+                  >
+                    <SelectTrigger>{FINDING_SEVERITY_CONFIG[severity].label}</SelectTrigger>
+                    <SelectContent>
+                      {SEVERITY_OPTIONS.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {capitalize(s)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Stack>
+              </div>
+              <div className="flex-1">
+                <Stack gap="xs">
+                  <label className="text-sm font-medium">Status</label>
+                  <Select
+                    value={status}
+                    onValueChange={(v) => v && setStatus(v as FindingStatus)}
+                    disabled={!canUpdate}
+                  >
+                    <SelectTrigger>{FINDING_STATUS_CONFIG[status].label}</SelectTrigger>
+                    <SelectContent>
+                      {allowedStatusOptions({
+                        current: status,
+                        isAuditor,
+                        isPlatformAdmin,
+                      }).map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {FINDING_STATUS_CONFIG[s].label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Stack>
+              </div>
             </HStack>
 
             {status === FindingStatus.needs_revision && (
@@ -392,11 +370,7 @@ export function FindingDetailSheet({
                 <span />
               )}
               <HStack gap="xs">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                >
+                <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                   Cancel
                 </Button>
                 <Button
@@ -437,9 +411,7 @@ export function FindingDetailSheet({
                   {history.map((entry) => (
                     <div key={entry.id} className="p-3">
                       <p className="text-xs text-balance">
-                        <strong>
-                          {entry.user?.name || entry.user?.email || 'Someone'}
-                        </strong>{' '}
+                        <strong>{entry.user?.name || entry.user?.email || 'Someone'}</strong>{' '}
                         {entry.description}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -459,17 +431,13 @@ export function FindingDetailSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete finding?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the finding and its activity history.
-              This action cannot be undone.
+              This permanently removes the finding and its activity history. This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
+            <AlertDialogAction variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting ? 'Deleting…' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>

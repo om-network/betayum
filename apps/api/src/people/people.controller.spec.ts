@@ -188,7 +188,7 @@ describe('PeopleController', () => {
       mockPeopleService.create.mockResolvedValue(createdMember);
 
       const result = await controller.createMember(
-        dto as any,
+        dto,
         'org_123',
         mockAuthContext,
       );
@@ -215,7 +215,7 @@ describe('PeopleController', () => {
       mockPeopleService.bulkCreate.mockResolvedValue(bulkResult);
 
       const result = await controller.bulkCreateMembers(
-        dto as any,
+        dto,
         'org_123',
         mockAuthContext,
       );
@@ -253,7 +253,7 @@ describe('PeopleController', () => {
 
       const result = await controller.updateMember(
         'mem_1',
-        dto as any,
+        dto,
         'org_123',
         mockAuthContext,
       );
@@ -272,7 +272,7 @@ describe('PeopleController', () => {
 
       await controller.updateMember(
         'mem_1',
-        { backgroundCheckExempt: true } as any,
+        { backgroundCheckExempt: true },
         'org_123',
         mockAuthContext,
       );

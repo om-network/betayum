@@ -2,13 +2,13 @@
 
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@trycompai/design-system';
 import { Launch, Security } from '@trycompai/design-system/icons';
-import { useMemo } from 'react';
 import { motion } from 'motion/react';
-import { parseVendorRiskAssessmentDescription } from './parse-vendor-risk-assessment-description';
+import { useMemo } from 'react';
 import { filterCertifications } from './filter-certifications';
+import { parseVendorRiskAssessmentDescription } from './parse-vendor-risk-assessment-description';
+import { SecurityAssessmentContent } from './SecurityAssessmentContent';
 import { VendorRiskAssessmentCertificationsCard } from './VendorRiskAssessmentCertificationsCard';
 import { VendorRiskAssessmentTimelineCard } from './VendorRiskAssessmentTimelineCard';
-import { SecurityAssessmentContent } from './SecurityAssessmentContent';
 
 export type VendorRiskAssessmentViewSource = {
   title: string;
@@ -121,5 +121,3 @@ export function VendorRiskAssessmentView({ source }: { source: VendorRiskAssessm
     </div>
   );
 }
-
-

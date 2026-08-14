@@ -4,9 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: {
     alias: {
-      '@trycompai/utils/brand': fileURLToPath(
-        new URL('../utils/src/brand.ts', import.meta.url),
-      ),
+      '@trycompai/utils/brand': fileURLToPath(new URL('../utils/src/brand.ts', import.meta.url)),
     },
   },
   test: {

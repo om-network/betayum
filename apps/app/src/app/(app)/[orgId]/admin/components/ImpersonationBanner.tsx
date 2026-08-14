@@ -9,11 +9,9 @@ export function ImpersonationBanner() {
   const router = useRouter();
   const [stopping, setStopping] = useState(false);
 
-  const rawImpersonatedBy = (
-    session?.session as Record<string, unknown> | undefined
-  )?.impersonatedBy;
-  const impersonatedBy =
-    typeof rawImpersonatedBy === 'string' ? rawImpersonatedBy : undefined;
+  const rawImpersonatedBy = (session?.session as Record<string, unknown> | undefined)
+    ?.impersonatedBy;
+  const impersonatedBy = typeof rawImpersonatedBy === 'string' ? rawImpersonatedBy : undefined;
 
   if (!impersonatedBy) return null;
 
@@ -22,12 +20,9 @@ export function ImpersonationBanner() {
     try {
       await authClient.admin.stopImpersonating();
       const { data: restored } = await authClient.getSession();
-      (authClient.$store as { notify: (signal: string) => void }).notify(
-        '$sessionSignal',
-      );
-      const adminOrgId = (
-        restored?.session as Record<string, unknown> | undefined
-      )?.activeOrganizationId;
+      (authClient.$store as { notify: (signal: string) => void }).notify('$sessionSignal');
+      const adminOrgId = (restored?.session as Record<string, unknown> | undefined)
+        ?.activeOrganizationId;
       if (typeof adminOrgId === 'string' && adminOrgId) {
         router.push(`/${adminOrgId}/admin/organizations`);
       } else {
@@ -42,8 +37,8 @@ export function ImpersonationBanner() {
   return (
     <div className="flex items-center justify-between border-b bg-destructive/10 px-4 py-1.5 text-xs text-destructive">
       <span>
-        Impersonating <span className="font-medium">{session?.user?.name ?? 'a user'}</span>{' '}
-        ({session?.user?.email})
+        Impersonating <span className="font-medium">{session?.user?.name ?? 'a user'}</span> (
+        {session?.user?.email})
       </span>
       <button
         onClick={handleStop}

@@ -35,7 +35,9 @@ export function validateScreenshot({
     (mimeType === 'image/png' && !isPng) ||
     (mimeType === 'image/jpeg' && !isJpeg)
   ) {
-    throw new BadRequestException('Screenshot signature does not match MIME type');
+    throw new BadRequestException(
+      'Screenshot signature does not match MIME type',
+    );
   }
 
   return {

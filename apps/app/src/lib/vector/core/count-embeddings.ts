@@ -1,8 +1,8 @@
 import 'server-only';
 
+import { logger } from '@/utils/logger';
 import { vectorIndex } from './client';
 import { generateEmbedding } from './generate-embedding';
-import { logger } from '@/utils/logger';
 
 /**
  * Counts embeddings for a specific organization and source type
@@ -27,7 +27,7 @@ export async function countEmbeddings(
   try {
     // Use organizationId as query to find all embeddings
     const queryEmbedding = await generateEmbedding(organizationId);
-    
+
     const results = await vectorIndex.query({
       vector: queryEmbedding,
       topK: 100, // Max allowed by Upstash Vector
@@ -47,7 +47,7 @@ export async function countEmbeddings(
     for (const result of orgResults) {
       const metadata = result.metadata as any;
       const st = metadata?.sourceType || 'unknown';
-      
+
       if (!sourceType || st === sourceType) {
         bySourceType[st] = (bySourceType[st] || 0) + 1;
         total++;
@@ -83,14 +83,14 @@ export async function countEmbeddings(
  * Lists all manual answer embeddings for an organization
  * Useful for debugging
  */
-export async function listManualAnswerEmbeddings(
-  organizationId: string,
-): Promise<Array<{
-  id: string;
-  sourceId: string;
-  content: string;
-  updatedAt?: string;
-}>> {
+export async function listManualAnswerEmbeddings(organizationId: string): Promise<
+  Array<{
+    id: string;
+    sourceId: string;
+    content: string;
+    updatedAt?: string;
+  }>
+> {
   if (!vectorIndex) {
     return [];
   }
@@ -98,7 +98,7 @@ export async function listManualAnswerEmbeddings(
   try {
     // Use organizationId as query
     const queryEmbedding = await generateEmbedding(organizationId);
-    
+
     const results = await vectorIndex.query({
       vector: queryEmbedding,
       topK: 100,
@@ -110,8 +110,7 @@ export async function listManualAnswerEmbeddings(
       .filter((result) => {
         const metadata = result.metadata as any;
         return (
-          metadata?.organizationId === organizationId &&
-          metadata?.sourceType === 'manual_answer'
+          metadata?.organizationId === organizationId && metadata?.sourceType === 'manual_answer'
         );
       })
       .map((result) => {
@@ -139,4 +138,3 @@ export async function listManualAnswerEmbeddings(
     return [];
   }
 }
-

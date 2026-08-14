@@ -1,5 +1,5 @@
 jest.mock('../../app/object-storage', () => {
-  const actual = jest.requireActual('../../app/object-storage') as typeof import('../../app/object-storage');
+  const actual = jest.requireActual('../../app/object-storage');
 
   return {
     ...actual,

@@ -4,10 +4,10 @@ import { Button } from '@trycompai/ui/button';
 import { Textarea } from '@trycompai/ui/textarea';
 import { BookOpen, ChevronDown, ChevronUp, Link as LinkIcon, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
-import type { QuestionAnswer } from './types';
 import { deduplicateSources } from '../utils/deduplicate-sources';
 import { KnowledgeBaseDocumentLink } from './KnowledgeBaseDocumentLink';
 import { ManualAnswerLink } from './ManualAnswerLink';
+import type { QuestionAnswer } from './types';
 
 interface QuestionnaireResultsCardsProps {
   orgId: string;
@@ -56,12 +56,13 @@ export function QuestionnaireResultsCards({
     <div className="lg:hidden space-y-4">
       {filteredResults.map((qa, index) => {
         // Use originalIndex if available (from detail page), otherwise find by question text
-        const originalIndex = qa._originalIndex !== undefined 
-          ? qa._originalIndex 
-          : results.findIndex((r) => r.question === qa.question);
+        const originalIndex =
+          qa._originalIndex !== undefined
+            ? qa._originalIndex
+            : results.findIndex((r) => r.question === qa.question);
         // Fallback to index if not found (shouldn't happen, but safety check)
         const safeIndex = originalIndex >= 0 ? originalIndex : index;
-        
+
         // Deduplicate sources for this question
         const uniqueSources = qa.sources ? deduplicateSources(qa.sources) : [];
         const isEditing = editingIndex === safeIndex;
@@ -73,18 +74,21 @@ export function QuestionnaireResultsCards({
         // 1. Status is explicitly 'processing'
         // 2. This is the single question being answered
         // 3. Auto-answer is running and this question doesn't have an answer yet (or has empty answer)
-        const isProcessing = 
-          questionStatus === 'processing' || 
+        const isProcessing =
+          questionStatus === 'processing' ||
           answeringQuestionIndex === safeIndex ||
-          (isAutoAnswering && hasClickedAutoAnswer && (!qa.answer || qa.answer.trim().length === 0) && questionStatus !== 'completed');
+          (isAutoAnswering &&
+            hasClickedAutoAnswer &&
+            (!qa.answer || qa.answer.trim().length === 0) &&
+            questionStatus !== 'completed');
 
         return (
           <div
             key={`card-${safeIndex}-${qa.question.substring(0, 20)}`}
             className="flex flex-col gap-3 p-4 rounded-xs bg-muted/20 border border-border/30 animate-in fade-in duration-500 ease-out"
-            style={{ 
+            style={{
               animationDelay: `${index * 50}ms`,
-              animationFillMode: 'backwards'
+              animationFillMode: 'backwards',
             }}
           >
             <div className="flex flex-col gap-2">
@@ -105,8 +109,8 @@ export function QuestionnaireResultsCards({
                     autoFocus
                   />
                   <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={() => onSaveAnswer(safeIndex)}
                       disabled={isSaving && savingIndex === safeIndex}
                     >
@@ -119,9 +123,9 @@ export function QuestionnaireResultsCards({
                         'Save'
                       )}
                     </Button>
-                    <Button 
-                      size="sm" 
-                      onClick={onCancelEdit} 
+                    <Button
+                      size="sm"
+                      onClick={onCancelEdit}
                       variant="outline"
                       disabled={isSaving && savingIndex === safeIndex}
                     >
@@ -138,7 +142,9 @@ export function QuestionnaireResultsCards({
                       title="Click to edit"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm text-foreground flex-1 leading-relaxed transition-colors duration-150 group-hover:text-foreground/90">{qa.answer}</p>
+                        <p className="text-sm text-foreground flex-1 leading-relaxed transition-colors duration-150 group-hover:text-foreground/90">
+                          {qa.answer}
+                        </p>
                         <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-70 transition-opacity duration-150 ease-in-out flex-shrink-0 mt-0.5" />
                       </div>
                     </div>

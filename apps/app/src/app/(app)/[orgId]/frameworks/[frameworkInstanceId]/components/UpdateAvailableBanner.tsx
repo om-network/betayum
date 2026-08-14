@@ -1,7 +1,7 @@
 'use client';
 
-import { Badge, Button, HStack, Stack, Text } from '@trycompai/design-system';
 import type { FrameworkUpdateStatus } from '@/types/framework-versioning';
+import { Badge, Button, HStack, Stack, Text } from '@trycompai/design-system';
 
 interface UpdateAvailableBannerProps {
   status: FrameworkUpdateStatus;
@@ -24,8 +24,7 @@ export function UpdateAvailableBanner({
         <HStack gap="2" align="center">
           <Badge variant="secondary">Update available</Badge>
           <Text weight="medium">
-            v{status.currentVersion?.version ?? '—'} → v
-            {status.latestVersion.version}
+            v{status.currentVersion?.version ?? '—'} → v{status.latestVersion.version}
           </Text>
         </HStack>
         {status.latestVersion.releaseNotes && (
@@ -35,8 +34,7 @@ export function UpdateAvailableBanner({
         )}
         {hasActiveAudit && (
           <Text size="sm" variant="muted">
-            Active audit in progress — syncing may change controls the
-            auditor is reviewing.
+            Active audit in progress — syncing may change controls the auditor is reviewing.
           </Text>
         )}
         {canUpdate && (

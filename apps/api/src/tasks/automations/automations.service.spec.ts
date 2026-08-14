@@ -106,7 +106,7 @@ describe('AutomationsService', () => {
     service = new AutomationsService(
       runtimeService as unknown as AutomationRuntimeService,
       usageLimitsService as unknown as AutomationUsageLimitsService,
-      secretsService as unknown as AutomationSecretsService,
+      secretsService,
       auditService as unknown as AutomationAuditService,
       workerDispatcher as unknown as import('./automation-worker-dispatcher.service').AutomationWorkerDispatcherService,
     );
@@ -153,12 +153,12 @@ describe('AutomationsService', () => {
   it('updates only automations scoped to the requested task and organization', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
     mockedDb.evidenceAutomation.update.mockResolvedValue({
       id: 'aut_1',
       name: 'Updated',
       description: 'Updated description',
-    } as never);
+    });
 
     await service.update({
       organizationId: 'org_1',
@@ -185,7 +185,7 @@ describe('AutomationsService', () => {
   it('deletes only automations scoped to the requested task and organization', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
 
     await service.delete({
       organizationId: 'org_1',
@@ -208,17 +208,17 @@ describe('AutomationsService', () => {
   it('publishes the next immutable automation version for the scoped automation', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
     mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
       version: 2,
-    } as never);
+    });
     mockedDb.evidenceAutomationVersion.create.mockReturnValue({
       id: 'eav_3',
       version: 3,
-    } as never);
+    });
     mockedDb.evidenceAutomation.update.mockReturnValue({
       id: 'aut_1',
-    } as never);
+    });
     mockedDb.$transaction.mockResolvedValue([
       { id: 'eav_3', version: 3 },
       { id: 'aut_1' },
@@ -268,13 +268,13 @@ describe('AutomationsService', () => {
   it('rejects version restore until draft storage is configured', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
     mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
       id: 'eav_1',
       version: 1,
       scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v1.js',
       changelog: 'Initial version',
-    } as never);
+    });
 
     await expect(
       service.restoreVersion({
@@ -303,7 +303,7 @@ describe('AutomationsService', () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
       chatHistory: JSON.stringify([{ id: 'msg_1' }, { id: 'msg_2' }]),
-    } as never);
+    });
 
     const result = await service.getChatHistory({
       organizationId: 'org_1',
@@ -345,7 +345,7 @@ describe('AutomationsService', () => {
           parts: [{ type: 'text', text: 'Second' }],
         },
       ]),
-    } as never);
+    });
 
     const result = await service.getChatHistory({
       organizationId: 'org_1',
@@ -362,10 +362,10 @@ describe('AutomationsService', () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
       chatHistory: null,
-    } as never);
+    });
     mockedDb.evidenceAutomation.update.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
 
     await service.saveChatHistory({
       organizationId: 'org_1',
@@ -392,17 +392,17 @@ describe('AutomationsService', () => {
   it('starts a manual run pinned to a published version through the runtime contract', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
     mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
       id: 'eav_2',
       version: 2,
       scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
-    } as never);
+    });
     mockedDb.evidenceAutomationRun.create.mockResolvedValue({
       id: 'ear_1',
       status: 'pending',
       version: 2,
-    } as never);
+    });
     const result = await service.startManualRun({
       organizationId: 'org_1',
       taskId: 'tsk_1',
@@ -507,12 +507,12 @@ describe('AutomationsService', () => {
   it('rejects manual runs that reference secrets outside the organization', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
     mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
       id: 'eav_2',
       version: 2,
       scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
-    } as never);
+    });
     secretsService.verifySecretRefs.mockRejectedValue(
       new NotFoundException('Automation secret not found'),
     );
@@ -533,17 +533,17 @@ describe('AutomationsService', () => {
   it('marks the run failed when worker enqueue fails', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
     mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
       id: 'eav_2',
       version: 2,
       scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
-    } as never);
+    });
     mockedDb.evidenceAutomationRun.create.mockResolvedValue({
       id: 'ear_1',
       status: 'pending',
       version: 2,
-    } as never);
+    });
     workerDispatcher.enqueue.mockRejectedValue(
       new ServiceUnavailableException(
         'Task automation worker queue is not configured',
@@ -574,12 +574,12 @@ describe('AutomationsService', () => {
   it('enforces the organization manual run limit before creating a run', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
     mockedDb.evidenceAutomationVersion.findFirst.mockResolvedValue({
       id: 'eav_2',
       version: 2,
       scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v2.js',
-    } as never);
+    });
     usageLimitsService.assertManualRunLimit.mockRejectedValue(
       new HttpException(
         'Task automation manual run limit reached',
@@ -602,7 +602,7 @@ describe('AutomationsService', () => {
   it('enforces the stored version limit before publishing', async () => {
     mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
       id: 'aut_1',
-    } as never);
+    });
     usageLimitsService.assertVersionLimit.mockRejectedValue(
       new HttpException(
         'Task automation version limit reached',

@@ -1,6 +1,11 @@
 'use client';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@trycompai/ui/accordion';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
@@ -108,20 +113,20 @@ export function AppOnboarding({
                   {cta && (
                     <div className="mt-4 flex w-full">
                       <TooltipProvider delayDuration={100}>
-                      {href ? (
+                        {href ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className={`w-full ${ctaDisabled ? 'cursor-not-allowed' : ''}`}>
-                        <Link href={href}>
+                                <Link href={href}>
                                   <Button
                                     variant="default"
                                     className={`flex w-full items-center gap-2 ${ctaDisabled ? 'cursor-not-allowed' : ''}`}
                                     disabled={ctaDisabled}
                                   >
-                            <PlusIcon className="h-4 w-4" />
-                            {cta}
-                          </Button>
-                        </Link>
+                                    <PlusIcon className="h-4 w-4" />
+                                    {cta}
+                                  </Button>
+                                </Link>
                               </span>
                             </TooltipTrigger>
                             {ctaDisabled && ctaTooltip && (
@@ -134,15 +139,15 @@ export function AppOnboarding({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className={`w-full ${ctaDisabled ? 'cursor-not-allowed' : ''}`}>
-                        <Button
-                          variant="default"
+                                <Button
+                                  variant="default"
                                   className={`flex w-full items-center gap-2 ${ctaDisabled ? 'cursor-not-allowed' : ''}`}
-                          onClick={() => setOpen('true')}
+                                  onClick={() => setOpen('true')}
                                   disabled={ctaDisabled}
-                        >
-                          <PlusIcon className="h-4 w-4" />
-                          {cta}
-                        </Button>
+                                >
+                                  <PlusIcon className="h-4 w-4" />
+                                  {cta}
+                                </Button>
                               </span>
                             </TooltipTrigger>
                             {ctaDisabled && ctaTooltip && (
@@ -151,7 +156,7 @@ export function AppOnboarding({
                               </TooltipContent>
                             )}
                           </Tooltip>
-                      )}
+                        )}
                       </TooltipProvider>
                     </div>
                   )}

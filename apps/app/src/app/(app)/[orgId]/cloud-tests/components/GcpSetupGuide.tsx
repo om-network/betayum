@@ -39,7 +39,6 @@ interface SetupStep {
   >;
 }
 
-
 export function GcpSetupGuide({
   connectionId,
   hasOrgId,
@@ -162,7 +161,7 @@ export function GcpSetupGuide({
       }
 
       const isBlockingNow = hasBlockingFailuresForSteps(
-        nextSteps.length > 0 ? nextSteps : setupResult?.steps ?? [],
+        nextSteps.length > 0 ? nextSteps : (setupResult?.steps ?? []),
       );
       if (wasBlocking && !isBlockingNow) {
         toast.success('Required setup complete — running first scan...');
@@ -203,10 +202,12 @@ export function GcpSetupGuide({
         <div>
           <h3 className="text-sm font-semibold">Get started with GCP scanning</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            OAuth signs in your account, but GCP still requires org-level IAM/API access for Security Command Center. We&apos;ll try to set it up automatically first.
+            OAuth signs in your account, but GCP still requires org-level IAM/API access for
+            Security Command Center. We&apos;ll try to set it up automatically first.
           </p>
           <p className="text-[11px] text-muted-foreground/70 mt-1">
-            For full auto-fix and rollback capabilities, connect with a GCP account that has Owner or Editor role on the selected projects.
+            For full auto-fix and rollback capabilities, connect with a GCP account that has Owner
+            or Editor role on the selected projects.
           </p>
         </div>
 
@@ -215,7 +216,11 @@ export function GcpSetupGuide({
           <div className="space-y-3">
             <StepRow done label="Connected via OAuth" />
             {hasOrgId && <StepRow done label="Organization detected" />}
-            <StepRow failed label="No projects selected" error="Select at least one GCP project to scan." />
+            <StepRow
+              failed
+              label="No projects selected"
+              error="Select at least one GCP project to scan."
+            />
             <a
               href={`/${orgId}/integrations/gcp`}
               className="inline-flex items-center gap-1.5 rounded-lg border bg-background px-4 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
@@ -246,9 +251,7 @@ export function GcpSetupGuide({
             {setupResult.organizationId && (
               <StepRow done label={`Organization: ${setupResult.organizationId}`} />
             )}
-            {setupResult.email && (
-              <StepRow done label={`Account: ${setupResult.email}`} />
-            )}
+            {setupResult.email && <StepRow done label={`Account: ${setupResult.email}`} />}
 
             {/* Project info */}
             {selectedProjectId && (
@@ -282,9 +285,7 @@ export function GcpSetupGuide({
           >
             <p
               className={`mb-2 text-xs font-medium ${
-                hasBlockingFailures
-                  ? 'text-amber-800 dark:text-amber-300'
-                  : 'text-primary'
+                hasBlockingFailures ? 'text-amber-800 dark:text-amber-300' : 'text-primary'
               }`}
             >
               {hasBlockingFailures
@@ -349,9 +350,7 @@ export function GcpSetupGuide({
                           className="inline-flex items-center gap-1 rounded border bg-background px-2 py-1 text-[11px] font-medium hover:bg-muted/50"
                         >
                           <Copy className="h-3 w-3" />
-                          {copiedCommandKey === `${step.id}-${index}`
-                            ? 'Copied'
-                            : action.label}
+                          {copiedCommandKey === `${step.id}-${index}` ? 'Copied' : action.label}
                         </button>
                       ),
                     )}
@@ -361,7 +360,8 @@ export function GcpSetupGuide({
             </div>
             {!hasBlockingFailures && failedOptionalSteps.length > 0 && (
               <p className="mt-2 text-[11px] text-muted-foreground">
-                Optional steps improve automatic setup and future onboarding, but they are not required for reading findings.
+                Optional steps improve automatic setup and future onboarding, but they are not
+                required for reading findings.
               </p>
             )}
           </div>
@@ -393,7 +393,6 @@ export function GcpSetupGuide({
           </div>
         )}
       </div>
-
     </div>
   );
 }
@@ -420,8 +419,8 @@ function StepRow({
             : optional
               ? 'bg-amber-100 dark:bg-amber-900/30'
               : failed
-              ? 'bg-red-100 dark:bg-red-900/30'
-              : 'border border-muted-foreground/30'
+                ? 'bg-red-100 dark:bg-red-900/30'
+                : 'border border-muted-foreground/30'
         }`}
       >
         {done && <Check className="h-3 w-3 text-primary" />}
@@ -442,7 +441,11 @@ function StepRow({
           {label}
         </p>
         {error && (
-          <p className={`mt-0.5 text-[11px] ${optional ? 'text-amber-700 dark:text-amber-400' : 'text-red-500'}`}>{error}</p>
+          <p
+            className={`mt-0.5 text-[11px] ${optional ? 'text-amber-700 dark:text-amber-400' : 'text-red-500'}`}
+          >
+            {error}
+          </p>
         )}
       </div>
     </div>

@@ -31,10 +31,7 @@ export class PrismaExtension implements BuildExtension {
   private _resolvedSchemaPath?: string;
 
   constructor(private options: PrismaExtensionOptions) {
-    this.moduleExternals = [
-      '@prisma/client',
-      '@trycompai/db',
-    ];
+    this.moduleExternals = ['@prisma/client', '@trycompai/db'];
   }
 
   externalsForTarget(target: any) {

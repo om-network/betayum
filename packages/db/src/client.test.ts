@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import { resolveSslConfig } from './ssl-config';
 
 describe('resolveSslConfig', () => {
@@ -25,13 +25,19 @@ describe('resolveSslConfig', () => {
   it('returns checkServerIdentity-noop for remote URLs (verified TLS via Node defaults)', () => {
     const result = resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {});
     expect(result).toBeDefined();
-    expect(typeof (result as { checkServerIdentity: unknown }).checkServerIdentity).toBe('function');
-    expect((result as { checkServerIdentity: () => undefined }).checkServerIdentity()).toBeUndefined();
+    expect(typeof (result as { checkServerIdentity: unknown }).checkServerIdentity).toBe(
+      'function',
+    );
+    expect(
+      (result as { checkServerIdentity: () => undefined }).checkServerIdentity(),
+    ).toBeUndefined();
   });
 
   it('treats malformed URLs as remote (defensive)', () => {
     const result = resolveSslConfig('not-a-valid-url', {});
     expect(result).toBeDefined();
-    expect(typeof (result as { checkServerIdentity: unknown }).checkServerIdentity).toBe('function');
+    expect(typeof (result as { checkServerIdentity: unknown }).checkServerIdentity).toBe(
+      'function',
+    );
   });
 });

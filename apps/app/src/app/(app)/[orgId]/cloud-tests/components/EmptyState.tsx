@@ -3,8 +3,6 @@
 import { ConnectIntegrationDialog } from '@/components/integrations/ConnectIntegrationDialog';
 import { useApi } from '@/hooks/use-api';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
-import MultipleSelector from '@trycompai/ui/multiple-selector';
 import {
   Button,
   Input,
@@ -19,6 +17,8 @@ import {
   Spinner,
 } from '@trycompai/design-system';
 import { ArrowLeft, CheckmarkFilled, Launch } from '@trycompai/design-system/icons';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
+import MultipleSelector from '@trycompai/ui/multiple-selector';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -112,7 +112,8 @@ export function EmptyState({
   const api = useApi();
   const { hasPermission } = usePermissions();
   const canCreate = hasPermission('integration', 'create');
-  const initialUsesDialog = initialProvider === 'aws' || initialProvider === 'gcp' || initialProvider === 'azure';
+  const initialUsesDialog =
+    initialProvider === 'aws' || initialProvider === 'gcp' || initialProvider === 'azure';
   const [step, setStep] = useState<Step>(
     initialProvider && !initialUsesDialog ? 'connect' : 'choose',
   );
@@ -332,9 +333,7 @@ export function EmptyState({
 
             <CardContent className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="region">
-                  Regions
-                </Label>
+                <Label htmlFor="region">Regions</Label>
                 <MultipleSelector
                   value={
                     Array.isArray(credentials.regions)
@@ -373,7 +372,11 @@ export function EmptyState({
               <div className="mt-6">
                 <Button
                   onClick={handleConnect}
-                  disabled={!canCreate || !Array.isArray(credentials.regions) || credentials.regions.length === 0}
+                  disabled={
+                    !canCreate ||
+                    !Array.isArray(credentials.regions) ||
+                    credentials.regions.length === 0
+                  }
                   loading={isConnecting}
                   width="full"
                   size="lg"
@@ -431,8 +434,7 @@ export function EmptyState({
 
         <div className="grid w-full gap-4 md:grid-cols-3">
           {CLOUD_PROVIDERS.filter(
-            (cp) =>
-              cp.id === 'aws' || cp.id === 'azure' || !connectedProviders.includes(cp.id),
+            (cp) => cp.id === 'aws' || cp.id === 'azure' || !connectedProviders.includes(cp.id),
           ).map((cloudProvider) => (
             <Card
               key={cloudProvider.id}
@@ -521,13 +523,13 @@ export function EmptyState({
 
                 return (
                   <div key={field.id} className="space-y-2">
-                    <Label htmlFor={field.id}>
-                      {field.label}
-                    </Label>
+                    <Label htmlFor={field.id}>{field.label}</Label>
                     {field.type === 'select' && options.length > 0 ? (
                       <Select
                         value={stringValue}
-                        onValueChange={(value) => { if (value) handleFieldChange(field.id, value); }}
+                        onValueChange={(value) => {
+                          if (value) handleFieldChange(field.id, value);
+                        }}
                         disabled={isConnecting}
                       >
                         <SelectTrigger>

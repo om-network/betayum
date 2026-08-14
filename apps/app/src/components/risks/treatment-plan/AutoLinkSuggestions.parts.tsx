@@ -1,8 +1,8 @@
 'use client';
 
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { Button } from '@trycompai/design-system';
 import { MagicWandFilled } from '@trycompai/design-system/icons';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useEffect, useMemo, useRef } from 'react';
 import { ControlsSection, TasksSection } from './AutoLinkSuggestions.sections';
 import {
@@ -296,7 +296,8 @@ export function LoadingState({
   }
 
   const { headline, sub } = describeStatus(status, meta.phase, meta.current, meta.total);
-  const showProgress = meta.phase === 'embedding-tasks' && typeof meta.total === 'number' && meta.total > 0;
+  const showProgress =
+    meta.phase === 'embedding-tasks' && typeof meta.total === 'number' && meta.total > 0;
   const pct = showProgress
     ? Math.min(100, Math.round(((meta.current ?? 0) / (meta.total ?? 1)) * 100))
     : null;

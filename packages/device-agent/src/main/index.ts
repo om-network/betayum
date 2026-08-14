@@ -257,8 +257,7 @@ function isNewerVersion(remote: string, local: string): boolean {
  */
 async function checkForManualUpdate(): Promise<void> {
   try {
-    const updateUrl =
-      process.env.AUTO_UPDATE_URL || __AUTO_UPDATE_URL__;
+    const updateUrl = process.env.AUTO_UPDATE_URL || __AUTO_UPDATE_URL__;
     const ymlUrl = `${updateUrl}/latest-linux.yml`;
 
     log(`Manual update check: fetching ${ymlUrl}`);

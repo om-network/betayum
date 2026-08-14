@@ -336,7 +336,7 @@ export class AutomationSetupQueueService {
         where: { id: dto.automationId },
         data: {
           isEnabled: dto.outcome === AutomationSetupOutcome.ready,
-          setupStatus: dto.outcome as AutomationSetupStatus,
+          setupStatus: dto.outcome,
           setupStatusUpdatedAt: new Date(),
           setupTask:
             dto.outcome === AutomationSetupOutcome.action_needed

@@ -36,8 +36,8 @@ import {
 import { Add, Login, TrashCan } from '@trycompai/design-system/icons';
 import { Input } from '@trycompai/ui/input';
 import { Label } from '@trycompai/ui/label';
-import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 
 const INVITE_ROLES = ['admin', 'auditor', 'employee', 'contractor'];
 
@@ -79,19 +79,13 @@ export function MembersTab({
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('employee');
   const [inviting, setInviting] = useState(false);
-  const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(
-    null,
-  );
-  const [impersonateTarget, setImpersonateTarget] = useState<OrgMember | null>(
-    null,
-  );
+  const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
+  const [impersonateTarget, setImpersonateTarget] = useState<OrgMember | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const fetchInvitations = useCallback(async () => {
     setLoadingInvitations(true);
-    const res = await api.get<PendingInvitation[]>(
-      `/v1/admin/organizations/${orgId}/invitations`,
-    );
+    const res = await api.get<PendingInvitation[]>(`/v1/admin/organizations/${orgId}/invitations`);
     if (res.data) setInvitations(res.data);
     setLoadingInvitations(false);
   }, [orgId]);
@@ -103,10 +97,10 @@ export function MembersTab({
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
     setInviting(true);
-    const res = await api.post(
-      `/v1/admin/organizations/${orgId}/invite`,
-      { email: inviteEmail.trim(), role: inviteRole },
-    );
+    const res = await api.post(`/v1/admin/organizations/${orgId}/invite`, {
+      email: inviteEmail.trim(),
+      role: inviteRole,
+    });
     if (!res.error) {
       setInviteEmail('');
       setInviteRole('employee');
@@ -118,9 +112,7 @@ export function MembersTab({
 
   const handleRevokeInvitation = async (invitationId: string) => {
     setRevokingId(invitationId);
-    const res = await api.delete(
-      `/v1/admin/organizations/${orgId}/invitations/${invitationId}`,
-    );
+    const res = await api.delete(`/v1/admin/organizations/${orgId}/invitations/${invitationId}`);
     if (!res.error) {
       setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
     }
@@ -160,11 +152,7 @@ export function MembersTab({
         <Section
           title={`Members (${members.length})`}
           actions={
-            <Button
-              size="sm"
-              iconLeft={<Add size={16} />}
-              onClick={() => setShowInviteForm(true)}
-            >
+            <Button size="sm" iconLeft={<Add size={16} />} onClick={() => setShowInviteForm(true)}>
               Invite Member
             </Button>
           }
@@ -228,11 +216,7 @@ export function MembersTab({
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  type="submit"
-                  loading={inviting}
-                  disabled={!inviteEmail.trim()}
-                >
+                <Button type="submit" loading={inviting} disabled={!inviteEmail.trim()}>
                   Send Invitation
                 </Button>
               </Stack>
@@ -251,19 +235,15 @@ export function MembersTab({
           <AlertDialogHeader>
             <AlertDialogTitle>Impersonate user</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to log in as{' '}
-              <strong>{impersonateTarget?.user.name}</strong> (
-              {impersonateTarget?.user.email}). All actions you take will be
-              performed under their identity and recorded in the audit log with
-              your admin session tracked via <em>impersonatedBy</em>.
+              You are about to log in as <strong>{impersonateTarget?.user.name}</strong> (
+              {impersonateTarget?.user.email}). All actions you take will be performed under their
+              identity and recorded in the audit log with your admin session tracked via{' '}
+              <em>impersonatedBy</em>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={handleConfirmImpersonate}
-            >
+            <AlertDialogAction variant="destructive" onClick={handleConfirmImpersonate}>
               Impersonate
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -294,46 +274,48 @@ function MembersTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {[...members].sort((a, b) => a.user.name.localeCompare(b.user.name)).map((member) => (
-          <TableRow key={member.id}>
-            <TableCell>
-              <div className="max-w-[200px] truncate">
-                <Text size="sm" weight="medium">
-                  {member.user.name}
-                </Text>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="max-w-[250px] truncate">
+        {[...members]
+          .sort((a, b) => a.user.name.localeCompare(b.user.name))
+          .map((member) => (
+            <TableRow key={member.id}>
+              <TableCell>
+                <div className="max-w-[200px] truncate">
+                  <Text size="sm" weight="medium">
+                    {member.user.name}
+                  </Text>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="max-w-[250px] truncate">
+                  <Text size="sm" variant="muted">
+                    {member.user.email}
+                  </Text>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge variant="secondary">
+                  {member.role.replace(/\b\w/g, (c) => c.toUpperCase())}
+                </Badge>
+              </TableCell>
+              <TableCell>
                 <Text size="sm" variant="muted">
-                  {member.user.email}
+                  {new Date(member.createdAt).toLocaleDateString()}
                 </Text>
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge variant="secondary">
-                {member.role.replace(/\b\w/g, (c) => c.toUpperCase())}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <Text size="sm" variant="muted">
-                {new Date(member.createdAt).toLocaleDateString()}
-              </Text>
-            </TableCell>
-            <TableCell>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onImpersonate(member)}
-                loading={impersonatingUserId === member.user.id}
-                disabled={impersonatingUserId !== null}
-                iconLeft={<Login size={16} />}
-              >
-                Login As
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
+              </TableCell>
+              <TableCell>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onImpersonate(member)}
+                  loading={impersonatingUserId === member.user.id}
+                  disabled={impersonatingUserId !== null}
+                  iconLeft={<Login size={16} />}
+                >
+                  Login As
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
       </TableBody>
     </Table>
   );
@@ -372,41 +354,43 @@ function InvitationsSection({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {[...invitations].sort((a, b) => a.email.localeCompare(b.email)).map((inv) => (
-              <TableRow key={inv.id}>
-                <TableCell>
-                  <div className="max-w-[250px] truncate">
-                    <Text size="sm">{inv.email}</Text>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {inv.role.replace(/\b\w/g, (c) => c.toUpperCase())}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Text size="sm" variant="muted">
-                    {new Date(inv.createdAt).toLocaleDateString()}
-                  </Text>
-                </TableCell>
-                <TableCell>
-                  <Text size="sm" variant="muted">
-                    {new Date(inv.expiresAt).toLocaleDateString()}
-                  </Text>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => onRevoke(inv.id)}
-                    loading={revokingId === inv.id}
-                    iconLeft={<TrashCan size={16} />}
-                  >
-                    Revoke
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {[...invitations]
+              .sort((a, b) => a.email.localeCompare(b.email))
+              .map((inv) => (
+                <TableRow key={inv.id}>
+                  <TableCell>
+                    <div className="max-w-[250px] truncate">
+                      <Text size="sm">{inv.email}</Text>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {inv.role.replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Text size="sm" variant="muted">
+                      {new Date(inv.createdAt).toLocaleDateString()}
+                    </Text>
+                  </TableCell>
+                  <TableCell>
+                    <Text size="sm" variant="muted">
+                      {new Date(inv.expiresAt).toLocaleDateString()}
+                    </Text>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => onRevoke(inv.id)}
+                      loading={revokingId === inv.id}
+                      iconLeft={<TrashCan size={16} />}
+                    >
+                      Revoke
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       )}

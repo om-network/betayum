@@ -81,12 +81,9 @@ export function tallySeverities<T extends { severity: IssueSeverity }>(
   return tally;
 }
 
-export function sortBySeverity<T extends { severity: IssueSeverity }>(
-  items: readonly T[],
-): T[] {
+export function sortBySeverity<T extends { severity: IssueSeverity }>(items: readonly T[]): T[] {
   return [...items].sort(
-    (a, b) =>
-      (SEVERITY_INDEX[a.severity] ?? 99) - (SEVERITY_INDEX[b.severity] ?? 99),
+    (a, b) => (SEVERITY_INDEX[a.severity] ?? 99) - (SEVERITY_INDEX[b.severity] ?? 99),
   );
 }
 
@@ -103,9 +100,7 @@ export type RunStatus =
   | 'cancelled';
 
 export function isRunInProgress(status: RunStatus | string | undefined): boolean {
-  return (
-    status === 'provisioning' || status === 'cloning' || status === 'running'
-  );
+  return status === 'provisioning' || status === 'cloning' || status === 'running';
 }
 
 export function isRunTerminal(status: RunStatus | string | undefined): boolean {

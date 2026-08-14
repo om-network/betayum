@@ -46,9 +46,7 @@ export function ContextTab({ orgId }: { orgId: string }) {
 
   const fetchContext = useCallback(async () => {
     setLoading(true);
-    const res = await api.get<ContextResponse>(
-      `/v1/admin/organizations/${orgId}/context`,
-    );
+    const res = await api.get<ContextResponse>(`/v1/admin/organizations/${orgId}/context`);
     if (res.data) setEntries(res.data.data);
     setLoading(false);
   }, [orgId]);
@@ -76,11 +74,7 @@ export function ContextTab({ orgId }: { orgId: string }) {
       <Section
         title={`Context (${entries.length})`}
         actions={
-          <Button
-            size="sm"
-            iconLeft={<Add size={16} />}
-            onClick={() => setShowCreateForm(true)}
-          >
+          <Button size="sm" iconLeft={<Add size={16} />} onClick={() => setShowCreateForm(true)}>
             Add Context
           </Button>
         }
@@ -99,34 +93,36 @@ export function ContextTab({ orgId }: { orgId: string }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...entries].sort((a, b) => a.question.localeCompare(b.question)).map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell>
-                    <div className="max-w-[400px] truncate">
-                      <Text size="sm" weight="medium">
-                        {entry.question}
-                      </Text>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[400px] truncate">
-                      <Text size="sm" variant="muted">
-                        {entry.answer}
-                      </Text>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      iconLeft={<Edit size={16} />}
-                      onClick={() => setEditingEntry(entry)}
-                    >
-                      Edit
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {[...entries]
+                .sort((a, b) => a.question.localeCompare(b.question))
+                .map((entry) => (
+                  <TableRow key={entry.id}>
+                    <TableCell>
+                      <div className="max-w-[400px] truncate">
+                        <Text size="sm" weight="medium">
+                          {entry.question}
+                        </Text>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[400px] truncate">
+                        <Text size="sm" variant="muted">
+                          {entry.answer}
+                        </Text>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        iconLeft={<Edit size={16} />}
+                        onClick={() => setEditingEntry(entry)}
+                      >
+                        Edit
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         )}
@@ -143,16 +139,10 @@ export function ContextTab({ orgId }: { orgId: string }) {
       >
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>
-              {editingEntry ? 'Edit Context' : 'Add Context'}
-            </SheetTitle>
+            <SheetTitle>{editingEntry ? 'Edit Context' : 'Add Context'}</SheetTitle>
           </SheetHeader>
           <SheetBody>
-            <ContextForm
-              orgId={orgId}
-              entry={editingEntry}
-              onSaved={handleSaved}
-            />
+            <ContextForm orgId={orgId} entry={editingEntry} onSaved={handleSaved} />
           </SheetBody>
         </SheetContent>
       </Sheet>
@@ -184,10 +174,7 @@ function ContextForm({
     const body = { question, answer };
 
     const res = entry
-      ? await api.patch(
-          `/v1/admin/organizations/${orgId}/context/${entry.id}`,
-          body,
-        )
+      ? await api.patch(`/v1/admin/organizations/${orgId}/context/${entry.id}`, body)
       : await api.post(`/v1/admin/organizations/${orgId}/context`, body);
 
     if (res.error) {
@@ -225,11 +212,7 @@ function ContextForm({
             {error}
           </Text>
         )}
-        <Button
-          type="submit"
-          loading={submitting}
-          disabled={!question.trim() || !answer.trim()}
-        >
+        <Button type="submit" loading={submitting} disabled={!question.trim() || !answer.trim()}>
           {entry ? 'Save Changes' : 'Create'}
         </Button>
       </Stack>

@@ -1,13 +1,13 @@
 'use client';
 
+import { useFrameworkRollback } from '@/hooks/use-framework-rollback';
+import { useFrameworkSyncHistory } from '@/hooks/use-framework-sync-history';
+import type { UserPermissions } from '@/lib/permissions';
+import { hasPermission } from '@/lib/permissions';
+import type { SyncHistoryItem } from '@/types/framework-versioning';
 import { Badge, Button, Text } from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useFrameworkSyncHistory } from '@/hooks/use-framework-sync-history';
-import { useFrameworkRollback } from '@/hooks/use-framework-rollback';
-import { hasPermission } from '@/lib/permissions';
-import type { UserPermissions } from '@/lib/permissions';
-import type { SyncHistoryItem } from '@/types/framework-versioning';
 import { RollbackConfirmDialog } from './RollbackConfirmDialog';
 
 interface SyncHistorySectionProps {
@@ -31,11 +31,7 @@ function isWithinRollbackWindow(item: SyncHistoryItem): boolean {
 }
 
 function canRollbackItem(item: SyncHistoryItem): boolean {
-  return (
-    item.kind === 'SYNC' &&
-    !item.rolledBackByOperationId &&
-    isWithinRollbackWindow(item)
-  );
+  return item.kind === 'SYNC' && !item.rolledBackByOperationId && isWithinRollbackWindow(item);
 }
 
 interface HistoryItemRowProps {
@@ -45,35 +41,25 @@ interface HistoryItemRowProps {
   isRollingBack: boolean;
 }
 
-function HistoryItemRow({
-  item,
-  showRollback,
-  onRollback,
-  isRollingBack,
-}: HistoryItemRowProps) {
+function HistoryItemRow({ item, showRollback, onRollback, isRollingBack }: HistoryItemRowProps) {
   const isSync = item.kind === 'SYNC';
   const wasRolledBack = !!item.rolledBackByOperationId;
-  const actorName = item.performedBy?.user?.name
-    ?? item.performedBy?.user?.email
-    ?? null;
+  const actorName = item.performedBy?.user?.name ?? item.performedBy?.user?.email ?? null;
   const actionVerb = isSync ? 'Synced' : 'Rolled back';
 
   return (
     <div className="flex items-start justify-between gap-4 rounded-md border px-4 py-3">
       <div className="flex flex-col gap-1 min-w-0">
         <div className="flex items-center gap-2">
-          <Badge variant={isSync ? 'secondary' : 'outline'}>
-            {isSync ? 'Sync' : 'Rollback'}
-          </Badge>
+          <Badge variant={isSync ? 'secondary' : 'outline'}>{isSync ? 'Sync' : 'Rollback'}</Badge>
           <Text size="sm" weight="medium">
             v{item.fromVersion.version} → v{item.toVersion.version}
           </Text>
-          {wasRolledBack && (
-            <Badge variant="outline">Rolled back</Badge>
-          )}
+          {wasRolledBack && <Badge variant="outline">Rolled back</Badge>}
         </div>
         <Text size="sm" variant="muted">
-          {actionVerb}{actorName ? ` by ${actorName}` : ''} on {formatDate(item.performedAt)}
+          {actionVerb}
+          {actorName ? ` by ${actorName}` : ''} on {formatDate(item.performedAt)}
         </Text>
         {item.rollbackExpiresAt && isWithinRollbackWindow(item) && !wasRolledBack && (
           <Text size="sm" variant="muted">
@@ -99,10 +85,7 @@ function HistoryItemRow({
 
 const INITIAL_VISIBLE = 5;
 
-export function SyncHistorySection({
-  frameworkInstanceId,
-  permissions,
-}: SyncHistorySectionProps) {
+export function SyncHistorySection({ frameworkInstanceId, permissions }: SyncHistorySectionProps) {
   const { data: history, isLoading } = useFrameworkSyncHistory(frameworkInstanceId);
   const { rollback, isRollingBack } = useFrameworkRollback(frameworkInstanceId);
   const [pendingRollback, setPendingRollback] = useState<SyncHistoryItem | null>(null);
@@ -114,9 +97,8 @@ export function SyncHistorySection({
   // Only the most recent non-reversed sync can be rolled back. Rolling back
   // an older sync in the middle of a chain would leave the instance in an
   // inconsistent state, so we surface the Rollback action only on that row.
-  const latestRollbackableSyncId = items.find(
-    (i) => i.kind === 'SYNC' && !i.rolledBackByOperationId,
-  )?.id ?? null;
+  const latestRollbackableSyncId =
+    items.find((i) => i.kind === 'SYNC' && !i.rolledBackByOperationId)?.id ?? null;
 
   if (isLoading) return null;
   if (items.length === 0) return null;
@@ -137,9 +119,7 @@ export function SyncHistorySection({
       toast.success(`Rolled back to v${pendingRollback.fromVersion.version}`);
       setPendingRollback(null);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to roll back framework',
-      );
+      toast.error(err instanceof Error ? err.message : 'Failed to roll back framework');
     }
   };
 
@@ -158,11 +138,7 @@ export function SyncHistorySection({
       </div>
       {items.length > INITIAL_VISIBLE && (
         <div className="flex justify-center">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setShowAll((v) => !v)}
-          >
+          <Button size="sm" variant="ghost" onClick={() => setShowAll((v) => !v)}>
             {showAll ? 'Show less' : `Show ${hiddenCount} more`}
           </Button>
         </div>

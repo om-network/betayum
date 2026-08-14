@@ -40,9 +40,7 @@ export function EditRolePageClient({ orgId, roleId, initialData }: EditRolePageC
     <Card>
       <CardHeader>
         <CardTitle>Role Details</CardTitle>
-        <CardDescription>
-          Modify the permissions for this custom role.
-        </CardDescription>
+        <CardDescription>Modify the permissions for this custom role.</CardDescription>
       </CardHeader>
       <CardContent>
         <RoleForm

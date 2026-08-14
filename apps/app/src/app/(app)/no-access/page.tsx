@@ -35,7 +35,8 @@ export default async function NoAccess() {
         <h1 className="text-2xl font-bold">Access Denied</h1>
         <div className="flex flex-col text-center">
           <p>
-            Your current role doesn&apos;t have access to the app. If you&apos;re looking for the employee portal, go to{' '}
+            Your current role doesn&apos;t have access to the app. If you&apos;re looking for the
+            employee portal, go to{' '}
             <Link href="https://portal.betayum.com" className="text-primary underline">
               portal.betayum.com
             </Link>
@@ -44,10 +45,7 @@ export default async function NoAccess() {
           <p>Please select another organization or contact your organization administrator.</p>
         </div>
         <div>
-          <OrganizationSwitcher
-            organizations={organizations}
-            organization={currentOrg}
-          />
+          <OrganizationSwitcher organizations={organizations} organization={currentOrg} />
         </div>
       </div>
     </div>

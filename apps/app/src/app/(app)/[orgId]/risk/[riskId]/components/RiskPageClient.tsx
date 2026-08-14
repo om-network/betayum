@@ -8,11 +8,11 @@ import { RiskOverview } from '@/components/risks/risk-overview';
 import { TreatmentPlanTab } from '@/components/risks/treatment-plan/TreatmentPlanTab';
 import { TaskItems } from '@/components/task-items/TaskItems';
 import { useAuditLogs } from '@/hooks/use-audit-logs';
-import { useRisk, useRiskActions, type RiskLinkedTask, type RiskResponse } from '@/hooks/use-risks';
-import { useTaskItems, useTaskItemActions } from '@/hooks/use-task-items';
 import { usePermissions } from '@/hooks/use-permissions';
-import { CommentEntityType } from '@db';
+import { useRisk, useRiskActions, type RiskLinkedTask, type RiskResponse } from '@/hooks/use-risks';
+import { useTaskItemActions, useTaskItems } from '@/hooks/use-task-items';
 import type { Member, Risk, RiskTreatmentType, User } from '@db';
+import { CommentEntityType } from '@db';
 import {
   Breadcrumb,
   HStack,
@@ -119,7 +119,7 @@ export function RiskPageClient({
   };
 
   const saveTitleEdit = async () => {
-    const currentTitle = isViewingTask ? (selectedTaskTitle || '') : risk.title;
+    const currentTitle = isViewingTask ? selectedTaskTitle || '' : risk.title;
     if (!titleValue.trim() || titleValue === currentTitle) {
       setIsEditingTitle(false);
       return;
@@ -227,12 +227,9 @@ export function RiskPageClient({
     [fetchActiveRiskAutoLinkRun, riskId],
   );
 
-  const handleDiscardAutoLinkRun = useCallback(
-    async () => {
-      await discardRiskAutoLinkRun(riskId);
-    },
-    [discardRiskAutoLinkRun, riskId],
-  );
+  const handleDiscardAutoLinkRun = useCallback(async () => {
+    await discardRiskAutoLinkRun(riskId);
+  }, [discardRiskAutoLinkRun, riskId]);
 
   return (
     <>
@@ -240,13 +237,29 @@ export function RiskPageClient({
         items={
           taskItemId
             ? [
-                { label: 'Risks', href: `/${orgId}/risk`, props: { render: <Link href={`/${orgId}/risk`} /> } },
-                { label: risk.title, href: `/${orgId}/risk/${riskId}`, props: { render: <Link href={`/${orgId}/risk/${riskId}`} /> } },
-                { label: 'Tasks', href: `/${orgId}/risk/${riskId}?tab=tasks`, props: { render: <Link href={`/${orgId}/risk/${riskId}?tab=tasks`} /> } },
+                {
+                  label: 'Risks',
+                  href: `/${orgId}/risk`,
+                  props: { render: <Link href={`/${orgId}/risk`} /> },
+                },
+                {
+                  label: risk.title,
+                  href: `/${orgId}/risk/${riskId}`,
+                  props: { render: <Link href={`/${orgId}/risk/${riskId}`} /> },
+                },
+                {
+                  label: 'Tasks',
+                  href: `/${orgId}/risk/${riskId}?tab=tasks`,
+                  props: { render: <Link href={`/${orgId}/risk/${riskId}?tab=tasks`} /> },
+                },
                 { label: selectedTaskTitle || 'Task', isCurrent: true },
               ]
             : [
-                { label: 'Risks', href: `/${orgId}/risk`, props: { render: <Link href={`/${orgId}/risk`} /> } },
+                {
+                  label: 'Risks',
+                  href: `/${orgId}/risk`,
+                  props: { render: <Link href={`/${orgId}/risk`} /> },
+                },
                 { label: risk.title, isCurrent: true },
               ]
         }
@@ -271,12 +284,12 @@ export function RiskPageClient({
               onClick={(isViewingTask ? canUpdateTask : canUpdate) ? startEditingTitle : undefined}
               className={`text-2xl font-semibold tracking-tight ${(isViewingTask ? canUpdateTask : canUpdate) ? 'cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 transition-colors' : ''}`}
             >
-              {taskItemId ? (selectedTaskTitle || 'Task') : risk.title}
+              {taskItemId ? selectedTaskTitle || 'Task' : risk.title}
             </h1>
           )}
         </HStack>
-        {!isViewingTask && (
-          isEditingDescription ? (
+        {!isViewingTask &&
+          (isEditingDescription ? (
             <textarea
               value={descriptionValue}
               onChange={(e) => {
@@ -308,12 +321,11 @@ export function RiskPageClient({
             >
               {risk.description || (canUpdate ? 'Add a description...' : '')}
             </Text>
-          )
-        )}
+          ))}
       </Stack>
 
       {isViewingTask ? (
-        <TaskItems entityId={riskId} entityType="risk"  />
+        <TaskItems entityId={riskId} entityType="risk" />
       ) : (
         <Tabs value={activeTab} onValueChange={(next) => void setActiveTab(String(next))}>
           <Stack gap="lg">
@@ -346,18 +358,17 @@ export function RiskPageClient({
                     treatmentStrategy: risk.treatmentStrategy,
                     treatmentStrategyDescription: risk.treatmentStrategyDescription,
                     strategyDescriptions:
-                      (swrRisk as { strategyDescriptions?: unknown } | undefined)
+                      ((swrRisk as { strategyDescriptions?: unknown } | undefined)
                         ?.strategyDescriptions as
                         | Partial<Record<RiskTreatmentType, string>>
                         | null
-                        | undefined ?? null,
+                        | undefined) ?? null,
                     // Fall through to the server-rendered initial risk so the
                     // Linked Work column doesn't blink empty between SSR and
                     // the first SWR resolution. (Cubic finding #28.)
                     tasks:
                       swrRisk?.tasks ??
-                      (initialRisk as unknown as { tasks?: RiskLinkedTask[] })
-                        .tasks ??
+                      (initialRisk as unknown as { tasks?: RiskLinkedTask[] }).tasks ??
                       [],
                   }}
                   canUpdate={canUpdate}
@@ -397,19 +408,28 @@ export function RiskPageClient({
 
             {activeTab === 'comments' && (
               <TabsContent value="comments">
-                <Comments entityId={riskId} entityType={CommentEntityType.risk} organizationId={orgId} />
+                <Comments
+                  entityId={riskId}
+                  entityType={CommentEntityType.risk}
+                  organizationId={orgId}
+                />
               </TabsContent>
             )}
 
             {activeTab === 'activity' && (
               <TabsContent value="activity">
-                <RiskActivitySection riskId={riskId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
+                <RiskActivitySection
+                  riskId={riskId}
+                  taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []}
+                />
               </TabsContent>
             )}
 
             {activeTab === 'settings' && (
               <TabsContent value="settings">
-                <Text size="sm" variant="muted">No settings yet.</Text>
+                <Text size="sm" variant="muted">
+                  No settings yet.
+                </Text>
               </TabsContent>
             )}
           </Stack>

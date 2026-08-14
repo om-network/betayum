@@ -42,10 +42,10 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
     async (input: AutomationConfigInput) => {
       setIsSaving(true);
       try {
-        const res = await apiClient.post<BrowserAutomation>(
-          '/v1/browserbase/automations',
-          { taskId, ...input },
-        );
+        const res = await apiClient.post<BrowserAutomation>('/v1/browserbase/automations', {
+          taskId,
+          ...input,
+        });
         if (res.error) throw new Error(res.error);
 
         toast.success('Browser automation created');
@@ -62,13 +62,7 @@ export function useBrowserAutomations({ taskId }: UseBrowserAutomationsOptions) 
   );
 
   const updateAutomation = useCallback(
-    async ({
-      automationId,
-      input,
-    }: {
-      automationId: string;
-      input: AutomationConfigInput;
-    }) => {
+    async ({ automationId, input }: { automationId: string; input: AutomationConfigInput }) => {
       setIsSaving(true);
       try {
         const res = await apiClient.patch<BrowserAutomation>(

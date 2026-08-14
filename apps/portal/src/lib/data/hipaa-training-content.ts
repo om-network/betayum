@@ -59,7 +59,7 @@ Prompt reporting matters even when you are unsure whether PHI was actually expos
 ] as const;
 
 export const hipaaAcknowledgements: readonly string[] = [
-  'I completed the organization\'s general security awareness training and this HIPAA Security Awareness Training Add-On.',
+  "I completed the organization's general security awareness training and this HIPAA Security Awareness Training Add-On.",
   'I understand that PHI includes information in electronic, paper, image, audio, and verbal form.',
   'I will access, use, disclose, transmit, and store PHI only as authorized for my job responsibilities and in accordance with organization policy.',
   'I will use approved safeguards, including strong authentication, secure handling practices, and prompt reporting of suspicious activity or incidents.',

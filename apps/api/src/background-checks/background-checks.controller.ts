@@ -40,7 +40,10 @@ export class PeopleBackgroundChecksController {
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
   ) {
-    return this.backgroundChecksService.getForMember({ organizationId, memberId });
+    return this.backgroundChecksService.getForMember({
+      organizationId,
+      memberId,
+    });
   }
 
   @Post(':id/background-check')
@@ -65,12 +68,17 @@ export class PeopleBackgroundChecksController {
 
   @Get(':id/background-check/custom-attachments')
   @RequirePermission('member', 'read')
-  @ApiOperation({ summary: 'Get custom background check attachments for a member' })
+  @ApiOperation({
+    summary: 'Get custom background check attachments for a member',
+  })
   async getCustomAttachmentsForMember(
     @Param('id') memberId: string,
     @OrganizationId() organizationId: string,
   ) {
-    return this.customService.getAttachmentsForMember({ organizationId, memberId });
+    return this.customService.getAttachmentsForMember({
+      organizationId,
+      memberId,
+    });
   }
 
   @Post(':id/background-check/custom')
@@ -104,7 +112,9 @@ export class PeopleBackgroundChecksController {
 @UseGuards(HybridAuthGuard, PermissionGuard)
 @ApiSecurity('apikey')
 export class BackgroundChecksController {
-  constructor(private readonly backgroundChecksService: BackgroundChecksService) {}
+  constructor(
+    private readonly backgroundChecksService: BackgroundChecksService,
+  ) {}
 
   @Get(':id')
   @RequirePermission('member', 'read')

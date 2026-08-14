@@ -5,9 +5,9 @@ import type {
   useApproveAccessRequest,
   useDenyAccessRequest,
 } from '@/hooks/use-access-requests';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
-import type { ColumnDef } from '@tanstack/react-table';
 
 type ApproveHook = ReturnType<typeof useApproveAccessRequest>;
 type DenyHook = ReturnType<typeof useDenyAccessRequest>;

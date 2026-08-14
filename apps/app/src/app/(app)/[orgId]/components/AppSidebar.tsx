@@ -140,9 +140,7 @@ export function AppSidebar({
     <AppShellNav>
       {visibleItems.map((item) => (
         <Link key={item.id} href={item.path}>
-          <AppShellNavItem isActive={isPathActive(item.path)}>
-            {item.name}
-          </AppShellNavItem>
+          <AppShellNavItem isActive={isPathActive(item.path)}>{item.name}</AppShellNavItem>
         </Link>
       ))}
     </AppShellNav>

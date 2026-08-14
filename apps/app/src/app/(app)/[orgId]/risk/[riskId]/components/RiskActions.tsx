@@ -46,16 +46,11 @@ export function RiskActions({ riskId, orgId }: { riskId: string; orgId: string }
       }
       toast.success('Regeneration triggered. This may take a moment.');
       refreshRisk();
+      globalMutate((key) => Array.isArray(key) && key[0] === 'risks', undefined, {
+        revalidate: true,
+      });
       globalMutate(
-        (key) => Array.isArray(key) && key[0] === 'risks',
-        undefined,
-        { revalidate: true },
-      );
-      globalMutate(
-        (key) =>
-          typeof key === 'string' &&
-          key.includes('/v1/comments') &&
-          key.includes(riskId),
+        (key) => typeof key === 'string' && key.includes('/v1/comments') && key.includes(riskId),
         undefined,
         { revalidate: true },
       );

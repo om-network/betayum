@@ -333,7 +333,7 @@ export class ChecksController {
             ...(errorStack ? { data: { stack: errorStack } } : {}),
             timestamp: new Date().toISOString(),
           },
-        ] as unknown as Prisma.InputJsonValue,
+        ],
       });
 
       this.logger.error(`Check execution failed: ${error}`);

@@ -17,7 +17,11 @@ interface SheetReadResponse {
 
 const cellValue = z.union([z.string(), z.number()]);
 
-export function buildGoogleSheetsTools({ taskId, automationId, taskTitle }: GoogleSheetsToolsParams) {
+export function buildGoogleSheetsTools({
+  taskId,
+  automationId,
+  taskTitle,
+}: GoogleSheetsToolsParams) {
   return {
     createGoogleSheet: tool({
       description:
@@ -28,10 +32,15 @@ export function buildGoogleSheetsTools({ taskId, automationId, taskTitle }: Goog
         rows: z.array(z.array(cellValue)).describe('Data rows to populate the sheet'),
       }),
       execute: async ({ title, headers, rows }) => {
-        const result = await serverApi.post<{ spreadsheetId: string; spreadsheetUrl: string; attachedToTask: boolean }>(
-          `/v1/tasks/${taskId}/automations/${automationId}/google-sheets`,
-          { title, headers, rows },
-        );
+        const result = await serverApi.post<{
+          spreadsheetId: string;
+          spreadsheetUrl: string;
+          attachedToTask: boolean;
+        }>(`/v1/tasks/${taskId}/automations/${automationId}/google-sheets`, {
+          title,
+          headers,
+          rows,
+        });
         if (result.error || !result.data?.spreadsheetId) {
           return { success: false, error: result.error ?? 'Failed to create spreadsheet' };
         }
@@ -69,7 +78,12 @@ export function buildGoogleSheetsTools({ taskId, automationId, taskTitle }: Goog
         'Read rows from an existing Google Spreadsheet by row offset. Use to verify contents before appending or to review previously logged evidence. Call repeatedly with increasing rowOffset until hasMore is false.',
       inputSchema: z.object({
         spreadsheetId: z.string().describe('The ID of the spreadsheet to read'),
-        rowOffset: z.number().int().min(0).default(0).describe('Row index to start reading from (0-based)'),
+        rowOffset: z
+          .number()
+          .int()
+          .min(0)
+          .default(0)
+          .describe('Row index to start reading from (0-based)'),
         range: z.string().optional().describe('Optional A1 notation range, e.g. "A1:Z1000"'),
       }),
       execute: async ({ spreadsheetId, rowOffset, range }) => {

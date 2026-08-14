@@ -33,7 +33,13 @@ import {
 } from '@trycompai/ui/command';
 import { Input } from '@trycompai/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { DataTableRangeFilter } from './data-table-range-filter';
 import {
   Faceted,

@@ -1,7 +1,7 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
+import { apiClient } from '@/lib/api-client';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
@@ -69,10 +69,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       setStatus('loading');
 
       // Get or create org context
-      const contextRes = await apiClient.post<ContextResponse>(
-        '/v1/browserbase/org-context',
-        {},
-      );
+      const contextRes = await apiClient.post<ContextResponse>('/v1/browserbase/org-context', {});
       if (contextRes.error || !contextRes.data) {
         throw new Error(contextRes.error || 'Failed to create context');
       }
@@ -80,10 +77,9 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       setHasContext(true);
 
       // Create session
-      const sessionRes = await apiClient.post<SessionResponse>(
-        '/v1/browserbase/session',
-        { contextId: contextRes.data.contextId },
-      );
+      const sessionRes = await apiClient.post<SessionResponse>('/v1/browserbase/session', {
+        contextId: contextRes.data.contextId,
+      });
       if (sessionRes.error || !sessionRes.data) {
         throw new Error(sessionRes.error || 'Failed to create session');
       }
@@ -92,10 +88,10 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       setLiveViewUrl(sessionRes.data.liveViewUrl);
 
       // Navigate to the URL
-      await apiClient.post(
-        '/v1/browserbase/navigate',
-        { sessionId: startedSessionId, url: urlToCheck },
-      );
+      await apiClient.post('/v1/browserbase/navigate', {
+        sessionId: startedSessionId,
+        url: urlToCheck,
+      });
 
       setStatus('session-active');
     } catch (err) {
@@ -107,10 +103,7 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       // If we created a session but navigation failed, close it to avoid orphaned sessions
       if (startedSessionId) {
         try {
-          await apiClient.post(
-            '/v1/browserbase/session/close',
-            { sessionId: startedSessionId },
-          );
+          await apiClient.post('/v1/browserbase/session/close', { sessionId: startedSessionId });
         } catch {
           // Ignore cleanup errors (don't mask original error)
         }
@@ -125,10 +118,10 @@ export function BrowserConnectionClient({ organizationId }: BrowserConnectionCli
       setError(null);
       setStatus('checking');
 
-      const res = await apiClient.post<AuthStatusResponse>(
-        '/v1/browserbase/check-auth',
-        { sessionId, url: urlToCheck },
-      );
+      const res = await apiClient.post<AuthStatusResponse>('/v1/browserbase/check-auth', {
+        sessionId,
+        url: urlToCheck,
+      });
       if (res.error || !res.data) {
         throw new Error(res.error || 'Failed to check auth');
       }
