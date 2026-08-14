@@ -106,7 +106,10 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Install Electron native dependencies
+        run: npx electron-builder install-app-deps
 
       - name: Set package.json version
         env:
@@ -175,7 +178,10 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Install Electron native dependencies
+        run: npx electron-builder install-app-deps
 
       - name: Set package.json version
         env:
@@ -348,7 +354,10 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Install Electron native dependencies
+        run: npx electron-builder install-app-deps
 
       - name: Set package.json version
         env:
