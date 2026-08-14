@@ -60,7 +60,7 @@
         "@aws-sdk/client-wafv2": "^3.948.0",
         "@aws-sdk/s3-request-presigner": "3.1013.0",
         "@better-auth/infra": "0.2.14",
-        "@better-auth/sso": "1.4.22",
+        "@better-auth/sso": "1.6.11",
         "@browserbasehq/sdk": "2.6.0",
         "@browserbasehq/stagehand": "^3.2.1",
         "@google-cloud/storage": "7.21.0",
