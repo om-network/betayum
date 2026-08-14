@@ -4,6 +4,20 @@ import { AutomationsController } from './automations.controller';
 
 jest.mock('@db', () => ({
   db: {},
+  AutomationSetupStatus: {
+    action_needed: 'action_needed',
+    building: 'building',
+    failed: 'failed',
+    ready: 'ready',
+  },
+  AutomationAssistantRunStatus: {
+    completed: 'completed',
+    failed: 'failed',
+    queued: 'queued',
+    running: 'running',
+    waiting_for_input: 'waiting_for_input',
+  },
+  Prisma: { TransactionIsolationLevel: { Serializable: 'Serializable' } },
   TaskFrequency: {
     daily: 'daily',
     weekly: 'weekly',
@@ -45,5 +59,20 @@ describe('AutomationsController permissions', () => {
     expect(deletePermission).toEqual([
       { resource: 'task', actions: ['update'] },
     ]);
+  });
+
+  it('uses update for assistant messages and read for assistant status', () => {
+    expect(
+      Reflect.getMetadata(
+        PERMISSIONS_KEY,
+        AutomationsController.prototype.submitAssistantMessage,
+      ),
+    ).toEqual([{ resource: 'task', actions: ['update'] }]);
+    expect(
+      Reflect.getMetadata(
+        PERMISSIONS_KEY,
+        AutomationsController.prototype.getAssistantRun,
+      ),
+    ).toEqual([{ resource: 'task', actions: ['read'] }]);
   });
 });

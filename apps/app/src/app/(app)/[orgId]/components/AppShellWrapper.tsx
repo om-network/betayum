@@ -1,7 +1,6 @@
 'use client';
 
-import { updateSidebarState } from '@/actions/sidebar';
-import { Chat } from '@/components/ai/chat';
+import { LazyAssistantChat } from '@/components/ai/lazy-assistant-chat';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
@@ -38,7 +37,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   HStack,
-  Logo,
   Text,
   ThemeSwitcher,
   TooltipProvider,
@@ -51,8 +49,8 @@ import {
   ManageProtection,
   Settings,
 } from '@trycompai/design-system/icons';
-import { useAction } from 'next-safe-action/hooks';
 import { useTheme } from 'next-themes';
+import { BrandLogo } from '@/components/brand-logo';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
@@ -135,20 +133,16 @@ function AppShellWrapperContent({
     setLogoVariant(resolvedTheme === 'light' ? 'dark' : 'light');
   }, [resolvedTheme]);
 
-  const { execute } = useAction(updateSidebarState, {
-    onError: () => {
-      setIsCollapsed(previousIsCollapsedRef.current);
-    },
-  });
-
   const handleSidebarOpenChange = useCallback(
     (open: boolean) => {
       const nextIsCollapsed = !open;
       previousIsCollapsedRef.current = isCollapsed;
       setIsCollapsed(nextIsCollapsed);
-      execute({ isCollapsed: nextIsCollapsed });
+      const expires = new Date();
+      expires.setFullYear(expires.getFullYear() + 1);
+      document.cookie = `sidebar-collapsed=${JSON.stringify(nextIsCollapsed)};path=/;expires=${expires.toUTCString()}`;
     },
-    [execute, isCollapsed, setIsCollapsed],
+    [isCollapsed, setIsCollapsed],
   );
 
   const searchGroups = getAppShellSearchGroups({
@@ -169,7 +163,7 @@ function AppShellWrapperContent({
       <ImpersonationBanner />
       <AppShell
         showAIChat
-        aiChatContent={<Chat />}
+        aiChatContent={<LazyAssistantChat />}
         sidebarOpen={!isCollapsed}
         onSidebarOpenChange={handleSidebarOpenChange}
       >
@@ -177,7 +171,12 @@ function AppShellWrapperContent({
           startContent={
             <HStack gap="xs" align="center">
               <Link href="/">
-                <Logo style={{ height: 22, width: 'auto' }} variant={logoVariant} />
+                <BrandLogo
+                  kind="wordmark"
+                  variant={logoVariant === 'dark' ? 'black' : 'white'}
+                  width={55}
+                  height={22}
+                />
               </Link>
               <span className="pl-3 pr-1 text-muted-foreground">/</span>
               <OrganizationSwitcher

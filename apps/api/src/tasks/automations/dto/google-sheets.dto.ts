@@ -27,6 +27,14 @@ export class CreateGoogleSheetDto {
 }
 
 export class AppendGoogleSheetDto {
+  @ApiPropertyOptional({
+    description: 'Title to use for the task attachment snapshot',
+    example: 'Access Review Log',
+  })
+  @IsString()
+  @IsOptional()
+  title?: string;
+
   @ApiProperty({
     description: 'Row data to append to the spreadsheet',
     example: [['projects/my-project', 'compliant', '2026-07-12T14:00:00Z']],

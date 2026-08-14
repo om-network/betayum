@@ -1,4 +1,7 @@
 import { TrainingCertificatePdfService } from './training-certificate-pdf.service';
+import { brandConfig } from '@trycompai/utils/brand';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // Mock fetch for logo download
 global.fetch = jest.fn().mockResolvedValue({
@@ -9,6 +12,11 @@ describe('TrainingCertificatePdfService', () => {
   let service: TrainingCertificatePdfService;
 
   beforeEach(() => {
+    Object.defineProperty(brandConfig.assets, 'logoUrl', {
+      value: undefined,
+      writable: true,
+    });
+    jest.clearAllMocks();
     service = new TrainingCertificatePdfService();
   });
 
@@ -24,6 +32,7 @@ describe('TrainingCertificatePdfService', () => {
       expect(result.length).toBeGreaterThan(0);
       // PDF magic bytes
       expect(result.subarray(0, 5).toString()).toBe('%PDF-');
+      expect(global.fetch).not.toHaveBeenCalled();
     });
 
     it('handles unicode characters in names', async () => {
@@ -50,7 +59,8 @@ describe('TrainingCertificatePdfService', () => {
     });
 
     it('handles logo fetch failure gracefully', async () => {
-      (global.fetch as jest.Mock).mockRejectedValueOnce(
+      brandConfig.assets.logoUrl = 'https://assets.example.com/betayum.png';
+      (global.fetch as unknown as jest.Mock).mockRejectedValueOnce(
         new Error('Network error'),
       );
 
@@ -62,6 +72,28 @@ describe('TrainingCertificatePdfService', () => {
 
       expect(result).toBeInstanceOf(Buffer);
       expect(result.length).toBeGreaterThan(0);
+    });
+
+    it('fetches and embeds a configured logo', async () => {
+      brandConfig.assets.logoUrl = 'https://assets.example.com/betayum.png';
+      (global.fetch as unknown as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: async () =>
+          readFileSync(
+            resolve(process.cwd(), '../../logos/Betayum_Icon_Main_Colors.png'),
+          ),
+      });
+
+      const result = await service.generateTrainingCertificatePdf({
+        userName: 'Logo User',
+        organizationName: 'Logo Org',
+        completedAt: new Date('2026-01-01'),
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://assets.example.com/betayum.png',
+      );
+      expect(result.subarray(0, 5).toString()).toBe('%PDF-');
     });
   });
 });

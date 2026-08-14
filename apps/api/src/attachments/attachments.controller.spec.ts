@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import type { Response } from 'express';
+import type { Readable } from 'node:stream';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { AttachmentsController } from './attachments.controller';
@@ -7,6 +9,8 @@ import { AttachmentsService } from './attachments.service';
 jest.mock('../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
 }));
+
+jest.mock('@db', () => ({ db: {} }));
 
 jest.mock('@trycompai/auth', () => ({
   statement: {},
@@ -19,6 +23,7 @@ describe('AttachmentsController', () => {
 
   const mockAttachmentsService = {
     getAttachmentDownloadUrl: jest.fn(),
+    streamAttachmentContent: jest.fn(),
   };
 
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
@@ -72,6 +77,30 @@ describe('AttachmentsController', () => {
       await expect(
         controller.getAttachmentDownloadUrl('org_123', 'att_invalid'),
       ).rejects.toThrow('Attachment not found');
+    });
+  });
+
+  describe('streamAttachment', () => {
+    it('encodes Unicode filenames into a valid Content-Disposition header', async () => {
+      const pipe = jest.fn();
+      const setHeader = jest.fn();
+      mockAttachmentsService.streamAttachmentContent.mockResolvedValue({
+        stream: { pipe } as unknown as Readable,
+        contentType: 'text/csv',
+        fileName: 'Access Review Log — 2026-07-22.csv',
+      });
+
+      await controller.streamAttachment(
+        'org_123',
+        'att_abc123',
+        { setHeader } as unknown as Response,
+      );
+
+      expect(setHeader).toHaveBeenCalledWith(
+        'Content-Disposition',
+        'attachment; filename="Access Review Log _ 2026-07-22.csv"; filename*=UTF-8\'\'Access%20Review%20Log%20%E2%80%94%202026-07-22.csv',
+      );
+      expect(pipe).toHaveBeenCalledTimes(1);
     });
   });
 });

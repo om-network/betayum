@@ -15,6 +15,8 @@ type HeroProps = {
   onSelectConnection: (id: string) => void;
   onOpenSettings: () => void;
   onAddAccount: () => void;
+  vmLoginOnly?: boolean;
+  canUpdate?: boolean;
 };
 
 export function IntegrationProviderHero({
@@ -25,6 +27,8 @@ export function IntegrationProviderHero({
   onSelectConnection,
   onOpenSettings,
   onAddAccount,
+  vmLoginOnly = false,
+  canUpdate = true,
 }: HeroProps) {
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-muted/30 via-background to-muted/20 dark:from-muted/10 dark:via-background dark:to-muted/5">
@@ -48,7 +52,11 @@ export function IntegrationProviderHero({
                 <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
                   {provider.name}
                 </h1>
-                {isConnected ? (
+                {vmLoginOnly ? (
+                  <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2 py-px text-[10px] font-medium text-muted-foreground">
+                    VM login only
+                  </span>
+                ) : isConnected ? (
                   <span className="inline-flex items-center rounded-full border border-emerald-500/25 bg-emerald-500/[0.08] px-2 py-px text-[10px] font-medium text-emerald-800 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-300">
                     {activeConnections.length === 1
                       ? 'Connected'
@@ -66,11 +74,12 @@ export function IntegrationProviderHero({
             </div>
           </div>
 
-          <div
-            className="flex w-full min-w-0 flex-col items-stretch gap-1.5 border-t border-border/40 pt-2 sm:items-end lg:w-auto lg:border-t-0 lg:pt-0"
-            role="toolbar"
-            aria-label="Integration actions"
-          >
+          {!vmLoginOnly && (
+            <div
+              className="flex w-full min-w-0 flex-col items-stretch gap-1.5 border-t border-border/40 pt-2 sm:items-end lg:w-auto lg:border-t-0 lg:pt-0"
+              role="toolbar"
+              aria-label="Integration actions"
+            >
             {provider.docsUrl || isConnected ? (
               <div className="flex w-full flex-wrap items-center justify-end gap-1.5">
                 {!isConnected && provider.docsUrl ? (
@@ -143,6 +152,7 @@ export function IntegrationProviderHero({
                               variant="ghost"
                               size="xs"
                               onClick={onAddAccount}
+                              disabled={!canUpdate}
                               iconLeft={<Add size={12} />}
                               aria-label="Add another account"
                             >
@@ -156,7 +166,8 @@ export function IntegrationProviderHero({
                 ) : null}
               </div>
             ) : null}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

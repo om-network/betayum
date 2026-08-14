@@ -1,6 +1,6 @@
 'use client';
 
-import { Icons } from '@trycompai/ui/icons';
+import { BrandLogo } from '@/app/components/brand-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/design-system';
 import { CheckmarkFilled, InProgress } from '@trycompai/design-system/icons';
 import { useSearchParams } from 'next/navigation';
@@ -83,7 +83,7 @@ export default function DeviceCallbackPage() {
             <div className="text-center">
               <CardHeader>
                 <div className="space-y-3 pt-10">
-                  <Icons.Logo className="mx-auto h-10 w-10" />
+                  <BrandLogo className="mx-auto" />
                   <div className="text-xl tracking-tight text-card-foreground">
                     <CardTitle>
                       {status === 'redirecting' && 'Completing sign-in...'}

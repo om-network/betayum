@@ -19,6 +19,8 @@ type TaskWithRelations = Task & {
     id: string;
     isEnabled: boolean;
     name: string;
+    setupStatus?: string | null;
+    setupTask?: string | null;
     runs?: Array<{
       status: string;
       success: boolean | null;

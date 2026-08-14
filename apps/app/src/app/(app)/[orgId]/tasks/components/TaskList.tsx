@@ -24,7 +24,14 @@ import {
   Text,
 } from '@trycompai/design-system';
 
-import { Check, Circle, FolderTree, List, Search, XCircle } from 'lucide-react';
+import {
+  Checkmark,
+  CircleStroke,
+  CloseFilled,
+  FolderTree,
+  List,
+  Search,
+} from '@trycompai/design-system/icons';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
@@ -33,12 +40,12 @@ import { ModernTaskList } from './ModernTaskList';
 import { TasksByCategory } from './TasksByCategory';
 
 const statuses = [
-  { id: 'todo', label: 'Todo', icon: Circle, color: 'text-slate-400' },
-  { id: 'in_progress', label: 'In Progress', icon: Circle, color: 'text-blue-400' },
-  { id: 'in_review', label: 'In Review', icon: Circle, color: 'text-orange-400' },
-  { id: 'done', label: 'Done', icon: Check, color: 'text-emerald-400' },
-  { id: 'failed', label: 'Failed', icon: XCircle, color: 'text-red-400' },
-  { id: 'not_relevant', label: 'Not Relevant', icon: Circle, color: 'text-slate-500' },
+  { id: 'todo', label: 'Todo', icon: CircleStroke, color: 'text-slate-400' },
+  { id: 'in_progress', label: 'In Progress', icon: CircleStroke, color: 'text-blue-400' },
+  { id: 'in_review', label: 'In Review', icon: CircleStroke, color: 'text-orange-400' },
+  { id: 'done', label: 'Done', icon: Checkmark, color: 'text-emerald-400' },
+  { id: 'failed', label: 'Failed', icon: CloseFilled, color: 'text-red-400' },
+  { id: 'not_relevant', label: 'Not Relevant', icon: CircleStroke, color: 'text-slate-500' },
 ] as const;
 
 export function TaskList({
@@ -57,6 +64,7 @@ export function TaskList({
       id: string;
       isEnabled: boolean;
       name: string;
+      setupStatus?: string | null;
       runs?: Array<{
         status: string;
         success: boolean | null;

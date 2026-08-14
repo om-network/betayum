@@ -23,7 +23,7 @@ export type BrandConfig = {
     hello: string;
   };
   assets: {
-    logoUrl: string;
+    logoUrl: string | undefined;
     opengraphImageUrl: string;
   };
   compatibilityIdentifiers: {
@@ -71,7 +71,7 @@ export function getBrandConfig(env: BrandEnv = process.env): BrandConfig {
       hello: envValue(env, 'BETAYUM_HELLO_EMAIL', `hello@${primaryDomain}`),
     },
     assets: {
-      logoUrl: envValue(env, 'BETAYUM_LOGO_URL', `${cdnUrl}/logo.png`),
+      logoUrl: env.BETAYUM_LOGO_URL || undefined,
       opengraphImageUrl: envValue(
         env,
         'BETAYUM_OPENGRAPH_IMAGE_URL',

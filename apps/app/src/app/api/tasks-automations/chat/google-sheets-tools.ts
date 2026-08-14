@@ -7,6 +7,7 @@ const SHEET_PAGE_SIZE = 100;
 interface GoogleSheetsToolsParams {
   taskId: string;
   automationId: string;
+  taskTitle: string;
 }
 
 interface SheetReadResponse {
@@ -16,7 +17,7 @@ interface SheetReadResponse {
 
 const cellValue = z.union([z.string(), z.number()]);
 
-export function buildGoogleSheetsTools({ taskId, automationId }: GoogleSheetsToolsParams) {
+export function buildGoogleSheetsTools({ taskId, automationId, taskTitle }: GoogleSheetsToolsParams) {
   return {
     createGoogleSheet: tool({
       description:
@@ -44,20 +45,23 @@ export function buildGoogleSheetsTools({ taskId, automationId }: GoogleSheetsToo
     }),
     updateGoogleSheet: tool({
       description:
-        'Append rows to an existing Google Spreadsheet. Use the spreadsheetId returned by createGoogleSheet.',
+        'Append rows to an existing Google Spreadsheet and immediately upload the edited sheet as a CSV task attachment. Use the spreadsheetId returned by createGoogleSheet or read from the task template URL.',
       inputSchema: z.object({
         spreadsheetId: z.string().describe('The ID of the spreadsheet to append to'),
         rows: z.array(z.array(cellValue)).describe('Rows to append'),
       }),
       execute: async ({ spreadsheetId, rows }) => {
-        const result = await serverApi.post<{ success: boolean }>(
+        const result = await serverApi.post<{ success: boolean; attachedToTask: boolean }>(
           `/v1/tasks/${taskId}/automations/${automationId}/google-sheets/${spreadsheetId}/append`,
-          { rows },
+          { title: taskTitle, rows },
         );
         if (result.error) {
           return { success: false, error: result.error };
         }
-        return { success: result.data?.success ?? true };
+        return {
+          success: result.data?.success ?? true,
+          attachedToTask: result.data?.attachedToTask ?? false,
+        };
       },
     }),
     readGoogleSheet: tool({

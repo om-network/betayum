@@ -92,6 +92,7 @@ describe('AutomationsService', () => {
   };
   const workerDispatcher = {
     enqueue: jest.fn(),
+    executor: jest.fn(),
   };
 
   beforeEach(() => {
@@ -107,7 +108,7 @@ describe('AutomationsService', () => {
       usageLimitsService as unknown as AutomationUsageLimitsService,
       secretsService as unknown as AutomationSecretsService,
       auditService as unknown as AutomationAuditService,
-      workerDispatcher,
+      workerDispatcher as unknown as import('./automation-worker-dispatcher.service').AutomationWorkerDispatcherService,
     );
   });
 
@@ -254,6 +255,7 @@ describe('AutomationsService', () => {
         evidenceAutomationId: 'aut_1',
         version: 3,
         scriptKey: 'org_1/tasks/tsk_1/automations/aut_1/v3.js',
+        scriptContent: null,
         changelog: 'Publish stable automation',
       },
     });
@@ -326,6 +328,34 @@ describe('AutomationsService', () => {
         hasMore: false,
       },
     });
+  });
+
+  it('returns stable unique IDs when persisted assistant messages reuse an ID', async () => {
+    mockedDb.evidenceAutomation.findFirst.mockResolvedValue({
+      id: 'aut_1',
+      chatHistory: JSON.stringify([
+        {
+          id: 'duplicate',
+          role: 'assistant',
+          parts: [{ type: 'text', text: 'First' }],
+        },
+        {
+          id: 'duplicate',
+          role: 'assistant',
+          parts: [{ type: 'text', text: 'Second' }],
+        },
+      ]),
+    } as never);
+
+    const result = await service.getChatHistory({
+      organizationId: 'org_1',
+      taskId: 'tsk_1',
+      automationId: 'aut_1',
+    });
+
+    expect(
+      result.data.messages.map((message) => (message as { id: string }).id),
+    ).toEqual(['duplicate', 'duplicate--2']);
   });
 
   it('saves chat history on the scoped automation draft', async () => {

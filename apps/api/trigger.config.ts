@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 export default defineConfig({
   runtime: 'node-22',
-  project: process.env.TRIGGER_PROJECT_ID ?? 'proj_ixwgznsvcyqykqxcwnkp',
+  project: process.env.TRIGGER_PROJECT_ID ?? 'proj_rxaglrggzjmdjgexjhoz',
   logLevel: 'log',
   maxDuration: 300, // 5 minutes
   build: {

@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { useTasks } from '../hooks/useTasks';
 import { usePermissions } from '@/hooks/use-permissions';
 import type { FrameworkInstanceForTasks } from '../types';
+import { AutomationTaskOverview } from './AutomationTaskOverview';
 import { CreateTaskSheet } from './CreateTaskSheet';
 import { TaskList } from './TaskList';
 
@@ -34,6 +35,8 @@ interface TasksPageClientProps {
       id: string;
       isEnabled: boolean;
       name: string;
+      setupStatus?: string | null;
+      setupTask?: string | null;
       runs?: Array<{
         status: string;
         success: boolean | null;
@@ -149,11 +152,18 @@ export function TasksPageClient({
           activeTab={activeTab}
           evidenceApprovalEnabled={evidenceApprovalEnabled}
           afterAnalytics={
-            <div className="w-fit">
-              <TabsList variant="underline">
-                <TabsTrigger value="evidence-list">Overview</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
+            <div className="space-y-4">
+              <AutomationTaskOverview
+                orgId={orgId}
+                tasks={tasks}
+                onRefresh={mutateTasks}
+              />
+              <div className="w-fit">
+                <TabsList variant="underline">
+                  <TabsTrigger value="evidence-list">Overview</TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
+                </TabsList>
+              </div>
             </div>
           }
           showFiltersAndList={mainTab === 'evidence-list'}

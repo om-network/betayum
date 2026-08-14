@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsEnum, IsArray } from 'class-validator';
-import { TaskFrequency } from '@db';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  IsArray,
+} from 'class-validator';
+import { AutomationSetupStatus, TaskFrequency } from '@db';
 
 export class UpdateAutomationDto {
   @ApiProperty({
@@ -55,4 +61,21 @@ export class UpdateAutomationDto {
   @IsString({ each: true })
   @IsOptional()
   allowedTools?: string[];
+
+  @ApiPropertyOptional({
+    enum: AutomationSetupStatus,
+    description: 'Current state of automated setup performed by the AI queue',
+  })
+  @IsEnum(AutomationSetupStatus)
+  @IsOptional()
+  setupStatus?: AutomationSetupStatus;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Specific information or intervention required from the user to continue setup',
+  })
+  @IsString()
+  @IsOptional()
+  setupTask?: string | null;
 }

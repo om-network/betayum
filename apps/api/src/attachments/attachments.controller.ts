@@ -13,6 +13,16 @@ import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { AttachmentsService } from './attachments.service';
 
+function buildContentDisposition(fileName: string): string {
+  const asciiFileName = fileName.replace(/[^\u0020-\u007E]|["\\]/g, '_');
+  const encodedFileName = encodeURIComponent(fileName).replace(
+    /['()*]/g,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+
+  return `attachment; filename="${asciiFileName}"; filename*=UTF-8''${encodedFileName}`;
+}
+
 @ApiTags('Attachments')
 @Controller({ path: 'attachments', version: '1' })
 @UseGuards(HybridAuthGuard, PermissionGuard)
@@ -80,7 +90,7 @@ export class AttachmentsController {
     res.setHeader('Content-Type', contentType);
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${fileName.replace(/"/g, '_')}"`,
+      buildContentDisposition(fileName),
     );
     stream.pipe(res);
   }

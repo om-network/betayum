@@ -5,6 +5,11 @@ jest.mock('@trycompai/company', () => ({
   toExternalEvidenceFormType: (v: string | null) => v,
 }));
 
+jest.mock('@trycompai/auth', () => ({
+  BUILT_IN_ROLE_OBLIGATIONS: {},
+  allRoles: {},
+}));
+
 const mockDb = {
   task: { findFirst: jest.fn() },
   evidenceSubmission: { findFirst: jest.fn(), findUnique: jest.fn() },
@@ -39,6 +44,10 @@ jest.mock('@db', () => ({
     high: 'high',
     critical: 'critical',
   },
+  BackgroundCheckStatus: {
+    completed: 'completed',
+    completed_with_flags: 'completed_with_flags',
+  },
 }));
 
 import { FindingsService } from './findings.service';
@@ -46,10 +55,7 @@ import { FindingsService } from './findings.service';
 describe('FindingsService.create (target validator)', () => {
   const auditService = {};
   const notifier = { notifyFindingCreated: jest.fn() };
-  const svc = new FindingsService(
-    auditService as never,
-    notifier as never,
-  );
+  const svc = new FindingsService(auditService as never, notifier as never, {} as never);
   const baseDto = { content: 'Example finding' };
 
   beforeEach(() => {

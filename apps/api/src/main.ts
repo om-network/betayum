@@ -6,8 +6,11 @@ import type { OpenAPIObject } from '@nestjs/swagger';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import helmet from 'helmet';
+import type { Server } from 'node:http';
 import path from 'path';
 import { AppModule } from './app.module';
+import { BrowserVncProxyService } from './integration-browser/browser-vnc-proxy.service';
+import { CodexTerminalProxyService } from './integration-browser/codex-terminal-proxy.service';
 import {
   applyPublicOpenApiMetadata,
   PUBLIC_OPENAPI_DESCRIPTION,
@@ -177,6 +180,11 @@ async function bootstrap(): Promise<void> {
       persistAuthorization: true, // Keep auth between page refreshes
     },
   });
+
+  const vncProxy = app.get(BrowserVncProxyService);
+  vncProxy.attach(app.getHttpServer() as Server);
+  const codexTerminalProxy = app.get(CodexTerminalProxyService);
+  codexTerminalProxy.attach(app.getHttpServer() as Server);
 
   const server = await app.listen(port);
   const address = server.address();

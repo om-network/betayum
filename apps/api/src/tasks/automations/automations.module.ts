@@ -14,10 +14,34 @@ import { AutomationWorkerDispatcherService } from './automation-worker-dispatche
 import { AutomationsService } from './automations.service';
 import { GoogleDocsService } from './google-docs.service';
 import { GoogleSheetsService } from './google-sheets.service';
+import { IntegrationBrowserModule } from '../../integration-browser/integration-browser.module';
+import {
+  CodexAutomationCallbackController,
+  CodexAutomationController,
+} from './codex-automation.controller';
+import { CodexAutomationService } from './codex-automation.service';
+import { AutomationContextController } from './automation-context.controller';
+import { AutomationContextService } from './automation-context.service';
+import { AutomationSetupQueueController } from './automation-setup-queue.controller';
+import { AutomationSetupQueueService } from './automation-setup-queue.service';
+import { AutomationAssistantService } from './automation-assistant.service';
 
 @Module({
-  imports: [AuthModule, forwardRef(() => TasksModule), IntegrationPlatformModule, AttachmentsModule],
-  controllers: [AutomationsController, AutomationRunsController],
+  imports: [
+    AuthModule,
+    forwardRef(() => TasksModule),
+    IntegrationPlatformModule,
+    AttachmentsModule,
+    IntegrationBrowserModule,
+  ],
+  controllers: [
+    AutomationsController,
+    AutomationRunsController,
+    CodexAutomationController,
+    CodexAutomationCallbackController,
+    AutomationContextController,
+    AutomationSetupQueueController,
+  ],
   providers: [
     AutomationsService,
     AutomationRuntimeService,
@@ -28,7 +52,15 @@ import { GoogleSheetsService } from './google-sheets.service';
     AutomationWorkerDispatcherService,
     GoogleDocsService,
     GoogleSheetsService,
+    CodexAutomationService,
+    AutomationContextService,
+    AutomationSetupQueueService,
+    AutomationAssistantService,
   ],
-  exports: [AutomationsService, AutomationRuntimeService],
+  exports: [
+    AutomationsService,
+    AutomationRuntimeService,
+    AutomationSetupQueueService,
+  ],
 })
 export class AutomationsModule {}

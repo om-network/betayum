@@ -1,26 +1,50 @@
 import { serverApi } from '@/lib/api-server';
+import { normalizeAutomationKickoffMessages } from '@/lib/automation-kickoff';
 import { auth } from '@/utils/auth';
 import { openai } from '@ai-sdk/openai';
 import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  stepCountIs,
   streamText,
   tool,
   type UIMessage,
 } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
+import { shouldStopAutomationAgent } from './agent-lifecycle';
+import { buildAutomationFinalizationTool } from './automation-finalization-tool';
+import { consumeBackgroundStream } from './background-stream';
+import { buildDelegateBrowserTool } from './delegate-browser-tool';
 import { buildGoogleDocsTools } from './google-docs-tools';
 import { buildGoogleSheetsTools } from './google-sheets-tools';
+import { buildAutomationPlatformContext, type IntegrationConnection } from './platform-context';
 import { buildReadRunOutputTool } from './read-run-output-tool';
-import { buildSystemPrompt, type GcpContext, type GithubContext } from './system-prompt';
+import { buildReadTaskAttachmentTool } from './read-task-attachment-tool';
+import { buildSystemPrompt } from './system-prompt';
+import { automationTaskContextSchema } from './task-context';
+import { buildTaskStatusTool } from './task-status-tool';
 
 export const maxDuration = 120;
 
-type StoreToS3Data = { status: 'uploading' | 'done' | 'error'; key?: string; error?: { message: string } };
+type StoreToS3Data = {
+  status: 'uploading' | 'done' | 'error';
+  key?: string;
+  error?: { message: string };
+};
+
+function isTriggerServiceToken(value: string | null): boolean {
+  const expected = process.env.SERVICE_TOKEN_TRIGGER;
+  if (!value || !expected) return false;
+  const receivedBuffer = Buffer.from(value);
+  const expectedBuffer = Buffer.from(expected);
+  return (
+    receivedBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(receivedBuffer, expectedBuffer)
+  );
+}
 
 async function attachOutputToTask(
   taskId: string,
@@ -32,10 +56,11 @@ async function attachOutputToTask(
     const serialized = typeof output === 'string' ? output : JSON.stringify(output, null, 2);
     if (!serialized.trim()) return { attachedToTask: false };
     const fileData = Buffer.from(serialized).toString('base64');
-    const result = await serverApi.post<{ id: string }>(
-      `/v1/tasks/${taskId}/attachments`,
-      { fileName: `automation-output-${runId}.json`, fileType: 'application/json', fileData },
-    );
+    const result = await serverApi.post<{ id: string }>(`/v1/tasks/${taskId}/attachments`, {
+      fileName: `automation-output-${runId}.json`,
+      fileType: 'application/json',
+      fileData,
+    });
     if (result.error || !result.data?.id) return { attachedToTask: false };
     return { attachedToTask: true, attachmentId: result.data.id };
   } catch {
@@ -49,11 +74,14 @@ function writeS3Event(writer: { write: (chunk: never) => void }, data: StoreToS3
 
 export async function POST(req: Request) {
   try {
+    const headerStore = await headers();
     const session = await auth.api.getSession({
-      headers: await headers(),
+      headers: headerStore,
     });
+    const serviceToken = headerStore.get('x-service-token');
+    const isTriggerWorker = isTriggerServiceToken(serviceToken);
 
-    if (!session?.user) {
+    if (!session?.user && !isTriggerWorker) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -69,52 +97,59 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Missing required parameters' }, { status: 400 });
     }
 
-    const [taskResponse, automationResponse, connectionsResponse] = await Promise.all([
-      serverApi.get<{ title?: string; description?: string; approverId?: string }>(`/v1/tasks/${taskId}`),
-      serverApi.get<{ automation: { allowedTools: string[] } }>(
-        `/v1/tasks/${taskId}/automations/${automationId}`,
-      ),
-      serverApi.get<Array<{ providerSlug: string; status: string; variables?: Record<string, unknown> }>>(
-        `/v1/integrations/connections`,
-      ),
-    ]);
+    const [taskResponse, automationResponse, connectionsResponse, taskContextResponse] =
+      await Promise.all([
+        serverApi.get<{ title?: string; description?: string; approverId?: string }>(
+          `/v1/tasks/${taskId}`,
+        ),
+        serverApi.get<{
+          automation: {
+            allowedTools: string[];
+            setupStatus: string | null;
+          };
+        }>(`/v1/tasks/${taskId}/automations/${automationId}`),
+        serverApi.get<IntegrationConnection[]>(`/v1/integrations/connections`),
+        serverApi.get(`/v1/tasks/${taskId}/automation-context`),
+      ]);
 
     const task = taskResponse.data ?? null;
     const allowedTools: string[] | null = automationResponse.data?.automation.allowedTools ?? null;
+    if (automationResponse.data?.automation.setupStatus === 'action_needed') {
+      await serverApi.patch(`/v1/tasks/${taskId}/automations/${automationId}`, {
+        setupStatus: 'building',
+        setupTask: null,
+      });
+    }
 
     const connections = Array.isArray(connectionsResponse.data) ? connectionsResponse.data : [];
-    const gcpConnection = connections.find(
-      (c) => c.providerSlug === 'gcp' && c.status === 'active',
-    );
+    const parsedTaskContext = automationTaskContextSchema.safeParse(taskContextResponse.data);
+    const taskContext = parsedTaskContext.success ? parsedTaskContext.data : null;
+    if (!parsedTaskContext.success) {
+      console.error('[AutomationChat] Invalid task context:', parsedTaskContext.error.flatten());
+    }
+    const { gcpContext, githubContext, integrationContext } =
+      buildAutomationPlatformContext(connections);
     const googleWorkspaceConnection = connections.find(
       (c) => c.providerSlug === 'google-workspace' && c.status === 'active',
     );
-    const gcpContext: GcpContext = gcpConnection
-      ? {
-          projectIds: Array.isArray(gcpConnection.variables?.project_ids)
-            ? (gcpConnection.variables.project_ids as string[])
-            : [],
-          organizationId:
-            typeof gcpConnection.variables?.organization_id === 'string'
-              ? gcpConnection.variables.organization_id
-              : undefined,
-        }
-      : null;
+    const hasGoogleWorkspace = !!googleWorkspaceConnection;
 
-    const hasGoogleWorkspace = !!(gcpConnection || googleWorkspaceConnection);
-    const githubConnection = connections.find(
-      (c) => c.providerSlug === 'github' && c.status === 'active',
+    const systemPrompt = buildSystemPrompt(
+      task,
+      gcpContext,
+      hasGoogleWorkspace,
+      githubContext,
+      integrationContext,
+      taskContext,
     );
-    const githubContext: GithubContext = githubConnection
-      ? {
-          orgs: Array.isArray(githubConnection.variables?.orgs)
-            ? (githubConnection.variables.orgs as string[])
-            : [],
-        }
-      : null;
-
-    const systemPrompt = buildSystemPrompt(task, gcpContext, hasGoogleWorkspace, githubContext);
-    const modelMessages = await convertToModelMessages(messages);
+    const modelMessages = await convertToModelMessages(
+      normalizeAutomationKickoffMessages(messages),
+    );
+    const delegateBrowserTools = buildDelegateBrowserTool({
+      automationId,
+      organizationId: orgId,
+      taskId,
+    });
 
     const optionalTools = {
       runScript: tool({
@@ -143,7 +178,13 @@ export async function POST(req: Request) {
             await new Promise((r) => setTimeout(r, 2000));
 
             const pollResult = await serverApi.get<{
-              run: { status: string; success: boolean | null; output: unknown; error: string | null; logs: unknown };
+              run: {
+                status: string;
+                success: boolean | null;
+                output: unknown;
+                error: string | null;
+                logs: unknown;
+              };
             }>(`/v1/tasks/${taskId}/automations/runs/${runId}`);
 
             if (pollResult.error) {
@@ -201,14 +242,19 @@ export async function POST(req: Request) {
             .describe('The environment variable name for the secret (e.g. GITHUB_TOKEN)'),
           description: z.string().optional().describe('What this secret is used for'),
           category: z.string().optional().default('automation'),
-          exampleValue: z
-            .string()
-            .optional()
-            .describe('An example of what this value looks like'),
+          exampleValue: z.string().optional().describe('An example of what this value looks like'),
           reason: z.string().describe('Why this secret is needed'),
         }),
         execute: async (input) => {
-          return { requested: true, secretName: input.secretName };
+          const setupResult = await serverApi.patch(
+            `/v1/tasks/${taskId}/automations/${automationId}`,
+            { setupStatus: 'action_needed', setupTask: input.reason },
+          );
+          return {
+            requested: true,
+            secretName: input.secretName,
+            setupTaskSaved: !setupResult.error,
+          };
         },
       }),
       promptForInfo: tool({
@@ -228,7 +274,15 @@ export async function POST(req: Request) {
           ),
         }),
         execute: async (input) => {
-          return { requested: true, fields: input.fields };
+          const setupResult = await serverApi.patch(
+            `/v1/tasks/${taskId}/automations/${automationId}`,
+            { setupStatus: 'action_needed', setupTask: input.reason },
+          );
+          return {
+            requested: true,
+            fields: input.fields,
+            setupTaskSaved: !setupResult.error,
+          };
         },
       }),
     };
@@ -249,18 +303,32 @@ export async function POST(req: Request) {
       : {};
 
     const googleSheetsTools = hasGoogleWorkspace
-      ? buildGoogleSheetsTools({ taskId, automationId })
+      ? buildGoogleSheetsTools({
+          taskId,
+          automationId,
+          taskTitle: task?.title ?? 'Automation evidence',
+        })
       : {};
 
     const readRunOutputTool = buildReadRunOutputTool({ taskId, automationId });
+    const taskStatusTool = buildTaskStatusTool({
+      taskId,
+      approverId: task?.approverId,
+    });
+    const automationFinalizationTool = buildAutomationFinalizationTool({ automationId, taskId });
+    const readTaskAttachmentTool = buildReadTaskAttachmentTool({
+      attachments: taskContext?.attachments ?? [],
+      taskId,
+    });
 
     const stream = createUIMessageStream({
+      originalMessages: messages,
       execute: async ({ writer }) => {
         const result = streamText({
           model: openai('gpt-5'),
           system: systemPrompt,
           messages: modelMessages,
-          stopWhen: stepCountIs(10),
+          stopWhen: shouldStopAutomationAgent,
           tools: {
             storeToS3: tool({
               description:
@@ -295,7 +363,12 @@ export async function POST(req: Request) {
                   );
 
                   if (triggerResult.error || !triggerResult.data?.run?.id) {
-                    return { key, success: true, runStarted: false, runError: triggerResult.error ?? 'Failed to start run' };
+                    return {
+                      key,
+                      success: true,
+                      runStarted: false,
+                      runError: triggerResult.error ?? 'Failed to start run',
+                    };
                   }
 
                   const runId = triggerResult.data.run.id;
@@ -305,16 +378,33 @@ export async function POST(req: Request) {
                     await new Promise((r) => setTimeout(r, 2000));
 
                     const pollResult = await serverApi.get<{
-                      run: { status: string; success: boolean | null; output: unknown; error: string | null };
+                      run: {
+                        status: string;
+                        success: boolean | null;
+                        output: unknown;
+                        error: string | null;
+                      };
                     }>(`/v1/tasks/${taskId}/automations/runs/${runId}`);
 
                     if (pollResult.error) {
-                      return { key, success: true, runStarted: true, runId, runError: pollResult.error };
+                      return {
+                        key,
+                        success: true,
+                        runStarted: true,
+                        runId,
+                        runError: pollResult.error,
+                      };
                     }
 
                     const run = pollResult.data?.run;
                     if (!run) {
-                      return { key, success: true, runStarted: true, runId, runError: 'Run not found during poll' };
+                      return {
+                        key,
+                        success: true,
+                        runStarted: true,
+                        runId,
+                        runError: 'Run not found during poll',
+                      };
                     }
 
                     if (run.status === 'completed' || run.status === 'failed') {
@@ -357,7 +447,13 @@ export async function POST(req: Request) {
                     }
                   }
 
-                  return { key, success: true, runStarted: true, runId, runError: 'Run timed out after 60 seconds' };
+                  return {
+                    key,
+                    success: true,
+                    runStarted: true,
+                    runId,
+                    runError: 'Run timed out after 60 seconds',
+                  };
                 } catch (error) {
                   const message = error instanceof Error ? error.message : 'Failed to save script';
                   writeS3Event(writer, { status: 'error', error: { message } });
@@ -372,12 +468,18 @@ export async function POST(req: Request) {
                 approverId: z
                   .string()
                   .optional()
-                  .describe("Member ID of the approver (mem_...). Leave blank to use the task's existing approver."),
+                  .describe(
+                    "Member ID of the approver (mem_...). Leave blank to use the task's existing approver.",
+                  ),
               }),
               execute: async ({ approverId }) => {
                 const effectiveApproverId = approverId ?? task?.approverId;
                 if (!effectiveApproverId) {
-                  return { success: false, skipped: true, reason: 'No approver configured on this task. Mention this in your report.' };
+                  return {
+                    success: false,
+                    skipped: true,
+                    reason: 'No approver configured on this task. Mention this in your report.',
+                  };
                 }
                 const result = await serverApi.post<{ task: { status: string } }>(
                   `/v1/tasks/${taskId}/submit-for-review`,
@@ -393,6 +495,10 @@ export async function POST(req: Request) {
             ...googleDocsTools,
             ...googleSheetsTools,
             ...readRunOutputTool,
+            ...taskStatusTool,
+            ...automationFinalizationTool,
+            ...readTaskAttachmentTool,
+            ...delegateBrowserTools,
           },
         });
 
@@ -402,9 +508,27 @@ export async function POST(req: Request) {
         console.error('[AutomationChat] Stream error:', error);
         return error instanceof Error ? error.message : 'An error occurred';
       },
+      onFinish: async ({ messages: completedMessages }) => {
+        const result = await serverApi.post(
+          `/v1/tasks/${taskId}/automations/${automationId}/chat-history`,
+          { messages: completedMessages },
+        );
+        if (result.error) {
+          console.error('[AutomationChat] Failed to persist background chat:', result.error);
+        }
+      },
     });
 
-    return createUIMessageStreamResponse({ stream });
+    return createUIMessageStreamResponse({
+      stream,
+      consumeSseStream: ({ stream: sseStream }) =>
+        consumeBackgroundStream({
+          stream: sseStream,
+          onError: (error) => {
+            console.error('[AutomationChat] Background stream failed:', error);
+          },
+        }),
+    });
   } catch (error) {
     console.error('[AutomationChat] Fatal error:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

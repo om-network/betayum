@@ -28,9 +28,9 @@ model CheckDefinition {
   sourceHash String
 
   /// Plain-English summary used as the panel title.
-  title String
+  title        String
   /// What the check actually verifies (1-3 sentences).
-  description String
+  description  String
   /// Conditions under which the check passes.
   passCriteria String
   /// Conditions under which the check fails.

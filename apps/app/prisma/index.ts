@@ -12,6 +12,7 @@ export {
   AuditLogEntityType,
   BrowserAutomationEvaluationStatus,
   BrowserAutomationRunStatus,
+  CodexAutomationRunStatus,
   CommentEntityType,
   Departments,
   DevicePlatform,

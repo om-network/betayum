@@ -163,4 +163,28 @@ describe('TasksPageClient permission gating', () => {
 
     expect(screen.getByTestId('task-list')).toBeInTheDocument();
   });
+
+  it('shows export controls for read-only users with evidence export access', () => {
+    setMockPermissions(AUDITOR_PERMISSIONS);
+
+    render(
+      <TasksPageClient
+        {...defaultProps}
+        hasEvidenceExportAccess
+      />,
+    );
+
+    expect(screen.getByText('Export All Evidence')).toBeInTheDocument();
+    expect(screen.queryByText('Create Evidence')).not.toBeInTheDocument();
+    expect(screen.getByTestId('task-list')).toBeInTheDocument();
+  });
+
+  it('shows mutation controls for admins while keeping evidence data visible', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+
+    render(<TasksPageClient {...defaultProps} />);
+
+    expect(screen.getByText('Create Evidence')).toBeInTheDocument();
+    expect(screen.getByTestId('task-list')).toBeInTheDocument();
+  });
 });

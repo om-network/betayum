@@ -63,7 +63,7 @@ export class GoogleSheetsService {
   }
 
   private assertGoogleSheetsApiPath(path: string): string {
-    if (!path.startsWith('/v4/spreadsheets/')) {
+    if (path !== '/v4/spreadsheets' && !path.startsWith('/v4/spreadsheets/')) {
       throw new BadRequestException('Invalid Google Sheets API path');
     }
 

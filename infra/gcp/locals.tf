@@ -60,6 +60,8 @@ locals {
         AUTH_PRIMARY_DOMAIN               = var.auth_primary_domain
         AUTH_STAGING_DOMAIN               = var.auth_staging_domain
         AUTH_MICROSOFT_TENANT_ID          = "organizations"
+        CODEX_AUTOMATION_API_BASE_URL     = "https://${env.domains.api}"
+        BETAYUM_LOGO_URL                  = "https://${env.domains.app}/brand/betayum-icon-color.png"
         APP_OBJECT_STORAGE_BUCKET         = local.object_storage_buckets[env_name].app_data
         APP_DEVICE_AGENT_ARTIFACTS_BUCKET = local.object_storage_buckets[env_name].device_agent_artifacts
         APP_GCP_BUCKET_NAME               = local.object_storage_buckets[env_name].app_data
