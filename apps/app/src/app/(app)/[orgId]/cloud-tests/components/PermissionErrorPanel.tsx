@@ -74,10 +74,31 @@ function isAzureError(error: string): boolean {
   );
 }
 
+function isAllowedHostname(hostname: string, allowedDomain: string): boolean {
+  const normalizedHost = hostname.toLowerCase();
+  const normalizedAllowed = allowedDomain.toLowerCase();
+  return normalizedHost === normalizedAllowed || normalizedHost.endsWith(`.${normalizedAllowed}`);
+}
+
+function errorContainsUrlFromDomain(error: string, allowedDomain: string): boolean {
+  const urlCandidates = error.match(/https?:\/\/[^\s'")\]]+/gi) ?? [];
+
+  for (const candidate of urlCandidates) {
+    try {
+      const hostname = new URL(candidate).hostname;
+      if (isAllowedHostname(hostname, allowedDomain)) return true;
+    } catch {
+      // Ignore malformed URL candidates.
+    }
+  }
+
+  return false;
+}
+
 function isGcpError(error: string): boolean {
   return (
     error.includes('PERMISSION_DENIED') ||
-    error.includes('googleapis.com') ||
+    errorContainsUrlFromDomain(error, 'googleapis.com') ||
     /does not have\s+[\w.]+\s+access/i.test(error) ||
     /permission\s+'[\w.]+'/i.test(error)
   );
