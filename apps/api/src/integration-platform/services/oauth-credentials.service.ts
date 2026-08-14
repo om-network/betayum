@@ -74,7 +74,7 @@ export class OAuthCredentialsService {
       return platformCredentials;
     }
 
-    return null;
+    return this.getEnvironmentCredentials(providerSlug, oauthConfig);
   }
 
   /**
@@ -107,7 +107,9 @@ export class OAuthCredentialsService {
       await this.platformCredentialRepository.findActiveByProviderSlug(
         providerSlug,
       );
-    const hasPlatformCredentials = !!platformCred;
+    const hasPlatformCredentials =
+      !!platformCred ||
+      !!this.getEnvironmentCredentials(providerSlug, oauthConfig);
 
     return {
       available: hasOrgCredentials || hasPlatformCredentials,
@@ -115,6 +117,24 @@ export class OAuthCredentialsService {
       hasPlatformCredentials,
       setupInstructions: oauthConfig.setupInstructions,
       createAppUrl: oauthConfig.createAppUrl,
+    };
+  }
+
+  private getEnvironmentCredentials(
+    providerSlug: string,
+    oauthConfig: OAuthConfig,
+  ): OAuthCredentials | null {
+    if (providerSlug !== 'gcp') return null;
+
+    const clientId = process.env.GCP_OAUTH_CLIENT_ID;
+    const clientSecret = process.env.GCP_OAUTH_CLIENT_SECRET;
+    if (!clientId || !clientSecret) return null;
+
+    return {
+      clientId,
+      clientSecret,
+      scopes: oauthConfig.scopes,
+      source: 'platform',
     };
   }
 

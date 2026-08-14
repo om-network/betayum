@@ -172,5 +172,7 @@ locals {
     "roles/logging.viewer",
     "roles/run.admin",
     "roles/cloudsql.client",
+    "roles/compute.networkUser",
+    "roles/compute.viewer",
   ])
 }

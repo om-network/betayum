@@ -39,6 +39,10 @@ resource "google_cloudbuild_trigger" "deploy" {
     _AUTH_STAGING_DOMAIN           = var.auth_staging_domain
     _APP_DATA_BUCKET               = google_storage_bucket.app_data[each.key].name
     _DEVICE_AGENT_ARTIFACTS_BUCKET = google_storage_bucket.device_agent_artifacts[each.key].name
+    _API_SERVICE_ACCOUNT           = google_service_account.runtime["${each.key}.api"].email
     _DB_JOB_SERVICE_ACCOUNT        = google_service_account.migrator[each.key].email
+    _BROWSER_VM_NETWORK            = "betayum-${each.key}-browser"
+    _BROWSER_VM_SUBNET             = "betayum-${each.key}-browser"
+    _BROWSER_VM_ZONE               = "${each.value.region}-a"
   }
 }
