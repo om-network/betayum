@@ -692,8 +692,8 @@ export async function applySync(
       kind: 'SYNC',
       performedById: ctx.memberId,
       rollbackExpiresAt: addDays(new Date(), ROLLBACK_WINDOW_DAYS),
-      undoPayload: undo,
-      summary: summary,
+      undoPayload: JSON.parse(JSON.stringify(undo)) as Prisma.InputJsonValue,
+      summary: JSON.parse(JSON.stringify(summary)) as Prisma.InputJsonValue,
     },
   });
 

@@ -643,7 +643,9 @@ export class CloudSecurityService {
             description: finding.description ?? '',
             severity: finding.passed ? 'info' : finding.severity,
             remediation: finding.remediation ?? null,
-            evidence: finding.evidence || {},
+            evidence: JSON.parse(
+              JSON.stringify(finding.evidence ?? {}),
+            ) as Prisma.InputJsonValue,
             collectedAt: new Date(finding.createdAt),
           })),
         });
