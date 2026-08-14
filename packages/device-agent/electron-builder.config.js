@@ -1,5 +1,9 @@
 // Use a space-free product name for Linux to avoid path issues
 const isLinuxBuild = process.argv.includes('--linux') || process.env.BUILD_TARGET === 'linux';
+const isLinuxOnlyBuild =
+  isLinuxBuild &&
+  !process.argv.includes('--mac') &&
+  !process.argv.includes('--win');
 const { resolveBuildEnv } = require('./build-env.js');
 const buildEnv = resolveBuildEnv();
 
@@ -30,24 +34,28 @@ module.exports = {
     },
   ],
   icon: 'assets/icon.png',
-  mac: {
-    category: 'public.app-category.utilities',
-    icon: 'assets/icon.icns',
-    artifactName: 'CompAI-Device-Agent-${version}-${arch}.${ext}',
-    target: [
-      {
-        target: 'dmg',
-        arch: ['x64', 'arm64'],
-      },
-      {
-        target: 'zip',
-        arch: ['x64', 'arm64'],
-      },
-    ],
-    hardenedRuntime: true,
-    entitlements: 'assets/entitlements.mac.plist',
-    entitlementsInherit: 'assets/entitlements.mac.plist',
-  },
+  ...(isLinuxOnlyBuild
+    ? {}
+    : {
+        mac: {
+          category: 'public.app-category.utilities',
+          icon: 'assets/icon.icns',
+          artifactName: 'CompAI-Device-Agent-${version}-${arch}.${ext}',
+          target: [
+            {
+              target: 'dmg',
+              arch: ['x64', 'arm64'],
+            },
+            {
+              target: 'zip',
+              arch: ['x64', 'arm64'],
+            },
+          ],
+          hardenedRuntime: true,
+          entitlements: 'assets/entitlements.mac.plist',
+          entitlementsInherit: 'assets/entitlements.mac.plist',
+        },
+      }),
   win: {
     target: [
       {
