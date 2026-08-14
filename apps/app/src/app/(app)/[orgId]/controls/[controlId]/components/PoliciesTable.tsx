@@ -2,9 +2,10 @@
 
 import { StatusIndicator } from '@/components/status-indicator';
 import { Policy } from '@db';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@trycompai/design-system';
-import { Search } from '@trycompai/design-system/icons';
 import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
   Table,
   TableBody,
   TableCell,
@@ -13,6 +14,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
+import { Search } from '@trycompai/design-system/icons';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
@@ -88,10 +90,7 @@ export function PoliciesTable({ policies, orgId }: PoliciesTableProps) {
                 }}
               >
                 <TableCell>
-                  <span
-                    className="block max-w-[420px] truncate text-sm"
-                    title={policy.name}
-                  >
+                  <span className="block max-w-[420px] truncate text-sm" title={policy.name}>
                     {policy.name}
                   </span>
                 </TableCell>

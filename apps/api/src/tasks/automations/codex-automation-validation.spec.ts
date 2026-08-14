@@ -34,9 +34,9 @@ describe('validateScreenshot', () => {
     ['evidence.png', jpeg, 'image/png'],
     ['evidence.jpg', png, 'image/jpeg'],
   ])('rejects invalid evidence %s', (fileName, bytes, mimeType) => {
-    expect(() =>
-      validateScreenshot({ bytes, fileName, mimeType }),
-    ).toThrow(BadRequestException);
+    expect(() => validateScreenshot({ bytes, fileName, mimeType })).toThrow(
+      BadRequestException,
+    );
   });
 
   it('rejects files larger than 10 MB', () => {

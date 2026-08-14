@@ -1,8 +1,8 @@
 'use client';
 
+import type { PentestRun } from '@/lib/security/penetration-tests-client';
 import { Button } from '@trycompai/design-system';
 import { Renew, Warning } from '@trycompai/design-system/icons';
-import type { PentestRun } from '@/lib/security/penetration-tests-client';
 import { formatReportDate } from '../lib';
 import { StatusPill } from './StatusPill';
 
@@ -20,13 +20,9 @@ export function FailedDetail({ run, onRetry }: FailedDetailProps) {
         <header className="space-y-3">
           <div className="flex items-center gap-3">
             <StatusPill status={run.status} />
-            <span className="font-mono text-xs text-muted-foreground">
-              {run.id}
-            </span>
+            <span className="font-mono text-xs text-muted-foreground">{run.id}</span>
           </div>
-          <h1 className="truncate text-[26px] font-medium tracking-[-0.02em]">
-            {run.targetUrl}
-          </h1>
+          <h1 className="truncate text-[26px] font-medium tracking-[-0.02em]">{run.targetUrl}</h1>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
             <span>Started {formatReportDate(run.createdAt)}</span>
             <span>Failed {formatReportDate(run.updatedAt)}</span>

@@ -1,8 +1,8 @@
 // apps/app/src/app/(app)/[orgId]/tasks/[taskId]/components/browser-automations/RunItem.test.tsx
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import { RunItem } from './RunItem';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import type { BrowserAutomationRun } from '../../hooks/types';
+import { RunItem } from './RunItem';
 
 const baseRun: BrowserAutomationRun = {
   id: 'bar_123',
@@ -19,9 +19,7 @@ describe('RunItem', () => {
   it('Open full size anchor points at the stable redirect endpoint, not the signed URL', () => {
     render(<RunItem run={baseRun} isLatest={true} />);
     const link = screen.getByRole('link', { name: /open full size/i });
-    expect(link.getAttribute('href')).toContain(
-      '/v1/browserbase/runs/bar_123/screenshot',
-    );
+    expect(link.getAttribute('href')).toContain('/v1/browserbase/runs/bar_123/screenshot');
     expect(link.getAttribute('href')).not.toContain('s3.example.com');
   });
 
@@ -30,9 +28,7 @@ describe('RunItem', () => {
     const img = screen.getByAltText('Automation screenshot');
     fireEvent.error(img);
     const fallback = screen.getByRole('link', { name: /try direct link/i });
-    expect(fallback.getAttribute('href')).toContain(
-      '/v1/browserbase/runs/bar_123/screenshot',
-    );
+    expect(fallback.getAttribute('href')).toContain('/v1/browserbase/runs/bar_123/screenshot');
   });
 
   it('renders the inline thumbnail using the presigned URL from the run payload', () => {

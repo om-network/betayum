@@ -58,9 +58,7 @@ export async function downloadAllEvidenceZip({
   const endpoint = `/v1/evidence-export/all?includeJson=${includeJson}`;
 
   await downloadFile(baseUrl + endpoint, {
-    fallbackBaseName: organizationName
-      ? `${organizationName}-all-evidence`
-      : 'all-evidence',
+    fallbackBaseName: organizationName ? `${organizationName}-all-evidence` : 'all-evidence',
     fallbackExtension: 'zip',
   });
 }

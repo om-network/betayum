@@ -64,11 +64,7 @@ export function Providers({ children, session }: ProviderProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="light"
-        disableTransitionOnChange
-      >
+      <ThemeProvider attribute="class" defaultTheme="light" disableTransitionOnChange>
         <AnalyticsProvider
           userId={session?.user?.id ?? undefined}
           userEmail={session?.user?.email ?? undefined}

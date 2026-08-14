@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Checkbox,
-  HStack,
-  Section,
-  Stack,
-  Text,
-} from '@trycompai/design-system';
+import { Button, Checkbox, HStack, Section, Stack, Text } from '@trycompai/design-system';
 import { Lock } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -48,8 +41,7 @@ const NOTIFICATION_ITEMS: {
     key: 'policyNotifications',
     roleKey: 'policyNotifications',
     label: 'Policy Notifications',
-    description:
-      'Receive emails when new policies are published or existing policies are updated',
+    description: 'Receive emails when new policies are published or existing policies are updated',
   },
   {
     key: 'taskReminders',
@@ -66,8 +58,7 @@ const NOTIFICATION_ITEMS: {
   {
     key: 'unassignedItemsNotifications',
     label: 'Unassigned Items Notifications',
-    description:
-      'Receive notifications when items need reassignment after a member is removed',
+    description: 'Receive notifications when items need reassignment after a member is removed',
   },
   {
     key: 'taskMentions',
@@ -90,8 +81,7 @@ export function EmailNotificationPreferences({
   roleNotifications,
 }: Props) {
   const { savePreferences } = useEmailPreferences({ initialPreferences });
-  const [preferences, setPreferences] =
-    useState<EmailPreferences>(initialPreferences);
+  const [preferences, setPreferences] = useState<EmailPreferences>(initialPreferences);
   const [saving, setSaving] = useState(false);
 
   const handleToggle = (key: keyof EmailPreferences, checked: boolean) => {
@@ -168,9 +158,7 @@ export function EmailNotificationPreferences({
               </Text>
             </div>
             <Button onClick={handleSelectAll} variant="outline" size="sm">
-              {Object.values(preferences).every((v) => v === true)
-                ? 'Disable All'
-                : 'Enable All'}
+              {Object.values(preferences).every((v) => v === true) ? 'Disable All' : 'Enable All'}
             </Button>
           </HStack>
         )}
@@ -184,26 +172,18 @@ export function EmailNotificationPreferences({
               <label
                 key={item.key}
                 className={`flex items-start gap-4 rounded-lg border p-4 transition-colors ${
-                  locked
-                    ? 'opacity-60 cursor-default'
-                    : 'cursor-pointer hover:bg-muted/50'
+                  locked ? 'opacity-60 cursor-default' : 'cursor-pointer hover:bg-muted/50'
                 }`}
               >
                 <Checkbox
                   checked={checked}
-                  onCheckedChange={
-                    locked
-                      ? undefined
-                      : (c) => handleToggle(item.key, c === true)
-                  }
+                  onCheckedChange={locked ? undefined : (c) => handleToggle(item.key, c === true)}
                   disabled={locked}
                 />
                 <div className="flex-1 min-w-0">
                   <HStack align="center" gap="xs">
                     <Text weight="medium">{item.label}</Text>
-                    {locked && (
-                      <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                    )}
+                    {locked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
                   </HStack>
                   <Text size="sm" variant="muted">
                     {item.description}

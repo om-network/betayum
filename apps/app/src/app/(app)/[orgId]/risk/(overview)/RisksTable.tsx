@@ -6,7 +6,6 @@ import {
   useRiskActions,
   useRisks,
   type Risk as ApiRisk,
-  type RiskAssignee,
   type RisksQueryParams,
 } from '@/hooks/use-risks';
 import { getSortingStateParser } from '@/lib/parsers';
@@ -16,9 +15,8 @@ import {
   previewResidual,
   suggestedResidual,
 } from '@/lib/suggested-residual';
-import { TaskStatus } from '@db';
 import type { Member, User } from '@db';
-import { Risk as RiskType } from '@db';
+import { Risk as RiskType, TaskStatus } from '@db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,10 +58,7 @@ import {
 import { OverflowMenuVertical, Search, TrashCan } from '@trycompai/design-system/icons';
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import {
-  parseAsString,
-  useQueryState,
-} from 'nuqs';
+import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { RiskOnboardingProvider } from './components/risk-onboarding-context';
@@ -112,7 +107,6 @@ function currentSeverityScore(risk: {
     completion,
   });
 }
-
 
 const STATUS_LABEL: Record<string, string> = {
   open: 'Open',
@@ -173,10 +167,7 @@ export const RisksTable = ({
 
   // Read current search params from URL
   const [title, setTitle] = useQueryState('title', parseAsString.withDefault(''));
-  const [statusFilter, setStatusFilter] = useQueryState(
-    'status',
-    parseAsString.withDefault(''),
-  );
+  const [statusFilter, setStatusFilter] = useQueryState('status', parseAsString.withDefault(''));
   const [assigneeFilter, setAssigneeFilter] = useQueryState(
     'assignee',
     parseAsString.withDefault(''),
@@ -211,7 +202,7 @@ export const RisksTable = ({
       ...(assigneeFilter && { assigneeId: assigneeFilter }),
       ...(currentSort && {
         sort: currentSort.id,
-        sortDirection: currentSort.desc ? 'desc' as const : 'asc' as const,
+        sortDirection: currentSort.desc ? ('desc' as const) : ('asc' as const),
       }),
     };
   }, [page, perPage, title, statusFilter, assigneeFilter, sort, fetchAllForSeverity]);
@@ -478,7 +469,7 @@ export const RisksTable = ({
                 <SelectValue placeholder="Severity">
                   {(value: string) =>
                     value && value !== 'all'
-                      ? LEVEL_LABEL[value as keyof typeof LEVEL_LABEL] ?? value
+                      ? (LEVEL_LABEL[value as keyof typeof LEVEL_LABEL] ?? value)
                       : 'All severities'
                   }
                 </SelectValue>
@@ -501,9 +492,7 @@ export const RisksTable = ({
               <SelectTrigger>
                 <SelectValue placeholder="Status">
                   {(value: string) =>
-                    value && value !== 'all'
-                      ? STATUS_LABEL[value] ?? value
-                      : 'All statuses'
+                    value && value !== 'all' ? (STATUS_LABEL[value] ?? value) : 'All statuses'
                   }
                 </SelectValue>
               </SelectTrigger>
@@ -612,121 +601,121 @@ export const RisksTable = ({
               },
             }}
           >
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <button
-                      type="button"
-                      onClick={() => handleSort('title')}
-                      className="flex items-center hover:text-foreground"
-                    >
-                      RISK
-                      {getSortIcon('title')}
-                    </button>
-                  </TableHead>
-                  <TableHead>SEVERITY</TableHead>
-                  <TableHead>INHERENT RISK</TableHead>
-                  <TableHead>CURRENT RISK</TableHead>
-                  <TableHead>STATUS</TableHead>
-                  <TableHead>OWNER</TableHead>
-                  <TableHead>
-                    <button
-                      type="button"
-                      onClick={() => handleSort('updatedAt')}
-                      className="flex items-center hover:text-foreground"
-                    >
-                      UPDATED
-                      {getSortIcon('updatedAt')}
-                    </button>
-                  </TableHead>
-                  {hasPermission('risk', 'delete') && <TableHead>ACTIONS</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mergedRisks.map((risk) => {
-                  const blocked = isRowBlocked(risk);
-                  return (
-                    <TableRow
-                      key={risk.id}
-                      onClick={() => !blocked && handleRowClick(risk.id)}
-                      style={{ cursor: blocked ? 'default' : 'pointer' }}
-                      data-state={blocked ? 'disabled' : undefined}
-                    >
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('title')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    RISK
+                    {getSortIcon('title')}
+                  </button>
+                </TableHead>
+                <TableHead>SEVERITY</TableHead>
+                <TableHead>INHERENT RISK</TableHead>
+                <TableHead>CURRENT RISK</TableHead>
+                <TableHead>STATUS</TableHead>
+                <TableHead>OWNER</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('updatedAt')}
+                    className="flex items-center hover:text-foreground"
+                  >
+                    UPDATED
+                    {getSortIcon('updatedAt')}
+                  </button>
+                </TableHead>
+                {hasPermission('risk', 'delete') && <TableHead>ACTIONS</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mergedRisks.map((risk) => {
+                const blocked = isRowBlocked(risk);
+                return (
+                  <TableRow
+                    key={risk.id}
+                    onClick={() => !blocked && handleRowClick(risk.id)}
+                    style={{ cursor: blocked ? 'default' : 'pointer' }}
+                    data-state={blocked ? 'disabled' : undefined}
+                  >
+                    <TableCell>
+                      <HStack gap="2" align="center">
+                        {blocked && <Spinner />}
+                        <Text>{risk.title}</Text>
+                      </HStack>
+                    </TableCell>
+                    {(() => {
+                      // Three score columns paint the before-vs-now picture:
+                      //   SEVERITY = current treatment-aware level (text).
+                      //   INHERENT = raw score before treatment, fixed.
+                      //   CURRENT  = treatment-aware score interpolated by
+                      //              linked-task completion. Named "Current"
+                      //              (not "Residual") because the canonical
+                      //              residual is the *target* score at 100%
+                      //              completion — what's shown here moves
+                      //              with progress and matches the hero's
+                      //              "Currently X/10" subline.
+                      // SEVERITY is plain text and CURRENT carries the
+                      // colored chip so we don't double-paint the band.
+                      const inherentScore = getRiskScore(risk.likelihood, risk.impact).score;
+                      const score = currentSeverityScore(risk);
+                      const level = getRiskLevelFromScore(score);
+                      return (
+                        <>
+                          <TableCell>
+                            <Text>{LEVEL_LABEL[level]}</Text>
+                          </TableCell>
+                          <TableCell>
+                            <RiskScoreBadge score={inherentScore} />
+                          </TableCell>
+                          <TableCell>
+                            <RiskScoreBadge score={score} />
+                          </TableCell>
+                        </>
+                      );
+                    })()}
+                    <TableCell>{getStatusBadge(risk.status)}</TableCell>
+                    <TableCell>
+                      <Text>{risk.assignee?.user?.name || 'Unassigned'}</Text>
+                    </TableCell>
+                    <TableCell>
+                      <Text>{formatDate(risk.updatedAt)}</Text>
+                    </TableCell>
+                    {hasPermission('risk', 'delete') && (
                       <TableCell>
-                        <HStack gap="2" align="center">
-                          {blocked && <Spinner />}
-                          <Text>{risk.title}</Text>
-                        </HStack>
-                      </TableCell>
-                      {(() => {
-                        // Three score columns paint the before-vs-now picture:
-                        //   SEVERITY = current treatment-aware level (text).
-                        //   INHERENT = raw score before treatment, fixed.
-                        //   CURRENT  = treatment-aware score interpolated by
-                        //              linked-task completion. Named "Current"
-                        //              (not "Residual") because the canonical
-                        //              residual is the *target* score at 100%
-                        //              completion — what's shown here moves
-                        //              with progress and matches the hero's
-                        //              "Currently X/10" subline.
-                        // SEVERITY is plain text and CURRENT carries the
-                        // colored chip so we don't double-paint the band.
-                        const inherentScore = getRiskScore(risk.likelihood, risk.impact).score;
-                        const score = currentSeverityScore(risk);
-                        const level = getRiskLevelFromScore(score);
-                        return (
-                          <>
-                            <TableCell>
-                              <Text>{LEVEL_LABEL[level]}</Text>
-                            </TableCell>
-                            <TableCell>
-                              <RiskScoreBadge score={inherentScore} />
-                            </TableCell>
-                            <TableCell>
-                              <RiskScoreBadge score={score} />
-                            </TableCell>
-                          </>
-                        );
-                      })()}
-                      <TableCell>{getStatusBadge(risk.status)}</TableCell>
-                      <TableCell>
-                        <Text>{risk.assignee?.user?.name || 'Unassigned'}</Text>
-                      </TableCell>
-                      <TableCell>
-                        <Text>{formatDate(risk.updatedAt)}</Text>
-                      </TableCell>
-                      {hasPermission('risk', 'delete') && (
-                        <TableCell>
-                          <div className="flex justify-center">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger
-                                variant="ellipsis"
-                                disabled={blocked}
-                                onClick={(e) => e.stopPropagation()}
+                        <div className="flex justify-center">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              variant="ellipsis"
+                              disabled={blocked}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <OverflowMenuVertical />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(risk);
+                                }}
                               >
-                                <OverflowMenuVertical />
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  variant="destructive"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteClick(risk);
-                                  }}
-                                >
-                                  <TrashCan size={16} />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                                <TrashCan size={16} />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
 
         {/* Delete Confirmation Dialog */}

@@ -39,5 +39,3 @@ export type VendorRiskAssessmentDataV1 = {
   links?: VendorRiskAssessmentLink[] | null;
   news?: VendorRiskAssessmentNewsItem[] | null;
 };
-
-

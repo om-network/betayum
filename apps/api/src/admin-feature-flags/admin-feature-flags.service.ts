@@ -25,7 +25,11 @@ export class AdminFeatureFlagsService {
 
   constructor(private readonly posthog: PostHogService) {}
 
-  private getPostHogRestConfig(): { apiHost: string; apiKey: string; projectId: string } | null {
+  private getPostHogRestConfig(): {
+    apiHost: string;
+    apiKey: string;
+    projectId: string;
+  } | null {
     const apiKey = process.env.POSTHOG_PERSONAL_API_KEY;
     const projectId = process.env.POSTHOG_PROJECT_ID;
     const apiHost =
@@ -169,7 +173,9 @@ export class AdminFeatureFlagsService {
 
     const client = this.posthog.getClient();
     if (!client) {
-      throw new BadRequestException('PostHog is not configured on this environment');
+      throw new BadRequestException(
+        'PostHog is not configured on this environment',
+      );
     }
 
     try {

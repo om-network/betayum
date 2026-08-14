@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Finding } from '@/hooks/use-findings-api';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
-import type { Finding } from '@/hooks/use-findings-api';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({ permissions: {}, hasPermission: mockHasPermission }),
@@ -19,8 +19,7 @@ vi.mock('@/hooks/use-findings-api', async () => {
   );
   return {
     ...actual,
-    useOrganizationFindings: (...args: unknown[]) =>
-      mockUseOrganizationFindings(...args),
+    useOrganizationFindings: (...args: unknown[]) => mockUseOrganizationFindings(...args),
   };
 });
 
@@ -101,9 +100,7 @@ describe('FindingsTab', () => {
     render(<FindingsTab organizationId="org_1" />);
 
     expect(screen.getByText(/task: upload mfa evidence/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/evidence missing a timestamp/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/evidence missing a timestamp/i)).toBeInTheDocument();
   });
 
   it('does not render the CreateFindingSheet mount for users without finding:create (admin)', () => {

@@ -30,7 +30,11 @@ const mockDb = {
 
 jest.mock('@db', () => ({
   db: mockDb,
-  FindingArea: { people: 'people', documents: 'documents', compliance: 'compliance' },
+  FindingArea: {
+    people: 'people',
+    documents: 'documents',
+    compliance: 'compliance',
+  },
   FindingStatus: {
     open: 'open',
     ready_for_review: 'ready_for_review',
@@ -55,7 +59,11 @@ import { FindingsService } from './findings.service';
 describe('FindingsService.create (target validator)', () => {
   const auditService = {};
   const notifier = { notifyFindingCreated: jest.fn() };
-  const svc = new FindingsService(auditService as never, notifier as never, {} as never);
+  const svc = new FindingsService(
+    auditService as never,
+    notifier as never,
+    {} as never,
+  );
   const baseDto = { content: 'Example finding' };
 
   beforeEach(() => {
@@ -90,7 +98,10 @@ describe('FindingsService.create (target validator)', () => {
   });
 
   it('creates a finding for a valid policy target', async () => {
-    mockDb.policy.findFirst.mockResolvedValue({ id: 'pol_1', name: 'Access Policy' });
+    mockDb.policy.findFirst.mockResolvedValue({
+      id: 'pol_1',
+      name: 'Access Policy',
+    });
     mockDb.finding.create.mockResolvedValue({
       id: 'fnd_new',
       content: 'Example finding',
@@ -124,7 +135,7 @@ describe('FindingsService.create (target validator)', () => {
 
     await svc.create('org_1', 'mem_1', 'usr_1', {
       ...baseDto,
-      area: 'people' as never,
+      area: 'people',
     });
 
     const createArgs = mockDb.finding.create.mock.calls[0][0];

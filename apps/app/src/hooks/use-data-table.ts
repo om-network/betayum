@@ -41,7 +41,8 @@ const DEBOUNCE_MS = 300;
 const THROTTLE_MS = 50;
 
 interface UseDataTableProps<TData>
-  extends Omit<
+  extends
+    Omit<
       TableOptions<TData>,
       | 'state'
       | 'pageCount'
@@ -61,7 +62,7 @@ interface UseDataTableProps<TData>
   enableAdvancedFilter?: boolean;
   scroll?: boolean;
   shallow?: boolean;
-  startTransition?: React.TransitionStartFunction;
+  startTransition?: UseQueryStateOptions<string>['startTransition'];
   tableId?: string;
 }
 
@@ -90,7 +91,6 @@ export function useDataTable<TData>(props: UseDataTableProps<TData>) {
       throttleMs,
       debounceMs,
       clearOnDefault,
-      //@ts-ignore
       startTransition,
     }),
     [history, scroll, shallow, throttleMs, debounceMs, clearOnDefault, startTransition],

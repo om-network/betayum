@@ -1,6 +1,6 @@
-import { createServer, type Server } from 'node:http';
-import { randomBytes } from 'node:crypto';
 import { dialog, shell } from 'electron';
+import { randomBytes } from 'node:crypto';
+import { createServer, type Server } from 'node:http';
 import { AGENT_VERSION, API_ROUTES } from '../shared/constants';
 import type {
   DeviceInfo,
@@ -40,10 +40,7 @@ export async function performLogin(deviceInfo: DeviceInfo): Promise<StoredAuth |
     // Wait for the auth code from either the browser redirect callback
     // or the state-based polling transport.
     log('Waiting for auth callback from browser or polling transport...');
-    const code = await Promise.race([
-      codePromise,
-      pollForAuthCode({ apiUrl, state }),
-    ]);
+    const code = await Promise.race([codePromise, pollForAuthCode({ apiUrl, state })]);
 
     if (!code) {
       log('Login timed out or was cancelled', 'WARN');

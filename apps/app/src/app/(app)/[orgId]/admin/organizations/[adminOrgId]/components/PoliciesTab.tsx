@@ -45,12 +45,19 @@ const DEPARTMENT_OPTIONS = ['none', 'admin', 'gov', 'hr', 'it', 'itsm', 'qms'];
 const FREQUENCY_OPTIONS = ['monthly', 'quarterly', 'yearly'];
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
-  draft: 'outline', published: 'default', needs_review: 'secondary',
+  draft: 'outline',
+  published: 'default',
+  needs_review: 'secondary',
 };
 
 const DEPARTMENT_LABELS: Record<string, string> = {
-  none: 'None', admin: 'Admin', gov: 'Gov', hr: 'HR',
-  it: 'IT', itsm: 'ITSM', qms: 'QMS',
+  none: 'None',
+  admin: 'Admin',
+  gov: 'Gov',
+  hr: 'HR',
+  it: 'IT',
+  itsm: 'ITSM',
+  qms: 'QMS',
 };
 
 function formatLabel(value: string) {
@@ -71,11 +78,15 @@ export function PoliciesTab({ orgId }: { orgId: string }) {
     setLoading(false);
   }, [orgId]);
 
-  useEffect(() => { void fetchPolicies(); }, [fetchPolicies]);
+  useEffect(() => {
+    void fetchPolicies();
+  }, [fetchPolicies]);
 
   const handleFieldChange = async (policyId: string, field: string, value: string | null) => {
     setUpdatingId(policyId);
-    const res = await api.patch(`/v1/admin/organizations/${orgId}/policies/${policyId}`, { [field]: value });
+    const res = await api.patch(`/v1/admin/organizations/${orgId}/policies/${policyId}`, {
+      [field]: value,
+    });
     if (!res.error) {
       setPolicies((prev) => prev.map((p) => (p.id === policyId ? { ...p, [field]: value } : p)));
     }
@@ -123,15 +134,17 @@ export function PoliciesTab({ orgId }: { orgId: string }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {[...policies].sort((a, b) => a.name.localeCompare(b.name)).map((policy) => (
-                <PolicyRow
-                  key={policy.id}
-                  policy={policy}
-                  isUpdating={updatingId === policy.id}
-                  onFieldChange={handleFieldChange}
-                  onView={setViewingPolicy}
-                />
-              ))}
+              {[...policies]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((policy) => (
+                  <PolicyRow
+                    key={policy.id}
+                    policy={policy}
+                    isUpdating={updatingId === policy.id}
+                    onFieldChange={handleFieldChange}
+                    onView={setViewingPolicy}
+                  />
+                ))}
             </TableBody>
           </Table>
         )}
@@ -141,12 +154,17 @@ export function PoliciesTab({ orgId }: { orgId: string }) {
         policy={viewingPolicy}
         orgId={orgId}
         onClose={() => setViewingPolicy(null)}
-        onRegenerated={() => { setViewingPolicy(null); void fetchPolicies(); }}
+        onRegenerated={() => {
+          setViewingPolicy(null);
+          void fetchPolicies();
+        }}
       />
 
       <Sheet open={showForm} onOpenChange={setShowForm}>
         <SheetContent>
-          <SheetHeader><SheetTitle>Create Policy</SheetTitle></SheetHeader>
+          <SheetHeader>
+            <SheetTitle>Create Policy</SheetTitle>
+          </SheetHeader>
           <SheetBody>
             <PolicyForm orgId={orgId} onCreated={handleCreated} />
           </SheetBody>
@@ -157,7 +175,10 @@ export function PoliciesTab({ orgId }: { orgId: string }) {
 }
 
 function PolicyRow({
-  policy, isUpdating, onFieldChange, onView,
+  policy,
+  isUpdating,
+  onFieldChange,
+  onView,
 }: {
   policy: Policy;
   isUpdating: boolean;
@@ -169,11 +190,15 @@ function PolicyRow({
       <TableCell>
         <div className="max-w-[400px]">
           <div className="truncate">
-            <Text size="sm" weight="medium">{policy.name}</Text>
+            <Text size="sm" weight="medium">
+              {policy.name}
+            </Text>
           </div>
           {policy.description && (
             <div className="truncate">
-              <Text size="xs" variant="muted">{policy.description}</Text>
+              <Text size="xs" variant="muted">
+                {policy.description}
+              </Text>
             </div>
           )}
         </div>
@@ -181,30 +206,45 @@ function PolicyRow({
       <TableCell>
         <Select
           value={policy.status}
-          onValueChange={(val) => { if (val) void onFieldChange(policy.id, 'status', val); }}
+          onValueChange={(val) => {
+            if (val) void onFieldChange(policy.id, 'status', val);
+          }}
           disabled={isUpdating}
         >
           <SelectTrigger size="sm">
-            <Badge variant={STATUS_VARIANT[policy.status] ?? 'default'}>{formatLabel(policy.status)}</Badge>
+            <Badge variant={STATUS_VARIANT[policy.status] ?? 'default'}>
+              {formatLabel(policy.status)}
+            </Badge>
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false}>
-            {STATUS_OPTIONS.map((s) => (<SelectItem key={s} value={s}>{formatLabel(s)}</SelectItem>))}
+            {STATUS_OPTIONS.map((s) => (
+              <SelectItem key={s} value={s}>
+                {formatLabel(s)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </TableCell>
       <TableCell>
         <Select
           value={policy.department ?? 'none'}
-          onValueChange={(val) => { if (val) void onFieldChange(policy.id, 'department', val); }}
+          onValueChange={(val) => {
+            if (val) void onFieldChange(policy.id, 'department', val);
+          }}
           disabled={isUpdating}
         >
           <SelectTrigger size="sm">
             <span className="text-sm">
-              {DEPARTMENT_LABELS[policy.department ?? 'none'] ?? formatLabel(policy.department ?? 'none')}
+              {DEPARTMENT_LABELS[policy.department ?? 'none'] ??
+                formatLabel(policy.department ?? 'none')}
             </span>
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false}>
-            {DEPARTMENT_OPTIONS.map((d) => (<SelectItem key={d} value={d}>{DEPARTMENT_LABELS[d] ?? d}</SelectItem>))}
+            {DEPARTMENT_OPTIONS.map((d) => (
+              <SelectItem key={d} value={d}>
+                {DEPARTMENT_LABELS[d] ?? d}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </TableCell>
@@ -217,16 +257,24 @@ function PolicyRow({
           disabled={isUpdating}
         >
           <SelectTrigger size="sm">
-            <span className="text-sm">{policy.frequency ? formatLabel(policy.frequency) : '--'}</span>
+            <span className="text-sm">
+              {policy.frequency ? formatLabel(policy.frequency) : '--'}
+            </span>
           </SelectTrigger>
           <SelectContent alignItemWithTrigger={false}>
             <SelectItem value="none">--</SelectItem>
-            {FREQUENCY_OPTIONS.map((f) => (<SelectItem key={f} value={f}>{formatLabel(f)}</SelectItem>))}
+            {FREQUENCY_OPTIONS.map((f) => (
+              <SelectItem key={f} value={f}>
+                {formatLabel(f)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </TableCell>
       <TableCell>
-        <Text size="sm" variant="muted">{policy.assignee?.user.name ?? '--'}</Text>
+        <Text size="sm" variant="muted">
+          {policy.assignee?.user.name ?? '--'}
+        </Text>
       </TableCell>
       <TableCell>
         <Text size="sm" variant="muted">
@@ -234,7 +282,12 @@ function PolicyRow({
         </Text>
       </TableCell>
       <TableCell>
-        <Button size="sm" variant="outline" iconLeft={<View size={16} />} onClick={() => onView(policy)}>
+        <Button
+          size="sm"
+          variant="outline"
+          iconLeft={<View size={16} />}
+          onClick={() => onView(policy)}
+        >
           View
         </Button>
       </TableCell>

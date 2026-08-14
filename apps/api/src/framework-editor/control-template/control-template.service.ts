@@ -143,7 +143,9 @@ export class ControlTemplateService {
         where: { id },
         data: {
           ...(dto.name !== undefined && { name: dto.name }),
-          ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.description !== undefined && {
+            description: dto.description,
+          }),
         },
       });
       this.logger.log(`Updated control template: ${updated.name} (${id})`);
@@ -162,7 +164,9 @@ export class ControlTemplateService {
         where: { id },
         data: {
           ...(dto.name !== undefined && { name: dto.name }),
-          ...(dto.description !== undefined && { description: dto.description }),
+          ...(dto.description !== undefined && {
+            description: dto.description,
+          }),
         },
       });
       await tx.frameworkEditorControlDocumentTypeLink.deleteMany({
@@ -230,11 +234,13 @@ export class ControlTemplateService {
       frameworkId,
     });
     await db.frameworkEditorControlPolicyTemplateLink.createMany({
-      data: [{
-        frameworkId: scopedFrameworkId,
-        controlTemplateId: controlId,
-        policyTemplateId,
-      }],
+      data: [
+        {
+          frameworkId: scopedFrameworkId,
+          controlTemplateId: controlId,
+          policyTemplateId,
+        },
+      ],
       skipDuplicates: true,
     });
     return { message: 'Policy template linked' };
@@ -269,11 +275,13 @@ export class ControlTemplateService {
       frameworkId,
     });
     await db.frameworkEditorControlTaskTemplateLink.createMany({
-      data: [{
-        frameworkId: scopedFrameworkId,
-        controlTemplateId: controlId,
-        taskTemplateId,
-      }],
+      data: [
+        {
+          frameworkId: scopedFrameworkId,
+          controlTemplateId: controlId,
+          taskTemplateId,
+        },
+      ],
       skipDuplicates: true,
     });
     return { message: 'Task template linked' };
@@ -308,11 +316,13 @@ export class ControlTemplateService {
       frameworkId,
     });
     await db.frameworkEditorControlDocumentTypeLink.createMany({
-      data: [{
-        frameworkId: scopedFrameworkId,
-        controlTemplateId: controlId,
-        formType,
-      }],
+      data: [
+        {
+          frameworkId: scopedFrameworkId,
+          controlTemplateId: controlId,
+          formType,
+        },
+      ],
       skipDuplicates: true,
     });
     return { message: 'Document type linked' };
@@ -328,7 +338,11 @@ export class ControlTemplateService {
       frameworkId,
     });
     await db.frameworkEditorControlDocumentTypeLink.deleteMany({
-      where: { frameworkId: scopedFrameworkId, controlTemplateId: controlId, formType },
+      where: {
+        frameworkId: scopedFrameworkId,
+        controlTemplateId: controlId,
+        formType,
+      },
     });
     return { message: 'Document type unlinked' };
   }

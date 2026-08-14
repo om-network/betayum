@@ -3,11 +3,7 @@
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
 import { Badge, Button, Section } from '@trycompai/design-system';
-import {
-  Close,
-  Logout,
-  Terminal,
-} from '@trycompai/design-system/icons';
+import { Close, Logout, Terminal } from '@trycompai/design-system/icons';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
@@ -41,10 +37,7 @@ interface CodexTerminalProps {
 
 const POLL_INTERVAL_MS = 3_000;
 
-export function CodexTerminal({
-  connectionId,
-  title = 'Codex terminal',
-}: CodexTerminalProps) {
+export function CodexTerminal({ connectionId, title = 'Codex terminal' }: CodexTerminalProps) {
   const { hasPermission } = usePermissions();
   const canManage = hasPermission('integration', 'update');
   const [session, setSession] = useState<CodexSession | null>(null);
@@ -103,10 +96,7 @@ export function CodexTerminal({
         setError(response.error || 'Failed to start Codex terminal');
         return;
       }
-      if (
-        response.data.status === 'failed' ||
-        response.data.status === 'expired'
-      ) {
+      if (response.data.status === 'failed' || response.data.status === 'expired') {
         setError(response.data.error || 'Codex terminal failed to start');
         setSession(null);
         setPendingLogout(false);
@@ -129,13 +119,7 @@ export function CodexTerminal({
     ) {
       void handleLogoutSession(sessionId);
     }
-  }, [
-    handleLogoutSession,
-    loggingOut,
-    pendingLogout,
-    sessionId,
-    sessionStatus,
-  ]);
+  }, [handleLogoutSession, loggingOut, pendingLogout, sessionId, sessionStatus]);
 
   const handleCreateSession = async ({ logout }: { logout: boolean }) => {
     setStarting(true);
@@ -155,9 +139,7 @@ export function CodexTerminal({
 
   const handleClose = async () => {
     if (!session) return;
-    await apiClient.delete(
-      `/v1/integration-browser/codex-sessions/${session.id}`,
-    );
+    await apiClient.delete(`/v1/integration-browser/codex-sessions/${session.id}`);
     setSession(null);
     setPendingLogout(false);
     setError(null);
@@ -188,17 +170,10 @@ export function CodexTerminal({
     <Section
       title={title}
       description="Codex CLI session for this organization"
-      actions={
-        <Badge variant={connected ? 'accent' : 'secondary'}>
-          {statusLabel}
-        </Badge>
-      }
+      actions={<Badge variant={connected ? 'accent' : 'secondary'}>{statusLabel}</Badge>}
     >
       {error && (
-        <div
-          role="alert"
-          className="rounded-md border border-destructive/30 bg-destructive/10 p-3"
-        >
+        <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3">
           <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
@@ -242,11 +217,7 @@ export function CodexTerminal({
             onDisconnected={handleDisconnected}
           />
           <div className="flex flex-wrap justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => void handleClose()}
-              iconLeft={<Close />}
-            >
+            <Button variant="outline" onClick={() => void handleClose()} iconLeft={<Close />}>
               Close
             </Button>
             <Button

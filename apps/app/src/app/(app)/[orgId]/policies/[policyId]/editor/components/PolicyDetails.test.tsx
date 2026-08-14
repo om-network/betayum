@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
 import { PolicyStatus } from '@db';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock matchMedia for useMediaQuery
 Object.defineProperty(window, 'matchMedia', {
@@ -124,11 +124,9 @@ vi.mock('../hooks/use-suggestions', () => ({
 
 // Mock PolicyEditor
 vi.mock('@/components/editor/policy-editor', () => ({
-  PolicyEditor: ({
-    readOnly,
-  }: {
-    readOnly: boolean;
-  }) => <div data-testid="policy-editor" data-readonly={readOnly} />,
+  PolicyEditor: ({ readOnly }: { readOnly: boolean }) => (
+    <div data-testid="policy-editor" data-readonly={readOnly} />
+  ),
 }));
 
 // Mock editor utils
@@ -232,18 +230,11 @@ describe('PolicyContentManager', () => {
 
     it('renders Publish button for admin on draft policy', () => {
       render(<PolicyContentManager {...defaultProps} />);
-      expect(
-        screen.getByRole('button', { name: /publish/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /publish/i })).toBeInTheDocument();
     });
 
     it('renders editor as read-only when viewing published active version', () => {
-      render(
-        <PolicyContentManager
-          {...defaultProps}
-          policyStatus={PolicyStatus.published}
-        />,
-      );
+      render(<PolicyContentManager {...defaultProps} policyStatus={PolicyStatus.published} />);
       const editor = screen.getByTestId('policy-editor');
       expect(editor.getAttribute('data-readonly')).toBe('true');
     });
@@ -262,9 +253,7 @@ describe('PolicyContentManager', () => {
 
     it('does not render the Publish button for auditor', () => {
       render(<PolicyContentManager {...defaultProps} />);
-      expect(
-        screen.queryByRole('button', { name: /^publish$/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^publish$/i })).not.toBeInTheDocument();
     });
 
     it('still renders the tab navigation', () => {
@@ -274,12 +263,7 @@ describe('PolicyContentManager', () => {
     });
 
     it('does not render the AI Assistant button', () => {
-      render(
-        <PolicyContentManager
-          {...defaultProps}
-          aiAssistantEnabled={true}
-        />,
-      );
+      render(<PolicyContentManager {...defaultProps} aiAssistantEnabled={true} />);
       // AI Assistant button should not appear because auditor cannot update
       // It only shows when !isPendingApproval && !isVersionReadOnly
       // But for auditor, the editor is readOnly due to !canUpdatePolicy
@@ -300,20 +284,14 @@ describe('PolicyContentManager', () => {
     });
 
     it('renders editor as read-only when pending approval', () => {
-      render(
-        <PolicyContentManager {...defaultProps} isPendingApproval={true} />,
-      );
+      render(<PolicyContentManager {...defaultProps} isPendingApproval={true} />);
       const editor = screen.getByTestId('policy-editor');
       expect(editor.getAttribute('data-readonly')).toBe('true');
     });
 
     it('does not render Publish button when pending approval', () => {
-      render(
-        <PolicyContentManager {...defaultProps} isPendingApproval={true} />,
-      );
-      expect(
-        screen.queryByRole('button', { name: /^publish$/i }),
-      ).not.toBeInTheDocument();
+      render(<PolicyContentManager {...defaultProps} isPendingApproval={true} />);
+      expect(screen.queryByRole('button', { name: /^publish$/i })).not.toBeInTheDocument();
     });
   });
 });

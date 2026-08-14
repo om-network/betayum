@@ -191,7 +191,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should throw NOT_FOUND when provider does not exist', async () => {
-      mockedGetManifest.mockReturnValue(undefined as never);
+      mockedGetManifest.mockReturnValue(undefined);
 
       await expect(controller.getProvider('nonexistent')).rejects.toThrow(
         HttpException,
@@ -249,7 +249,7 @@ describe('ConnectionsController', () => {
         updatedAt: new Date(),
       };
       mockConnectionService.getConnection.mockResolvedValue(connection);
-      mockedGetManifest.mockReturnValue(undefined as never);
+      mockedGetManifest.mockReturnValue(undefined);
 
       const result = await controller.getConnection('conn_1', 'org_1');
 
@@ -306,7 +306,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should throw NOT_FOUND when provider does not exist', async () => {
-      mockedGetManifest.mockReturnValue(undefined as never);
+      mockedGetManifest.mockReturnValue(undefined);
 
       await expect(
         controller.createConnection('org_1', {
@@ -338,9 +338,9 @@ describe('ConnectionsController', () => {
         provider: undefined,
       });
 
-      await expect(controller.testConnection('conn_1', 'org_1')).rejects.toThrow(
-        HttpException,
-      );
+      await expect(
+        controller.testConnection('conn_1', 'org_1'),
+      ).rejects.toThrow(HttpException);
     });
 
     it('should throw BAD_REQUEST when no credentials found', async () => {
@@ -352,9 +352,9 @@ describe('ConnectionsController', () => {
         null,
       );
 
-      await expect(controller.testConnection('conn_1', 'org_1')).rejects.toThrow(
-        HttpException,
-      );
+      await expect(
+        controller.testConnection('conn_1', 'org_1'),
+      ).rejects.toThrow(HttpException);
     });
 
     it('should activate connection when no handler is defined', async () => {

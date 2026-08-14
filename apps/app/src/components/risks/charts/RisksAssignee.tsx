@@ -1,5 +1,5 @@
-import { getInitials } from '@/lib/utils';
 import { serverApi } from '@/lib/api-server';
+import { getInitials } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@trycompai/ui/card';
 import { ScrollArea } from '@trycompai/ui/scroll-area';

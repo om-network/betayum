@@ -1,18 +1,12 @@
 'use client';
 
+import { RecentAuditLogs } from '@/components/RecentAuditLogs';
+import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
+import { apiClient } from '@/lib/api-client';
+import { Badge, Section, Stack, Switch, Text } from '@trycompai/design-system';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-import { apiClient } from '@/lib/api-client';
-import { RecentAuditLogs } from '@/components/RecentAuditLogs';
-import type { AuditLogWithRelations } from '@/hooks/use-audit-logs';
-import {
-  Badge,
-  Section,
-  Stack,
-  Switch,
-  Text,
-} from '@trycompai/design-system';
 
 interface AdminOrgDetail {
   id: string;
@@ -32,9 +26,7 @@ export function OrganizationDetail({
   currentOrgId: string;
   hasAccess: boolean;
 }) {
-  const [bgCheckEnabled, setBgCheckEnabled] = useState(
-    org.backgroundCheckStepEnabled,
-  );
+  const [bgCheckEnabled, setBgCheckEnabled] = useState(org.backgroundCheckStepEnabled);
   const [savingBgCheck, setSavingBgCheck] = useState(false);
 
   const handleToggleBgCheck = async (next: boolean) => {
@@ -42,10 +34,9 @@ export function OrganizationDetail({
     setBgCheckEnabled(next);
     setSavingBgCheck(true);
 
-    const res = await apiClient.patch(
-      `/v1/admin/organizations/${org.id}`,
-      { backgroundCheckStepEnabled: next },
-    );
+    const res = await apiClient.patch(`/v1/admin/organizations/${org.id}`, {
+      backgroundCheckStepEnabled: next,
+    });
 
     setSavingBgCheck(false);
 
@@ -56,9 +47,7 @@ export function OrganizationDetail({
     }
 
     toast.success(
-      next
-        ? 'Background checks now required'
-        : 'Background checks bypassed for this organization',
+      next ? 'Background checks now required' : 'Background checks bypassed for this organization',
     );
   };
 
@@ -81,14 +70,8 @@ export function OrganizationDetail({
           variant={hasAccess ? 'default' : 'destructive'}
         />
         <InfoCard label="Members" value={String(org.members.length)} />
-        <InfoCard
-          label="Created"
-          value={new Date(org.createdAt).toLocaleDateString()}
-        />
-        <InfoCard
-          label="Onboarding"
-          value={org.onboardingCompleted ? 'Completed' : 'Pending'}
-        />
+        <InfoCard label="Created" value={new Date(org.createdAt).toLocaleDateString()} />
+        <InfoCard label="Onboarding" value={org.onboardingCompleted ? 'Completed' : 'Pending'} />
       </div>
 
       <Section title="Compliance settings">
@@ -96,9 +79,8 @@ export function OrganizationDetail({
           <div className="flex-1">
             <Text weight="medium">Require background checks</Text>
             <Text size="sm" variant="muted">
-              When off, this org&apos;s members do not need to pass a background
-              check to count toward people completion. Existing requests stay
-              accessible.
+              When off, this org&apos;s members do not need to pass a background check to count
+              toward people completion. Existing requests stay accessible.
             </Text>
           </div>
           <Switch

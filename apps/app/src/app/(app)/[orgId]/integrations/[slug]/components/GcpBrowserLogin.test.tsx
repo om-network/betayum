@@ -1,13 +1,13 @@
 import { usePermissions } from '@/hooks/use-permissions';
 import { apiClient } from '@/lib/api-client';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
 import {
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   mockHasPermission,
   setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import { BrowserLogin } from './GcpBrowserLogin';
 
 vi.mock('@/env.mjs', () => ({
@@ -83,14 +83,10 @@ describe(BrowserLogin.name, () => {
       });
 
     render(<BrowserLogin connectionId="icn_2" providerName="GitHub" />);
-    expect(
-      screen.getByText("GitHub login saved in this organization's VM browser"),
-    ).toBeTruthy();
+    expect(screen.getByText("GitHub login saved in this organization's VM browser")).toBeTruthy();
     fireEvent.click(await screen.findByRole('button', { name: 'Open desktop' }));
 
-    expect(
-      await screen.findByLabelText('Organization browser desktop'),
-    ).toBeTruthy();
+    expect(await screen.findByLabelText('Organization browser desktop')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Save session' }));
 
     await waitFor(() => {
@@ -119,5 +115,4 @@ describe(BrowserLogin.name, () => {
     expect(screen.getByText(/Last saved/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Open desktop' })).toBeNull();
   });
-
 });

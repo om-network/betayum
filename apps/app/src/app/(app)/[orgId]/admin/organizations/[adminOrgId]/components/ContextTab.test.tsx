@@ -1,5 +1,4 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockGet = vi.fn();
@@ -94,9 +93,7 @@ describe('ContextTab', () => {
     render(<ContextTab orgId="org_test" />);
 
     await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledWith(
-        '/v1/admin/organizations/org_test/context',
-      );
+      expect(mockGet).toHaveBeenCalledWith('/v1/admin/organizations/org_test/context');
     });
   });
 });

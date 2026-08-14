@@ -62,11 +62,7 @@ export function applyMitigationPlanFields({
       if (typeof v === 'string' && v.length > 0) map[k] = v;
     }
   }
-  if (
-    currentStrategy !== 'mitigate' &&
-    currentDescription &&
-    currentDescription.length > 0
-  ) {
+  if (currentStrategy !== 'mitigate' && currentDescription && currentDescription.length > 0) {
     map[currentStrategy] = currentDescription;
   }
   map.mitigate = plan;

@@ -19,6 +19,7 @@ export default [
       '**/playwright-report/**',
       '**/.turbo/**',
       '**/out/**',
+      'prisma/schema/**',
     ],
   },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
@@ -31,4 +32,3 @@ export default [
     },
   },
 ];
-

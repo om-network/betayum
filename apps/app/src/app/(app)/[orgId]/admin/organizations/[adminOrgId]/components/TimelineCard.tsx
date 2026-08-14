@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { api } from '@/lib/api-client';
+import { TimelinePhaseBar } from '@/app/(app)/[orgId]/overview/components/TimelinePhaseBar';
 import type { AdminOrgTimeline } from '@/hooks/use-admin-timelines';
+import { api } from '@/lib/api-client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,16 +21,17 @@ import {
 import {
   Checkmark,
   CircleDash,
+  Edit,
   InProgress,
   Locked,
   Pause,
   Play,
-  Edit,
   Reset,
   TrashCan,
   Unlocked,
 } from '@trycompai/design-system/icons';
-import { TimelinePhaseBar } from '@/app/(app)/[orgId]/overview/components/TimelinePhaseBar';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { TimelineActivateForm } from './TimelineActivateForm';
 import { TimelinePhaseEditor } from './TimelinePhaseEditor';
 
@@ -45,17 +45,15 @@ const STATUS_BADGE: Record<
   COMPLETED: { label: 'Completed', variant: 'default' },
 };
 
-const PHASE_COMPLETION_LABEL: Record<
-  AdminOrgTimeline['phases'][number]['completionType'],
-  string
-> = {
-  MANUAL: 'Manual',
-  AUTO_TASKS: 'Auto (Tasks)',
-  AUTO_POLICIES: 'Auto (Policies)',
-  AUTO_PEOPLE: 'Auto (People)',
-  AUTO_FINDINGS: 'Auto (Findings)',
-  AUTO_UPLOAD: 'Auto (Upload)',
-};
+const PHASE_COMPLETION_LABEL: Record<AdminOrgTimeline['phases'][number]['completionType'], string> =
+  {
+    MANUAL: 'Manual',
+    AUTO_TASKS: 'Auto (Tasks)',
+    AUTO_POLICIES: 'Auto (Policies)',
+    AUTO_PEOPLE: 'Auto (People)',
+    AUTO_FINDINGS: 'Auto (Findings)',
+    AUTO_UPLOAD: 'Auto (Upload)',
+  };
 
 function formatDate(date: string | null): string {
   if (!date) return '--';
@@ -100,12 +98,8 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const badge = STATUS_BADGE[timeline.status];
   const frameworkName =
-    timeline.template?.name ??
-    timeline.frameworkInstance?.framework.name ??
-    'Unknown Framework';
-  const sortedPhases = [...timeline.phases].sort(
-    (a, b) => a.orderIndex - b.orderIndex,
-  );
+    timeline.template?.name ?? timeline.frameworkInstance?.framework.name ?? 'Unknown Framework';
+  const sortedPhases = [...timeline.phases].sort((a, b) => a.orderIndex - b.orderIndex);
 
   const runAction = async (
     method: 'post' | 'delete',
@@ -114,11 +108,9 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
     body?: unknown,
   ) => {
     setActionLoading(true);
-    const res = await (
-      method === 'delete'
-        ? api.delete(path, undefined, body)
-        : api.post(path, body)
-    );
+    const res = await (method === 'delete'
+      ? api.delete(path, undefined, body)
+      : api.post(path, body));
     setActionLoading(false);
     if (res.error) {
       toast.error(res.error);
@@ -147,19 +139,39 @@ export function TimelineCard({ timeline, orgId, onMutate }: TimelineCardProps) {
             timelineId={timeline.id}
             loading={actionLoading}
             onPause={() =>
-              runAction('post', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/pause`, 'Timeline paused')
+              runAction(
+                'post',
+                `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/pause`,
+                'Timeline paused',
+              )
             }
             onResume={() =>
-              runAction('post', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/resume`, 'Timeline resumed')
+              runAction(
+                'post',
+                `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/resume`,
+                'Timeline resumed',
+              )
             }
             onReset={() =>
-              runAction('post', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/reset`, 'Timeline reset to draft')
+              runAction(
+                'post',
+                `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/reset`,
+                'Timeline reset to draft',
+              )
             }
             onDelete={() =>
-              runAction('delete', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}`, 'Timeline deleted')
+              runAction(
+                'delete',
+                `/v1/admin/organizations/${orgId}/timelines/${timeline.id}`,
+                'Timeline deleted',
+              )
             }
             onStartNextCycle={() =>
-              runAction('post', `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/next-cycle`, 'Next cycle created as draft')
+              runAction(
+                'post',
+                `/v1/admin/organizations/${orgId}/timelines/${timeline.id}/next-cycle`,
+                'Next cycle created as draft',
+              )
             }
             onUnlock={(unlockReason) =>
               runAction(
@@ -258,12 +270,8 @@ function PhaseRow({
           Lock
         </Badge>
       ) : null}
-      <Badge variant="outline">
-        {PHASE_COMPLETION_LABEL[phase.completionType]}
-      </Badge>
-      <Badge variant="outline">
-        {phase.status.replace('_', ' ')}
-      </Badge>
+      <Badge variant="outline">{PHASE_COMPLETION_LABEL[phase.completionType]}</Badge>
+      <Badge variant="outline">{phase.status.replace('_', ' ')}</Badge>
       {editable && (
         <button
           onClick={onEdit}
@@ -379,9 +387,7 @@ function TimelineActions({
   if (status === 'ACTIVE') {
     return (
       <div className="flex items-center gap-2">
-        {lockedAt ? (
-          <UnlockDialogButton onConfirm={onUnlock} loading={loading} />
-        ) : null}
+        {lockedAt ? <UnlockDialogButton onConfirm={onUnlock} loading={loading} /> : null}
         <ConfirmButton
           title="Pause Timeline"
           description="Pausing will stop auto-completion checks. You can resume later and dates will be adjusted."
@@ -407,9 +413,7 @@ function TimelineActions({
   if (status === 'PAUSED') {
     return (
       <div className="flex items-center gap-2">
-        {lockedAt ? (
-          <UnlockDialogButton onConfirm={onUnlock} loading={loading} />
-        ) : null}
+        {lockedAt ? <UnlockDialogButton onConfirm={onUnlock} loading={loading} /> : null}
         <ConfirmButton
           title="Resume Timeline"
           description="Resuming will adjust dates forward based on the pause duration."

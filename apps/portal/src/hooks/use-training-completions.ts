@@ -1,8 +1,8 @@
-import type { EmployeeTrainingVideoCompletion } from '@db';
 import { env } from '@/env.mjs';
-import useSWR from 'swr';
-import { toast } from 'sonner';
+import type { EmployeeTrainingVideoCompletion } from '@db';
 import { useCallback } from 'react';
+import { toast } from 'sonner';
+import useSWR from 'swr';
 
 const API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
@@ -21,13 +21,15 @@ export function useTrainingCompletions({
 }: {
   fallbackData?: EmployeeTrainingVideoCompletion[];
 } = {}) {
-  const { data, error, isLoading, mutate } = useSWR<
-    EmployeeTrainingVideoCompletion[]
-  >(SWR_KEY, fetcher, {
-    fallbackData,
-    revalidateOnMount: !fallbackData,
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, mutate } = useSWR<EmployeeTrainingVideoCompletion[]>(
+    SWR_KEY,
+    fetcher,
+    {
+      fallbackData,
+      revalidateOnMount: !fallbackData,
+      revalidateOnFocus: false,
+    },
+  );
 
   const completions = Array.isArray(data) ? data : [];
 
@@ -36,28 +38,22 @@ export function useTrainingCompletions({
       try {
         await mutate(
           async (current) => {
-            const res = await fetch(
-              `${API_URL}/v1/training/completions/${videoId}/complete`,
-              {
-                method: 'POST',
-                credentials: 'include',
-              },
-            );
+            const res = await fetch(`${API_URL}/v1/training/completions/${videoId}/complete`, {
+              method: 'POST',
+              credentials: 'include',
+            });
 
             if (!res.ok) {
               throw new Error('Failed to mark video as completed');
             }
 
-            const updatedRecord: EmployeeTrainingVideoCompletion =
-              await res.json();
+            const updatedRecord: EmployeeTrainingVideoCompletion = await res.json();
 
             if (!Array.isArray(current)) return [updatedRecord];
 
             const exists = current.some((c) => c.videoId === videoId);
             if (exists) {
-              return current.map((c) =>
-                c.videoId === videoId ? updatedRecord : c,
-              );
+              return current.map((c) => (c.videoId === videoId ? updatedRecord : c));
             }
             return [...current, updatedRecord];
           },

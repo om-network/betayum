@@ -287,7 +287,10 @@ export class OAuthController {
     // is the one completing it. The `state` token alone provides CSRF
     // protection, but a session match guards against state-token leakage and
     // ensures the completing user still has an active session for the org.
-    const sessionMismatch = await this.checkSessionMatchesState(req, oauthState);
+    const sessionMismatch = await this.checkSessionMatchesState(
+      req,
+      oauthState,
+    );
     if (sessionMismatch) {
       await this.oauthStateRepository.delete(state);
       this.logger.warn(
@@ -636,5 +639,4 @@ export class OAuthController {
     }
     return url.toString();
   }
-
 }

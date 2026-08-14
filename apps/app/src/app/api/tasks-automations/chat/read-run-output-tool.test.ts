@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/api-server', () => ({
   serverApi: {
@@ -17,7 +17,10 @@ const RUN_ID = 'run_test';
 
 function getExecute() {
   const tools = buildReadRunOutputTool({ taskId: TASK_ID, automationId: AUTOMATION_ID });
-  return tools.readRunOutput.execute as (args: { runId: string; offset: number }, opts: unknown) => Promise<unknown>;
+  return tools.readRunOutput.execute as (
+    args: { runId: string; offset: number },
+    opts: unknown,
+  ) => Promise<unknown>;
 }
 
 describe('buildReadRunOutputTool', () => {
@@ -34,7 +37,7 @@ describe('buildReadRunOutputTool', () => {
     });
 
     const execute = getExecute();
-    const result = await execute({ runId: RUN_ID, offset: 0 }, {}) as Record<string, unknown>;
+    const result = (await execute({ runId: RUN_ID, offset: 0 }, {})) as Record<string, unknown>;
 
     expect(result.offset).toBe(0);
     expect(result.nextOffset).toBe(4000);
@@ -52,7 +55,7 @@ describe('buildReadRunOutputTool', () => {
     });
 
     const execute = getExecute();
-    const result = await execute({ runId: RUN_ID, offset: 4000 }, {}) as Record<string, unknown>;
+    const result = (await execute({ runId: RUN_ID, offset: 4000 }, {})) as Record<string, unknown>;
 
     expect(result.offset).toBe(4000);
     expect(result.hasMore).toBe(false);
@@ -69,7 +72,7 @@ describe('buildReadRunOutputTool', () => {
     });
 
     const execute = getExecute();
-    const result = await execute({ runId: RUN_ID, offset: 4000 }, {}) as Record<string, unknown>;
+    const result = (await execute({ runId: RUN_ID, offset: 4000 }, {})) as Record<string, unknown>;
 
     expect(result.offset).toBe(4000);
     expect(result.nextOffset).toBe(8000);
@@ -84,7 +87,7 @@ describe('buildReadRunOutputTool', () => {
     });
 
     const execute = getExecute();
-    const result = await execute({ runId: RUN_ID, offset: 0 }, {}) as Record<string, unknown>;
+    const result = (await execute({ runId: RUN_ID, offset: 0 }, {})) as Record<string, unknown>;
 
     expect(result.error).toBeDefined();
   });
@@ -98,7 +101,7 @@ describe('buildReadRunOutputTool', () => {
     });
 
     const execute = getExecute();
-    const result = await execute({ runId: RUN_ID, offset: 0 }, {}) as Record<string, unknown>;
+    const result = (await execute({ runId: RUN_ID, offset: 0 }, {})) as Record<string, unknown>;
 
     expect(result.chunk).toContain('"key": "value"');
     expect(result.hasMore).toBe(false);

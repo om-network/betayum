@@ -1,12 +1,12 @@
 'use client';
 
-import { authClient } from '@/utils/auth-client';
 import { buildAuthCallbackUrl } from '@/utils/auth-callback';
+import { authClient } from '@/utils/auth-client';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@trycompai/ui/button';
 import { cn } from '@trycompai/ui/cn';
 import { Form, FormControl, FormField, FormItem } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';

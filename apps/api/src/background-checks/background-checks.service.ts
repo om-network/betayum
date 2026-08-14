@@ -10,12 +10,8 @@ import {
   headerValue,
   verifyBackgroundCheckWebhookSignature,
 } from './background-check-webhook-signature';
-import {
-  identityWebhookPayloadSchema,
-} from './background-checks.types';
-import {
-  fetchCompletedReportSnapshot,
-} from './background-check-report-snapshot';
+import { identityWebhookPayloadSchema } from './background-checks.types';
+import { fetchCompletedReportSnapshot } from './background-check-report-snapshot';
 
 @Injectable()
 export class BackgroundChecksService {
@@ -173,7 +169,10 @@ export class BackgroundChecksService {
       throw new NotFoundException('Background check not found.');
     }
 
-    if (!record.identityBackgroundCheckId || !process.env.BACKGROUND_CHECK_API_KEY) {
+    if (
+      !record.identityBackgroundCheckId ||
+      !process.env.BACKGROUND_CHECK_API_KEY
+    ) {
       return { record };
     }
 
@@ -195,8 +194,11 @@ export class BackgroundChecksService {
     }
 
     verifyBackgroundCheckWebhookSignature({ rawBody, headers });
-    const payload = identityWebhookPayloadSchema.parse(JSON.parse(rawBody.toString('utf8')));
-    const eventId = headerValue(headers, 'x-background-check-event-id') ?? payload.eventId;
+    const payload = identityWebhookPayloadSchema.parse(
+      JSON.parse(rawBody.toString('utf8')),
+    );
+    const eventId =
+      headerValue(headers, 'x-background-check-event-id') ?? payload.eventId;
     const eventType =
       headerValue(headers, 'x-background-check-event-type') ?? payload.type;
 
@@ -223,7 +225,7 @@ export class BackgroundChecksService {
           eventType,
           backgroundCheckRequestId: record.id,
           identityBackgroundCheckId: payload.data.id,
-          payload: payload as Prisma.InputJsonValue,
+          payload: payload,
         },
       });
     } catch (error) {

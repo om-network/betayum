@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -62,7 +62,9 @@ vi.mock('date-fns', () => ({
 
 // Mock @trycompai/ui components
 vi.mock('@trycompai/ui/avatar', () => ({
-  Avatar: ({ children, ...props }: { children: React.ReactNode }) => <div {...props}>{children}</div>,
+  Avatar: ({ children, ...props }: { children: React.ReactNode }) => (
+    <div {...props}>{children}</div>
+  ),
   AvatarFallback: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
   AvatarImage: () => null,
 }));
@@ -83,7 +85,12 @@ vi.mock('@trycompai/ui/button', () => ({
     'aria-label'?: string;
     onMouseDown?: (e: React.MouseEvent) => void;
   }) => (
-    <button onClick={onClick} disabled={disabled} aria-label={props['aria-label']} data-variant={props.variant}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={props['aria-label']}
+      data-variant={props.variant}
+    >
       {children}
     </button>
   ),

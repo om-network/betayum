@@ -48,7 +48,7 @@ interface QuestionnaireViewProps {
   onCancelEdit: () => void;
   onExport: (format: 'xlsx' | 'csv' | 'pdf') => void;
   onToggleSource: (index: number) => void;
-  
+
   // New questionnaire specific props (optional)
   selectedFile?: File | null;
   onFileSelect?: (acceptedFiles: File[], rejectedFiles: any[]) => void;
@@ -58,7 +58,7 @@ interface QuestionnaireViewProps {
   showExitDialog?: boolean;
   onShowExitDialogChange?: (show: boolean) => void;
   onExit?: () => void;
-  
+
   // Existing questionnaire specific props (optional)
   filename?: string;
   description?: string;
@@ -151,8 +151,7 @@ export function QuestionnaireView({
           {filename || 'Security Questionnaire'}
         </h1>
         <p className="text-xs lg:text-sm text-muted-foreground leading-relaxed max-w-3xl">
-          {description ||
-            "Review and manage answers for this questionnaire"}
+          {description || 'Review and manage answers for this questionnaire'}
         </p>
       </div>
       <QuestionnaireResults
@@ -191,4 +190,3 @@ export function QuestionnaireView({
     </div>
   );
 }
-

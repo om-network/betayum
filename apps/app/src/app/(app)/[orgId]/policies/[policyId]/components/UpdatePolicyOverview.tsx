@@ -1,6 +1,7 @@
 'use client';
 
 import { SelectAssignee } from '@/components/SelectAssignee';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   Departments,
   Frequency,
@@ -40,7 +41,6 @@ import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { usePolicy } from '../hooks/usePolicy';
-import { usePermissions } from '@/hooks/use-permissions';
 
 type PolicyWithVersion = Policy & {
   currentVersion?: (PolicyVersion & { publishedBy: (Member & { user: User }) | null }) | null;
@@ -82,7 +82,7 @@ export function UpdatePolicyOverview({
   // Display the current policy status from the database
   // This always reflects the actual status stored in the Policy table
   const displayStatus = policy.status ?? PolicyStatus.draft;
-  
+
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(policy.assigneeId);
   const [selectedDepartment, setSelectedDepartment] = useState<Departments>(
     policy.department || Departments.admin,
@@ -146,9 +146,16 @@ export function UpdatePolicyOverview({
     const assigneeChanged = selectedAssigneeId !== policy.assigneeId;
     const departmentChanged = selectedDepartment !== (policy.department || Departments.admin);
     const frequencyChanged = selectedFrequency !== (policy.frequency || Frequency.monthly);
-    
+
     return assigneeChanged || departmentChanged || frequencyChanged;
-  }, [selectedAssigneeId, selectedDepartment, selectedFrequency, policy.assigneeId, policy.department, policy.frequency]);
+  }, [
+    selectedAssigneeId,
+    selectedDepartment,
+    selectedFrequency,
+    policy.assigneeId,
+    policy.department,
+    policy.frequency,
+  ]);
 
   const isLoading = isSubmitting;
 

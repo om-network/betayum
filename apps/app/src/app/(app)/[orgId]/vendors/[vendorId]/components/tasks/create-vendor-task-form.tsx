@@ -3,7 +3,14 @@
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTaskMutations } from '@/hooks/use-task-mutations';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@trycompai/ui/accordion';
+import { Member, User } from '@db';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@trycompai/ui/accordion';
 import { Button } from '@trycompai/ui/button';
 import { Calendar } from '@trycompai/ui/calendar';
 import { cn } from '@trycompai/ui/cn';
@@ -11,8 +18,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@trycompai/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
 import { Textarea } from '@trycompai/ui/textarea';
-import { Member, User } from '@db';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { ArrowRightIcon, CalendarIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
@@ -179,7 +184,11 @@ export function CreateVendorTaskForm({ assignees }: { assignees: (Member & { use
           </div>
 
           <div className="mt-4 flex justify-end">
-            <Button type="submit" variant="default" disabled={isSubmitting || !hasPermission('task', 'create')}>
+            <Button
+              type="submit"
+              variant="default"
+              disabled={isSubmitting || !hasPermission('task', 'create')}
+            >
               <div className="flex items-center justify-center">
                 {'Create'}
                 <ArrowRightIcon className="ml-2 h-4 w-4" />

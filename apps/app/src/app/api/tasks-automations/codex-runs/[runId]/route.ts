@@ -29,10 +29,7 @@ const completionOutputSchema = z.object({
   summary: z.string(),
 });
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ runId: string }> },
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ runId: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -67,16 +64,11 @@ export async function GET(
         organizationId: z.string(),
         status: z.string(),
         summary: z.string().nullable(),
-        screenshots: z.array(
-          z.object({ attachmentId: z.string().nullable() }),
-        ),
+        screenshots: z.array(z.object({ attachmentId: z.string().nullable() })),
       })
       .parse(codexRun.data);
     if (localRun.organizationId !== query.data.orgId) {
-      return NextResponse.json(
-        { message: 'Run scope does not match' },
-        { status: 403 },
-      );
+      return NextResponse.json({ message: 'Run scope does not match' }, { status: 403 });
     }
     const status =
       localRun.status === 'promoted'

@@ -1,3 +1,4 @@
+import { BrandLogo } from '@/components/brand-logo';
 import { LoginForm } from '@/components/login-form';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
@@ -10,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@trycompai/ui/card';
-import { BrandLogo } from '@/components/brand-logo';
 import { brandConfig } from '@trycompai/utils/brand';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';

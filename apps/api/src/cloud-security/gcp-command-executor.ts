@@ -206,7 +206,7 @@ async function executeOnce(
   if (
     step.method === 'POST' &&
     step.url.includes(':getIamPolicy') &&
-    (!step.body || !(step.body as Record<string, unknown>).options)
+    (!step.body || !step.body.options)
   ) {
     effectiveBody = {
       ...step.body,
@@ -215,9 +215,14 @@ async function executeOnce(
   }
 
   logger.log(`${step.method} ${url} — ${step.purpose}`);
-  if (effectiveBody && (step.method === 'POST' || step.method === 'PUT' || step.method === 'PATCH')) {
+  if (
+    effectiveBody &&
+    (step.method === 'POST' || step.method === 'PUT' || step.method === 'PATCH')
+  ) {
     const bodyStr = JSON.stringify(effectiveBody);
-    logger.debug(`  Body (${bodyStr.length} chars): ${bodyStr.substring(0, 2000)}${bodyStr.length > 2000 ? '...' : ''}`);
+    logger.debug(
+      `  Body (${bodyStr.length} chars): ${bodyStr.substring(0, 2000)}${bodyStr.length > 2000 ? '...' : ''}`,
+    );
   }
 
   const response = await fetch(url, {
@@ -413,7 +418,9 @@ export function validateGcpPlanSteps(steps: GcpApiStep[]): string[] {
     if (!step.method) errors.push(`Step ${i + 1}: method is required`);
     // POST/PUT/PATCH to mutation endpoints must have a body
     if (
-      (step.method === 'POST' || step.method === 'PUT' || step.method === 'PATCH') &&
+      (step.method === 'POST' ||
+        step.method === 'PUT' ||
+        step.method === 'PATCH') &&
       !step.url.includes(':getIamPolicy') &&
       !step.url.includes('/stop') &&
       !step.url.includes('/start') &&

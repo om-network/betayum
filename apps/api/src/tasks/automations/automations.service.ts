@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { db } from '@db';
 import { AutomationAuditService } from './automation-audit.service';
 import {
@@ -145,7 +149,9 @@ export class AutomationsService {
       },
       data: {
         ...rest,
-        ...(data.setupStatus !== undefined ? { setupStatusUpdatedAt: new Date() } : {}),
+        ...(data.setupStatus !== undefined
+          ? { setupStatusUpdatedAt: new Date() }
+          : {}),
         ...(scheduleFrequency !== undefined ? { scheduleFrequency } : {}),
         ...(allowedTools !== undefined ? { allowedTools } : {}),
       },
@@ -334,10 +340,15 @@ export class AutomationsService {
       throw new BadRequestException('No draft script to run');
     }
 
-    await this.automationUsageLimitsService.assertManualRunLimit({ organizationId });
+    await this.automationUsageLimitsService.assertManualRunLimit({
+      organizationId,
+    });
 
     if (secretRefs.length > 0) {
-      await this.automationSecretsService.verifySecretRefs({ organizationId, secretRefs });
+      await this.automationSecretsService.verifySecretRefs({
+        organizationId,
+        secretRefs,
+      });
     }
 
     const run = await db.evidenceAutomationRun.create({
@@ -371,7 +382,8 @@ export class AutomationsService {
         where: { id: run.id },
         data: {
           status: 'failed',
-          error: error instanceof Error ? error.message : 'Worker enqueue failed',
+          error:
+            error instanceof Error ? error.message : 'Worker enqueue failed',
           completedAt: new Date(),
         },
       });

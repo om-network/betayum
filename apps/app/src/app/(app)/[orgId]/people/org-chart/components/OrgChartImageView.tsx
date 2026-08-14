@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useApi } from '@/hooks/use-api';
 import { Button } from '@trycompai/design-system';
 import { TrashCan, Upload } from '@trycompai/design-system/icons';
-import { useApi } from '@/hooks/use-api';
-import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { UploadOrgChartDialog } from './UploadOrgChartDialog';
 
 interface OrgChartImageViewProps {
@@ -13,10 +13,7 @@ interface OrgChartImageViewProps {
   chartName: string;
 }
 
-export function OrgChartImageView({
-  imageUrl,
-  chartName,
-}: OrgChartImageViewProps) {
+export function OrgChartImageView({ imageUrl, chartName }: OrgChartImageViewProps) {
   const api = useApi();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);

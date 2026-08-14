@@ -63,7 +63,7 @@ function fromAzureEvidence(
     input.evidence && typeof input.evidence.alertType === 'string'
       ? input.evidence.alertType
       : input.evidence && typeof input.evidence.serviceName === 'string'
-        ? (input.evidence.serviceName as string)
+        ? input.evidence.serviceName
         : null;
 
   const subject = alertType ?? 'this configuration';

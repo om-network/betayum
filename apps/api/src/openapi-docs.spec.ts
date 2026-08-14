@@ -13,7 +13,6 @@ jest.mock('./auth/auth.server', () => ({
 }));
 
 jest.mock('@thallesp/nestjs-better-auth', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { Module } = require('@nestjs/common');
   @Module({})
   class AuthModuleStub {
@@ -67,7 +66,6 @@ jest.mock('@trycompai/auth', () => {
 // Mock @db — keep all Prisma enums from @prisma/client, replace only the db instance
 // so that module-level enum references (e.g. IsEnum(CommentEntityType)) resolve correctly
 jest.mock('@db', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const prismaClient = require('@prisma/client');
   return {
     ...prismaClient,

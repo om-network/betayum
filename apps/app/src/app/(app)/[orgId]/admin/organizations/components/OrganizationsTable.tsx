@@ -16,10 +16,7 @@ import {
   TableRow,
   Text,
 } from '@trycompai/design-system';
-import {
-  Renew,
-  View,
-} from '@trycompai/design-system/icons';
+import { Renew, View } from '@trycompai/design-system/icons';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
@@ -45,18 +42,13 @@ interface AdminOrgsResponse {
   limit: number;
 }
 
-async function fetchOrgs(
-  search: string,
-  page: number,
-): Promise<AdminOrgsResponse> {
+async function fetchOrgs(search: string, page: number): Promise<AdminOrgsResponse> {
   const params = new URLSearchParams({
     limit: String(PAGE_SIZE),
     page: String(page),
   });
   if (search) params.set('search', search);
-  const res = await api.get<AdminOrgsResponse>(
-    `/v1/admin/organizations?${params}`,
-  );
+  const res = await api.get<AdminOrgsResponse>(`/v1/admin/organizations?${params}`);
   if (res.error) throw new Error(res.error);
   return res.data ?? { data: [], total: 0, page: 1, limit: PAGE_SIZE };
 }
@@ -94,8 +86,7 @@ export function OrganizationsTable({
         page: initialPage,
         limit: PAGE_SIZE,
       },
-      revalidateOnMount:
-        search !== initialSearch || page !== initialPage || !initialOrgs.length,
+      revalidateOnMount: search !== initialSearch || page !== initialPage || !initialOrgs.length,
     },
   );
 
@@ -182,13 +173,11 @@ export function OrganizationsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {[...orgs].sort((a, b) => a.name.localeCompare(b.name)).map((org) => (
-              <OrgRow
-                key={org.id}
-                org={org}
-                orgId={orgId}
-              />
-            ))}
+            {[...orgs]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((org) => (
+                <OrgRow key={org.id} org={org} orgId={orgId} />
+              ))}
           </TableBody>
         </Table>
       )}
@@ -196,13 +185,7 @@ export function OrganizationsTable({
   );
 }
 
-function OrgRow({
-  org,
-  orgId,
-}: {
-  org: AdminOrg;
-  orgId: string;
-}) {
+function OrgRow({ org, orgId }: { org: AdminOrg; orgId: string }) {
   const router = useRouter();
   const detailHref = `/${orgId}/admin/organizations/${org.id}`;
 

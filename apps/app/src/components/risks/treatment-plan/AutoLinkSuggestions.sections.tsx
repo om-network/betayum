@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Text } from '@trycompai/design-system';
-import { ChevronLeft, ChevronRight, Checkmark } from '@trycompai/design-system/icons';
+import { Checkmark, ChevronLeft, ChevronRight } from '@trycompai/design-system/icons';
 import { useEffect, useState } from 'react';
 import {
   isControlDerived,

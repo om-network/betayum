@@ -39,9 +39,7 @@ export function AssistantConversation({
     <Conversation className="flex-1">
       <ConversationContent className="mx-auto max-w-xl !gap-6">
         {showHistoryLoading ? (
-          <div className="px-4 py-2 text-sm text-muted-foreground">
-            Loading chat history...
-          </div>
+          <div className="px-4 py-2 text-sm text-muted-foreground">Loading chat history...</div>
         ) : messages.length === 0 && !error ? (
           <ConversationEmptyState
             icon={<LogoSpinner />}
@@ -72,9 +70,7 @@ export function AssistantConversation({
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center text-foreground">
                       <LogoSpinner size={16} isDisabled={false} />
                     </div>
-                    <span className="text-xs font-semibold text-foreground">
-                      Betayum
-                    </span>
+                    <span className="text-xs font-semibold text-foreground">Betayum</span>
                   </div>
                   <MessageContent className="pl-7">
                     <AssistantMessageParts
@@ -96,13 +92,7 @@ export function AssistantConversation({
   );
 }
 
-function AssistantErrorMessage({
-  error,
-  onRetry,
-}: {
-  error: Error;
-  onRetry: () => void;
-}) {
+function AssistantErrorMessage({ error, onRetry }: { error: Error; onRetry: () => void }) {
   return (
     <Message from="assistant">
       <div className="flex items-center gap-2">

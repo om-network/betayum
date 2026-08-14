@@ -1,8 +1,8 @@
 import 'server-only';
 
+import { env } from '@/env.mjs';
 import { openai } from '@ai-sdk/openai';
 import { embed } from 'ai';
-import { env } from '@/env.mjs';
 
 /**
  * Generates an embedding vector for the given text using OpenAI's embedding model
@@ -27,4 +27,3 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     );
   }
 }
-

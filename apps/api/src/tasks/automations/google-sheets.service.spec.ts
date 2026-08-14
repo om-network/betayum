@@ -35,13 +35,19 @@ describe('GoogleSheetsService', () => {
     }).compile();
 
     service = module.get(GoogleSheetsService);
-    connectionService = module.get(ConnectionService) as jest.Mocked<ConnectionService>;
-    oauthCredentialsService = module.get(OAuthCredentialsService) as jest.Mocked<OAuthCredentialsService>;
-    credentialVaultService = module.get(CredentialVaultService) as jest.Mocked<CredentialVaultService>;
+    connectionService = module.get(ConnectionService);
+    oauthCredentialsService = module.get(OAuthCredentialsService);
+    credentialVaultService = module.get(CredentialVaultService);
 
-    connectionService.getConnectionByProviderSlug = jest.fn().mockResolvedValue(ACTIVE_CONNECTION);
-    oauthCredentialsService.getCredentials = jest.fn().mockResolvedValue(OAUTH_CREDS);
-    credentialVaultService.getValidAccessToken = jest.fn().mockResolvedValue(TOKEN);
+    connectionService.getConnectionByProviderSlug = jest
+      .fn()
+      .mockResolvedValue(ACTIVE_CONNECTION);
+    oauthCredentialsService.getCredentials = jest
+      .fn()
+      .mockResolvedValue(OAUTH_CREDS);
+    credentialVaultService.getValidAccessToken = jest
+      .fn()
+      .mockResolvedValue(TOKEN);
 
     fetchSpy = jest.spyOn(global, 'fetch');
   });
@@ -56,11 +62,11 @@ describe('GoogleSheetsService', () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ spreadsheetId: 'sheet_abc' }),
-        } as Response)
+        })
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({}),
-        } as Response);
+        });
 
       const result = await service.createSpreadsheet({
         organizationId: ORG_ID,
@@ -76,14 +82,27 @@ describe('GoogleSheetsService', () => {
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
 
-      const [createUrl, createOpts] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      const [createUrl, createOpts] = fetchSpy.mock.calls[0] as [
+        string,
+        RequestInit,
+      ];
       expect(createUrl).toBe('https://sheets.googleapis.com/v4/spreadsheets');
-      expect(JSON.parse(createOpts.body as string)).toEqual({ properties: { title: 'Evidence Sheet' } });
+      expect(JSON.parse(createOpts.body as string)).toEqual({
+        properties: { title: 'Evidence Sheet' },
+      });
 
-      const [appendUrl, appendOpts] = fetchSpy.mock.calls[1] as [string, RequestInit];
+      const [appendUrl, appendOpts] = fetchSpy.mock.calls[1] as [
+        string,
+        RequestInit,
+      ];
       expect(appendUrl).toContain('/values/A1:append');
-      const appendBody = JSON.parse(appendOpts.body as string) as { values: unknown[][] };
-      expect(appendBody.values).toEqual([['Resource', 'Status'], ['projects/foo', 'ok']]);
+      const appendBody = JSON.parse(appendOpts.body as string) as {
+        values: unknown[][];
+      };
+      expect(appendBody.values).toEqual([
+        ['Resource', 'Status'],
+        ['projects/foo', 'ok'],
+      ]);
     });
 
     it('creates a spreadsheet without headers when not provided', async () => {
@@ -91,11 +110,11 @@ describe('GoogleSheetsService', () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ spreadsheetId: 'sheet_no_headers' }),
-        } as Response)
+        })
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({}),
-        } as Response);
+        });
 
       await service.createSpreadsheet({
         organizationId: ORG_ID,
@@ -104,7 +123,9 @@ describe('GoogleSheetsService', () => {
       });
 
       const [, appendOpts] = fetchSpy.mock.calls[1] as [string, RequestInit];
-      const appendBody = JSON.parse(appendOpts.body as string) as { values: unknown[][] };
+      const appendBody = JSON.parse(appendOpts.body as string) as {
+        values: unknown[][];
+      };
       expect(appendBody.values).toEqual([['data1', 'data2']]);
     });
   });
@@ -114,7 +135,7 @@ describe('GoogleSheetsService', () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
         json: async () => ({}),
-      } as Response);
+      });
 
       const result = await service.appendRows({
         organizationId: ORG_ID,
@@ -132,21 +153,33 @@ describe('GoogleSheetsService', () => {
 
   describe('no active connection', () => {
     it('throws NotFoundException when no GCP connection found', async () => {
-      connectionService.getConnectionByProviderSlug = jest.fn().mockResolvedValue(null);
+      connectionService.getConnectionByProviderSlug = jest
+        .fn()
+        .mockResolvedValue(null);
 
       await expect(
-        service.createSpreadsheet({ organizationId: ORG_ID, title: 'T', rows: [] }),
+        service.createSpreadsheet({
+          organizationId: ORG_ID,
+          title: 'T',
+          rows: [],
+        }),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when connection status is not active', async () => {
-      connectionService.getConnectionByProviderSlug = jest.fn().mockResolvedValue({
-        id: 'conn_1',
-        status: 'inactive',
-      });
+      connectionService.getConnectionByProviderSlug = jest
+        .fn()
+        .mockResolvedValue({
+          id: 'conn_1',
+          status: 'inactive',
+        });
 
       await expect(
-        service.createSpreadsheet({ organizationId: ORG_ID, title: 'T', rows: [] }),
+        service.createSpreadsheet({
+          organizationId: ORG_ID,
+          title: 'T',
+          rows: [],
+        }),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -157,10 +190,14 @@ describe('GoogleSheetsService', () => {
         ok: false,
         status: 403,
         json: async () => ({ error: { message: 'Sheets API not enabled' } }),
-      } as Response);
+      });
 
       await expect(
-        service.createSpreadsheet({ organizationId: ORG_ID, title: 'T', rows: [] }),
+        service.createSpreadsheet({
+          organizationId: ORG_ID,
+          title: 'T',
+          rows: [],
+        }),
       ).rejects.toThrow('Sheets API not enabled');
     });
   });
@@ -176,7 +213,7 @@ describe('GoogleSheetsService', () => {
             ['bob', 'viewer'],
           ],
         }),
-      } as Response);
+      });
 
       const result = await service.readValues({
         organizationId: ORG_ID,
@@ -185,7 +222,11 @@ describe('GoogleSheetsService', () => {
 
       expect(result).toEqual({
         spreadsheetId: 'sheet_read',
-        values: [['Name', 'Role'], ['alice', 'admin'], ['bob', 'viewer']],
+        values: [
+          ['Name', 'Role'],
+          ['alice', 'admin'],
+          ['bob', 'viewer'],
+        ],
       });
 
       const [url, opts] = fetchSpy.mock.calls[0] as [string, RequestInit];
@@ -198,7 +239,7 @@ describe('GoogleSheetsService', () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ values: [] }),
-      } as Response);
+      });
 
       await service.readValues({
         organizationId: ORG_ID,
@@ -214,7 +255,7 @@ describe('GoogleSheetsService', () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
         json: async () => ({}),
-      } as Response);
+      });
 
       const result = await service.readValues({
         organizationId: ORG_ID,
@@ -228,11 +269,16 @@ describe('GoogleSheetsService', () => {
       fetchSpy.mockResolvedValueOnce({
         ok: false,
         status: 403,
-        json: async () => ({ error: { message: 'Insufficient permission to read sheet' } }),
-      } as Response);
+        json: async () => ({
+          error: { message: 'Insufficient permission to read sheet' },
+        }),
+      });
 
       await expect(
-        service.readValues({ organizationId: ORG_ID, spreadsheetId: 'sheet_err' }),
+        service.readValues({
+          organizationId: ORG_ID,
+          spreadsheetId: 'sheet_err',
+        }),
       ).rejects.toThrow('Insufficient permission to read sheet');
     });
   });

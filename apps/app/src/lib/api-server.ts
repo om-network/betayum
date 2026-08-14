@@ -73,8 +73,7 @@ async function call<T = unknown>(
 }
 
 export const serverApi = {
-  get: <T = unknown>(endpoint: string) =>
-    call<T>(endpoint, { method: 'GET' }),
+  get: <T = unknown>(endpoint: string) => call<T>(endpoint, { method: 'GET' }),
 
   post: <T = unknown>(endpoint: string, body?: unknown) =>
     call<T>(endpoint, { method: 'POST', body }),

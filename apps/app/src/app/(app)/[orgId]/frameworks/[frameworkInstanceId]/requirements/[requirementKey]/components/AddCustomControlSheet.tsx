@@ -2,6 +2,7 @@
 
 import { useControls } from '@/app/(app)/[orgId]/controls/hooks/useControls';
 import { usePermissions } from '@/hooks/use-permissions';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
   Sheet,
@@ -11,17 +12,9 @@ import {
   SheetTitle,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@trycompai/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
 import { Textarea } from '@trycompai/ui/textarea';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -76,9 +69,7 @@ export function AddCustomControlSheet({
       form.reset();
       router.refresh();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to create control',
-      );
+      toast.error(error instanceof Error ? error.message : 'Failed to create control');
     } finally {
       setIsSubmitting(false);
     }
@@ -86,11 +77,7 @@ export function AddCustomControlSheet({
 
   return (
     <>
-      <Button
-        size="sm"
-        iconLeft={<Add size={16} />}
-        onClick={() => setIsOpen(true)}
-      >
+      <Button size="sm" iconLeft={<Add size={16} />} onClick={() => setIsOpen(true)}>
         Add Control
       </Button>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -100,10 +87,7 @@ export function AddCustomControlSheet({
           </SheetHeader>
           <SheetBody>
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(handleSubmit)}
-                className="space-y-4"
-              >
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="name"

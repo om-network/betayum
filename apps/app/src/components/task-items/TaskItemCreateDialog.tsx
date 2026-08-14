@@ -1,8 +1,12 @@
 'use client';
 
-import type { TaskItemEntityType, TaskItemFilters, TaskItemSortBy, TaskItemSortOrder } from '@/hooks/use-task-items';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useMediaQuery } from '@trycompai/ui/hooks';
+import type {
+  TaskItemEntityType,
+  TaskItemFilters,
+  TaskItemSortBy,
+  TaskItemSortOrder,
+} from '@/hooks/use-task-items';
 import {
   Drawer,
   DrawerContent,
@@ -14,6 +18,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@trycompai/design-system';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { TaskItemForm } from './TaskItemForm';
 
 interface TaskItemCreateDialogProps {

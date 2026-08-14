@@ -7,10 +7,15 @@ export interface CrossFrameworkRefs {
 }
 
 export interface BuildRefsInput {
-  otherInstances: Array<{ frameworkInstanceId: string; manifest: FrameworkManifest }>;
+  otherInstances: Array<{
+    frameworkInstanceId: string;
+    manifest: FrameworkManifest;
+  }>;
 }
 
-export function buildCrossFrameworkRefs({ otherInstances }: BuildRefsInput): CrossFrameworkRefs {
+export function buildCrossFrameworkRefs({
+  otherInstances,
+}: BuildRefsInput): CrossFrameworkRefs {
   const controlTemplateIds = new Set<string>();
   const policyTemplateIds = new Set<string>();
   const taskTemplateIds = new Set<string>();

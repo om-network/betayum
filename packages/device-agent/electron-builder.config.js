@@ -1,6 +1,5 @@
 // Use a space-free product name for Linux to avoid path issues
-const isLinuxBuild =
-  process.argv.includes('--linux') || process.env.BUILD_TARGET === 'linux';
+const isLinuxBuild = process.argv.includes('--linux') || process.env.BUILD_TARGET === 'linux';
 const { resolveBuildEnv } = require('./build-env.js');
 const buildEnv = resolveBuildEnv();
 

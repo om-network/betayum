@@ -3,22 +3,28 @@
 import { updateTaskSchema } from '@/actions/schema';
 import { SelectUser } from '@/components/select-user';
 import { StatusIndicator } from '@/components/status-indicator';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useTaskMutations } from '@/hooks/use-task-mutations';
+import { type Task, TaskStatus, type User } from '@db';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@trycompai/ui/button';
 import { Calendar } from '@trycompai/ui/calendar';
 import { cn } from '@trycompai/ui/cn';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
-import { type Task, TaskStatus, type User } from '@db';
-import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-import { usePermissions } from '@/hooks/use-permissions';
 
 export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
   const { updateTask } = useTaskMutations();
@@ -149,11 +155,7 @@ export function UpdateTaskForm({ task, users }: { task: Task; users: User[] }) {
         </div>
         <div className="mt-4 flex justify-end">
           <Button type="submit" variant="default" disabled={!canUpdate || isSubmitting}>
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
           </Button>
         </div>
       </form>

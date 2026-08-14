@@ -1,9 +1,5 @@
+import { runLinkage, type LinkagePhase, type RunLinkageInput } from '@/lib/embedding/run-linkage';
 import { logger, metadata, task } from '@trigger.dev/sdk';
-import {
-  runLinkage,
-  type LinkagePhase,
-  type RunLinkageInput,
-} from '@/lib/embedding/run-linkage';
 
 /**
  * Wraps `runLinkage` and mirrors progress phases into trigger.dev run metadata

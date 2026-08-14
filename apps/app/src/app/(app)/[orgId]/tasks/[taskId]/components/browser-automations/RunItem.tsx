@@ -1,14 +1,14 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Badge } from '@trycompai/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
 import {
   ChevronDown,
   Download,
-  Image as ImageIcon,
   Launch as ExternalLink,
+  Image as ImageIcon,
 } from '@trycompai/design-system/icons';
+import { Badge } from '@trycompai/ui/badge';
+import { formatDistanceToNow } from 'date-fns';
 import Image from 'next/image';
 import { useState } from 'react';
 import type { BrowserAutomationRun } from '../../hooks/types';
@@ -222,5 +222,3 @@ export function RunItem({ run, isLatest }: RunItemProps) {
     </div>
   );
 }
-
-

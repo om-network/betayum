@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const postMock = vi.fn();
@@ -15,13 +15,8 @@ vi.mock('sonner', () => ({
 vi.mock('@trycompai/ui/dialog', () => {
   const Pass = ({ children }: { children: React.ReactNode }) => <>{children}</>;
   return {
-    Dialog: ({
-      open,
-      children,
-    }: {
-      open: boolean;
-      children: React.ReactNode;
-    }) => (open ? <div>{children}</div> : null),
+    Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
+      open ? <div>{children}</div> : null,
     DialogContent: Pass,
     DialogDescription: Pass,
     DialogHeader: Pass,
@@ -62,21 +57,12 @@ describe('MarkExceptionModal', () => {
         resourceLabel="IAM Account: 123456789012"
       />,
     );
-    expect(
-      screen.getByText('IAM password policy < 14 characters'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('IAM password policy < 14 characters')).toBeInTheDocument();
     expect(screen.getByText('IAM Account: 123456789012')).toBeInTheDocument();
   });
 
   it('keeps the submit button disabled until reason reaches min length', () => {
-    render(
-      <MarkExceptionModal
-        open
-        onOpenChange={() => {}}
-        findingId="icx_1"
-        findingTitle="X"
-      />,
-    );
+    render(<MarkExceptionModal open onOpenChange={() => {}} findingId="icx_1" findingTitle="X" />);
     const submit = screen.getByRole('button', { name: /^Mark as exception$/ });
     expect(submit).toBeDisabled();
 
@@ -110,9 +96,7 @@ describe('MarkExceptionModal', () => {
         value: 'This is a long enough documented reason for the exception.',
       },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: /^Mark as exception$/ }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /^Mark as exception$/ }));
     await Promise.resolve();
     await Promise.resolve();
     expect(postMock).toHaveBeenCalledWith(
@@ -141,9 +125,7 @@ describe('MarkExceptionModal', () => {
         value: 'This is a long enough documented reason for the exception.',
       },
     });
-    fireEvent.click(
-      screen.getByRole('button', { name: /^Mark as exception$/ }),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /^Mark as exception$/ }));
     await Promise.resolve();
     await Promise.resolve();
     expect(onMarked).not.toHaveBeenCalled();

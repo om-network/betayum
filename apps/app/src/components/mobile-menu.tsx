@@ -5,9 +5,9 @@ import { Button } from '@trycompai/ui/button';
 import { Icons } from '@trycompai/ui/icons';
 import { Sheet, SheetContent } from '@trycompai/ui/sheet';
 import { useState } from 'react';
+import { BrandLogo } from './brand-logo';
 import { MainMenu } from './main-menu';
 import { OrganizationSwitcher } from './organization-switcher';
-import { BrandLogo } from './brand-logo';
 
 interface MobileMenuProps {
   organizations: OrganizationFromMe[];

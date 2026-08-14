@@ -58,9 +58,7 @@ export async function filterDigestMembersByCompliance<T extends DigestMember>(
     obligationMap = Object.fromEntries(
       dbRoles.map((r) => {
         const obligations =
-          typeof r.obligations === 'string'
-            ? JSON.parse(r.obligations)
-            : r.obligations || {};
+          typeof r.obligations === 'string' ? JSON.parse(r.obligations) : r.obligations || {};
         return [r.name, obligations as { compliance?: boolean }];
       }),
     );

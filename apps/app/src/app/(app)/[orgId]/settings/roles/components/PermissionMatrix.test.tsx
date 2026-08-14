@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
-  PermissionMatrix,
-  getAccessLevel,
   accessLevelToPermissions,
+  getAccessLevel,
+  PermissionMatrix,
   RESOURCES,
 } from './PermissionMatrix';
 
@@ -51,7 +51,7 @@ describe('PermissionMatrix', () => {
             risk: ['create', 'read', 'update', 'delete'], // edit level
           }}
           onChange={mockOnChange}
-        />
+        />,
       );
 
       const radioGroups = screen.getAllByRole('radiogroup');
@@ -98,12 +98,7 @@ describe('PermissionMatrix', () => {
 
     it('removes permissions when selecting No Access', () => {
       const mockOnChange = vi.fn();
-      render(
-        <PermissionMatrix
-          value={{ control: ['read'] }}
-          onChange={mockOnChange}
-        />
-      );
+      render(<PermissionMatrix value={{ control: ['read'] }} onChange={mockOnChange} />);
 
       // Find the Controls row and click on No Access radio
       const controlsText = screen.getByText('Controls');
@@ -126,7 +121,7 @@ describe('PermissionMatrix', () => {
             policy: ['read'],
           }}
           onChange={mockOnChange}
-        />
+        />,
       );
 
       // Find the Risk row and click on Read radio
@@ -210,7 +205,9 @@ describe('PermissionMatrix', () => {
 
       const result = mockOnChange.mock.calls[0][0];
       // All compliance resources should have full edit permissions
-      expect(result.control).toEqual(expect.arrayContaining(['create', 'read', 'update', 'delete']));
+      expect(result.control).toEqual(
+        expect.arrayContaining(['create', 'read', 'update', 'delete']),
+      );
       expect(result.policy).toEqual(expect.arrayContaining(['create', 'read', 'update', 'delete']));
       // Pentest should NOT be affected
       expect(result.pentest).toBeUndefined();
@@ -226,7 +223,7 @@ describe('PermissionMatrix', () => {
             pentest: ['read'],
           }}
           onChange={mockOnChange}
-        />
+        />,
       );
 
       const selectAllText = screen.getByText('Select All');
@@ -293,7 +290,10 @@ describe('Utility Functions', () => {
 
     it('returns correct edit permissions', () => {
       expect(accessLevelToPermissions('control', 'edit')).toEqual([
-        'create', 'read', 'update', 'delete',
+        'create',
+        'read',
+        'update',
+        'delete',
       ]);
     });
   });

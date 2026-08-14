@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -108,12 +108,7 @@ describe('PolicyHeaderActions', () => {
     });
 
     it('renders the dropdown trigger button', () => {
-      render(
-        <PolicyHeaderActions
-          policy={basePolicy}
-          organizationId="org-1"
-        />,
-      );
+      render(<PolicyHeaderActions policy={basePolicy} organizationId="org-1" />);
 
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
@@ -126,10 +121,7 @@ describe('PolicyHeaderActions', () => {
 
     it('returns null when user has neither policy:update nor policy:delete', () => {
       const { container } = render(
-        <PolicyHeaderActions
-          policy={basePolicy}
-          organizationId="org-1"
-        />,
+        <PolicyHeaderActions policy={basePolicy} organizationId="org-1" />,
       );
 
       expect(container.innerHTML).toBe('');
@@ -142,9 +134,7 @@ describe('PolicyHeaderActions', () => {
     });
 
     it('returns null when policy is null', () => {
-      const { container } = render(
-        <PolicyHeaderActions policy={null} organizationId="org-1" />,
-      );
+      const { container } = render(<PolicyHeaderActions policy={null} organizationId="org-1" />);
 
       expect(container.innerHTML).toBe('');
     });
@@ -158,12 +148,7 @@ describe('PolicyHeaderActions', () => {
     });
 
     it('renders the dropdown when user has policy:update only', () => {
-      render(
-        <PolicyHeaderActions
-          policy={basePolicy}
-          organizationId="org-1"
-        />,
-      );
+      render(<PolicyHeaderActions policy={basePolicy} organizationId="org-1" />);
 
       expect(screen.getByRole('button')).toBeInTheDocument();
     });
@@ -177,12 +162,7 @@ describe('PolicyHeaderActions', () => {
     });
 
     it('renders the dropdown when user has policy:delete only', () => {
-      render(
-        <PolicyHeaderActions
-          policy={basePolicy}
-          organizationId="org-1"
-        />,
-      );
+      render(<PolicyHeaderActions policy={basePolicy} organizationId="org-1" />);
 
       expect(screen.getByRole('button')).toBeInTheDocument();
     });

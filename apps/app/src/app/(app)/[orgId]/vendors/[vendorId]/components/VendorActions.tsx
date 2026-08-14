@@ -109,9 +109,7 @@ export function VendorActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRegenerating}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isRegenerating}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirm} disabled={isRegenerating}>
               {isRegenerating ? 'Working\u2026' : 'Confirm'}
             </AlertDialogAction>
@@ -128,13 +126,8 @@ export function VendorActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isAssessmentSubmitting}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleAssessmentConfirm}
-              disabled={isAssessmentSubmitting}
-            >
+            <AlertDialogCancel disabled={isAssessmentSubmitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAssessmentConfirm} disabled={isAssessmentSubmitting}>
               {isAssessmentSubmitting ? 'Working\u2026' : 'Confirm'}
             </AlertDialogAction>
           </AlertDialogFooter>

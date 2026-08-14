@@ -44,9 +44,9 @@ import { RemediationDialog } from './RemediationDialog';
 import { ScheduledScanPopover } from './ScheduledScanPopover';
 
 import type { Finding } from '../types';
+import { buildCheckGroups } from './check-groups';
 import { CheckDefinitionPanel } from './CheckDefinitionPanel';
 import { CheckGroupBlock } from './CheckGroupBlock';
-import { buildCheckGroups } from './check-groups';
 import { EvidenceJsonViewer } from './EvidenceJsonViewer';
 import { MarkExceptionModal } from './MarkExceptionModal';
 import { RemediationSection } from './RemediationSection';
@@ -341,19 +341,13 @@ export function CloudTestsSection({
             )
           : groupFindings;
 
-      const failed = matching.filter(
-        (f) => f.status === 'failed' || f.status === 'FAILED',
-      );
-      const passed = matching.filter(
-        (f) => f.status === 'passed' || f.status === 'success',
-      );
+      const failed = matching.filter((f) => f.status === 'failed' || f.status === 'FAILED');
+      const passed = matching.filter((f) => f.status === 'passed' || f.status === 'success');
 
       // With severity filter active, hide services that have no matching
       // failures. Without filters, keep services that have any findings.
       if (severityFilter) {
-        const hasMatching = failed.some(
-          (f) => f.severity?.toLowerCase() === severityFilter,
-        );
+        const hasMatching = failed.some((f) => f.severity?.toLowerCase() === severityFilter);
         if (!hasMatching) continue;
       } else if (q && failed.length === 0 && passed.length === 0) {
         continue;
@@ -368,9 +362,7 @@ export function CloudTestsSection({
       });
     }
 
-    return groups.sort(
-      (a, b) => b.failed - a.failed || a.name.localeCompare(b.name),
-    );
+    return groups.sort((a, b) => b.failed - a.failed || a.name.localeCompare(b.name));
   }, [findings, severityFilter, searchQuery]);
 
   // Split into baseline (security fundamentals) vs service-specific
@@ -537,7 +529,6 @@ export function CloudTestsSection({
           </Button>
         </div>
       </div>
-
 
       {/* Selected projects indicator (GCP) */}
       {providerSlug === 'gcp' &&
@@ -1380,11 +1371,7 @@ function EvidenceSection({ evidence }: { evidence: unknown }) {
         className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-medium hover:bg-muted/30"
         aria-expanded={open}
       >
-        {open ? (
-          <ChevronDown className="h-3 w-3" />
-        ) : (
-          <ChevronRight className="h-3 w-3" />
-        )}
+        {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         Evidence
         <span className="ml-auto text-[10px] font-normal text-muted-foreground">
           Sensitive values redacted

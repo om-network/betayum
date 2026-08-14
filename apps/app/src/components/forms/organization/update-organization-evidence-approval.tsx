@@ -3,9 +3,9 @@
 import { organizationEvidenceApprovalSchema } from '@/actions/schema';
 import { useOrganizationMutations } from '@/hooks/use-organization-mutations';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Switch } from '@trycompai/design-system';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -53,8 +53,9 @@ export function UpdateOrganizationEvidenceApproval({
                 <div className="space-y-1">
                   <div className="text-sm font-medium">Evidence Approval</div>
                   <div className="text-muted-foreground text-sm leading-relaxed">
-                    When enabled, evidence tasks can be submitted for review before being marked as done.
-                    An approver can be assigned to each task who must approve the evidence before completion.
+                    When enabled, evidence tasks can be submitted for review before being marked as
+                    done. An approver can be assigned to each task who must approve the evidence
+                    before completion.
                   </div>
                   {isSaving && (
                     <div className="flex items-center text-muted-foreground text-xs pt-1">

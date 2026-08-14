@@ -1,6 +1,10 @@
 {
   "name": "@trycompai/utils",
   "version": "1.0.0",
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -28,16 +32,11 @@
       "require": "./dist/format.js"
     }
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "devDependencies": {
-    "tsup": "^8.5.1",
-    "typescript": "^5.8.3"
-  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "private": true,
   "scripts": {
     "build": "tsup src/index.ts src/brand.ts src/devices.ts src/envs.ts src/format.ts --format cjs,esm --dts",
@@ -47,5 +46,6 @@
     "lint": "prettier --check .",
     "typecheck": "tsc --noEmit"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "types": "./dist/index.d.ts"
 }

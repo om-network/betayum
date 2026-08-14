@@ -6,6 +6,8 @@ import {
   useIntegrationMutations,
 } from '@/hooks/use-integration-platform';
 import { usePermissions } from '@/hooks/use-permissions';
+import { Button, Tabs, TabsList, TabsTrigger, cn } from '@trycompai/design-system';
+import { TrashCan } from '@trycompai/design-system/icons';
 import {
   Dialog,
   DialogContent,
@@ -13,18 +15,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@trycompai/ui/dialog';
-import {
-  Button,
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  cn,
-} from '@trycompai/design-system';
-import { TrashCan } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ScanModeSwitchDialog } from './ScanModeSwitchDialog';
 import type { AwsScanModeChoice } from '../../integrations/[slug]/components/AwsScanModeStep';
+import { ScanModeSwitchDialog } from './ScanModeSwitchDialog';
 
 interface CloudProvider {
   id: string;
@@ -69,11 +63,14 @@ export function CloudSettingsModal({
   // canDelete here would silently block valid update users from seeing
   // the "Switch" button even though the API would accept their request.
   const canUpdate = hasPermission('integration', 'update');
-  const [activeProvider, setActiveProvider] = useState<string>(connectedProviders[0]?.connectionId || '');
+  const [activeProvider, setActiveProvider] = useState<string>(
+    connectedProviders[0]?.connectionId || '',
+  );
   const [isDeleting, setIsDeleting] = useState(false);
   const { deleteConnection } = useIntegrationMutations();
 
-  const currentProvider = connectedProviders.find((p) => p.connectionId === activeProvider) ?? connectedProviders[0];
+  const currentProvider =
+    connectedProviders.find((p) => p.connectionId === activeProvider) ?? connectedProviders[0];
 
   const handleDisconnect = async (provider: CloudProvider) => {
     if (!confirm('Are you sure? All scan results will be deleted.')) return;
@@ -113,9 +110,7 @@ export function CloudSettingsModal({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Connection Settings</DialogTitle>
-          <DialogDescription>
-            Manage your cloud provider connections.
-          </DialogDescription>
+          <DialogDescription>Manage your cloud provider connections.</DialogDescription>
         </DialogHeader>
 
         {/* Provider selector (if multiple) */}
@@ -165,7 +160,9 @@ function ConnectionTab({
       <div className="rounded-lg border p-4 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Status</span>
-          <span className={cn('text-sm capitalize font-medium', getStatusColorClass(provider.status))}>
+          <span
+            className={cn('text-sm capitalize font-medium', getStatusColorClass(provider.status))}
+          >
             {provider.status}
           </span>
         </div>
@@ -178,7 +175,9 @@ function ConnectionTab({
         {provider.regions && provider.regions.length > 0 && (
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Regions</span>
-            <span className="text-sm">{provider.regions.length} region{provider.regions.length !== 1 ? 's' : ''}</span>
+            <span className="text-sm">
+              {provider.regions.length} region{provider.regions.length !== 1 ? 's' : ''}
+            </span>
           </div>
         )}
       </div>
@@ -232,13 +231,7 @@ const SCAN_MODE_LABEL: Record<AwsScanModeChoice, string> = {
  * `variables.awsScanMode` to determine the current mode, falling back
  * to 'comp_scanners' when the field is missing (pre-feature connections).
  */
-function AwsScanModeSection({
-  connectionId,
-  canEdit,
-}: {
-  connectionId: string;
-  canEdit: boolean;
-}) {
+function AwsScanModeSection({ connectionId, canEdit }: { connectionId: string; canEdit: boolean }) {
   const { connection, isLoading, refresh } = useIntegrationConnection(connectionId);
   const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
 
@@ -261,16 +254,10 @@ function AwsScanModeSection({
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium">Scan engine</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {SCAN_MODE_LABEL[currentMode]}
-            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{SCAN_MODE_LABEL[currentMode]}</p>
           </div>
           {canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSwitchDialogOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setSwitchDialogOpen(true)}>
               Switch to {SCAN_MODE_LABEL[targetMode]}
             </Button>
           )}

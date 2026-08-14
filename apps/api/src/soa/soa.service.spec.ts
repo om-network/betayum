@@ -192,9 +192,9 @@ describe('SOAService', () => {
         columns: [{ name: 'Control ID', type: 'string' }],
         questions,
       });
-      (
-        mockDb.sOAFrameworkConfiguration.create as jest.Mock
-      ).mockResolvedValue(config);
+      (mockDb.sOAFrameworkConfiguration.create as jest.Mock).mockResolvedValue(
+        config,
+      );
       (mockDb.sOADocument.findFirst as jest.Mock).mockResolvedValue(null);
       (
         mockDb.sOAFrameworkConfiguration.findUnique as jest.Mock

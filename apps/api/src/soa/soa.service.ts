@@ -541,7 +541,7 @@ export class SOAService {
     }));
 
     const exportMetadata: SOAExportMetadata = {
-      preparedBy: (document.preparedBy as string | null) ?? null,
+      preparedBy: document.preparedBy ?? null,
       answeredQuestions: document.answeredQuestions,
       totalQuestions: document.totalQuestions,
       approvedAt: document.approvedAt ?? null,

@@ -1,4 +1,9 @@
-import { BadGatewayException, BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CredentialVaultService } from '../../integration-platform/services/credential-vault.service';
 import { OAuthCredentialsService } from '../../integration-platform/services/oauth-credentials.service';
 import { ConnectionService } from '../../integration-platform/services/connection.service';
@@ -42,22 +47,31 @@ export class GoogleDocsService {
   ) {}
 
   private async resolveAccessToken(organizationId: string): Promise<string> {
-    const connection = await this.connectionService.getConnectionByProviderSlug('gcp', organizationId);
+    const connection = await this.connectionService.getConnectionByProviderSlug(
+      'gcp',
+      organizationId,
+    );
     if (!connection || connection.status !== 'active') {
       throw new NotFoundException('No active GCP integration connection found');
     }
 
-    const oauthCreds = await this.oauthCredentialsService.getCredentials('gcp', organizationId);
+    const oauthCreds = await this.oauthCredentialsService.getCredentials(
+      'gcp',
+      organizationId,
+    );
     if (!oauthCreds) {
       throw new NotFoundException('GCP OAuth credentials not found');
     }
 
-    const token = await this.credentialVaultService.getValidAccessToken(connection.id, {
-      tokenUrl: 'https://oauth2.googleapis.com/token',
-      clientId: oauthCreds.clientId,
-      clientSecret: oauthCreds.clientSecret,
-      clientAuthMethod: 'body',
-    });
+    const token = await this.credentialVaultService.getValidAccessToken(
+      connection.id,
+      {
+        tokenUrl: 'https://oauth2.googleapis.com/token',
+        clientId: oauthCreds.clientId,
+        clientSecret: oauthCreds.clientSecret,
+        clientAuthMethod: 'body',
+      },
+    );
 
     if (!token) {
       throw new NotFoundException('Could not obtain a valid GCP access token');
@@ -88,14 +102,20 @@ export class GoogleDocsService {
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({})) as DocsErrorResponse;
-      throw new BadGatewayException(err.error?.message ?? `Google Docs API error: ${res.status}`);
+      const err = (await res.json().catch(() => ({}))) as DocsErrorResponse;
+      throw new BadGatewayException(
+        err.error?.message ?? `Google Docs API error: ${res.status}`,
+      );
     }
 
     return res.json() as Promise<T>;
   }
 
-  async createDocument({ organizationId, title, content }: {
+  async createDocument({
+    organizationId,
+    title,
+    content,
+  }: {
     organizationId: string;
     title: string;
     content: string;
@@ -133,7 +153,10 @@ export class GoogleDocsService {
     };
   }
 
-  async readDocument({ organizationId, documentId }: {
+  async readDocument({
+    organizationId,
+    documentId,
+  }: {
     organizationId: string;
     documentId: string;
   }): Promise<{ documentId: string; title: string; content: string }> {
@@ -154,7 +177,11 @@ export class GoogleDocsService {
     return { documentId: doc.documentId, title: doc.title, content };
   }
 
-  async appendToDocument({ organizationId, documentId, content }: {
+  async appendToDocument({
+    organizationId,
+    documentId,
+    content,
+  }: {
     organizationId: string;
     documentId: string;
     content: string;

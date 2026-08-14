@@ -71,8 +71,16 @@ async function resolveSecrets(
 async function runPython(
   script: string,
   env: Record<string, string>,
-): Promise<{ success: boolean; output: unknown; error?: string; logs: string[] }> {
-  const scriptPath = join(tmpdir(), `aut_${Date.now()}_${Math.random().toString(36).slice(2)}.py`);
+): Promise<{
+  success: boolean;
+  output: unknown;
+  error?: string;
+  logs: string[];
+}> {
+  const scriptPath = join(
+    tmpdir(),
+    `aut_${Date.now()}_${Math.random().toString(36).slice(2)}.py`,
+  );
 
   try {
     await writeFile(scriptPath, script, 'utf8');
@@ -112,7 +120,8 @@ export const runEvidenceAutomation = task({
   maxDuration: 300,
   queue: { concurrencyLimit: 20 },
   run: async (payload: AutomationExecutionRequest) => {
-    const { organizationId, automationId, runId, version, secretRefs } = payload;
+    const { organizationId, automationId, runId, version, secretRefs } =
+      payload;
 
     await db.evidenceAutomationRun.update({
       where: { id: runId },
@@ -123,10 +132,14 @@ export const runEvidenceAutomation = task({
       const scriptContent = await fetchScriptContent({ automationId, version });
 
       if (!scriptContent) {
-        throw new Error('No script content found — publish or save a draft first');
+        throw new Error(
+          'No script content found — publish or save a draft first',
+        );
       }
 
-      logger.info(`Executing script for automation ${automationId} v${version}`);
+      logger.info(
+        `Executing script for automation ${automationId} v${version}`,
+      );
 
       const env = await resolveSecrets(organizationId, secretRefs);
       const result = await runPython(scriptContent, env);

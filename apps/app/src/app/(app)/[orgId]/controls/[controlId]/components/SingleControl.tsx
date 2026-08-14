@@ -9,13 +9,7 @@ import type {
   RequirementMap,
   Task,
 } from '@db';
-import {
-  Stack,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@trycompai/design-system';
+import { Stack, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/design-system';
 import { useParams } from 'next/navigation';
 import type { ControlProgressResponse } from '../data/getOrganizationControlProgress';
 import { PoliciesTable } from './PoliciesTable';
@@ -56,7 +50,9 @@ export function SingleControl({
         <TabsList variant="underline">
           <TabsTrigger value="policies">Policies ({relatedPolicies.length})</TabsTrigger>
           <TabsTrigger value="tasks">Tasks ({relatedTasks.length})</TabsTrigger>
-          <TabsTrigger value="requirements">Requirements ({control.requirementsMapped.length})</TabsTrigger>
+          <TabsTrigger value="requirements">
+            Requirements ({control.requirementsMapped.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="policies">

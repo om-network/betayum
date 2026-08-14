@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { MainMenu } from './main-menu';
 import { BrandLogo } from './brand-logo';
+import { MainMenu } from './main-menu';
 
 export async function Sidebar() {
   return (

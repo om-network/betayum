@@ -1,10 +1,10 @@
 'use client';
 
+import { MemoizedReactMarkdown } from '@/components/markdown';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@trycompai/ui/collapsible';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import remarkGfm from 'remark-gfm';
-import { MemoizedReactMarkdown } from '@/components/markdown';
 
 interface SecurityAssessmentContentProps {
   text: string;
@@ -21,9 +21,7 @@ export function SecurityAssessmentContent({
   if (!isLong) {
     return (
       <div className="text-sm text-foreground/90 leading-7">
-        <MemoizedReactMarkdown remarkPlugins={[remarkGfm]}>
-          {text}
-        </MemoizedReactMarkdown>
+        <MemoizedReactMarkdown remarkPlugins={[remarkGfm]}>{text}</MemoizedReactMarkdown>
       </div>
     );
   }
@@ -37,9 +35,7 @@ export function SecurityAssessmentContent({
           }
         >
           <div className="text-sm text-foreground/90 leading-7">
-            <MemoizedReactMarkdown remarkPlugins={[remarkGfm]}>
-              {text}
-            </MemoizedReactMarkdown>
+            <MemoizedReactMarkdown remarkPlugins={[remarkGfm]}>{text}</MemoizedReactMarkdown>
           </div>
         </div>
         <div
@@ -73,5 +69,3 @@ export function SecurityAssessmentContent({
     </Collapsible>
   );
 }
-
-

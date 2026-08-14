@@ -21,9 +21,7 @@ export const DOCUMENT_TYPE_LABELS: Record<EvidenceFormType, string> = {
   tabletop_exercise: 'Tabletop Exercise',
 };
 
-export const ALL_DOCUMENT_TYPES = Object.keys(
-  DOCUMENT_TYPE_LABELS,
-) as EvidenceFormType[];
+export const ALL_DOCUMENT_TYPES = Object.keys(DOCUMENT_TYPE_LABELS) as EvidenceFormType[];
 
 export function getDocumentTypeLabel(formType: EvidenceFormType | string): string {
   return DOCUMENT_TYPE_LABELS[formType as EvidenceFormType] ?? formType;

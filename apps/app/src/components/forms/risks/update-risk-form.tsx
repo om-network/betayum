@@ -2,10 +2,10 @@
 
 import { updateRiskSchema } from '@/actions/schema';
 import { useRiskActions } from '@/hooks/use-risks';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Departments, type Risk } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, Stack, Textarea } from '@trycompai/design-system';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -47,11 +47,9 @@ export function UpdateRiskForm({ risk, onSuccess }: UpdateRiskFormProps) {
         assigneeId: data.assigneeId,
       });
       toast.success('Risk updated successfully');
-      globalMutate(
-        (key) => Array.isArray(key) && key[0]?.includes('/v1/risks'),
-        undefined,
-        { revalidate: true },
-      );
+      globalMutate((key) => Array.isArray(key) && key[0]?.includes('/v1/risks'), undefined, {
+        revalidate: true,
+      });
       onSuccess?.();
     } catch {
       toast.error('Failed to update risk');

@@ -8,6 +8,7 @@ import {
   type ConnectionListItem,
   type IntegrationProvider,
 } from '@/hooks/use-integration-platform';
+import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api-client';
 import { CLOUD_RECONNECT_CUTOFF_LABEL, requiresCloudReconnect } from '@/lib/cloud-reconnect-policy';
 import { Breadcrumb, Button, Stack } from '@trycompai/design-system';
@@ -15,7 +16,6 @@ import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { usePermissions } from '@/hooks/use-permissions';
 import { AccountSettingsSheet } from './AccountSettingsSheet';
 import { getConnectionDisplayLabel } from './connection-display';
 import { EmptyStateOnboarding } from './EmptyStateOnboarding';
@@ -72,11 +72,8 @@ export function ProviderDetailView({
     return activeConnections[0] ?? null;
   }, [selectedConnectionId, activeConnections]);
   const browserLoginConnectionId =
-    selectedConnection?.status === 'active'
-      ? selectedConnection.id
-      : browserConnectionId;
-  const isGithubVmLoginOnly =
-    provider.id === 'github' && provider.oauthConfigured === false;
+    selectedConnection?.status === 'active' ? selectedConnection.id : browserConnectionId;
+  const isGithubVmLoginOnly = provider.id === 'github' && provider.oauthConfigured === false;
 
   const services = useMemo(
     () =>
@@ -291,13 +288,9 @@ export function ProviderDetailView({
           />
         )}
 
-        {(provider.id === 'gcp' || provider.id === 'github') &&
-          browserLoginConnectionId && (
-            <BrowserLogin
-              connectionId={browserLoginConnectionId}
-              providerName={provider.name}
-            />
-          )}
+        {(provider.id === 'gcp' || provider.id === 'github') && browserLoginConnectionId && (
+          <BrowserLogin connectionId={browserLoginConnectionId} providerName={provider.name} />
+        )}
 
         {selectedConnectionRequiresReconnect && (
           <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 flex items-center justify-between gap-3">
@@ -308,7 +301,12 @@ export function ProviderDetailView({
                 keep scans and remediation fully reliable.
               </p>
             </div>
-            <Button size="sm" variant="outline" disabled={!canUpdateIntegration} onClick={() => setReconnectDialogOpen(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!canUpdateIntegration}
+              onClick={() => setReconnectDialogOpen(true)}
+            >
               Reconnect
             </Button>
           </div>

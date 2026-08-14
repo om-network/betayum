@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
+import { apiClient } from '@/lib/api-client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,8 +44,6 @@ import {
   ViewOff,
 } from '@trycompai/design-system/icons';
 import { Copy } from 'lucide-react';
-import { apiClient } from '@/lib/api-client';
-import { usePermissions } from '@/hooks/use-permissions';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { Secret } from '../../hooks/useSecrets';
@@ -186,9 +186,7 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
       {isEmpty || isSearchEmpty ? (
         <Empty>
           <EmptyHeader>
-            <EmptyTitle>
-              {searchQuery ? 'No secrets found' : 'No secrets yet'}
-            </EmptyTitle>
+            <EmptyTitle>{searchQuery ? 'No secrets found' : 'No secrets yet'}</EmptyTitle>
             <EmptyDescription>
               {searchQuery
                 ? 'Try adjusting your search.'
@@ -242,15 +240,11 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
                         onClick={() => handleCopySecret(secret.id)}
                         className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 font-mono text-sm transition-colors hover:bg-muted/80"
                       >
-                        <span className="max-w-[200px] truncate">
-                          {revealedSecrets[secret.id]}
-                        </span>
+                        <span className="max-w-[200px] truncate">{revealedSecrets[secret.id]}</span>
                         <Copy className="h-3 w-3 shrink-0 text-muted-foreground" />
                       </button>
                     ) : (
-                      <span className="font-mono text-sm text-muted-foreground">
-                        ••••••••••••
-                      </span>
+                      <span className="font-mono text-sm text-muted-foreground">••••••••••••</span>
                     )}
                     <button
                       type="button"
@@ -258,11 +252,7 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
                       disabled={loadingSecrets[secret.id]}
                       className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
                     >
-                      {revealedSecrets[secret.id] ? (
-                        <ViewOff size={16} />
-                      ) : (
-                        <View size={16} />
-                      )}
+                      {revealedSecrets[secret.id] ? <ViewOff size={16} /> : <View size={16} />}
                     </button>
                   </HStack>
                 </TableCell>
@@ -339,8 +329,8 @@ export function SecretsTable({ initialSecrets }: SecretsTableProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Secret</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{secretToDelete?.name}&quot;? This action
-              cannot be undone.
+              Are you sure you want to delete &quot;{secretToDelete?.name}&quot;? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

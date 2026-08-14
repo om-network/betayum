@@ -43,10 +43,9 @@ export function useFrameworks(options?: UseFrameworksOptions) {
   const frameworks = Array.isArray(data) ? data : [];
 
   const addFrameworks = async (frameworkIds: string[]) => {
-    const response = await apiClient.post<AddFrameworksResponse>(
-      '/v1/frameworks',
-      { frameworkIds },
-    );
+    const response = await apiClient.post<AddFrameworksResponse>('/v1/frameworks', {
+      frameworkIds,
+    });
     if (response.error) throw new Error(response.error);
     await mutate();
     return response.data;

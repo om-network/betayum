@@ -14,7 +14,10 @@ import { CredentialVaultService } from '../../integration-platform/services/cred
 const execAsync = promisify(exec);
 const logger = new Logger('AutomationScriptExecutor');
 
-async function fetchScriptContent(automationId: string, version: number): Promise<string | null> {
+async function fetchScriptContent(
+  automationId: string,
+  version: number,
+): Promise<string | null> {
   if (version === 0) {
     const automation = await db.evidenceAutomation.findUnique({
       where: { id: automationId },
@@ -67,7 +70,10 @@ async function resolveSecrets(
 }
 
 async function runPython(script: string, env: Record<string, string>) {
-  const scriptPath = join(tmpdir(), `aut_${Date.now()}_${Math.random().toString(36).slice(2)}.py`);
+  const scriptPath = join(
+    tmpdir(),
+    `aut_${Date.now()}_${Math.random().toString(36).slice(2)}.py`,
+  );
 
   try {
     await writeFile(scriptPath, script, 'utf8');
@@ -106,24 +112,36 @@ export class AutomationScriptExecutorService {
     private readonly credentialVaultService: CredentialVaultService,
   ) {}
 
-  private async resolveIntegrationTokens(organizationId: string): Promise<Record<string, string>> {
+  private async resolveIntegrationTokens(
+    organizationId: string,
+  ): Promise<Record<string, string>> {
     const tokens: Record<string, string> = {};
 
     await Promise.all([
       (async () => {
         try {
-          const connection = await this.connectionService.getConnectionByProviderSlug('gcp', organizationId);
+          const connection =
+            await this.connectionService.getConnectionByProviderSlug(
+              'gcp',
+              organizationId,
+            );
           if (!connection || connection.status !== 'active') return;
 
-          const oauthCreds = await this.oauthCredentialsService.getCredentials('gcp', organizationId);
+          const oauthCreds = await this.oauthCredentialsService.getCredentials(
+            'gcp',
+            organizationId,
+          );
           if (!oauthCreds) return;
 
-          const token = await this.credentialVaultService.getValidAccessToken(connection.id, {
-            tokenUrl: 'https://oauth2.googleapis.com/token',
-            clientId: oauthCreds.clientId,
-            clientSecret: oauthCreds.clientSecret,
-            clientAuthMethod: 'body',
-          });
+          const token = await this.credentialVaultService.getValidAccessToken(
+            connection.id,
+            {
+              tokenUrl: 'https://oauth2.googleapis.com/token',
+              clientId: oauthCreds.clientId,
+              clientSecret: oauthCreds.clientSecret,
+              clientAuthMethod: 'body',
+            },
+          );
           if (token) tokens['GCP_ACCESS_TOKEN'] = token;
         } catch {
           // ignore
@@ -131,10 +149,16 @@ export class AutomationScriptExecutorService {
       })(),
       (async () => {
         try {
-          const connection = await this.connectionService.getConnectionByProviderSlug('github', organizationId);
+          const connection =
+            await this.connectionService.getConnectionByProviderSlug(
+              'github',
+              organizationId,
+            );
           if (!connection || connection.status !== 'active') return;
 
-          const token = await this.credentialVaultService.getValidAccessToken(connection.id);
+          const token = await this.credentialVaultService.getValidAccessToken(
+            connection.id,
+          );
           if (token) tokens['GITHUB_TOKEN'] = token;
         } catch {
           // ignore
@@ -145,12 +169,15 @@ export class AutomationScriptExecutorService {
     return tokens;
   }
 
-  async executeInBackground(request: AutomationExecutionRequest): Promise<void> {
+  async executeInBackground(
+    request: AutomationExecutionRequest,
+  ): Promise<void> {
     setImmediate(() => void this.execute(request));
   }
 
   private async execute(request: AutomationExecutionRequest): Promise<void> {
-    const { organizationId, automationId, runId, version, secretRefs } = request;
+    const { organizationId, automationId, runId, version, secretRefs } =
+      request;
 
     try {
       await db.evidenceAutomationRun.update({
@@ -161,7 +188,9 @@ export class AutomationScriptExecutorService {
       const scriptContent = await fetchScriptContent(automationId, version);
 
       if (!scriptContent) {
-        throw new Error('No script content found — save a draft or publish first');
+        throw new Error(
+          'No script content found — save a draft or publish first',
+        );
       }
 
       logger.log(`Executing script for automation ${automationId} v${version}`);
@@ -190,15 +219,17 @@ export class AutomationScriptExecutorService {
       const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error(`Run ${runId} failed: ${message}`);
 
-      await db.evidenceAutomationRun.update({
-        where: { id: runId },
-        data: {
-          status: 'failed',
-          success: false,
-          error: message,
-          completedAt: new Date(),
-        },
-      }).catch(() => {});
+      await db.evidenceAutomationRun
+        .update({
+          where: { id: runId },
+          data: {
+            status: 'failed',
+            success: false,
+            error: message,
+            completedAt: new Date(),
+          },
+        })
+        .catch(() => {});
     }
   }
 }

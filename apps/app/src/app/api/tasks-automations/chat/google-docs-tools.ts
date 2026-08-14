@@ -62,7 +62,12 @@ export function buildGoogleDocsTools({ taskId, automationId }: GoogleDocsToolsPa
         'Read a chunk of an existing Google Doc by character offset. Use to verify contents before appending or to review previously logged evidence. Call repeatedly with increasing offsets until hasMore is false.',
       inputSchema: z.object({
         documentId: z.string().describe('The ID of the Google Doc to read'),
-        offset: z.number().int().min(0).default(0).describe('Character offset to start reading from'),
+        offset: z
+          .number()
+          .int()
+          .min(0)
+          .default(0)
+          .describe('Character offset to start reading from'),
       }),
       execute: async ({ documentId, offset }) => {
         const result = await serverApi.get<DocReadResponse>(

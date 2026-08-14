@@ -201,7 +201,9 @@ export function createCheckContext(options: CheckContextOptions): {
       try {
         errorBody = await response.text();
       } catch {}
-      const err = new Error(`HTTP ${response.status}: ${response.statusText}${errorBody ? ` - ${errorBody.slice(0, 500)}` : ''}`);
+      const err = new Error(
+        `HTTP ${response.status}: ${response.statusText}${errorBody ? ` - ${errorBody.slice(0, 500)}` : ''}`,
+      );
       (err as Error & { status: number }).status = response.status;
       throw err;
     }

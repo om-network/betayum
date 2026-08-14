@@ -279,7 +279,7 @@ describe('PeopleService', () => {
       const result = await service.updateById(
         'mem_1',
         'org_123',
-        updateData as any,
+        updateData,
         'usr_caller',
       );
 
@@ -319,12 +319,7 @@ describe('PeopleService', () => {
       );
       setupCallerMember('usr_caller', 'org_123', 'admin');
 
-      await service.updateById(
-        'mem_1',
-        'org_123',
-        updateData as any,
-        'usr_caller',
-      );
+      await service.updateById('mem_1', 'org_123', updateData, 'usr_caller');
 
       expect(MemberValidator.validateUser).toHaveBeenCalledWith('usr_new');
       expect(MemberValidator.validateUserNotMember).toHaveBeenCalledWith(

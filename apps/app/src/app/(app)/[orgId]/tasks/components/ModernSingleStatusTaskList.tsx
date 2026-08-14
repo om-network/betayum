@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { usePermissions } from '@/hooks/use-permissions';
+import { Member, Task, User } from '@db';
 import { Button } from '@trycompai/ui/button';
 import { Checkbox } from '@trycompai/ui/checkbox';
-import { Member, Task, User } from '@db';
 import { RefreshCw, Trash2, User as UserIcon } from 'lucide-react';
-import { usePermissions } from '@/hooks/use-permissions';
 import { BulkTaskAssigneeChangeModal } from './BulkTaskAssigneeChangeModal';
 import { BulkTaskDeleteModal } from './BulkTaskDeleteModal';
 import { BulkTaskStatusChangeModal } from './BulkTaskStatusChangeModal';

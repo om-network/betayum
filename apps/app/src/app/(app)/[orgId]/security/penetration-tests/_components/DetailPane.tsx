@@ -1,11 +1,11 @@
 'use client';
 
-import { ErrorFilled, InProgress } from '@trycompai/design-system/icons';
 import type {
   PentestAgentEvent,
   PentestIssue,
   PentestRun,
 } from '@/lib/security/penetration-tests-client';
+import { ErrorFilled, InProgress } from '@trycompai/design-system/icons';
 import { CompletedDetail } from './CompletedDetail';
 import { FailedDetail } from './FailedDetail';
 import { FindingDetail } from './FindingDetail';
@@ -88,12 +88,7 @@ export function DetailPane({
 
   if (isRunInProgress(run.status)) {
     return (
-      <RunningDetail
-        run={run}
-        issues={issues}
-        events={events}
-        onOpenFinding={onOpenFinding}
-      />
+      <RunningDetail run={run} issues={issues} events={events} onOpenFinding={onOpenFinding} />
     );
   }
 

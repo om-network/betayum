@@ -1,7 +1,7 @@
 import { AppOnboarding } from '@/components/app-onboarding';
 import { serverApi } from '@/lib/api-server';
-import { SecondaryMenu } from '@trycompai/ui/secondary-menu';
 import type { Member, User } from '@db';
+import { SecondaryMenu } from '@trycompai/ui/secondary-menu';
 import { Suspense } from 'react';
 import { CreateVendorSheet } from '../components/create-vendor-sheet';
 
@@ -29,14 +29,9 @@ export default async function Layout({
   ]);
 
   const vendorCount = vendorsRes.data?.count ?? 0;
-  const allMembers = Array.isArray(membersRes.data?.data)
-    ? membersRes.data.data
-    : [];
+  const allMembers = Array.isArray(membersRes.data?.data) ? membersRes.data.data : [];
   const assignees = allMembers.filter(
-    (m) =>
-      !m.deactivated &&
-      !m.role.includes('employee') &&
-      !m.role.includes('contractor'),
+    (m) => !m.deactivated && !m.role.includes('employee') && !m.role.includes('contractor'),
   );
 
   if (vendorCount === 0) {

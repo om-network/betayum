@@ -49,7 +49,4 @@ export const deviceAgentRedisClient: Pick<
       url: process.env.UPSTASH_REDIS_REST_URL!,
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     })
-  : (new InMemoryRedis() as unknown as Pick<
-      Redis,
-      'get' | 'set' | 'getdel' | 'del'
-    >);
+  : new InMemoryRedis();

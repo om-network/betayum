@@ -116,9 +116,7 @@ export default async function StatementOfApplicabilityPage({
           people.find((p) => p.userId === session.user.id && !p.deactivated) ?? null;
 
         const currentMemberRoles = parseRolesString(currentMember?.role);
-        const canApprove = currentMemberRoles.some(
-          (role) => role === 'owner' || role === 'admin',
-        );
+        const canApprove = currentMemberRoles.some((role) => role === 'owner' || role === 'admin');
 
         const isPendingApproval = document.status === 'needs_review';
         const canCurrentUserApprove = isPendingApproval && approverId === currentMember?.id;
@@ -127,9 +125,7 @@ export default async function StatementOfApplicabilityPage({
           .filter(
             (p) =>
               !p.deactivated &&
-              parseRolesString(p.role).some(
-                (role) => role === 'owner' || role === 'admin',
-              ),
+              parseRolesString(p.role).some((role) => role === 'owner' || role === 'admin'),
           )
           .sort((a, b) => (a.user?.name ?? '').localeCompare(b.user?.name ?? ''));
 
@@ -156,8 +152,7 @@ export default async function StatementOfApplicabilityPage({
           ownerAdminMembers,
         } as SOAData;
       } else if (!soaError) {
-        soaError =
-          'SOA setup did not return required configuration data. Please try again later.';
+        soaError = 'SOA setup did not return required configuration data. Please try again later.';
       }
     } catch (error) {
       console.error('Failed to setup SOA:', error);

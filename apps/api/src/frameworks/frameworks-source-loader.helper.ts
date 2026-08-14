@@ -75,7 +75,10 @@ export async function loadFrameworkSources({
   for (const v of versions) {
     if (!latestVersionByFrameworkId.has(v.frameworkId)) {
       latestVersionByFrameworkId.set(v.frameworkId, v.id);
-      manifestByFrameworkId.set(v.frameworkId, v.manifest as unknown as FrameworkManifest);
+      manifestByFrameworkId.set(
+        v.frameworkId,
+        v.manifest as unknown as FrameworkManifest,
+      );
     }
   }
   const frameworksWithoutVersion = frameworkEditorIds.filter(
@@ -85,9 +88,18 @@ export async function loadFrameworkSources({
   const requirementToFrameworkId = new Map<string, string>();
 
   // Collect controls/policies/tasks across all frameworks, deduped by id.
-  const controlsMap = new Map<string, LoadedFrameworkSources['controlTemplates'][number]>();
-  const policiesMap = new Map<string, LoadedFrameworkSources['policyTemplates'][number]>();
-  const tasksMap = new Map<string, LoadedFrameworkSources['taskTemplates'][number]>();
+  const controlsMap = new Map<
+    string,
+    LoadedFrameworkSources['controlTemplates'][number]
+  >();
+  const policiesMap = new Map<
+    string,
+    LoadedFrameworkSources['policyTemplates'][number]
+  >();
+  const tasksMap = new Map<
+    string,
+    LoadedFrameworkSources['taskTemplates'][number]
+  >();
 
   // groupedRelations accumulates per-framework control edges. A reusable
   // control can carry different policy/task/document links in each framework.
@@ -103,7 +115,10 @@ export async function loadFrameworkSources({
     }
   >();
 
-  const getOrCreateRelation = (frameworkId: string, controlTemplateId: string) => {
+  const getOrCreateRelation = (
+    frameworkId: string,
+    controlTemplateId: string,
+  ) => {
     const key = `${frameworkId}::${controlTemplateId}`;
     let rel = relationsByControl.get(key);
     if (!rel) {
@@ -173,7 +188,7 @@ export async function loadFrameworkSources({
           department: (t.department as unknown as Departments | null) ?? null,
           // Resolved from live template below; AUTOMATED is the schema default
           // and a safe fallback if the live template has been deleted.
-          automationStatus: 'AUTOMATED' as TaskAutomationStatus,
+          automationStatus: 'AUTOMATED',
         });
       }
     }
@@ -225,28 +240,29 @@ export async function loadFrameworkSources({
     }
 
     const fallbackControlIds = liveControls.map((c) => c.id);
-    const controlRelationsLive = await tx.frameworkEditorControlTemplate.findMany({
-      where: { id: { in: fallbackControlIds } },
-      select: {
-        id: true,
-        requirements: {
-          where: { id: { in: fallbackRequirementIds } },
-          select: { id: true },
+    const controlRelationsLive =
+      await tx.frameworkEditorControlTemplate.findMany({
+        where: { id: { in: fallbackControlIds } },
+        select: {
+          id: true,
+          requirements: {
+            where: { id: { in: fallbackRequirementIds } },
+            select: { id: true },
+          },
+          frameworkPolicyLinks: {
+            where: { frameworkId: { in: frameworksWithoutVersion } },
+            select: { frameworkId: true, policyTemplateId: true },
+          },
+          frameworkTaskLinks: {
+            where: { frameworkId: { in: frameworksWithoutVersion } },
+            select: { frameworkId: true, taskTemplateId: true },
+          },
+          frameworkDocumentLinks: {
+            where: { frameworkId: { in: frameworksWithoutVersion } },
+            select: { frameworkId: true, formType: true },
+          },
         },
-        frameworkPolicyLinks: {
-          where: { frameworkId: { in: frameworksWithoutVersion } },
-          select: { frameworkId: true, policyTemplateId: true },
-        },
-        frameworkTaskLinks: {
-          where: { frameworkId: { in: frameworksWithoutVersion } },
-          select: { frameworkId: true, taskTemplateId: true },
-        },
-        frameworkDocumentLinks: {
-          where: { frameworkId: { in: frameworksWithoutVersion } },
-          select: { frameworkId: true, formType: true },
-        },
-      },
-    });
+      });
     for (const cr of controlRelationsLive) {
       const frameworkIds = new Set(
         cr.requirements
@@ -321,14 +337,16 @@ export async function loadFrameworkSources({
     }
   }
 
-  const groupedRelations = Array.from(relationsByControl.values()).map((rel) => ({
-    frameworkId: rel.frameworkId,
-    controlTemplateId: rel.controlTemplateId,
-    requirementTemplateIds: Array.from(rel.requirementTemplateIds),
-    policyTemplateIds: Array.from(rel.policyTemplateIds),
-    taskTemplateIds: Array.from(rel.taskTemplateIds),
-    documentTypes: Array.from(rel.documentTypes),
-  }));
+  const groupedRelations = Array.from(relationsByControl.values()).map(
+    (rel) => ({
+      frameworkId: rel.frameworkId,
+      controlTemplateId: rel.controlTemplateId,
+      requirementTemplateIds: Array.from(rel.requirementTemplateIds),
+      policyTemplateIds: Array.from(rel.policyTemplateIds),
+      taskTemplateIds: Array.from(rel.taskTemplateIds),
+      documentTypes: Array.from(rel.documentTypes),
+    }),
+  );
 
   return {
     controlTemplates: Array.from(controlsMap.values()),

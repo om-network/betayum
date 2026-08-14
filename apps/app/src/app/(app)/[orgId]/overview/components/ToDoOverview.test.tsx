@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   NO_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({
@@ -131,9 +131,7 @@ describe('ToDoOverview', () => {
 
       render(<ToDoOverview {...defaultProps} />);
 
-      expect(
-        screen.getByRole('button', { name: /publish all policies/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /publish all policies/i })).toBeInTheDocument();
     });
 
     it('hides "Publish All Policies" button when user lacks policy:update permission (auditor)', () => {
@@ -188,37 +186,21 @@ describe('ToDoOverview', () => {
 
       render(<ToDoOverview {...defaultProps} />);
 
-      expect(
-        screen.getByText('Complete SOC 2 audit'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Complete SOC 2 audit')).toBeInTheDocument();
     });
 
     it('shows "All policies are published!" when no unpublished policies exist', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
 
-      render(
-        <ToDoOverview
-          {...defaultProps}
-          unpublishedPolicies={[]}
-          remainingPolicies={0}
-        />,
-      );
+      render(<ToDoOverview {...defaultProps} unpublishedPolicies={[]} remainingPolicies={0} />);
 
-      expect(
-        screen.getByText('All policies are published!'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('All policies are published!')).toBeInTheDocument();
     });
 
     it('does not show publish button even with permissions when no unpublished policies', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
 
-      render(
-        <ToDoOverview
-          {...defaultProps}
-          unpublishedPolicies={[]}
-          remainingPolicies={0}
-        />,
-      );
+      render(<ToDoOverview {...defaultProps} unpublishedPolicies={[]} remainingPolicies={0} />);
 
       expect(
         screen.queryByRole('button', { name: /publish all policies/i }),
@@ -232,9 +214,7 @@ describe('ToDoOverview', () => {
 
       expect(screen.getByTestId('tab-trigger-policies')).toBeInTheDocument();
       expect(screen.getByTestId('tab-trigger-tasks')).toBeInTheDocument();
-      expect(
-        screen.getByTestId('tab-trigger-offboarding'),
-      ).toBeInTheDocument();
+      expect(screen.getByTestId('tab-trigger-offboarding')).toBeInTheDocument();
     });
   });
 });

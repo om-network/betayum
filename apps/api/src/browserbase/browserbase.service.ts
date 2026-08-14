@@ -5,10 +5,7 @@ import Browserbase from '@browserbasehq/sdk';
 type Stagehand = import('@browserbasehq/stagehand').Stagehand;
 import { db, TaskFrequency } from '@db';
 import { z } from 'zod';
-import {
-  objectStorage,
-  type ObjectStorage,
-} from '@/app/object-storage';
+import { objectStorage, type ObjectStorage } from '@/app/object-storage';
 import { renderOverlay } from './screenshot-overlay';
 import { isNoPageError, toRunErrorMessage } from './run-error-formatter';
 

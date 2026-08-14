@@ -318,7 +318,7 @@ export class TaskManagementService {
         void this.notifier.notifyAssignee({
           organizationId,
           taskItemId: taskItem.id,
-          entityType: taskItem.entityType as any,
+          entityType: taskItem.entityType,
           entityId: taskItem.entityId,
           taskTitle: taskItem.title,
           assigneeMemberId: createTaskItemDto.assigneeId,
@@ -534,7 +534,7 @@ export class TaskManagementService {
           void this.notifier.notifyAssignee({
             organizationId,
             taskItemId: taskItem.id,
-            entityType: taskItem.entityType as any,
+            entityType: taskItem.entityType,
             entityId: taskItem.entityId,
             taskTitle: taskItem.title,
             assigneeMemberId: taskItem.assigneeId,

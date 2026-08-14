@@ -101,10 +101,7 @@ function resolveBuildEnv() {
     `${portalUrl}/api/device-agent/updates`,
   );
 
-  const agentVersion = firstDefined(
-    process.env.AGENT_VERSION,
-    fileEnv.AGENT_VERSION,
-  );
+  const agentVersion = firstDefined(process.env.AGENT_VERSION, fileEnv.AGENT_VERSION);
 
   return {
     portalUrl,
@@ -117,4 +114,3 @@ function resolveBuildEnv() {
 module.exports = {
   resolveBuildEnv,
 };
-

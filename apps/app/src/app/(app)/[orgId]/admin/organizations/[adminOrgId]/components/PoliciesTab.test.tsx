@@ -54,9 +54,7 @@ describe('PoliciesTab', () => {
     render(<PoliciesTab orgId="org_1" />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Information Security Policy'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Information Security Policy')).toBeInTheDocument();
     });
     expect(screen.getByText('Acceptable Use Policy')).toBeInTheDocument();
     expect(screen.getByText('Alice')).toBeInTheDocument();
@@ -76,9 +74,7 @@ describe('PoliciesTab', () => {
     render(<PoliciesTab orgId="org_test" />);
 
     await waitFor(() => {
-      expect(mockGet).toHaveBeenCalledWith(
-        '/v1/admin/organizations/org_test/policies',
-      );
+      expect(mockGet).toHaveBeenCalledWith('/v1/admin/organizations/org_test/policies');
     });
   });
 
@@ -99,9 +95,7 @@ describe('PoliciesTab', () => {
     render(<PoliciesTab orgId="org_1" />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Information Security Policy'),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Information Security Policy')).toBeInTheDocument();
     });
 
     const buttons = screen.getAllByRole('button', { name: /regenerate/i });

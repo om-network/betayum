@@ -1,6 +1,7 @@
 'use client';
 
 import { LazyAssistantChat } from '@/components/ai/lazy-assistant-chat';
+import { BrandLogo } from '@/components/brand-logo';
 import { CheckoutCompleteDialog } from '@/components/dialogs/checkout-complete-dialog';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { OrganizationSwitcher } from '@/components/organization-switcher';
@@ -50,7 +51,6 @@ import {
   Settings,
 } from '@trycompai/design-system/icons';
 import { useTheme } from 'next-themes';
-import { BrandLogo } from '@/components/brand-logo';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';

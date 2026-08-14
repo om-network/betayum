@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
 import { getFeatureFlags } from '@/app/posthog';
 import { requireRoutePermission } from '@/lib/permissions.server';
 import { auth } from '@/utils/auth';
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { BrowserConnectionClient } from './components/BrowserConnectionClient';

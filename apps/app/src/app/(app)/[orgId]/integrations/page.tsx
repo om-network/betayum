@@ -1,10 +1,5 @@
 import { serverApi } from '@/lib/api-server';
-import {
-  PageHeader,
-  PageLayout,
-  Section,
-  Stack,
-} from '@trycompai/design-system';
+import { PageHeader, PageLayout, Section, Stack } from '@trycompai/design-system';
 import type { ConnectionListItemResponse } from '@trycompai/integration-platform';
 import { CodexTerminal } from './[slug]/components/CodexTerminal';
 import { PlatformIntegrations } from './components/PlatformIntegrations';
@@ -44,8 +39,7 @@ export default async function IntegrationsPage({ params }: PageProps) {
     .sort((a, b) => a.name.localeCompare(b.name));
   const codexConnection = connectionsResult.data?.find(
     (connection) =>
-      (connection.providerSlug === 'gcp' ||
-        connection.providerSlug === 'github') &&
+      (connection.providerSlug === 'gcp' || connection.providerSlug === 'github') &&
       connection.status === 'active',
   );
 
@@ -53,21 +47,12 @@ export default async function IntegrationsPage({ params }: PageProps) {
     <PageLayout>
       <Stack gap="md">
         <PageHeader title="Integrations" />
-        {codexConnection && (
-          <CodexTerminal
-            connectionId={codexConnection.id}
-            title="Codex login"
-          />
-        )}
+        {codexConnection && <CodexTerminal connectionId={codexConnection.id} title="Codex login" />}
         {!codexConnection && (
-          <Section
-            title="Codex login"
-            description="Codex CLI session for this organization's VM"
-          >
+          <Section title="Codex login" description="Codex CLI session for this organization's VM">
             <div className="border-t py-4">
               <p className="text-sm text-muted-foreground">
-                Connect GCP or GitHub to make the organization VM login
-                available.
+                Connect GCP or GitHub to make the organization VM login available.
               </p>
             </div>
           </Section>

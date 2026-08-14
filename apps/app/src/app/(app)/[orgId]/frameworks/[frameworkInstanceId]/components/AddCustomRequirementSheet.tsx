@@ -1,7 +1,8 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
+import { apiClient } from '@/lib/api-client';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
   Sheet,
@@ -11,17 +12,9 @@ import {
   SheetTitle,
 } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@trycompai/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
 import { Textarea } from '@trycompai/ui/textarea';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -74,9 +67,7 @@ export function AddCustomRequirementSheet({
       form.reset();
       router.refresh();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to add requirement',
-      );
+      toast.error(error instanceof Error ? error.message : 'Failed to add requirement');
     } finally {
       setIsSubmitting(false);
     }
@@ -84,11 +75,7 @@ export function AddCustomRequirementSheet({
 
   return (
     <>
-      <Button
-        size="sm"
-        iconLeft={<Add size={16} />}
-        onClick={() => setIsOpen(true)}
-      >
+      <Button size="sm" iconLeft={<Add size={16} />} onClick={() => setIsOpen(true)}>
         Add Requirement
       </Button>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -98,10 +85,7 @@ export function AddCustomRequirementSheet({
           </SheetHeader>
           <SheetBody>
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(handleSubmit)}
-                className="space-y-4"
-              >
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="identifier"

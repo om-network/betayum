@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   type Attachment,
   useTaskAttachmentActions,
@@ -25,7 +26,6 @@ import {
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { usePermissions } from '@/hooks/use-permissions';
 import { AttachmentPreviewDialog } from './AttachmentPreviewDialog';
 
 interface TaskBodyProps {

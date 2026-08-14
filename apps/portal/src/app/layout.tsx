@@ -1,10 +1,9 @@
 import { auth } from '@/app/lib/auth';
 import { env } from '@/env.mjs';
 import { initializeServer } from '@trycompai/analytics/server';
+import '@trycompai/design-system/globals.css';
 import { cn } from '@trycompai/ui/cn';
 import { brandConfig } from '@trycompai/utils/brand';
-import './globals.css';
-import '@trycompai/design-system/globals.css';
 import { GeistMono } from 'geist/font/mono';
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
@@ -12,6 +11,7 @@ import { headers } from 'next/headers';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { Suspense } from 'react';
 import { Toaster } from 'sonner';
+import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {

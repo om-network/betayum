@@ -10,10 +10,7 @@ import { resolvePath } from './expression-evaluator';
  *
  * Unresolved variables are left as empty strings.
  */
-export function interpolate(
-  template: string,
-  scope: Record<string, unknown>,
-): string {
+export function interpolate(template: string, scope: Record<string, unknown>): string {
   let result = '';
   let cursor = 0;
 
@@ -49,10 +46,7 @@ export function interpolate(
   return result;
 }
 
-function resolveTemplateValue(
-  path: string,
-  scope: Record<string, unknown>,
-): string {
+function resolveTemplateValue(path: string, scope: Record<string, unknown>): string {
   const trimmedPath = path.trim();
 
   // Special built-in variables

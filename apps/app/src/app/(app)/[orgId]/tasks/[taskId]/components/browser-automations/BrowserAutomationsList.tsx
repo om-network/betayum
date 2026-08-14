@@ -1,12 +1,12 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { Badge } from '@trycompai/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { Globe, Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { BrowserAutomation } from '../../hooks/types';
 import { AutomationItem } from './AutomationItem';
-import { usePermissions } from '@/hooks/use-permissions';
 
 // Calculate next scheduled run (daily at 5:00 AM UTC)
 const getNextScheduledRun = (): Date => {

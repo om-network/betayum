@@ -91,7 +91,7 @@ export const integrationChecksSchedule = schedules.task({
       const candidateTasks = await db.task.findMany({
         where: {
           organizationId: connection.organizationId,
-          taskTemplateId: { in: taskTemplateIds as string[] },
+          taskTemplateId: { in: taskTemplateIds },
         },
         select: {
           id: true,

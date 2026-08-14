@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -63,17 +63,13 @@ vi.mock('@/components/onboarding-loading-animation', () => ({
 
 // Mock VendorStatus
 vi.mock('@/components/vendor-status', () => ({
-  VendorStatus: ({ status }: any) => (
-    <span data-testid="vendor-status">{status}</span>
-  ),
+  VendorStatus: ({ status }: any) => <span data-testid="vendor-status">{status}</span>,
 }));
 
 // Mock design system
 vi.mock('@trycompai/design-system', () => ({
   AlertDialog: ({ children }: any) => <div>{children}</div>,
-  AlertDialogAction: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
-  ),
+  AlertDialogAction: ({ children, ...props }: any) => <button {...props}>{children}</button>,
   AlertDialogCancel: ({ children }: any) => <button>{children}</button>,
   AlertDialogContent: ({ children }: any) => <div>{children}</div>,
   AlertDialogDescription: ({ children }: any) => <p>{children}</p>,
@@ -86,9 +82,7 @@ vi.mock('@trycompai/design-system', () => ({
   Badge: ({ children }: any) => <span>{children}</span>,
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
-  DropdownMenuItem: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
-  ),
+  DropdownMenuItem: ({ children, ...props }: any) => <button {...props}>{children}</button>,
   DropdownMenuTrigger: ({ children, ...props }: any) => (
     <button data-testid="actions-trigger" {...props}>
       {children}
@@ -158,13 +152,7 @@ describe('VendorsTable', () => {
   it('does not render ACTIONS column when user lacks vendor:delete permission', () => {
     setMockPermissions({});
 
-    render(
-      <VendorsTable
-        vendors={mockVendors}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={mockVendors} assignees={mockAssignees} orgId="org-1" />);
 
     expect(screen.queryByText('ACTIONS')).not.toBeInTheDocument();
   });
@@ -172,13 +160,7 @@ describe('VendorsTable', () => {
   it('does not render ACTIONS column for auditor role', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
 
-    render(
-      <VendorsTable
-        vendors={mockVendors}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={mockVendors} assignees={mockAssignees} orgId="org-1" />);
 
     expect(screen.queryByText('ACTIONS')).not.toBeInTheDocument();
   });
@@ -186,13 +168,7 @@ describe('VendorsTable', () => {
   it('renders ACTIONS column when user has vendor:delete permission', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
 
-    render(
-      <VendorsTable
-        vendors={mockVendors}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={mockVendors} assignees={mockAssignees} orgId="org-1" />);
 
     expect(screen.getByText('ACTIONS')).toBeInTheDocument();
   });
@@ -200,13 +176,7 @@ describe('VendorsTable', () => {
   it('renders delete action trigger per row when user has vendor:delete permission', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
 
-    render(
-      <VendorsTable
-        vendors={mockVendors}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={mockVendors} assignees={mockAssignees} orgId="org-1" />);
 
     expect(screen.getAllByTestId('actions-trigger').length).toBeGreaterThanOrEqual(1);
   });
@@ -214,13 +184,7 @@ describe('VendorsTable', () => {
   it('does not render delete action trigger when user lacks vendor:delete permission', () => {
     setMockPermissions({ vendor: ['read'] });
 
-    render(
-      <VendorsTable
-        vendors={mockVendors}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={mockVendors} assignees={mockAssignees} orgId="org-1" />);
 
     expect(screen.queryByTestId('actions-trigger')).not.toBeInTheDocument();
   });
@@ -228,13 +192,7 @@ describe('VendorsTable', () => {
   it('renders vendor name and category regardless of permissions', () => {
     setMockPermissions({});
 
-    render(
-      <VendorsTable
-        vendors={mockVendors}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={mockVendors} assignees={mockAssignees} orgId="org-1" />);
 
     expect(screen.getByText('Acme Corp')).toBeInTheDocument();
     expect(screen.getByText('Cloud')).toBeInTheDocument();
@@ -243,13 +201,7 @@ describe('VendorsTable', () => {
   it('renders the INHERENT RISK column with a numeric score for assessed vendors', () => {
     setMockPermissions({});
 
-    render(
-      <VendorsTable
-        vendors={mockVendors}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={mockVendors} assignees={mockAssignees} orgId="org-1" />);
 
     // Column header
     expect(screen.getByText('INHERENT RISK')).toBeInTheDocument();
@@ -260,13 +212,7 @@ describe('VendorsTable', () => {
   it('renders the RESIDUAL RISK column immediately after INHERENT RISK', () => {
     setMockPermissions({});
 
-    render(
-      <VendorsTable
-        vendors={mockVendors}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={mockVendors} assignees={mockAssignees} orgId="org-1" />);
 
     expect(screen.getByText('RESIDUAL RISK')).toBeInTheDocument();
 
@@ -282,13 +228,7 @@ describe('VendorsTable', () => {
   it('renders a residual score badge for assessed vendors', () => {
     setMockPermissions({});
 
-    render(
-      <VendorsTable
-        vendors={mockVendors}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={mockVendors} assignees={mockAssignees} orgId="org-1" />);
 
     // Acme Corp residual (unlikely × minor) → raw 4 → score 2/10
     expect(screen.getByText('2/10')).toBeInTheDocument();
@@ -304,13 +244,7 @@ describe('VendorsTable', () => {
       status: 'not_assessed',
     };
 
-    render(
-      <VendorsTable
-        vendors={[notAssessedVendor]}
-        assignees={mockAssignees}
-        orgId="org-1"
-      />,
-    );
+    render(<VendorsTable vendors={[notAssessedVendor]} assignees={mockAssignees} orgId="org-1" />);
 
     // One em-dash per risk column (inherent + residual) for not_assessed vendors.
     expect(screen.getAllByText('—').length).toBe(2);

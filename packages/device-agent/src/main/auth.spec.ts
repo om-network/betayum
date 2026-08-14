@@ -23,7 +23,7 @@ describe('device-agent auth polling transport', () => {
   });
 
   it('returns the code when a later poll succeeds', async () => {
-    ((globalThis.fetch as unknown) as Mock)
+    (globalThis.fetch as unknown as Mock)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ code: null }),

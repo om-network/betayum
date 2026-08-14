@@ -487,7 +487,7 @@ export const vendorRiskAssessmentTask: Task<
       const existingVerifyTask = await db.taskItem.findFirst({
         where: {
           organizationId: payload.organizationId,
-          entityType: 'vendor' as TaskItemEntityType,
+          entityType: 'vendor',
           entityId: payload.vendorId,
           title: VERIFY_RISK_ASSESSMENT_TASK_TITLE,
         },
@@ -558,9 +558,7 @@ export const vendorRiskAssessmentTask: Task<
 
       // Extract compliance badges and logo from cached GlobalVendors data
       const cachedBadges = globalVendor?.riskAssessmentData
-        ? extractComplianceBadges(
-            globalVendor.riskAssessmentData as Prisma.InputJsonValue,
-          )
+        ? extractComplianceBadges(globalVendor.riskAssessmentData)
         : null;
       const cachedLogoUrl = generateLogoUrl(vendor.website);
 
@@ -613,7 +611,7 @@ export const vendorRiskAssessmentTask: Task<
     const existingVerifyTask = await db.taskItem.findFirst({
       where: {
         organizationId: payload.organizationId,
-        entityType: 'vendor' as TaskItemEntityType,
+        entityType: 'vendor',
         entityId: payload.vendorId,
         title: VERIFY_RISK_ASSESSMENT_TASK_TITLE,
       },

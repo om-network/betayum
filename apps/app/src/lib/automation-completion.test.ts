@@ -30,9 +30,7 @@ describe(hasAttachedAutomationEvidence.name, () => {
       ]),
     ).toBe(true);
     expect(
-      hasAttachedAutomationEvidence([
-        message([{ type: 'text', text: 'Attachment IDs: none' }]),
-      ]),
+      hasAttachedAutomationEvidence([message([{ type: 'text', text: 'Attachment IDs: none' }])]),
     ).toBe(false);
   });
 });

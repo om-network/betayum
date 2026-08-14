@@ -63,10 +63,7 @@ export function PolicyForm({ orgId, onCreated }: PolicyFormProps) {
     if (department && department !== 'none') body.department = department;
     if (frequency) body.frequency = frequency;
 
-    const res = await api.post(
-      `/v1/admin/organizations/${orgId}/policies`,
-      body,
-    );
+    const res = await api.post(`/v1/admin/organizations/${orgId}/policies`, body);
 
     if (res.error) {
       setError(res.error);
@@ -101,7 +98,12 @@ export function PolicyForm({ orgId, onCreated }: PolicyFormProps) {
 
         <div>
           <Label>Status</Label>
-          <Select value={status} onValueChange={(val) => { if (val) setStatus(val); }}>
+          <Select
+            value={status}
+            onValueChange={(val) => {
+              if (val) setStatus(val);
+            }}
+          >
             <SelectTrigger>
               <span className="text-sm">
                 {STATUS_OPTIONS.find((o) => o.value === status)?.label ?? 'Draft (default)'}
@@ -119,7 +121,12 @@ export function PolicyForm({ orgId, onCreated }: PolicyFormProps) {
 
         <div>
           <Label>Department</Label>
-          <Select value={department} onValueChange={(val) => { if (val) setDepartment(val); }}>
+          <Select
+            value={department}
+            onValueChange={(val) => {
+              if (val) setDepartment(val);
+            }}
+          >
             <SelectTrigger>
               <span className="text-sm">
                 {DEPARTMENT_OPTIONS.find((o) => o.value === department)?.label ?? 'None (default)'}
@@ -137,7 +144,12 @@ export function PolicyForm({ orgId, onCreated }: PolicyFormProps) {
 
         <div>
           <Label>Frequency</Label>
-          <Select value={frequency} onValueChange={(val) => { if (val) setFrequency(val); }}>
+          <Select
+            value={frequency}
+            onValueChange={(val) => {
+              if (val) setFrequency(val);
+            }}
+          >
             <SelectTrigger>
               <span className="text-sm">
                 {FREQUENCY_OPTIONS.find((o) => o.value === frequency)?.label ?? 'No frequency'}

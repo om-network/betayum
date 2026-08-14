@@ -179,16 +179,9 @@ export class CodexTerminalProxyService {
           terminal.stream.write(this.toBuffer(data));
           return;
         }
-        const parsed = resizeMessageSchema.safeParse(
-          this.parseMessage(data),
-        );
+        const parsed = resizeMessageSchema.safeParse(this.parseMessage(data));
         if (parsed.success) {
-          terminal.stream.setWindow(
-            parsed.data.rows,
-            parsed.data.cols,
-            0,
-            0,
-          );
+          terminal.stream.setWindow(parsed.data.rows, parsed.data.cols, 0, 0);
         }
       });
       terminal.stream.on('data', (data: Buffer) => {
@@ -259,5 +252,4 @@ export class CodexTerminalProxyService {
       `HTTP/1.1 ${status} ${message}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`,
     );
   }
-
 }

@@ -746,7 +746,10 @@ describe('RolesService', () => {
 
     it('returns the hardcoded default when no override row exists', async () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
-      const result = await service.getBuiltInObligations(organizationId, 'owner');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'owner',
+      );
       expect(result).toEqual({ compliance: true });
     });
 
@@ -754,7 +757,10 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue({
         obligations: JSON.stringify({ compliance: false }),
       });
-      const result = await service.getBuiltInObligations(organizationId, 'owner');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'owner',
+      );
       expect(result).toEqual({ compliance: false });
     });
 
@@ -762,13 +768,19 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue({
         obligations: { compliance: false },
       });
-      const result = await service.getBuiltInObligations(organizationId, 'owner');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'owner',
+      );
       expect(result).toEqual({ compliance: false });
     });
 
     it('returns empty for admin (no default compliance, no override)', async () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue(null);
-      const result = await service.getBuiltInObligations(organizationId, 'admin');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'admin',
+      );
       expect(result).toEqual({});
     });
 
@@ -784,7 +796,10 @@ describe('RolesService', () => {
       (mockDb.organizationRole.findFirst as jest.Mock).mockResolvedValue({
         obligations: '{}',
       });
-      const result = await service.getBuiltInObligations(organizationId, 'owner');
+      const result = await service.getBuiltInObligations(
+        organizationId,
+        'owner',
+      );
       expect(result).toEqual({ compliance: true });
     });
   });
@@ -804,7 +819,10 @@ describe('RolesService', () => {
         { compliance: false },
       );
 
-      expect(result).toEqual({ name: 'owner', obligations: { compliance: false } });
+      expect(result).toEqual({
+        name: 'owner',
+        obligations: { compliance: false },
+      });
       expect(mockDb.organizationRole.upsert).toHaveBeenCalledWith({
         where: { organizationId_name: { organizationId, name: 'owner' } },
         create: expect.objectContaining({
@@ -924,14 +942,18 @@ describe('RolesService', () => {
 
       const result = await service.listRoles(organizationId);
       // Override row must not appear as a custom role
-      expect(result.customRoles.map((r) => r.name)).toEqual(['compliance-lead']);
+      expect(result.customRoles.map((r) => r.name)).toEqual([
+        'compliance-lead',
+      ]);
       // Built-in entries carry effective obligations — owner reflects the override
       const ownerEntry = result.builtInRoles.find((r) => r.name === 'owner');
       expect(ownerEntry?.obligations).toEqual({ compliance: false });
       // Other built-ins still show their hardcoded defaults
       const adminEntry = result.builtInRoles.find((r) => r.name === 'admin');
       expect(adminEntry?.obligations).toEqual({});
-      const employeeEntry = result.builtInRoles.find((r) => r.name === 'employee');
+      const employeeEntry = result.builtInRoles.find(
+        (r) => r.name === 'employee',
+      );
       expect(employeeEntry?.obligations).toEqual({ compliance: true });
     });
 

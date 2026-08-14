@@ -64,12 +64,8 @@ export default async function RootPage({
 
   // Always use the org the user last switched to (stored in session)
   const activeOrgId = session.session.activeOrganizationId;
-  const activeOrg = activeOrgId
-    ? memberships.find((m) => m.id === activeOrgId)
-    : undefined;
-  const readyOrg = memberships.find(
-    (m) => m.onboardingCompleted && m.hasAccess,
-  );
+  const activeOrg = activeOrgId ? memberships.find((m) => m.id === activeOrgId) : undefined;
+  const readyOrg = memberships.find((m) => m.onboardingCompleted && m.hasAccess);
   const targetOrg = activeOrg || readyOrg || memberships[0];
 
   if (!targetOrg.onboardingCompleted) {
@@ -81,9 +77,7 @@ export default async function RootPage({
   }
 
   // Resolve permissions for default route
-  const { permissions, customRoleNames } = resolveBuiltInPermissions(
-    targetOrg.memberRole,
-  );
+  const { permissions, customRoleNames } = resolveBuiltInPermissions(targetOrg.memberRole);
 
   if (customRoleNames.length > 0) {
     // Custom role resolution still needs DB (infrastructure auth concern)
@@ -97,9 +91,7 @@ export default async function RootPage({
     for (const role of customRoles) {
       if (!role.permissions) continue;
       const parsed =
-        typeof role.permissions === 'string'
-          ? JSON.parse(role.permissions)
-          : role.permissions;
+        typeof role.permissions === 'string' ? JSON.parse(role.permissions) : role.permissions;
       if (parsed && typeof parsed === 'object') {
         mergePermissions(permissions, parsed as Record<string, string[]>);
       }

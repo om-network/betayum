@@ -235,7 +235,9 @@ export class DeviceAgentAuthService {
         isCompliant,
         lastCheckIn: new Date(),
         ...(dto.agentVersion ? { agentVersion: dto.agentVersion } : {}),
-        ...(sessionIdToLink !== undefined ? { agentSessionId: sessionIdToLink } : {}),
+        ...(sessionIdToLink !== undefined
+          ? { agentSessionId: sessionIdToLink }
+          : {}),
       },
     });
 

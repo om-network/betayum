@@ -71,10 +71,7 @@ export function TaskForm({ orgId, onCreated }: TaskFormProps) {
     if (department && department !== 'none') body.department = department;
     if (frequency) body.frequency = frequency;
 
-    const res = await api.post(
-      `/v1/admin/organizations/${orgId}/tasks`,
-      body,
-    );
+    const res = await api.post(`/v1/admin/organizations/${orgId}/tasks`, body);
 
     if (res.error) {
       setError(res.error);
@@ -110,7 +107,12 @@ export function TaskForm({ orgId, onCreated }: TaskFormProps) {
 
         <div>
           <Label>Status</Label>
-          <Select value={status} onValueChange={(val) => { if (val) setStatus(val); }}>
+          <Select
+            value={status}
+            onValueChange={(val) => {
+              if (val) setStatus(val);
+            }}
+          >
             <SelectTrigger>
               <span className="text-sm">
                 {STATUS_OPTIONS.find((o) => o.value === status)?.label ?? 'To Do (default)'}
@@ -128,7 +130,12 @@ export function TaskForm({ orgId, onCreated }: TaskFormProps) {
 
         <div>
           <Label>Department</Label>
-          <Select value={department} onValueChange={(val) => { if (val) setDepartment(val); }}>
+          <Select
+            value={department}
+            onValueChange={(val) => {
+              if (val) setDepartment(val);
+            }}
+          >
             <SelectTrigger>
               <span className="text-sm">
                 {DEPARTMENT_OPTIONS.find((o) => o.value === department)?.label ?? 'None (default)'}
@@ -146,7 +153,12 @@ export function TaskForm({ orgId, onCreated }: TaskFormProps) {
 
         <div>
           <Label>Frequency</Label>
-          <Select value={frequency} onValueChange={(val) => { if (val) setFrequency(val); }}>
+          <Select
+            value={frequency}
+            onValueChange={(val) => {
+              if (val) setFrequency(val);
+            }}
+          >
             <SelectTrigger>
               <span className="text-sm">
                 {FREQUENCY_OPTIONS.find((o) => o.value === frequency)?.label ?? 'No frequency'}

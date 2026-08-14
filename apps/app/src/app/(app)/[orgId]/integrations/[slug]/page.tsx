@@ -42,8 +42,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const connections = (connectionsResult.data ?? []).filter((c) => c.providerSlug === slug);
   const browserConnectionId = (connectionsResult.data ?? []).find(
     (connection) =>
-      (connection.providerSlug === 'gcp' ||
-        connection.providerSlug === 'github') &&
+      (connection.providerSlug === 'gcp' || connection.providerSlug === 'github') &&
       connection.status === 'active',
   )?.id;
   const taskTemplates = (tasksResult.data?.data ?? [])

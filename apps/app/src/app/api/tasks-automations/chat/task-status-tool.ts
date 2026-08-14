@@ -38,7 +38,6 @@ export function buildTaskStatusTool({ taskId, approverId }: BuildTaskStatusToolP
         const requiresReview = status === 'in_review' || (status === 'done' && !!approverId);
 
         if (requiresReview && approverId) {
-
           const result = await serverApi.post<TaskStatusResponse>(
             `/v1/tasks/${taskId}/submit-for-review`,
             { approverId },

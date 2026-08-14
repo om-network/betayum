@@ -13,26 +13,14 @@ interface DevicesTabContentProps {
 }
 
 export function DevicesTabContent({ isCurrentUserOwner }: DevicesTabContentProps) {
-  const {
-    agentDevices,
-    isLoading: isAgentLoading,
-    error: agentError,
-  } = useAgentDevices();
-  const {
-    fleetHosts,
-    isLoading: isFleetLoading,
-    error: fleetError,
-  } = useFleetHosts();
+  const { agentDevices, isLoading: isAgentLoading, error: agentError } = useAgentDevices();
+  const { fleetHosts, isLoading: isFleetLoading, error: fleetError } = useFleetHosts();
 
   // Filter out Fleet hosts for members who already have device-agent devices.
   // Device agent takes priority over Fleet.
   const filteredFleetDevices = useMemo(() => {
-    const memberIdsWithAgent = new Set(
-      agentDevices.map((d) => d.memberId).filter(Boolean),
-    );
-    return fleetHosts.filter(
-      (host) => !host.member_id || !memberIdsWithAgent.has(host.member_id),
-    );
+    const memberIdsWithAgent = new Set(agentDevices.map((d) => d.memberId).filter(Boolean));
+    return fleetHosts.filter((host) => !host.member_id || !memberIdsWithAgent.has(host.member_id));
   }, [agentDevices, fleetHosts]);
 
   const error = agentError ?? fleetError;
@@ -60,14 +48,9 @@ export function DevicesTabContent({ isCurrentUserOwner }: DevicesTabContentProps
 
   return (
     <div className="space-y-6">
-      <DeviceComplianceChart
-        fleetDevices={filteredFleetDevices}
-        agentDevices={agentDevices}
-      />
+      <DeviceComplianceChart fleetDevices={filteredFleetDevices} agentDevices={agentDevices} />
 
-      {agentDevices.length > 0 && (
-        <DeviceAgentDevicesList devices={agentDevices} />
-      )}
+      {agentDevices.length > 0 && <DeviceAgentDevicesList devices={agentDevices} />}
 
       {isFleetLoading ? (
         <div className="flex items-center gap-2 rounded-md border border-border bg-muted/20 px-4 py-3 text-xs text-muted-foreground">

@@ -109,7 +109,7 @@ export class AuditLogInterceptor implements NestInterceptor {
       );
       return {
         previousValues: null,
-        memberNames: {} as Record<string, string>,
+        memberNames: {},
         relationMappingResult: null,
       };
     });

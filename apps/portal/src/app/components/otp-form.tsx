@@ -1,11 +1,11 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@trycompai/ui/input-otp';
 import { Spinner } from '@trycompai/design-system';
+import { Button } from '@trycompai/ui/button';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@trycompai/ui/input-otp';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';

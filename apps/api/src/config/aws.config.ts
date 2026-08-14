@@ -10,7 +10,9 @@ function normalizeEnvValue(value: string | undefined): string | undefined {
   return trimmedValue.length > 0 ? trimmedValue : undefined;
 }
 
-function firstDefined(...values: Array<string | undefined>): string | undefined {
+function firstDefined(
+  ...values: Array<string | undefined>
+): string | undefined {
   return values.map(normalizeEnvValue).find(Boolean);
 }
 
@@ -50,8 +52,10 @@ export const awsConfig = registerAs('aws', (): AwsConfig => {
       process.env.APP_AWS_BUCKET_NAME,
     ),
     endpoint:
-      firstDefined(process.env.APP_GCP_ENDPOINT, process.env.APP_AWS_ENDPOINT) ||
-      (isGcpConfigured ? 'https://storage.googleapis.com' : undefined),
+      firstDefined(
+        process.env.APP_GCP_ENDPOINT,
+        process.env.APP_AWS_ENDPOINT,
+      ) || (isGcpConfigured ? 'https://storage.googleapis.com' : undefined),
   };
 
   // Validate configuration at startup

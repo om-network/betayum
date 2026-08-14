@@ -39,10 +39,7 @@ export const weeklyTaskReminder = schedules.task({
         members: {
           where: {
             deactivated: false,
-            OR: [
-              { user: { role: { not: 'admin' } } },
-              { role: { contains: 'owner' } },
-            ],
+            OR: [{ user: { role: { not: 'admin' } } }, { role: { contains: 'owner' } }],
           },
           select: {
             id: true,
@@ -58,7 +55,9 @@ export const weeklyTaskReminder = schedules.task({
       },
     });
 
-    logger.info(`Found ${organizations.length} active organizations to process (skipped orgs with no sessions in ${ORG_INACTIVITY_DAYS} days)`);
+    logger.info(
+      `Found ${organizations.length} active organizations to process (skipped orgs with no sessions in ${ORG_INACTIVITY_DAYS} days)`,
+    );
 
     // Build email payloads for all members with TODO tasks
     const emailPayloads = [];

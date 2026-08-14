@@ -1,5 +1,6 @@
 'use client';
 
+import type { UpdatePreview } from '@/types/framework-versioning';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,7 +13,6 @@ import {
   Stack,
   Text,
 } from '@trycompai/design-system';
-import type { UpdatePreview } from '@/types/framework-versioning';
 
 interface SyncConfirmDialogProps {
   open: boolean;
@@ -75,12 +75,10 @@ export function SyncConfirmDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            Sync to v{preview.toVersion.version}?
-          </AlertDialogTitle>
+          <AlertDialogTitle>Sync to v{preview.toVersion.version}?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will apply the following changes to your framework instance.
-            This action can be rolled back within the rollback window.
+            This will apply the following changes to your framework instance. This action can be
+            rolled back within the rollback window.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -112,8 +110,7 @@ export function SyncConfirmDialog({
           {preview.controls.updatedPreserved.length > 0 && (
             <Text size="sm" variant="muted">
               {preview.controls.updatedPreserved.length} control edit
-              {preview.controls.updatedPreserved.length !== 1 ? 's' : ''} you
-              made will be preserved
+              {preview.controls.updatedPreserved.length !== 1 ? 's' : ''} you made will be preserved
             </Text>
           )}
         </Stack>

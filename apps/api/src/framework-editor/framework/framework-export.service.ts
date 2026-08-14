@@ -235,26 +235,29 @@ export class FrameworkExportService {
         ),
       );
 
-      const policyLinks = (dto.controlTemplates ?? []).flatMap((ct, controlIndex) =>
-        (ct.policyTemplateIndices ?? []).map((policyIndex) => ({
-          frameworkId: framework.id,
-          controlTemplateId: createdControls[controlIndex].id,
-          policyTemplateId: createdPolicies[policyIndex].id,
-        })),
+      const policyLinks = (dto.controlTemplates ?? []).flatMap(
+        (ct, controlIndex) =>
+          (ct.policyTemplateIndices ?? []).map((policyIndex) => ({
+            frameworkId: framework.id,
+            controlTemplateId: createdControls[controlIndex].id,
+            policyTemplateId: createdPolicies[policyIndex].id,
+          })),
       );
-      const taskLinks = (dto.controlTemplates ?? []).flatMap((ct, controlIndex) =>
-        (ct.taskTemplateIndices ?? []).map((taskIndex) => ({
-          frameworkId: framework.id,
-          controlTemplateId: createdControls[controlIndex].id,
-          taskTemplateId: createdTasks[taskIndex].id,
-        })),
+      const taskLinks = (dto.controlTemplates ?? []).flatMap(
+        (ct, controlIndex) =>
+          (ct.taskTemplateIndices ?? []).map((taskIndex) => ({
+            frameworkId: framework.id,
+            controlTemplateId: createdControls[controlIndex].id,
+            taskTemplateId: createdTasks[taskIndex].id,
+          })),
       );
-      const documentLinks = (dto.controlTemplates ?? []).flatMap((ct, controlIndex) =>
-        (ct.documentTypes ?? []).map((formType) => ({
-          frameworkId: framework.id,
-          controlTemplateId: createdControls[controlIndex].id,
-          formType: formType as EvidenceFormType,
-        })),
+      const documentLinks = (dto.controlTemplates ?? []).flatMap(
+        (ct, controlIndex) =>
+          (ct.documentTypes ?? []).map((formType) => ({
+            frameworkId: framework.id,
+            controlTemplateId: createdControls[controlIndex].id,
+            formType: formType,
+          })),
       );
 
       if (policyLinks.length > 0) {

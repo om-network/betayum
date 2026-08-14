@@ -1,12 +1,9 @@
+import type { CheckDetails, DeviceWithChecks } from '@/app/(app)/[orgId]/people/devices/types';
 import { auth } from '@/utils/auth';
 import { db } from '@db/server';
+import { daysSinceCheckIn, getDeviceComplianceStatus } from '@trycompai/utils/devices';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import {
-  daysSinceCheckIn,
-  getDeviceComplianceStatus,
-} from '@trycompai/utils/devices';
-import type { CheckDetails, DeviceWithChecks } from '@/app/(app)/[orgId]/people/devices/types';
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });

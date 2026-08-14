@@ -201,7 +201,7 @@ describe('KnowledgeBaseService', () => {
         fileName: 'doc.pdf',
         fileType: 'application/pdf',
         fileData: 'base64data',
-      } as any);
+      });
 
       expect(result).toEqual({
         id: 'd1',

@@ -69,10 +69,10 @@ describe('TaskForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /create task/i }));
 
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith(
-        '/v1/admin/organizations/org_1/tasks',
-        { title: 'Review Controls', description: 'Review all access controls' },
-      );
+      expect(mockPost).toHaveBeenCalledWith('/v1/admin/organizations/org_1/tasks', {
+        title: 'Review Controls',
+        description: 'Review all access controls',
+      });
     });
 
     expect(onCreated).toHaveBeenCalled();

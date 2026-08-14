@@ -2,7 +2,6 @@
 
 import { apiClient } from '@/lib/api-client';
 import { isJSON } from '@/lib/utils';
-import { useMediaQuery } from '@trycompai/ui/hooks';
 import type { Context } from '@db';
 import {
   AlertDialog,
@@ -50,6 +49,7 @@ import {
   Search,
   TrashCan,
 } from '@trycompai/design-system/icons';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { Check, Loader2 } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -491,13 +491,7 @@ function CreateContextSheetLocal({
   );
 }
 
-export const ContextTable = ({
-  entries,
-  pageCount,
-}: {
-  entries: Context[];
-  pageCount: number;
-}) => {
+export const ContextTable = ({ entries, pageCount }: { entries: Context[]; pageCount: number }) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -559,8 +553,7 @@ export const ContextTable = ({
           onPageChange: (page) => updateSearchParams({ page: String(page) }),
           pageSize: perPage,
           pageSizeOptions: [25, 50, 100],
-          onPageSizeChange: (size) =>
-            updateSearchParams({ perPage: String(size), page: '1' }),
+          onPageSizeChange: (size) => updateSearchParams({ perPage: String(size), page: '1' }),
         }}
       >
         <TableHeader>

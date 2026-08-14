@@ -24,7 +24,9 @@ describe('resolveStrategyDescriptionUpdate', () => {
   it('returns empty when neither strategy nor description is changing', () => {
     expect(resolveStrategyDescriptionUpdate(baseExisting, {})).toEqual({});
     expect(
-      resolveStrategyDescriptionUpdate(baseExisting, { assigneeId: 'mbr_1' } as never),
+      resolveStrategyDescriptionUpdate(baseExisting, {
+        assigneeId: 'mbr_1',
+      } as never),
     ).toEqual({});
   });
 
@@ -85,7 +87,9 @@ describe('resolveStrategyDescriptionUpdate', () => {
       },
     );
     expect(result.treatmentStrategy).toBe(RiskTreatmentType.accept);
-    expect(result.treatmentStrategyDescription).toBe('Brand-new accept rationale');
+    expect(result.treatmentStrategyDescription).toBe(
+      'Brand-new accept rationale',
+    );
     expect(result.strategyDescriptions).toEqual({
       mitigate: 'Current mitigate plan',
       accept: 'Brand-new accept rationale',
@@ -105,7 +109,7 @@ describe('resolveStrategyDescriptionUpdate', () => {
 
   it('handles malformed strategyDescriptions gracefully', () => {
     const result = resolveStrategyDescriptionUpdate(
-      { ...baseExisting, strategyDescriptions: 'not an object' as unknown },
+      { ...baseExisting, strategyDescriptions: 'not an object' },
       { treatmentStrategy: RiskTreatmentType.accept },
     );
     // Falls back to empty map; saves current Mitigate text

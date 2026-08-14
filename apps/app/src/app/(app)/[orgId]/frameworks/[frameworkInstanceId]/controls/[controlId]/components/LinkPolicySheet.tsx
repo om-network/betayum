@@ -1,7 +1,7 @@
 'use client';
 
-import { apiClient } from '@/lib/api-client';
 import { usePermissions } from '@/hooks/use-permissions';
+import { apiClient } from '@/lib/api-client';
 import {
   Button,
   Checkbox,
@@ -34,14 +34,8 @@ export function LinkPolicySheet({
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { policies, isLoading } = useControlOptions(isOpen);
-  const linked = useMemo(
-    () => new Set(alreadyLinkedPolicyIds),
-    [alreadyLinkedPolicyIds],
-  );
-  const options = useMemo(
-    () => policies.filter((p) => !linked.has(p.id)),
-    [policies, linked],
-  );
+  const linked = useMemo(() => new Set(alreadyLinkedPolicyIds), [alreadyLinkedPolicyIds]);
+  const options = useMemo(() => policies.filter((p) => !linked.has(p.id)), [policies, linked]);
 
   useEffect(() => {
     if (!isOpen) setSelected(new Set());
@@ -71,9 +65,7 @@ export function LinkPolicySheet({
       setIsOpen(false);
       router.refresh();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to link policies',
-      );
+      toast.error(error instanceof Error ? error.message : 'Failed to link policies');
     } finally {
       setIsSubmitting(false);
     }
@@ -81,11 +73,7 @@ export function LinkPolicySheet({
 
   return (
     <>
-      <Button
-        size="sm"
-        iconLeft={<LinkIcon size={16} />}
-        onClick={() => setIsOpen(true)}
-      >
+      <Button size="sm" iconLeft={<LinkIcon size={16} />} onClick={() => setIsOpen(true)}>
         Link Policy
       </Button>
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -119,10 +107,7 @@ export function LinkPolicySheet({
                   </label>
                 ))}
                 <div className="flex justify-end pt-2">
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={selected.size === 0 || isSubmitting}
-                  >
+                  <Button onClick={handleSubmit} disabled={selected.size === 0 || isSubmitting}>
                     Link {selected.size || ''} Polic
                     {selected.size === 1 ? 'y' : 'ies'}
                   </Button>

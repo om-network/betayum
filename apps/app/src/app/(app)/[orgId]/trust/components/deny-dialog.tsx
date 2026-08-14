@@ -1,5 +1,6 @@
 import { useDenyAccessRequest } from '@/hooks/use-access-requests';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useForm } from '@tanstack/react-form';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -11,7 +12,6 @@ import {
 } from '@trycompai/ui/dialog';
 import { Field, FieldError, FieldLabel } from '@trycompai/ui/field';
 import { Textarea } from '@trycompai/ui/textarea';
-import { useForm } from '@tanstack/react-form';
 import { toast } from 'sonner';
 import * as z from 'zod';
 
@@ -93,7 +93,11 @@ export function DenyDialog({
             </Button>
             <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
               {([canSubmit, isSubmitting]) => (
-                <Button variant="destructive" type="submit" disabled={!canSubmit || isSubmitting || !canUpdate}>
+                <Button
+                  variant="destructive"
+                  type="submit"
+                  disabled={!canSubmit || isSubmitting || !canUpdate}
+                >
                   {isSubmitting ? 'Denying...' : 'Deny Request'}
                 </Button>
               )}

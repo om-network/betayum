@@ -23,7 +23,9 @@ export default function DeviceCallbackPage() {
 
     if (!callbackPort || !state) {
       setStatus('error');
-      setErrorMessage('Missing required parameters. Please try signing in again from the Betayum agent.');
+      setErrorMessage(
+        'Missing required parameters. Please try signing in again from the Betayum agent.',
+      );
       return;
     }
 
@@ -111,11 +113,7 @@ export default function DeviceCallbackPage() {
                       </p>
                     </div>
                   )}
-                  {status === 'error' && (
-                    <p className="text-sm text-destructive">
-                      {errorMessage}
-                    </p>
-                  )}
+                  {status === 'error' && <p className="text-sm text-destructive">{errorMessage}</p>}
                 </div>
               </CardContent>
             </div>

@@ -200,7 +200,8 @@ export class CloudSecurityQueryService {
     // Filter out findings under an active (non-revoked, non-expired)
     // FindingException. Looked up in one query keyed by org so the cost
     // stays constant regardless of finding count.
-    const activeExceptionKeys = await this.loadActiveExceptionKeys(organizationId);
+    const activeExceptionKeys =
+      await this.loadActiveExceptionKeys(organizationId);
     if (activeExceptionKeys.size === 0) return combined;
 
     return combined.filter((finding) => {

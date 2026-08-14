@@ -14,7 +14,9 @@ export function VendorNewsLoadingPlaceholder() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
               </span>
-              <Text size="sm" weight="medium">Gathering recent news...</Text>
+              <Text size="sm" weight="medium">
+                Gathering recent news...
+              </Text>
             </div>
           </CardTitle>
         </CardHeader>

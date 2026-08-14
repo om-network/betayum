@@ -76,9 +76,7 @@ export class PurgeOrganizationExternalService {
         result.customerDeleted = true;
       } catch (err) {
         if (this.isStripeMissingResource(err)) {
-          this.logger.log(
-            `Stripe customer ${stripe.customerId} already gone`,
-          );
+          this.logger.log(`Stripe customer ${stripe.customerId} already gone`);
         } else {
           throw err;
         }

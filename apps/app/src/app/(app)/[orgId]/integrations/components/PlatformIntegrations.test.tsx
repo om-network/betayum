@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   NO_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -110,7 +110,11 @@ vi.mock('@trycompai/ui/button', () => ({
 }));
 
 vi.mock('@trycompai/ui/card', () => ({
-  Card: ({ children, ...props }: any) => <div data-testid="card" {...props}>{children}</div>,
+  Card: ({ children, ...props }: any) => (
+    <div data-testid="card" {...props}>
+      {children}
+    </div>
+  ),
   CardContent: ({ children }: any) => <div>{children}</div>,
   CardDescription: ({ children }: any) => <p>{children}</p>,
   CardHeader: ({ children }: any) => <div>{children}</div>,
@@ -118,7 +122,7 @@ vi.mock('@trycompai/ui/card', () => ({
 }));
 
 vi.mock('@trycompai/ui/dialog', () => ({
-  Dialog: ({ children, open }: any) => open ? <div data-testid="dialog">{children}</div> : null,
+  Dialog: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
   DialogContent: ({ children }: any) => <div>{children}</div>,
   DialogDescription: ({ children }: any) => <p>{children}</p>,
   DialogHeader: ({ children }: any) => <div>{children}</div>,
@@ -151,9 +155,7 @@ import { toast } from 'sonner';
 import { PlatformIntegrations } from './PlatformIntegrations';
 
 const defaultProps = {
-  taskTemplates: [
-    { id: 'tmpl-1', taskId: 'task-1', name: 'Test Task', description: 'desc' },
-  ],
+  taskTemplates: [{ id: 'tmpl-1', taskId: 'task-1', name: 'Test Task', description: 'desc' }],
 };
 
 describe('PlatformIntegrations', () => {
@@ -219,9 +221,7 @@ describe('PlatformIntegrations', () => {
       render(<PlatformIntegrations {...defaultProps} />);
 
       screen.getByRole('button', { name: 'Set up VM login' }).click();
-      expect(mockRouterPush).toHaveBeenCalledWith(
-        '/org-1/integrations/github',
-      );
+      expect(mockRouterPush).toHaveBeenCalledWith('/org-1/integrations/github');
       expect(screen.queryByText('Coming Soon')).not.toBeInTheDocument();
     });
 
@@ -366,9 +366,7 @@ describe('PlatformIntegrations', () => {
 
       render(<PlatformIntegrations {...defaultProps} />);
 
-      expect(toast.success).toHaveBeenCalledWith(
-        'Google Workspace connected successfully!',
-      );
+      expect(toast.success).toHaveBeenCalledWith('Google Workspace connected successfully!');
       expect(toast.info).toHaveBeenCalledWith(
         'Import your Google Workspace users',
         expect.objectContaining({
@@ -427,9 +425,7 @@ describe('PlatformIntegrations', () => {
 
       render(<PlatformIntegrations {...defaultProps} />);
 
-      expect(toast.success).toHaveBeenCalledWith(
-        'GitHub connected successfully!',
-      );
+      expect(toast.success).toHaveBeenCalledWith('GitHub connected successfully!');
       expect(toast.info).not.toHaveBeenCalled();
     });
   });

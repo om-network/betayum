@@ -6,8 +6,8 @@ import type { IntegrationProvider } from '@/hooks/use-integration-platform';
 import { useIntegrationMutations } from '@/hooks/use-integration-platform';
 import { Button, Label } from '@trycompai/design-system';
 import {
-  getAwsCloudShellUrl,
   getAwsCloudShellScript,
+  getAwsCloudShellUrl,
   getAwsRemediationScript,
   normalizeAwsEnvironment,
 } from '@trycompai/integration-platform';
@@ -505,9 +505,7 @@ function CloudSetup({
   // AWS only — which scan engine the customer is choosing for this
   // connection. Sent in createConnection's credentials payload as the
   // `awsScanMode` variable, then read on every scan in cloud-security.service.
-  const [awsScanMode, setAwsScanMode] = useState<AwsScanModeChoice>(
-    DEFAULT_AWS_SCAN_MODE_CHOICE,
-  );
+  const [awsScanMode, setAwsScanMode] = useState<AwsScanModeChoice>(DEFAULT_AWS_SCAN_MODE_CHOICE);
 
   const allFields = provider.credentialFields ?? [];
   const visibleFields = allFields.filter(
@@ -597,9 +595,7 @@ function CloudSetup({
         )
       : regionOptions;
   const setupScript =
-    provider.id === 'aws'
-      ? getAwsCloudShellScript(awsEnvironment)
-      : (provider.setupScript ?? '');
+    provider.id === 'aws' ? getAwsCloudShellScript(awsEnvironment) : (provider.setupScript ?? '');
   const remediationScript = getAwsRemediationScript(awsEnvironment);
   const cloudShellUrl = getAwsCloudShellUrl(awsEnvironment);
 

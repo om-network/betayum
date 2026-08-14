@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -34,8 +34,8 @@ vi.mock('./AutomationItem', () => ({
   ),
 }));
 
-import { BrowserAutomationsList } from './BrowserAutomationsList';
 import type { BrowserAutomation } from '../../hooks/types';
+import { BrowserAutomationsList } from './BrowserAutomationsList';
 
 const mockAutomations: BrowserAutomation[] = [
   {

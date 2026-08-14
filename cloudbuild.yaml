@@ -41,7 +41,7 @@ steps:
   - id: build-app
     name: gcr.io/cloud-builders/docker
     waitFor:
-      - build-api
+      - '-'
     args:
       - build
       - -f
@@ -86,7 +86,7 @@ steps:
   - id: build-seeder
     name: gcr.io/cloud-builders/docker
     waitFor:
-      - build-app
+      - '-'
     args:
       - build
       - -f

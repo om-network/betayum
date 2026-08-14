@@ -1,9 +1,9 @@
 'use client';
 
 import { useOrganizationFindings } from '@/hooks/use-findings-api';
-import { useFeatureFlag } from '@trycompai/analytics';
 import { FindingStatus } from '@db';
-import { TabsList, TabsTrigger, Tabs } from '@trycompai/design-system';
+import { useFeatureFlag } from '@trycompai/analytics';
+import { Tabs, TabsList, TabsTrigger } from '@trycompai/design-system';
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 
@@ -27,9 +27,7 @@ export function OverviewTabs() {
   const { data: openFindingsData } = useOrganizationFindings({
     status: FindingStatus.open,
   });
-  const openCount = Array.isArray(openFindingsData?.data)
-    ? openFindingsData.data.length
-    : 0;
+  const openCount = Array.isArray(openFindingsData?.data) ? openFindingsData.data.length : 0;
 
   const overviewHref = `/${orgId}/overview`;
   const findingsHref = `/${orgId}/overview/findings`;

@@ -7,21 +7,15 @@ vi.mock('recharts', () => ({
   PieChart: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="pie-chart">{children}</div>
   ),
-  Pie: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="pie">{children}</div>
-  ),
+  Pie: ({ children }: { children: React.ReactNode }) => <div data-testid="pie">{children}</div>,
   Cell: () => <div data-testid="cell" />,
   Label: () => null,
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 // Mock @trycompai/ui chart components
 vi.mock('@trycompai/ui/chart', () => ({
-  ChartContainer: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  ChartContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   ChartTooltip: () => null,
   ChartTooltipContent: () => null,
 }));
@@ -109,7 +103,12 @@ function makeFleetDevice(overrides: Partial<Host> = {}): Host {
     percent_disk_space_available: 0,
     gigs_total_disk_space: 0,
     issues: {},
-    mdm: { connected_to_fleet: false, dep_profile_error: false, encryption_key_available: false, enrollment_status: '' },
+    mdm: {
+      connected_to_fleet: false,
+      dep_profile_error: false,
+      encryption_key_available: false,
+      enrollment_status: '',
+    },
     refetch_critical_queries_until: null,
     last_restarted_at: '',
     labels: [],
@@ -126,7 +125,11 @@ function makeFleetDevice(overrides: Partial<Host> = {}): Host {
 describe('DeviceComplianceChart', () => {
   it('shows empty state when no devices from either source', () => {
     render(<DeviceComplianceChart fleetDevices={[]} agentDevices={[]} />);
-    expect(screen.getByText('No device data available. Please make sure your employees access the portal and install the device agent.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'No device data available. Please make sure your employees access the portal and install the device agent.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('counts agent devices correctly — all compliant', () => {

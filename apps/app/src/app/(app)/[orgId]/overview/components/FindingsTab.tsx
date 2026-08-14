@@ -9,7 +9,7 @@ import {
 } from '@/hooks/use-findings-api';
 import { usePermissions } from '@/hooks/use-permissions';
 import { formatDate } from '@/lib/format';
-import { FindingStatus, FindingSeverity, FindingType } from '@db';
+import { FindingSeverity, FindingStatus, FindingType } from '@db';
 import {
   Badge,
   Empty,
@@ -71,8 +71,7 @@ function targetLabel(f: Finding): string {
   if (f.risk) return `Risk: ${f.risk.title}`;
   if (f.member) return `Person: ${f.member.user.name ?? f.member.user.email}`;
   if (f.device) return `Device: ${f.device.name || f.device.hostname}`;
-  if (f.evidenceSubmission)
-    return `Document: ${f.evidenceSubmission.formType.replace(/-/g, ' ')}`;
+  if (f.evidenceSubmission) return `Document: ${f.evidenceSubmission.formType.replace(/-/g, ' ')}`;
   if (f.evidenceFormType) return `Document: ${f.evidenceFormType.replace(/-/g, ' ')}`;
   if (f.area === 'risks') return 'Risks (general)';
   if (f.area === 'vendors') return 'Vendors (general)';
@@ -81,7 +80,10 @@ function targetLabel(f: Finding): string {
   return '—';
 }
 
-const SEVERITY_VARIANT: Record<FindingSeverity, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+const SEVERITY_VARIANT: Record<
+  FindingSeverity,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
   low: 'outline',
   medium: 'secondary',
   high: 'secondary',
@@ -128,9 +130,7 @@ export function FindingsTab({
 
   const { data, mutate } = useOrganizationFindings(
     {},
-    initialFindings
-      ? { fallbackData: { data: initialFindings, status: 200 } }
-      : {},
+    initialFindings ? { fallbackData: { data: initialFindings, status: 200 } } : {},
   );
   const findings: Finding[] = Array.isArray(data?.data) ? data.data : [];
 
@@ -164,9 +164,7 @@ export function FindingsTab({
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
-        (f) =>
-          f.content.toLowerCase().includes(q) ||
-          targetLabel(f).toLowerCase().includes(q),
+        (f) => f.content.toLowerCase().includes(q) || targetLabel(f).toLowerCase().includes(q),
       );
     }
 
@@ -179,13 +177,11 @@ export function FindingsTab({
     return result;
   }, [findings, statusFilter, severityFilter, frameworkFilter, searchQuery]);
 
-  const statusLabel =
-    STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label ?? 'Status';
+  const statusLabel = STATUS_OPTIONS.find((o) => o.value === statusFilter)?.label ?? 'Status';
   const severityLabel =
     SEVERITY_OPTIONS.find((o) => o.value === severityFilter)?.label ?? 'Severity';
   const frameworkLabel =
-    FRAMEWORK_OPTIONS.find((o) => o.value === frameworkFilter)?.label ??
-    'Framework';
+    FRAMEWORK_OPTIONS.find((o) => o.value === frameworkFilter)?.label ?? 'Framework';
 
   const hasAnyFinding = findings.length > 0;
 
@@ -209,9 +205,7 @@ export function FindingsTab({
             <div className="flex-1 md:w-[180px] md:flex-none">
               <Select
                 value={statusFilter}
-                onValueChange={(v) =>
-                  setStatusFilter((v ?? 'all') as FindingStatus | 'all')
-                }
+                onValueChange={(v) => setStatusFilter((v ?? 'all') as FindingStatus | 'all')}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Status">{statusLabel}</SelectValue>
@@ -228,9 +222,7 @@ export function FindingsTab({
             <div className="flex-1 md:w-[180px] md:flex-none">
               <Select
                 value={severityFilter}
-                onValueChange={(v) =>
-                  setSeverityFilter((v ?? 'all') as FindingSeverity | 'all')
-                }
+                onValueChange={(v) => setSeverityFilter((v ?? 'all') as FindingSeverity | 'all')}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Severity">{severityLabel}</SelectValue>
@@ -247,9 +239,7 @@ export function FindingsTab({
             <div className="flex-1 md:w-[180px] md:flex-none">
               <Select
                 value={frameworkFilter}
-                onValueChange={(v) =>
-                  setFrameworkFilter((v ?? 'all') as FindingType | 'all')
-                }
+                onValueChange={(v) => setFrameworkFilter((v ?? 'all') as FindingType | 'all')}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Framework">{frameworkLabel}</SelectValue>
@@ -275,9 +265,8 @@ export function FindingsTab({
             </EmptyMedia>
             <EmptyTitle>No findings yet</EmptyTitle>
             <EmptyDescription>
-              Findings are raised by your auditor when something in your compliance
-              program needs attention. They&apos;ll show up here so your team can act
-              on them.
+              Findings are raised by your auditor when something in your compliance program needs
+              attention. They&apos;ll show up here so your team can act on them.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

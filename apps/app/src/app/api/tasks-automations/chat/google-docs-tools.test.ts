@@ -17,7 +17,11 @@ const AUTOMATION_ID = 'aut_test';
 
 function getTools() {
   const tools = buildGoogleDocsTools({ taskId: TASK_ID, automationId: AUTOMATION_ID });
-  if (!tools.createGoogleDoc.execute || !tools.updateGoogleDoc.execute || !tools.readGoogleDoc.execute) {
+  if (
+    !tools.createGoogleDoc.execute ||
+    !tools.updateGoogleDoc.execute ||
+    !tools.readGoogleDoc.execute
+  ) {
     throw new Error('execute not defined on tool');
   }
   return {
@@ -149,7 +153,10 @@ describe('buildGoogleDocsTools', () => {
       });
 
       const { readGoogleDoc } = getTools();
-      const result = await readGoogleDoc.execute({ documentId: 'doc_123', offset: 4000 }, {} as never);
+      const result = await readGoogleDoc.execute(
+        { documentId: 'doc_123', offset: 4000 },
+        {} as never,
+      );
 
       expect(result).toMatchObject({ offset: 4000, nextOffset: 8000, hasMore: true });
     });
@@ -161,7 +168,10 @@ describe('buildGoogleDocsTools', () => {
       });
 
       const { readGoogleDoc } = getTools();
-      const result = await readGoogleDoc.execute({ documentId: 'doc_123', offset: 8000 }, {} as never);
+      const result = await readGoogleDoc.execute(
+        { documentId: 'doc_123', offset: 8000 },
+        {} as never,
+      );
 
       expect(result).toMatchObject({ offset: 8000, nextOffset: 10000, hasMore: false });
     });

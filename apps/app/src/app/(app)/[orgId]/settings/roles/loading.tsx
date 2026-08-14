@@ -1,6 +1,5 @@
 'use client';
 
-import { Skeleton } from '@trycompai/ui/skeleton';
 import {
   HStack,
   Stack,
@@ -11,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@trycompai/design-system';
+import { Skeleton } from '@trycompai/ui/skeleton';
 
 export default function RolesLoading() {
   return (

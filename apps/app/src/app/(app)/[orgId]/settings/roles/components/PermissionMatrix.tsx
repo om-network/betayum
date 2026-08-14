@@ -1,21 +1,26 @@
 'use client';
 
-import {
-  RadioGroup,
-  RadioGroupItem,
-  Switch,
-  Text,
-} from '@trycompai/design-system';
 import { statement } from '@trycompai/auth';
+import { RadioGroup, RadioGroupItem, Switch, Text } from '@trycompai/design-system';
 
 /** Access toggles — binary on/off permissions shown as switches above the matrix */
 const ACCESS_TOGGLES = [
-  { key: 'app', label: 'App Access', description: 'Can access the main compliance dashboard. Without this, the user can only access the employee portal.' },
+  {
+    key: 'app',
+    label: 'App Access',
+    description:
+      'Can access the main compliance dashboard. Without this, the user can only access the employee portal.',
+  },
 ];
 
 /** Obligation toggles — requirements the role must fulfill, separate from permissions */
 const OBLIGATION_TOGGLES = [
-  { key: 'compliance', label: 'Employee Compliance', description: 'Must complete compliance tasks: sign policies, watch training videos, and install device agent.' },
+  {
+    key: 'compliance',
+    label: 'Employee Compliance',
+    description:
+      'Must complete compliance tasks: sign policies, watch training videos, and install device agent.',
+  },
 ];
 
 /** UI labels for permission resources. Keys kept in display order. */
@@ -43,9 +48,21 @@ const RESOURCE_SECTIONS: Array<{ label: string; keys: string[] }> = [
   {
     label: 'Compliance',
     keys: [
-      'organization', 'member', 'control', 'evidence', 'policy', 'risk',
-      'vendor', 'task', 'framework', 'audit', 'finding', 'questionnaire',
-      'integration', 'apiKey', 'trust',
+      'organization',
+      'member',
+      'control',
+      'evidence',
+      'policy',
+      'risk',
+      'vendor',
+      'task',
+      'framework',
+      'audit',
+      'finding',
+      'questionnaire',
+      'integration',
+      'apiKey',
+      'trust',
     ],
   },
   {
@@ -86,18 +103,20 @@ type AccessLevel = 'none' | 'view' | 'edit';
  * - view = ['read']
  * - edit = all actions the resource supports
  */
-const ACCESS_LEVEL_MAPPING: Record<string, Record<Exclude<AccessLevel, 'none'>, string[]>> =
-  Object.fromEntries(
-    Object.entries(statement)
-      .filter(([key]) => key in RESOURCE_LABELS)
-      .map(([key, actions]) => [
-        key,
-        {
-          view: ['read'],
-          edit: [...actions],
-        },
-      ]),
-  );
+const ACCESS_LEVEL_MAPPING: Record<
+  string,
+  Record<Exclude<AccessLevel, 'none'>, string[]>
+> = Object.fromEntries(
+  Object.entries(statement)
+    .filter(([key]) => key in RESOURCE_LABELS)
+    .map(([key, actions]) => [
+      key,
+      {
+        view: ['read'],
+        edit: [...actions],
+      },
+    ]),
+);
 
 interface PermissionMatrixProps {
   value: Record<string, string[]>;
@@ -128,7 +147,7 @@ function getAccessLevel(resourceKey: ResourceKey, permissions: string[]): Access
 
   // Check if it has edit-level permissions (includes create, update, or delete)
   const hasEditPermissions = permissions.some(
-    (p) => p === 'create' || p === 'update' || p === 'delete'
+    (p) => p === 'create' || p === 'update' || p === 'delete',
   );
 
   if (hasEditPermissions) {
@@ -214,16 +233,19 @@ function AccessToggle({
           {toggle.description}
         </Text>
       </div>
-      <Switch
-        checked={enabled}
-        onCheckedChange={onToggle}
-        disabled={disabled}
-      />
+      <Switch checked={enabled} onCheckedChange={onToggle} disabled={disabled} />
     </div>
   );
 }
 
-export function PermissionMatrix({ value, onChange, obligations, onObligationsChange, disabled = false, obligationsEditable = false }: PermissionMatrixProps) {
+export function PermissionMatrix({
+  value,
+  onChange,
+  obligations,
+  onObligationsChange,
+  disabled = false,
+  obligationsEditable = false,
+}: PermissionMatrixProps) {
   const obligationsDisabled = disabled && !obligationsEditable;
   const handleObligationChange = (key: string, enabled: boolean) => {
     if (!onObligationsChange) return;
@@ -275,7 +297,9 @@ export function PermissionMatrix({ value, onChange, obligations, onObligationsCh
     onChange(newPermissions);
   };
 
-  const getSectionAccessLevel = (sectionResources: Array<{ key: string }>): AccessLevel | 'mixed' => {
+  const getSectionAccessLevel = (
+    sectionResources: Array<{ key: string }>,
+  ): AccessLevel | 'mixed' => {
     if (sectionResources.length === 0) return 'none';
     const levels = sectionResources.map((r) => getAccessLevel(r.key, value[r.key] || []));
     const first = levels[0];
@@ -339,41 +363,39 @@ export function PermissionMatrix({ value, onChange, obligations, onObligationsCh
             </span>
           </div>
           {/* Select All Row */}
-          {section.resources.length > 1 && (() => {
-            const sectionLevel = getSectionAccessLevel(section.resources);
-            return (
-              <RadioGroup
-                value={sectionLevel === 'mixed' ? '' : sectionLevel}
-                onValueChange={(newValue) =>
-                  handleSetAllInSection(section.resources, newValue as AccessLevel)
-                }
-                disabled={disabled}
-              >
-                <div className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b py-3 px-3 bg-muted/25">
-                  <div>
-                    <Text size="sm" weight="medium">
-                      Select All
-                    </Text>
+          {section.resources.length > 1 &&
+            (() => {
+              const sectionLevel = getSectionAccessLevel(section.resources);
+              return (
+                <RadioGroup
+                  value={sectionLevel === 'mixed' ? '' : sectionLevel}
+                  onValueChange={(newValue) =>
+                    handleSetAllInSection(section.resources, newValue as AccessLevel)
+                  }
+                  disabled={disabled}
+                >
+                  <div className="grid grid-cols-[1fr_100px_100px_100px] items-center border-b py-3 px-3 bg-muted/25">
+                    <div>
+                      <Text size="sm" weight="medium">
+                        Select All
+                      </Text>
+                    </div>
+                    <div className="flex justify-center">
+                      <RadioGroupItem value="none" />
+                    </div>
+                    <div className="flex justify-center">
+                      <RadioGroupItem value="view" />
+                    </div>
+                    <div className="flex justify-center">
+                      <RadioGroupItem value="edit" />
+                    </div>
                   </div>
-                  <div className="flex justify-center">
-                    <RadioGroupItem value="none" />
-                  </div>
-                  <div className="flex justify-center">
-                    <RadioGroupItem value="view" />
-                  </div>
-                  <div className="flex justify-center">
-                    <RadioGroupItem value="edit" />
-                  </div>
-                </div>
-              </RadioGroup>
-            );
-          })()}
+                </RadioGroup>
+              );
+            })()}
           {/* Rows */}
           {section.resources.map((resource) => {
-            const currentLevel = getAccessLevel(
-              resource.key,
-              value[resource.key] || []
-            );
+            const currentLevel = getAccessLevel(resource.key, value[resource.key] || []);
 
             return (
               <PermissionRow
@@ -392,5 +414,5 @@ export function PermissionMatrix({ value, onChange, obligations, onObligationsCh
 }
 
 // Export utilities for use in other components
-export { RESOURCES, ACCESS_LEVEL_MAPPING, getAccessLevel, accessLevelToPermissions };
-export type { ResourceKey, AccessLevel };
+export { ACCESS_LEVEL_MAPPING, accessLevelToPermissions, getAccessLevel, RESOURCES };
+export type { AccessLevel, ResourceKey };

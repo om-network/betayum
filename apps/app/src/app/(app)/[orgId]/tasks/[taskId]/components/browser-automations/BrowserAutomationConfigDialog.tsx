@@ -1,6 +1,7 @@
 'use client';
 
 import { SchedulePicker } from '@/components/schedule-picker';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -13,7 +14,6 @@ import {
 import { Input } from '@trycompai/ui/input';
 import { Label } from '@trycompai/ui/label';
 import { Textarea } from '@trycompai/ui/textarea';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -192,8 +192,8 @@ export function BrowserAutomationConfigDialog({
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
-              If set, each run checks the final page against this criteria and records a
-              pass/fail verdict. Leave blank to only capture a screenshot.
+              If set, each run checks the final page against this criteria and records a pass/fail
+              verdict. Leave blank to only capture a screenshot.
             </p>
           </div>
 

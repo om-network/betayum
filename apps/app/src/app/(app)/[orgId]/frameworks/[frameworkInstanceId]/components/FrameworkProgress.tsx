@@ -1,13 +1,13 @@
 'use client';
 
-import type { Control, Task } from '@db';
-import { Badge, Text } from '@trycompai/design-system';
 import {
   type EvidenceSubmissionInfo,
   getControlStatus,
   getFrameworkAggregatePercent,
 } from '@/lib/control-compliance';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
+import type { Control, Task } from '@db';
+import { Badge, Text } from '@trycompai/design-system';
 
 interface Props {
   framework: FrameworkInstanceWithControls;

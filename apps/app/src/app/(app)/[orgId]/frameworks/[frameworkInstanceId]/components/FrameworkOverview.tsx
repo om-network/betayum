@@ -1,13 +1,11 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
+import { type EvidenceSubmissionInfo, getControlStatus } from '@/lib/control-compliance';
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import type { Control, Task } from '@db';
-import {
-  Badge,
-  Button,
-  PageHeader,
-  Text,
-} from '@trycompai/design-system';
-import { TrashCan, OverflowMenuVertical } from '@trycompai/design-system/icons';
+import { Badge, Button, PageHeader, Text } from '@trycompai/design-system';
+import { OverflowMenuVertical, TrashCan } from '@trycompai/design-system/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,14 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
 import { useState } from 'react';
-import { usePermissions } from '@/hooks/use-permissions';
-import {
-  type EvidenceSubmissionInfo,
-  getControlStatus,
-} from '@/lib/control-compliance';
-import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
-import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
 import { AddCustomRequirementSheet } from './AddCustomRequirementSheet';
+import { FrameworkDeleteDialog } from './FrameworkDeleteDialog';
 import { LinkRequirementSheet } from './LinkRequirementSheet';
 
 interface FrameworkOverviewProps {
@@ -44,13 +36,14 @@ export function FrameworkOverview({
   const totalControls = allControls.length;
 
   const compliantControls = allControls.filter(
-    (control) => getControlStatus(
-      control.policies,
-      tasks,
-      control.id,
-      control.controlDocumentTypes,
-      evidenceSubmissions,
-    ) === 'completed',
+    (control) =>
+      getControlStatus(
+        control.policies,
+        tasks,
+        control.id,
+        control.controlDocumentTypes,
+        evidenceSubmissions,
+      ) === 'completed',
   ).length;
 
   const compliancePercentage =
@@ -79,12 +72,8 @@ export function FrameworkOverview({
         title={frameworkDisplayName}
         actions={
           <>
-            <LinkRequirementSheet
-              frameworkInstanceId={frameworkInstanceWithControls.id}
-            />
-            <AddCustomRequirementSheet
-              frameworkInstanceId={frameworkInstanceWithControls.id}
-            />
+            <LinkRequirementSheet frameworkInstanceId={frameworkInstanceWithControls.id} />
+            <AddCustomRequirementSheet frameworkInstanceId={frameworkInstanceWithControls.id} />
             {hasPermission('framework', 'delete') ? (
               <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
                 <DropdownMenuTrigger asChild>
@@ -119,9 +108,15 @@ export function FrameworkOverview({
 
       <div className="flex items-center gap-6 text-sm">
         <Badge variant={getComplianceBadgeVariant()}>{compliancePercentage}% compliant</Badge>
-        <Text size="sm" variant="muted">{compliantControls} completed</Text>
-        <Text size="sm" variant="muted">{inProgressControls} remaining</Text>
-        <Text size="sm" variant="muted">{totalControls} total controls</Text>
+        <Text size="sm" variant="muted">
+          {compliantControls} completed
+        </Text>
+        <Text size="sm" variant="muted">
+          {inProgressControls} remaining
+        </Text>
+        <Text size="sm" variant="muted">
+          {totalControls} total controls
+        </Text>
       </div>
 
       <div className="h-2 w-full rounded-full bg-muted/50">

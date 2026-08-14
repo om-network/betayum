@@ -73,7 +73,9 @@ function buildController(overrides?: {
       : jest.fn().mockResolvedValue({ id: 'att_1' }),
   } as unknown as AttachmentsService;
 
-  const mockTasksService = { verifyTaskAccess: jest.fn().mockResolvedValue(undefined) };
+  const mockTasksService = {
+    verifyTaskAccess: jest.fn().mockResolvedValue(undefined),
+  };
 
   const controller = new AutomationsController(
     {} as never,
@@ -85,7 +87,12 @@ function buildController(overrides?: {
     {} as never,
   );
 
-  return { controller, mockSheetsService, mockAttachmentsService, mockTasksService };
+  return {
+    controller,
+    mockSheetsService,
+    mockAttachmentsService,
+    mockTasksService,
+  };
 }
 
 describe('AutomationsController.createGoogleSheet', () => {
@@ -132,7 +139,10 @@ describe('AutomationsController.createGoogleSheet', () => {
     });
 
     await expect(
-      controller.createGoogleSheet('org_1', 'task_1', 'auto_1', { title: 'T', rows: [] }),
+      controller.createGoogleSheet('org_1', 'task_1', 'auto_1', {
+        title: 'T',
+        rows: [],
+      }),
     ).rejects.toThrow('Google API error');
 
     expect(mockAttachmentsService.uploadAttachment).not.toHaveBeenCalled();

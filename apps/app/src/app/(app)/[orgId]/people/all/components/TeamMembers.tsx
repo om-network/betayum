@@ -4,9 +4,9 @@ import { trainingVideos as trainingVideosData } from '@/lib/data/training-videos
 import { serverApi } from '@/lib/server-api-client';
 import type { Invitation, Member, User } from '@db';
 import { db } from '@db/server';
+import type { BackgroundCheckStatus } from '../../[employeeId]/components/backgroundCheckTypes';
 import { getEmployeeSyncConnections } from '../data/queries';
 import { TeamMembersClient } from './TeamMembersClient';
-import type { BackgroundCheckStatus } from '../../[employeeId]/components/backgroundCheckTypes';
 
 export type { BackgroundCheckStatus };
 
@@ -43,12 +43,7 @@ export interface TeamMembersProps {
 }
 
 export async function TeamMembers(props: TeamMembersProps) {
-  const {
-    canManageMembers,
-    canInviteUsers,
-    isCurrentUserOwner,
-    organizationId,
-  } = props;
+  const { canManageMembers, canInviteUsers, isCurrentUserOwner, organizationId } = props;
 
   if (!organizationId) {
     return null;
@@ -56,9 +51,7 @@ export async function TeamMembers(props: TeamMembersProps) {
 
   // Fetch members and invitations from API
   const [membersRes, invitationsRes] = await Promise.all([
-    serverApi.get<{ data: MemberWithUser[]; count: number }>(
-      '/v1/people?includeDeactivated=true',
-    ),
+    serverApi.get<{ data: MemberWithUser[]; count: number }>('/v1/people?includeDeactivated=true'),
     serverApi.get<{ data: Invitation[] }>('/v1/auth/invitations'),
   ]);
 
@@ -97,7 +90,6 @@ export async function TeamMembers(props: TeamMembersProps) {
   const hasHipaaFramework = !!hipaaInstance;
 
   if (employeeMembers.length > 0) {
-
     const policies = await db.policy.findMany({
       where: {
         organizationId,
@@ -115,7 +107,9 @@ export async function TeamMembers(props: TeamMembersProps) {
       : [];
 
     const totalPolicies = policies.length;
-    const totalTrainingVideos = orgFlags?.securityTrainingStepEnabled ? trainingVideosData.length : 0;
+    const totalTrainingVideos = orgFlags?.securityTrainingStepEnabled
+      ? trainingVideosData.length
+      : 0;
     const totalHipaaTraining = hasHipaaFramework ? 1 : 0;
     const totalTasks = totalPolicies + totalTrainingVideos + totalHipaaTraining;
 

@@ -178,9 +178,7 @@ export class FindingsService {
       );
     }
     if (targetCount > 1) {
-      throw new BadRequestException(
-        'Provide only one target for the finding',
-      );
+      throw new BadRequestException('Provide only one target for the finding');
     }
 
     // Validate each entity belongs to this organization (for FK targets)
@@ -189,7 +187,8 @@ export class FindingsService {
         where: { id: createDto.taskId, organizationId },
         select: { id: true, title: true },
       });
-      if (!task) throw new NotFoundException(`Task ${createDto.taskId} not found`);
+      if (!task)
+        throw new NotFoundException(`Task ${createDto.taskId} not found`);
       return { kind: 'task' as const, id: task.id, label: task.title };
     }
     if (createDto.evidenceSubmissionId) {

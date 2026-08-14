@@ -86,10 +86,7 @@ export function BookingStep({
 
           {/* Cancel option */}
           <div className="flex justify-center">
-            <CancelOnboardingButton
-              organizationId={orgId}
-              hasOtherOrgs={hasOtherOrgs}
-            />
+            <CancelOnboardingButton organizationId={orgId} hasOtherOrgs={hasOtherOrgs} />
           </div>
         </div>
       </Card>

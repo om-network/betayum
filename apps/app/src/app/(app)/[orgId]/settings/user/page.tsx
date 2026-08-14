@@ -2,11 +2,7 @@ import { serverApi } from '@/lib/api-server';
 import type { Metadata } from 'next';
 import { EmailNotificationPreferences } from './components/EmailNotificationPreferences';
 
-export default async function UserSettings({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
+export default async function UserSettings({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
 
   const res = await serverApi.get<{

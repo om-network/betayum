@@ -25,7 +25,13 @@ import {
   CommandList,
 } from '@trycompai/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 
 const OPEN_MENU_SHORTCUT = 's';
 const REMOVE_SORT_SHORTCUTS = ['backspace', 'delete'];

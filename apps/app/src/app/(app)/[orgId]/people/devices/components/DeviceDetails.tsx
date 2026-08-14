@@ -103,9 +103,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
               <div className="flex items-center gap-2">
                 <span
                   className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${
-                    isDeviceOnline(device.lastCheckIn)
-                      ? 'bg-green-500'
-                      : 'bg-gray-300'
+                    isDeviceOnline(device.lastCheckIn) ? 'bg-green-500' : 'bg-gray-300'
                   }`}
                 />
                 <Text size="lg" weight="semibold">
@@ -223,10 +221,7 @@ export const DeviceDetails = ({ device, onClose }: DeviceDetailsProps) => {
                   {isFleetUnsupported ? (
                     <Badge variant="outline">N/A</Badge>
                   ) : isStale ? (
-                    <Badge
-                      variant="secondary"
-                      title={`${label} — unknown (device is stale)`}
-                    >
+                    <Badge variant="secondary" title={`${label} — unknown (device is stale)`}>
                       —
                     </Badge>
                   ) : (
