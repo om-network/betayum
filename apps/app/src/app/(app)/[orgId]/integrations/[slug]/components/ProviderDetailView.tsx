@@ -8,6 +8,7 @@ import {
   type ConnectionListItem,
   type IntegrationProvider,
 } from '@/hooks/use-integration-platform';
+import { usePermissions } from '@/hooks/use-permissions';
 import { api } from '@/lib/api-client';
 import { CLOUD_RECONNECT_CUTOFF_LABEL, requiresCloudReconnect } from '@/lib/cloud-reconnect-policy';
 import { Breadcrumb, Button, Stack } from '@trycompai/design-system';
@@ -18,6 +19,7 @@ import { toast } from 'sonner';
 import { AccountSettingsSheet } from './AccountSettingsSheet';
 import { getConnectionDisplayLabel } from './connection-display';
 import { EmptyStateOnboarding } from './EmptyStateOnboarding';
+import { BrowserLogin } from './GcpBrowserLogin';
 import { GcpProjectPicker } from './GcpProjectPicker';
 import { IntegrationEvidenceTasks, type IntegrationTaskTemplate } from './IntegrationEvidenceTasks';
 import { IntegrationProviderHero } from './IntegrationProviderHero';
@@ -29,6 +31,7 @@ interface ProviderDetailViewProps {
   taskTemplates: IntegrationTaskTemplate[];
   /** Server passes true when URL was ?success=true&provider=gcp (OAuth return) */
   gcpOAuthJustConnected?: boolean;
+  browserConnectionId?: string;
 }
 
 export function ProviderDetailView({
@@ -36,12 +39,15 @@ export function ProviderDetailView({
   initialConnections,
   taskTemplates,
   gcpOAuthJustConnected = false,
+  browserConnectionId,
 }: ProviderDetailViewProps) {
   const { orgId } = useParams<{ orgId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { connections: allConnections, refresh: refreshConnections } = useIntegrationConnections();
   const { startOAuth } = useIntegrationMutations();
+  const { hasPermission } = usePermissions();
+  const canUpdateIntegration = hasPermission('integration', 'update');
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [reconnectDialogOpen, setReconnectDialogOpen] = useState(false);
@@ -65,6 +71,9 @@ export function ProviderDetailView({
     }
     return activeConnections[0] ?? null;
   }, [selectedConnectionId, activeConnections]);
+  const browserLoginConnectionId =
+    selectedConnection?.status === 'active' ? selectedConnection.id : browserConnectionId;
+  const isGithubVmLoginOnly = provider.id === 'github' && provider.oauthConfigured === false;
 
   const services = useMemo(
     () =>
@@ -113,6 +122,7 @@ export function ProviderDetailView({
 
   const handleToggleService = useCallback(
     async (serviceId: string, enabled: boolean): Promise<boolean> => {
+      if (!canUpdateIntegration) return false;
       setTogglingService(serviceId);
       try {
         await updateServices(serviceId, enabled);
@@ -127,7 +137,7 @@ export function ProviderDetailView({
         setTogglingService(null);
       }
     },
-    [updateServices, services],
+    [canUpdateIntegration, updateServices, services],
   );
 
   // OAuth return (?success=true): strip query, detect org/projects (NOT services yet — user must select projects first)
@@ -213,6 +223,7 @@ export function ProviderDetailView({
   }, [isCloudProvider, isConnected, selectedConnection, refreshServices, provider.id]);
 
   const handleConnect = useCallback(async () => {
+    if (!canUpdateIntegration) return;
     if (provider.authType === 'oauth2') {
       const redirectUrl = `${window.location.origin}/${orgId}/integrations/${provider.id}?success=true&settings=true`;
       const result = await startOAuth(provider.id, redirectUrl);
@@ -226,7 +237,7 @@ export function ProviderDetailView({
       // For non-OAuth, show the inline add-account form
       setShowAddAccount(true);
     }
-  }, [provider, orgId, startOAuth]);
+  }, [canUpdateIntegration, provider, orgId, startOAuth]);
 
   useEffect(() => {
     if (!selectedConnection?.id || settingsQueryHandledRef.current) return;
@@ -265,9 +276,21 @@ export function ProviderDetailView({
           onSelectConnection={(id) => setSelectedConnectionId(id)}
           onOpenSettings={() => setSettingsOpen(true)}
           onAddAccount={() => void handleConnect()}
+          canUpdate={canUpdateIntegration}
+          vmLoginOnly={isGithubVmLoginOnly}
         />
 
-        <IntegrationEvidenceTasks provider={provider} taskTemplates={taskTemplates} orgId={orgId} />
+        {!isGithubVmLoginOnly && (
+          <IntegrationEvidenceTasks
+            provider={provider}
+            taskTemplates={taskTemplates}
+            orgId={orgId}
+          />
+        )}
+
+        {(provider.id === 'gcp' || provider.id === 'github') && browserLoginConnectionId && (
+          <BrowserLogin connectionId={browserLoginConnectionId} providerName={provider.name} />
+        )}
 
         {selectedConnectionRequiresReconnect && (
           <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 flex items-center justify-between gap-3">
@@ -278,14 +301,19 @@ export function ProviderDetailView({
                 keep scans and remediation fully reliable.
               </p>
             </div>
-            <Button size="sm" variant="outline" onClick={() => setReconnectDialogOpen(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!canUpdateIntegration}
+              onClick={() => setReconnectDialogOpen(true)}
+            >
               Reconnect
             </Button>
           </div>
         )}
 
         {/* Content: zero state OR findings */}
-        {!isConnected && (
+        {!isConnected && !isGithubVmLoginOnly && (
           <EmptyStateOnboarding
             provider={provider}
             orgId={orgId}

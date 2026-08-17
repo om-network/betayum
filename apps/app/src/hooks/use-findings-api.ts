@@ -2,13 +2,8 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useApiSWR, UseApiSWROptions } from '@/hooks/use-api-swr';
+import type { FindingArea, FindingSeverity, FindingStatus, FindingType } from '@db';
 import type { EvidenceFormType } from '@trycompai/company';
-import type {
-  FindingArea,
-  FindingSeverity,
-  FindingStatus,
-  FindingType,
-} from '@db';
 import { useCallback } from 'react';
 
 // ---------------------------------------------------------------------------
@@ -135,7 +130,7 @@ export interface FindingHistoryEntry {
 
 const DEFAULT_FINDINGS_POLLING_INTERVAL = 10000;
 
-export interface UseFindingsOptions extends UseApiSWROptions<Finding[]> {}
+export type UseFindingsOptions = UseApiSWROptions<Finding[]>;
 
 export interface OrganizationFindingsFilters {
   status?: FindingStatus;
@@ -170,14 +165,11 @@ export function useOrganizationFindings(
 
   return useApiSWR<Finding[]>(endpoint, {
     ...options,
-    refreshInterval:
-      options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
+    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
   });
 }
 
-export function useFindingTemplates(
-  options: UseApiSWROptions<FindingTemplate[]> = {},
-) {
+export function useFindingTemplates(options: UseApiSWROptions<FindingTemplate[]> = {}) {
   return useApiSWR<FindingTemplate[]>('/v1/finding-template', options);
 }
 
@@ -189,8 +181,7 @@ export function useFindingHistory(
 
   return useApiSWR<FindingHistoryEntry[]>(endpoint, {
     ...options,
-    refreshInterval:
-      options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
+    refreshInterval: options.refreshInterval ?? DEFAULT_FINDINGS_POLLING_INTERVAL,
   });
 }
 
@@ -208,10 +199,7 @@ export function useFindingActions() {
 
   const updateFinding = useCallback(
     async (findingId: string, data: UpdateFindingData) => {
-      const response = await api.patch<Finding>(
-        `/v1/findings/${findingId}`,
-        data,
-      );
+      const response = await api.patch<Finding>(`/v1/findings/${findingId}`, data);
       if (response.error) throw new Error(response.error);
       return response.data!;
     },
@@ -230,9 +218,7 @@ export function useFindingActions() {
   return { createFinding, updateFinding, deleteFinding };
 }
 
-export function useGroupedFindingTemplates(
-  options: UseApiSWROptions<FindingTemplate[]> = {},
-) {
+export function useGroupedFindingTemplates(options: UseApiSWROptions<FindingTemplate[]> = {}) {
   const { data, ...rest } = useFindingTemplates(options);
 
   const groupedTemplates = data?.data?.reduce(

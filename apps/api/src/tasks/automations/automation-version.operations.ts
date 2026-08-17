@@ -21,7 +21,11 @@ export async function createAutomationVersion({
   auditService: AutomationAuditService;
   usageLimitsService: AutomationUsageLimitsService;
 }) {
-  const automation = await findScopedAutomation({ organizationId, taskId, automationId });
+  const automation = await findScopedAutomation({
+    organizationId,
+    taskId,
+    automationId,
+  });
   await usageLimitsService.assertVersionLimit({
     organizationId,
     taskId,

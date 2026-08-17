@@ -5,12 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { format } from 'date-fns';
 import { useApi } from '@/hooks/use-api';
 import { usePeopleActions } from '@/hooks/use-people-api';
 import { parseRolesString } from '@/lib/permissions';
 import { authClient } from '@/utils/auth-client';
-import useSWR from 'swr';
 import type { Invitation } from '@db';
 import {
   Button,
@@ -38,14 +36,21 @@ import {
   TableHeader,
   TableRow,
 } from '@trycompai/design-system';
-import { Calendar as CalendarIcon, ChevronDown, InProgress, Search } from '@trycompai/design-system/icons';
+import {
+  Calendar as CalendarIcon,
+  ChevronDown,
+  InProgress,
+  Search,
+} from '@trycompai/design-system/icons';
+import { format } from 'date-fns';
+import useSWR from 'swr';
 
 import { apiClient } from '@/lib/api-client';
 import { useMemo } from 'react';
 import { useAgentDevices } from '../../devices/hooks/useAgentDevices';
 import { useFleetHosts } from '../../devices/hooks/useFleetHosts';
-import { buildDisplayItems, filterDisplayItems } from './filter-members';
 import { computeDeviceStatusMap } from './compute-device-status-map';
+import { buildDisplayItems, filterDisplayItems } from './filter-members';
 import { MemberRow } from './MemberRow';
 import { PendingInvitationRow } from './PendingInvitationRow';
 import type { MemberWithUser, TaskCompletion, TeamMembersData } from './TeamMembers';
@@ -98,13 +103,12 @@ export function TeamMembersClient({
   const api = useApi();
 
   // Fetch custom roles for the role combobox
-  const { data: rolesData } = useSWR(
-    `/v1/roles`,
-    async (endpoint: string) => {
-      const res = await api.get<{ customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }> }>(endpoint);
-      return res.data?.customRoles ?? [];
-    },
-  );
+  const { data: rolesData } = useSWR(`/v1/roles`, async (endpoint: string) => {
+    const res = await api.get<{
+      customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }>;
+    }>(endpoint);
+    return res.data?.customRoles ?? [];
+  });
   const customRoles = (rolesData ?? []).map((r) => ({
     id: r.id,
     name: r.name,
@@ -128,9 +132,7 @@ export function TeamMembersClient({
   const lastSyncAt = employeeSyncData.lastSyncAt;
   const nextSyncAt = employeeSyncData.nextSyncAt;
 
-  const handleEmployeeSync = async (
-    provider: string,
-  ) => {
+  const handleEmployeeSync = async (provider: string) => {
     const result = await syncEmployees(provider);
     if (result?.success) {
       router.refresh();
@@ -301,7 +303,12 @@ export function TeamMembersClient({
               <SelectValue placeholder="Active">
                 {hasOffboardFilter && !statusFilter
                   ? 'All People'
-                  : ({ all: 'All People', active: 'Active', pending: 'Pending', deactivated: 'Deactivated' }[statusFilter] ?? 'Active')}
+                  : ({
+                      all: 'All People',
+                      active: 'Active',
+                      pending: 'Pending',
+                      deactivated: 'Deactivated',
+                    }[statusFilter] ?? 'Active')}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -323,7 +330,13 @@ export function TeamMembersClient({
           >
             <SelectTrigger>
               <SelectValue placeholder="All Roles">
-                {{ owner: 'Owner', admin: 'Admin', auditor: 'Auditor', employee: 'Employee', contractor: 'Contractor' }[roleFilter] ?? 'All Roles'}
+                {{
+                  owner: 'Owner',
+                  admin: 'Admin',
+                  auditor: 'Auditor',
+                  employee: 'Employee',
+                  contractor: 'Contractor',
+                }[roleFilter] ?? 'All Roles'}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -340,15 +353,31 @@ export function TeamMembersClient({
           label="Onboarded"
           from={onboardFrom}
           to={onboardTo}
-          onApply={(from, to) => { setOnboardFrom(from); setOnboardTo(to); setPage(1); }}
-          onClear={() => { setOnboardFrom(undefined); setOnboardTo(undefined); setPage(1); }}
+          onApply={(from, to) => {
+            setOnboardFrom(from);
+            setOnboardTo(to);
+            setPage(1);
+          }}
+          onClear={() => {
+            setOnboardFrom(undefined);
+            setOnboardTo(undefined);
+            setPage(1);
+          }}
         />
         <DateRangeFilter
           label="Offboarded"
           from={offboardFrom}
           to={offboardTo}
-          onApply={(from, to) => { setOffboardFrom(from); setOffboardTo(to); setPage(1); }}
-          onClear={() => { setOffboardFrom(undefined); setOffboardTo(undefined); setPage(1); }}
+          onApply={(from, to) => {
+            setOffboardFrom(from);
+            setOffboardTo(to);
+            setPage(1);
+          }}
+          onClear={() => {
+            setOffboardFrom(undefined);
+            setOffboardTo(undefined);
+            setPage(1);
+          }}
         />
         {hasAnyConnection && (
           <div className="flex items-center gap-2">
@@ -356,9 +385,7 @@ export function TeamMembersClient({
               <Select
                 onValueChange={(value) => {
                   if (value) {
-                    handleEmployeeSync(
-                      value as 'google-workspace' | 'rippling' | 'jumpcloud',
-                    );
+                    handleEmployeeSync(value as 'google-workspace' | 'rippling' | 'jumpcloud');
                   }
                 }}
                 disabled={isSyncing || !canManageMembers}
@@ -387,105 +414,109 @@ export function TeamMembersClient({
                     <SelectValue placeholder="Select sync source" />
                   )}
                 </SelectTrigger>
-              <SelectContent>
-                <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
-                  {selectedProvider ? (
-                    <>
-                      <div>Auto-syncs daily at 7 AM UTC</div>
-                      {lastSyncAt && (
-                        <div className="text-xs text-muted-foreground/80">
-                          Last sync: {new Date(lastSyncAt).toLocaleString()}
-                        </div>
-                      )}
-                      {nextSyncAt && (
-                        <div className="text-xs text-muted-foreground/80">
-                          Next sync: {new Date(nextSyncAt).toLocaleString()}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    'Select a provider to enable auto-sync'
-                  )}
-                </div>
-                <Separator />
-                {googleWorkspaceConnectionId && (
-                  <SelectItem value="google-workspace">
-                    <div className="flex items-center gap-2">
-                      <Image
-                        src={getProviderLogo('google-workspace')}
-                        alt="Google"
-                        width={16}
-                        height={16}
-                        className="rounded-sm"
-                        unoptimized
-                      />
-                      Google Workspace
-                      {selectedProvider === 'google-workspace' && (
-                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                )}
-                {ripplingConnectionId && (
-                  <SelectItem value="rippling">
-                    <div className="flex items-center gap-2">
-                      <Image
-                        src={getProviderLogo('rippling')}
-                        alt="Rippling"
-                        width={16}
-                        height={16}
-                        className="rounded-sm"
-                        unoptimized
-                      />
-                      Rippling
-                      {selectedProvider === 'rippling' && (
-                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                )}
-                {jumpcloudConnectionId && (
-                  <SelectItem value="jumpcloud">
-                    <div className="flex items-center gap-2">
-                      <Image
-                        src={getProviderLogo('jumpcloud')}
-                        alt="JumpCloud"
-                        width={16}
-                        height={16}
-                        className="rounded-sm"
-                        unoptimized
-                      />
-                      JumpCloud
-                      {selectedProvider === 'jumpcloud' && (
-                        <span className="ml-auto text-xs text-muted-foreground">Active</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                )}
-                {/* Dynamic sync providers (from dynamic integrations) */}
-                {availableProviders
-                  .filter((p) => p.connected && !['google-workspace', 'rippling', 'jumpcloud'].includes(p.slug))
-                  .map((provider) => (
-                    <SelectItem key={provider.slug} value={provider.slug}>
-                      <div className="flex items-center gap-2">
-                        {provider.logoUrl && (
-                          <Image
-                            src={provider.logoUrl}
-                            alt={provider.name}
-                            width={16}
-                            height={16}
-                            className="rounded-sm"
-                            unoptimized
-                          />
+                <SelectContent>
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground space-y-1">
+                    {selectedProvider ? (
+                      <>
+                        <div>Auto-syncs daily at 7 AM UTC</div>
+                        {lastSyncAt && (
+                          <div className="text-xs text-muted-foreground/80">
+                            Last sync: {new Date(lastSyncAt).toLocaleString()}
+                          </div>
                         )}
-                        {provider.name}
-                        {selectedProvider === provider.slug && (
+                        {nextSyncAt && (
+                          <div className="text-xs text-muted-foreground/80">
+                            Next sync: {new Date(nextSyncAt).toLocaleString()}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      'Select a provider to enable auto-sync'
+                    )}
+                  </div>
+                  <Separator />
+                  {googleWorkspaceConnectionId && (
+                    <SelectItem value="google-workspace">
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src={getProviderLogo('google-workspace')}
+                          alt="Google"
+                          width={16}
+                          height={16}
+                          className="rounded-sm"
+                          unoptimized
+                        />
+                        Google Workspace
+                        {selectedProvider === 'google-workspace' && (
                           <span className="ml-auto text-xs text-muted-foreground">Active</span>
                         )}
                       </div>
                     </SelectItem>
-                  ))}
-              </SelectContent>
+                  )}
+                  {ripplingConnectionId && (
+                    <SelectItem value="rippling">
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src={getProviderLogo('rippling')}
+                          alt="Rippling"
+                          width={16}
+                          height={16}
+                          className="rounded-sm"
+                          unoptimized
+                        />
+                        Rippling
+                        {selectedProvider === 'rippling' && (
+                          <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  )}
+                  {jumpcloudConnectionId && (
+                    <SelectItem value="jumpcloud">
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src={getProviderLogo('jumpcloud')}
+                          alt="JumpCloud"
+                          width={16}
+                          height={16}
+                          className="rounded-sm"
+                          unoptimized
+                        />
+                        JumpCloud
+                        {selectedProvider === 'jumpcloud' && (
+                          <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  )}
+                  {/* Dynamic sync providers (from dynamic integrations) */}
+                  {availableProviders
+                    .filter(
+                      (p) =>
+                        p.connected &&
+                        !['google-workspace', 'rippling', 'jumpcloud'].includes(p.slug),
+                    )
+                    .map((provider) => (
+                      <SelectItem key={provider.slug} value={provider.slug}>
+                        <div className="flex items-center gap-2">
+                          {provider.logoUrl && (
+                            <Image
+                              src={provider.logoUrl}
+                              alt={provider.name}
+                              width={16}
+                              height={16}
+                              className="rounded-sm"
+                              unoptimized
+                            />
+                          )}
+                          {provider.name}
+                          {selectedProvider === provider.slug && (
+                            <span className="ml-auto text-xs text-muted-foreground">Active</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
               </Select>
             </div>
           </div>
@@ -647,13 +678,14 @@ function DateRangeFilter({
     setOpen(false);
   };
 
-  const displayLabel = from && to
-    ? `${format(from, 'MMM d')} – ${format(to, 'MMM d, yyyy')}`
-    : from
-      ? `From ${format(from, 'MMM d, yyyy')}`
-      : to
-        ? `Until ${format(to, 'MMM d, yyyy')}`
-        : 'Any time';
+  const displayLabel =
+    from && to
+      ? `${format(from, 'MMM d')} – ${format(to, 'MMM d, yyyy')}`
+      : from
+        ? `From ${format(from, 'MMM d, yyyy')}`
+        : to
+          ? `Until ${format(to, 'MMM d, yyyy')}`
+          : 'Any time';
 
   return (
     <div className="hidden sm:block">
@@ -695,14 +727,22 @@ function DateRangeFilter({
                 <PopoverTrigger>
                   <div className="border-border bg-muted/50 flex h-10 flex-1 items-center gap-2 rounded-lg border px-3 text-sm cursor-pointer">
                     <CalendarIcon size={14} className="text-muted-foreground" />
-                    {draftFrom ? format(draftFrom, 'MMM d, yyyy') : <span className="text-muted-foreground">Start date</span>}
+                    {draftFrom ? (
+                      format(draftFrom, 'MMM d, yyyy')
+                    ) : (
+                      <span className="text-muted-foreground">Start date</span>
+                    )}
                   </div>
                 </PopoverTrigger>
                 <PopoverContent align="start">
                   <Calendar
                     mode="single"
                     selected={draftFrom}
-                    onSelect={(d) => { setDraftFrom(d ?? undefined); setActivePreset(null); setFromPickerOpen(false); }}
+                    onSelect={(d) => {
+                      setDraftFrom(d ?? undefined);
+                      setActivePreset(null);
+                      setFromPickerOpen(false);
+                    }}
                     captionLayout="dropdown"
                     fromYear={2000}
                     toYear={new Date().getFullYear() + 1}
@@ -714,14 +754,22 @@ function DateRangeFilter({
                 <PopoverTrigger>
                   <div className="border-border bg-muted/50 flex h-10 flex-1 items-center gap-2 rounded-lg border px-3 text-sm cursor-pointer">
                     <CalendarIcon size={14} className="text-muted-foreground" />
-                    {draftTo ? format(draftTo, 'MMM d, yyyy') : <span className="text-muted-foreground">End date</span>}
+                    {draftTo ? (
+                      format(draftTo, 'MMM d, yyyy')
+                    ) : (
+                      <span className="text-muted-foreground">End date</span>
+                    )}
                   </div>
                 </PopoverTrigger>
                 <PopoverContent align="start">
                   <Calendar
                     mode="single"
                     selected={draftTo}
-                    onSelect={(d) => { setDraftTo(d ?? undefined); setActivePreset(null); setToPickerOpen(false); }}
+                    onSelect={(d) => {
+                      setDraftTo(d ?? undefined);
+                      setActivePreset(null);
+                      setToPickerOpen(false);
+                    }}
                     captionLayout="dropdown"
                     fromYear={2000}
                     toYear={new Date().getFullYear() + 1}
@@ -732,10 +780,14 @@ function DateRangeFilter({
 
             <div className="flex items-center justify-end gap-2 border-t pt-3">
               <div>
-                <Button variant="ghost" size="sm" onClick={handleClear}>Clear</Button>
+                <Button variant="ghost" size="sm" onClick={handleClear}>
+                  Clear
+                </Button>
               </div>
               <div>
-                <Button size="sm" onClick={handleApply}>Apply</Button>
+                <Button size="sm" onClick={handleApply}>
+                  Apply
+                </Button>
               </div>
             </div>
           </div>

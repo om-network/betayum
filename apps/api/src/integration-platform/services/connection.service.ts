@@ -286,8 +286,7 @@ export class ConnectionService {
 
     if (!hasCustom && !hasApp) return 'todo';
 
-    const allPassing =
-      (!hasCustom || customPassing) && (!hasApp || appPassing);
+    const allPassing = (!hasCustom || customPassing) && (!hasApp || appPassing);
     return allPassing ? 'done' : 'failed';
   }
 

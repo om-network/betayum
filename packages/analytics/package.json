@@ -4,11 +4,11 @@
   "version": "1.0.0",
   "dependencies": {
     "posthog-js": "^1.236.6",
-    "posthog-node": "^5.8.2"
+    "posthog-node": "^5.29.2"
   },
   "devDependencies": {
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   },
   "exports": {
     ".": {

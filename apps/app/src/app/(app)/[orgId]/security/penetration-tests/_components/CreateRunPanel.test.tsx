@@ -17,9 +17,7 @@ vi.mock('sonner', () => ({
 }));
 
 async function confirmAuthorization(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(
-    screen.getByText('I own this target or have written authorization to test it.'),
-  );
+  await user.click(screen.getByText('I own this target or have written authorization to test it.'));
 }
 
 function checkInput(label: RegExp) {
@@ -183,7 +181,11 @@ describe('CreateRunPanel', () => {
   it('uses design-system radio styling for evidence options', () => {
     render(<CreateRunPanel orgId="org_1" balance={1} onSubmit={vi.fn()} />);
 
-    expect(validationLevel().getByLabelText(/safe proof/i, { selector: 'input' }).closest('label')).toHaveClass(
+    expect(
+      validationLevel()
+        .getByLabelText(/safe proof/i, { selector: 'input' })
+        .closest('label'),
+    ).toHaveClass(
       'has-[[data-checked]]:border-primary',
       'has-[[data-checked]]:bg-primary/5',
       'has-[[data-checked]]:text-primary',
@@ -211,9 +213,7 @@ describe('CreateRunPanel', () => {
 
     await user.click(screen.getByText('Quick'));
 
-    expect(
-      screen.getByText(/findings are reported without exploitation/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/findings are reported without exploitation/i)).toBeInTheDocument();
   });
 
   it('renders the Scan coverage panel open by default and exposes validation level options', async () => {
@@ -223,14 +223,18 @@ describe('CreateRunPanel', () => {
 
     expect(screen.getByText('Scan coverage')).toBeInTheDocument();
     expect(screen.getByText('Validation level')).toBeInTheDocument();
-    expect(validationLevel().getByLabelText(/report only/i, { selector: 'input' })).toBeInTheDocument();
-    expect(validationLevel().getByLabelText(/safe proof/i, { selector: 'input' })).toBeInTheDocument();
-    expect(validationLevel().getByLabelText(/impact proof/i, { selector: 'input' })).toBeInTheDocument();
+    expect(
+      validationLevel().getByLabelText(/report only/i, { selector: 'input' }),
+    ).toBeInTheDocument();
+    expect(
+      validationLevel().getByLabelText(/safe proof/i, { selector: 'input' }),
+    ).toBeInTheDocument();
+    expect(
+      validationLevel().getByLabelText(/impact proof/i, { selector: 'input' }),
+    ).toBeInTheDocument();
 
     await user.click(validationLevel().getByLabelText(/report only/i, { selector: 'input' }));
-    expect(
-      screen.getByText(/findings are reported without exploitation/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/findings are reported without exploitation/i)).toBeInTheDocument();
 
     await user.click(validationLevel().getByLabelText(/safe proof/i, { selector: 'input' }));
     expect(
@@ -304,9 +308,7 @@ describe('CreateRunPanel', () => {
     expect(onSubmit).not.toHaveBeenCalled();
     const dialog = screen.getByRole('alertdialog');
     expect(within(dialog).getByText(/confirm impact-proof scan/i)).toBeInTheDocument();
-    expect(
-      within(dialog).getByText(/actively exploits findings/i),
-    ).toBeInTheDocument();
+    expect(within(dialog).getByText(/actively exploits findings/i)).toBeInTheDocument();
 
     await user.click(within(dialog).getByRole('button', { name: /run impact-proof scan/i }));
 

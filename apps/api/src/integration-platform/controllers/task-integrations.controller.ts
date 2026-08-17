@@ -425,12 +425,7 @@ export class TaskIntegrationsController {
           resourceId: f.resourceId,
           title: f.title,
           description: f.description,
-          severity: f.severity as
-            | 'info'
-            | 'low'
-            | 'medium'
-            | 'high'
-            | 'critical',
+          severity: f.severity,
           remediation: f.remediation,
           evidence: f.evidence as Prisma.InputJsonValue,
         })),

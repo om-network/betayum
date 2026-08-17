@@ -17,7 +17,9 @@ export function chunkText(
   }
 
   if (chunkSizeTokens <= 0 || overlapTokens < 0) {
-    throw new Error('Invalid chunk parameters: chunkSizeTokens must be > 0, overlapTokens must be >= 0');
+    throw new Error(
+      'Invalid chunk parameters: chunkSizeTokens must be > 0, overlapTokens must be >= 0',
+    );
   }
 
   if (overlapTokens >= chunkSizeTokens) {
@@ -40,11 +42,11 @@ export function chunkText(
   while (start < text.length && iterations < maxIterations) {
     iterations++;
     const end = Math.min(start + chunkSizeChars, text.length);
-    
+
     if (end <= start) {
       break; // Prevent infinite loop
     }
-    
+
     let chunk = text.slice(start, end);
 
     // Try to break at sentence boundaries if possible
@@ -72,10 +74,9 @@ export function chunkText(
     } else {
       start = nextStart;
     }
-    
+
     if (start >= text.length) break;
   }
 
   return chunks.filter((chunk) => chunk.length > 0);
 }
-

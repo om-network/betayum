@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -122,7 +122,8 @@ vi.mock('./components/risks-loading-animation', () => ({
 
 // Mock design system components
 vi.mock('@trycompai/design-system', () => ({
-  AlertDialog: ({ children, open }: any) => (open ? <div data-testid="alert-dialog">{children}</div> : null),
+  AlertDialog: ({ children, open }: any) =>
+    open ? <div data-testid="alert-dialog">{children}</div> : null,
   AlertDialogAction: ({ children, ...props }: any) => <button {...props}>{children}</button>,
   AlertDialogCancel: ({ children, ...props }: any) => <button {...props}>{children}</button>,
   AlertDialogContent: ({ children }: any) => <div>{children}</div>,
@@ -135,7 +136,11 @@ vi.mock('@trycompai/design-system', () => ({
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
   DropdownMenuItem: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-  DropdownMenuTrigger: ({ children, ...props }: any) => <button data-testid="row-actions-trigger" {...props}>{children}</button>,
+  DropdownMenuTrigger: ({ children, ...props }: any) => (
+    <button data-testid="row-actions-trigger" {...props}>
+      {children}
+    </button>
+  ),
   Empty: ({ children }: any) => <div data-testid="empty-state">{children}</div>,
   EmptyDescription: ({ children }: any) => <p>{children}</p>,
   EmptyHeader: ({ children }: any) => <div>{children}</div>,
@@ -156,7 +161,11 @@ vi.mock('@trycompai/design-system', () => ({
   TableCell: ({ children }: any) => <td>{children}</td>,
   TableHead: ({ children }: any) => <th>{children}</th>,
   TableHeader: ({ children }: any) => <thead>{children}</thead>,
-  TableRow: ({ children, onClick, ...props }: any) => <tr onClick={onClick} {...props}>{children}</tr>,
+  TableRow: ({ children, onClick, ...props }: any) => (
+    <tr onClick={onClick} {...props}>
+      {children}
+    </tr>
+  ),
   Text: ({ children }: any) => <span>{children}</span>,
 }));
 
@@ -166,8 +175,8 @@ vi.mock('@trycompai/design-system/icons', () => ({
   TrashCan: () => <span data-testid="trash-icon" />,
 }));
 
-import { RisksTable } from './RisksTable';
 import type { RiskRow } from './RisksTable';
+import { RisksTable } from './RisksTable';
 
 const mockRisks: RiskRow[] = [
   {

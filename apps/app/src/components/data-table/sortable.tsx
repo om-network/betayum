@@ -1,7 +1,6 @@
 'use client';
 
 import { composeEventHandlers, useComposedRefs } from '@/lib/composition';
-import { cn } from '@trycompai/ui/cn';
 import {
   type Announcements,
   DndContext,
@@ -37,6 +36,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Slot } from '@radix-ui/react-slot';
+import { cn } from '@trycompai/ui/cn';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
@@ -374,33 +374,35 @@ const SortableItem = React.forwardRef<HTMLDivElement, SortableItemProps>((props,
     [id, attributes, listeners, setActivatorNodeRef, isDragging, disabled],
   );
 
-  const ItemPrimitive = asChild ? Slot : 'div';
+  const primitiveProps = {
+    id,
+    'data-dragging': isDragging ? '' : undefined,
+    ...itemProps,
+    ...(asHandle ? attributes : {}),
+    ...(asHandle ? listeners : {}),
+    tabIndex: disabled ? undefined : 0,
+    style: composedStyle,
+    className: cn(
+      'focus-visible:ring-ring focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden',
+      {
+        'touch-none select-none': asHandle,
+        'cursor-default': context.flatCursor,
+        'data-dragging:cursor-grabbing': !context.flatCursor,
+        'cursor-grab': !isDragging && asHandle && !context.flatCursor,
+        'opacity-50': isDragging,
+        'pointer-events-none opacity-50': disabled,
+      },
+      className,
+    ),
+  };
 
   return (
     <SortableItemContext.Provider value={itemContext}>
-      <ItemPrimitive
-        id={id}
-        data-dragging={isDragging ? '' : undefined}
-        {...itemProps}
-        {...(asHandle ? attributes : {})}
-        {...(asHandle ? listeners : {})}
-        tabIndex={disabled ? undefined : 0}
-        //@ts-ignore
-        ref={composedRef}
-        style={composedStyle}
-        className={cn(
-          'focus-visible:ring-ring focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden',
-          {
-            'touch-none select-none': asHandle,
-            'cursor-default': context.flatCursor,
-            'data-dragging:cursor-grabbing': !context.flatCursor,
-            'cursor-grab': !isDragging && asHandle && !context.flatCursor,
-            'opacity-50': isDragging,
-            'pointer-events-none opacity-50': disabled,
-          },
-          className,
-        )}
-      />
+      {asChild ? (
+        <Slot {...primitiveProps} ref={composedRef} />
+      ) : (
+        <div {...primitiveProps} ref={composedRef} />
+      )}
     </SortableItemContext.Provider>
   );
 });
@@ -426,25 +428,25 @@ const SortableItemHandle = React.forwardRef<HTMLButtonElement, SortableItemHandl
       itemContext.setActivatorNodeRef(node);
     });
 
-    const HandlePrimitive = asChild ? Slot : 'button';
+    const primitiveProps = {
+      type: 'button' as const,
+      'aria-controls': itemContext.id,
+      'data-dragging': itemContext.isDragging ? '' : undefined,
+      ...itemHandleProps,
+      ...itemContext.attributes,
+      ...itemContext.listeners,
+      className: cn(
+        'select-none disabled:pointer-events-none disabled:opacity-50',
+        context.flatCursor ? 'cursor-default' : 'cursor-grab data-dragging:cursor-grabbing',
+        className,
+      ),
+      disabled: isDisabled,
+    };
 
-    return (
-      <HandlePrimitive
-        type="button"
-        aria-controls={itemContext.id}
-        data-dragging={itemContext.isDragging ? '' : undefined}
-        {...itemHandleProps}
-        {...itemContext.attributes}
-        {...itemContext.listeners}
-        //@ts-ignore
-        ref={composedRef}
-        className={cn(
-          'select-none disabled:pointer-events-none disabled:opacity-50',
-          context.flatCursor ? 'cursor-default' : 'cursor-grab data-dragging:cursor-grabbing',
-          className,
-        )}
-        disabled={isDisabled}
-      />
+    return asChild ? (
+      <Slot {...primitiveProps} ref={composedRef} />
+    ) : (
+      <button {...primitiveProps} ref={composedRef} />
     );
   },
 );
@@ -463,8 +465,10 @@ const dropAnimation: DropAnimation = {
   }),
 };
 
-interface SortableOverlayProps
-  extends Omit<React.ComponentPropsWithoutRef<typeof DragOverlay>, 'children'> {
+interface SortableOverlayProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof DragOverlay>,
+  'children'
+> {
   container?: Element | DocumentFragment | null;
   children?: ((params: { value: UniqueIdentifier }) => React.ReactNode) | React.ReactNode;
 }

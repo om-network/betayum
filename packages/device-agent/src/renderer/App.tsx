@@ -4,7 +4,6 @@ import {
   Card,
   CardContent,
   Heading,
-  LogoIcon,
   Separator,
   Stack,
   Text,
@@ -17,6 +16,7 @@ import type {
   RemediationInfo,
   RemediationResult,
 } from '../shared/types';
+import { BrandLogo } from './BrandLogo';
 
 declare global {
   interface Window {
@@ -162,14 +162,24 @@ function CheckCard({
                 variant={remediationInfo.type === 'auto_fix' ? 'default' : 'outline'}
                 onClick={handleRemediate}
                 loading={isRemediating}
-                iconLeft={isGuideOnly
-                  ? (isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />)
-                  : getRemediationButtonIcon(remediationInfo)}
+                iconLeft={
+                  isGuideOnly ? (
+                    isExpanded ? (
+                      <ChevronUp size={14} />
+                    ) : (
+                      <ChevronDown size={14} />
+                    )
+                  ) : (
+                    getRemediationButtonIcon(remediationInfo)
+                  )
+                }
               >
                 {isRemediating
                   ? 'Fixing...'
                   : isGuideOnly
-                    ? (isExpanded ? 'Hide Guide' : 'View Guide')
+                    ? isExpanded
+                      ? 'Hide Guide'
+                      : 'View Guide'
                     : getRemediationButtonLabel(remediationInfo)}
               </Button>
 
@@ -231,7 +241,10 @@ export default function App() {
   useEffect(() => {
     async function init() {
       try {
-        window.compAgent.getAppVersion().then(setAppVersion).catch(() => {});
+        window.compAgent
+          .getAppVersion()
+          .then(setAppVersion)
+          .catch(() => {});
         const authStatus = await window.compAgent.getAuthStatus();
         setIsAuthenticated(authStatus.isAuthenticated);
         if (authStatus.isAuthenticated) {
@@ -314,7 +327,7 @@ export default function App() {
     return (
       <div className="flex h-screen items-center justify-center p-6">
         <Stack gap="3" align="center">
-          <LogoIcon width={32} height={32} />
+          <BrandLogo size={32} />
           <Text size="sm" variant="muted">
             Loading...
           </Text>
@@ -327,7 +340,7 @@ export default function App() {
     return (
       <div className="flex h-screen flex-col items-center justify-center p-8">
         <Stack gap="6" align="center">
-          <LogoIcon width={40} height={40} />
+          <BrandLogo size={40} />
           <Stack gap="2" align="center">
             <Heading level="3">Betayum Device Agent</Heading>
             <Text size="sm" variant="muted">
@@ -361,7 +374,7 @@ export default function App() {
     <div className="flex h-screen flex-col p-5">
       {/* Header */}
       <Stack direction="row" gap="3" align="center">
-        <LogoIcon width={28} height={28} />
+        <BrandLogo size={28} />
         <Stack gap="0">
           <Text size="sm" weight="semibold">
             Betayum

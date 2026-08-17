@@ -1,7 +1,19 @@
 'use client';
 
-import { useOptimisticTaskItems } from '@/hooks/use-task-items';
+import { SelectAssignee } from '@/components/SelectAssignee';
 import { useAssignableMembers } from '@/hooks/use-organization-members';
+import { usePermissions } from '@/hooks/use-permissions';
+import type {
+  TaskItemEntityType,
+  TaskItemFilters,
+  TaskItemPriority,
+  TaskItemSortBy,
+  TaskItemSortOrder,
+  TaskItemStatus,
+} from '@/hooks/use-task-items';
+import { useOptimisticTaskItems } from '@/hooks/use-task-items';
+import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
+import type { JSONContent } from '@tiptap/react';
 import { Button } from '@trycompai/ui/button';
 import { Input } from '@trycompai/ui/input';
 import { Label } from '@trycompai/ui/label';
@@ -12,23 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@trycompai/ui/select';
-import type {
-  TaskItemEntityType,
-  TaskItemFilters,
-  TaskItemPriority,
-  TaskItemSortBy,
-  TaskItemSortOrder,
-  TaskItemStatus,
-} from '@/hooks/use-task-items';
 import { Loader2 } from 'lucide-react';
-import { useState, useMemo, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { SelectAssignee } from '@/components/SelectAssignee';
-import { filterMembersByOwnerOrAdmin } from '@/utils/filter-members-by-role';
 import { TaskRichDescriptionField } from './TaskRichDescriptionField';
 import { useTaskItemAttachmentUpload } from './hooks/use-task-item-attachment-upload';
-import type { JSONContent } from '@tiptap/react';
-import { usePermissions } from '@/hooks/use-permissions';
 
 interface TaskSmartFormProps {
   entityId: string;
@@ -80,19 +80,11 @@ export function TaskSmartForm({
 }: TaskSmartFormProps) {
   const [title, setTitle] = useState(initialValues?.title || '');
   const [description, setDescription] = useState<JSONContent | null>(
-    typeof initialValues?.description === 'object'
-      ? initialValues.description
-      : null,
+    typeof initialValues?.description === 'object' ? initialValues.description : null,
   );
-  const [status, setStatus] = useState<TaskItemStatus>(
-    initialValues?.status || 'todo',
-  );
-  const [priority, setPriority] = useState<TaskItemPriority>(
-    initialValues?.priority || 'medium',
-  );
-  const [assigneeId, setAssigneeId] = useState<string | null>(
-    initialValues?.assigneeId ?? null,
-  );
+  const [status, setStatus] = useState<TaskItemStatus>(initialValues?.status || 'todo');
+  const [priority, setPriority] = useState<TaskItemPriority>(initialValues?.priority || 'medium');
+  const [assigneeId, setAssigneeId] = useState<string | null>(initialValues?.assigneeId ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { hasPermission } = usePermissions();
@@ -183,9 +175,7 @@ export function TaskSmartForm({
 
     try {
       // Convert description JSON to string for API
-      const descriptionText = description
-        ? JSON.stringify(description)
-        : undefined;
+      const descriptionText = description ? JSON.stringify(description) : undefined;
 
       if (mode === 'create') {
         await optimisticCreate({
@@ -214,9 +204,7 @@ export function TaskSmartForm({
       onSuccess?.();
     } catch (error) {
       console.error('Error creating task item:', error);
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to create task',
-      );
+      toast.error(error instanceof Error ? error.message : 'Failed to create task');
     } finally {
       setIsSubmitting(false);
     }
@@ -272,10 +260,7 @@ export function TaskSmartForm({
           <Label htmlFor="task-status" className="text-sm font-medium">
             Status
           </Label>
-          <Select
-            value={status}
-            onValueChange={(value) => setStatus(value as TaskItemStatus)}
-          >
+          <Select value={status} onValueChange={(value) => setStatus(value as TaskItemStatus)}>
             <SelectTrigger id="task-status" className="bg-background">
               <SelectValue />
             </SelectTrigger>
@@ -338,7 +323,9 @@ export function TaskSmartForm({
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={isSubmitting || isUploading || !title.trim() || (mode === 'create' && !canCreate)}
+          disabled={
+            isSubmitting || isUploading || !title.trim() || (mode === 'create' && !canCreate)
+          }
           className="h-8 px-3"
         >
           {isSubmitting ? (
@@ -346,12 +333,13 @@ export function TaskSmartForm({
               <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
               {mode === 'create' ? 'Creating...' : 'Updating...'}
             </>
+          ) : mode === 'create' ? (
+            'Create Task'
           ) : (
-            mode === 'create' ? 'Create Task' : 'Update Task'
+            'Update Task'
           )}
         </Button>
       </div>
     </div>
   );
 }
-

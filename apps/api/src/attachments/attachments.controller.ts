@@ -1,4 +1,5 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiOperation,
   ApiParam,
@@ -11,6 +12,16 @@ import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import { AttachmentsService } from './attachments.service';
+
+function buildContentDisposition(fileName: string): string {
+  const asciiFileName = fileName.replace(/[^\u0020-\u007E]|["\\]/g, '_');
+  const encodedFileName = encodeURIComponent(fileName).replace(
+    /['()*]/g,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+
+  return `attachment; filename="${asciiFileName}"; filename*=UTF-8''${encodedFileName}`;
+}
 
 @ApiTags('Attachments')
 @Controller({ path: 'attachments', version: '1' })
@@ -62,5 +73,22 @@ export class AttachmentsController {
       organizationId,
       attachmentId,
     );
+  }
+
+  @Get(':attachmentId/stream')
+  @RequirePermission('evidence', 'read')
+  async streamAttachment(
+    @OrganizationId() organizationId: string,
+    @Param('attachmentId') attachmentId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { stream, contentType, fileName } =
+      await this.attachmentsService.streamAttachmentContent(
+        organizationId,
+        attachmentId,
+      );
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', buildContentDisposition(fileName));
+    stream.pipe(res);
   }
 }

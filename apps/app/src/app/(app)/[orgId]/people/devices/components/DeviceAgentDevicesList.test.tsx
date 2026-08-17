@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DeviceWithChecks } from '../types';
 
 vi.mock('next/navigation', () => ({
@@ -18,8 +18,8 @@ vi.mock('../lib/devices-csv', async (importOriginal) => {
   };
 });
 
-import { DeviceAgentDevicesList } from './DeviceAgentDevicesList';
 import { downloadDevicesCsv } from '../lib/devices-csv';
+import { DeviceAgentDevicesList } from './DeviceAgentDevicesList';
 
 const mockDownload = vi.mocked(downloadDevicesCsv);
 
@@ -116,7 +116,12 @@ describe('DeviceAgentDevicesList', () => {
       <DeviceAgentDevicesList
         devices={[
           makeDevice({ name: 'Alpha', id: 'a' }),
-          makeDevice({ name: 'Beta', id: 'b', complianceStatus: 'stale', daysSinceLastCheckIn: 10 }),
+          makeDevice({
+            name: 'Beta',
+            id: 'b',
+            complianceStatus: 'stale',
+            daysSinceLastCheckIn: 10,
+          }),
         ]}
       />,
     );
@@ -132,14 +137,10 @@ describe('DeviceAgentDevicesList', () => {
   it('renders a stale-explainer tooltip trigger next to the Stale badge', () => {
     render(
       <DeviceAgentDevicesList
-        devices={[
-          makeDevice({ complianceStatus: 'stale', daysSinceLastCheckIn: 12 }),
-        ]}
+        devices={[makeDevice({ complianceStatus: 'stale', daysSinceLastCheckIn: 12 })]}
       />,
     );
-    expect(
-      screen.getByRole('button', { name: /What does Stale mean\?/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /What does Stale mean\?/i })).toBeInTheDocument();
   });
 
   it('renders the stale-explainer tooltip trigger when daysSinceLastCheckIn is null (never reported)', () => {
@@ -154,9 +155,7 @@ describe('DeviceAgentDevicesList', () => {
         ]}
       />,
     );
-    expect(
-      screen.getByRole('button', { name: /What does Stale mean\?/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /What does Stale mean\?/i })).toBeInTheDocument();
   });
 
   it('does not render the stale-explainer tooltip trigger for a compliant device', () => {

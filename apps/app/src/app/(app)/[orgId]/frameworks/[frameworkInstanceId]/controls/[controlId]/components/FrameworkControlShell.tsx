@@ -59,7 +59,13 @@ interface Props {
   documentRows: DocumentRow[];
 }
 
-export function FrameworkControlShell({ orgId, frameworkInstanceId, control, breadcrumbs, documentRows }: Props) {
+export function FrameworkControlShell({
+  orgId,
+  frameworkInstanceId,
+  control,
+  breadcrumbs,
+  documentRows,
+}: Props) {
   const [activeTab, setActiveTab] = useState('policies');
 
   const linkedPolicyIds = control.policies.map((p) => p.id);

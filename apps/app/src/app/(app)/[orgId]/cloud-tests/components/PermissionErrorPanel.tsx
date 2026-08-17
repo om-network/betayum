@@ -43,10 +43,26 @@ function extractActionsFromError(error: string): string[] {
 
 /** Known AWS service-linked role patterns. */
 const SERVICE_LINKED_ROLE_PATTERNS: { pattern: RegExp; service: string; command: string }[] = [
-  { pattern: /config.*service-linked role/i, service: 'AWS Config', command: 'aws iam create-service-linked-role --aws-service-name config.amazonaws.com' },
-  { pattern: /guardduty.*service-linked role|service-linked role.*guardduty/i, service: 'GuardDuty', command: 'aws iam create-service-linked-role --aws-service-name guardduty.amazonaws.com' },
-  { pattern: /inspector.*service-linked role/i, service: 'Inspector', command: 'aws iam create-service-linked-role --aws-service-name inspector2.amazonaws.com' },
-  { pattern: /macie.*service-linked role/i, service: 'Macie', command: 'aws iam create-service-linked-role --aws-service-name macie.amazonaws.com' },
+  {
+    pattern: /config.*service-linked role/i,
+    service: 'AWS Config',
+    command: 'aws iam create-service-linked-role --aws-service-name config.amazonaws.com',
+  },
+  {
+    pattern: /guardduty.*service-linked role|service-linked role.*guardduty/i,
+    service: 'GuardDuty',
+    command: 'aws iam create-service-linked-role --aws-service-name guardduty.amazonaws.com',
+  },
+  {
+    pattern: /inspector.*service-linked role/i,
+    service: 'Inspector',
+    command: 'aws iam create-service-linked-role --aws-service-name inspector2.amazonaws.com',
+  },
+  {
+    pattern: /macie.*service-linked role/i,
+    service: 'Macie',
+    command: 'aws iam create-service-linked-role --aws-service-name macie.amazonaws.com',
+  },
 ];
 
 function detectServiceLinkedRole(error: string): { service: string; command: string } | null {
@@ -67,17 +83,45 @@ function buildAwsFixScript(actions: string[]): string | null {
 }
 
 function isAzureError(error: string): boolean {
-  return (
-    error.includes('AuthorizationFailed') ||
-    error.includes('management.azure.com') ||
-    error.includes('does not have authorization')
-  );
+  if (error.includes('AuthorizationFailed') || error.includes('does not have authorization')) {
+    return true;
+  }
+
+  const urls = error.match(/https?:\/\/[^\s'"]+/gi) ?? [];
+  return urls.some((rawUrl) => {
+    try {
+      return new URL(rawUrl).hostname === 'management.azure.com';
+    } catch {
+      return false;
+    }
+  });
+}
+
+function isAllowedHostname(hostname: string, allowedDomain: string): boolean {
+  const normalizedHost = hostname.toLowerCase();
+  const normalizedAllowed = allowedDomain.toLowerCase();
+  return normalizedHost === normalizedAllowed || normalizedHost.endsWith(`.${normalizedAllowed}`);
+}
+
+function errorContainsUrlFromDomain(error: string, allowedDomain: string): boolean {
+  const urlCandidates = error.match(/https?:\/\/[^\s'")\]]+/gi) ?? [];
+
+  for (const candidate of urlCandidates) {
+    try {
+      const hostname = new URL(candidate).hostname;
+      if (isAllowedHostname(hostname, allowedDomain)) return true;
+    } catch {
+      // Ignore malformed URL candidates.
+    }
+  }
+
+  return false;
 }
 
 function isGcpError(error: string): boolean {
   return (
     error.includes('PERMISSION_DENIED') ||
-    error.includes('googleapis.com') ||
+    errorContainsUrlFromDomain(error, 'googleapis.com') ||
     /does not have\s+[\w.]+\s+access/i.test(error) ||
     /permission\s+'[\w.]+'/i.test(error)
   );
@@ -96,7 +140,8 @@ export function PermissionErrorPanel({
   const [copied, setCopied] = useState(false);
 
   // Auto-detect provider if not specified
-  const detectedProvider = provider ?? (isAzureError(error) ? 'azure' : isGcpError(error) ? 'gcp' : 'aws');
+  const detectedProvider =
+    provider ?? (isAzureError(error) ? 'azure' : isGcpError(error) ? 'gcp' : 'aws');
   const isGcp = detectedProvider === 'gcp';
   const isAzure = detectedProvider === 'azure';
 
@@ -112,21 +157,24 @@ export function PermissionErrorPanel({
 
   if (!isPermissionError) {
     // Truncate long AI-generated messages for clean UX
-    const shortError = error.length > 150
-      ? error.slice(0, 150).replace(/\s+\S*$/, '') + '…'
-      : error;
+    const shortError =
+      error.length > 150 ? error.slice(0, 150).replace(/\s+\S*$/, '') + '…' : error;
     const hasDetails = error.length > 150;
 
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
-        <p className="text-sm font-medium text-red-800 dark:text-red-300">Fix could not be applied</p>
+        <p className="text-sm font-medium text-red-800 dark:text-red-300">
+          Fix could not be applied
+        </p>
         <p className="text-xs text-red-700/80 dark:text-red-400/80 mt-1">{shortError}</p>
         {hasDetails && (
           <details className="mt-2">
             <summary className="text-[11px] text-red-600 dark:text-red-400 cursor-pointer hover:underline">
               Show full details
             </summary>
-            <p className="text-[11px] text-red-600/70 dark:text-red-400/70 mt-1 whitespace-pre-wrap">{error}</p>
+            <p className="text-[11px] text-red-600/70 dark:text-red-400/70 mt-1 whitespace-pre-wrap">
+              {error}
+            </p>
           </details>
         )}
         {onRetry && (
@@ -153,7 +201,7 @@ export function PermissionErrorPanel({
 
   const script = serviceLinkedRole
     ? serviceLinkedRole.command
-    : backendScript ?? (isGcp || isAzure ? null : buildAwsFixScript(actions));
+    : (backendScript ?? (isGcp || isAzure ? null : buildAwsFixScript(actions)));
 
   const shellName = isAzure ? 'Cloud Shell' : isGcp ? 'Cloud Shell' : 'CloudShell';
   const shellUrl = isAzure
@@ -189,41 +237,41 @@ export function PermissionErrorPanel({
                   : 'Missing IAM Permission'}
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-              {serviceLinkedRole
-                ? `${serviceLinkedRole.service} requires a service-linked role. Create it with the command below, then retry.`
-                : isGcp
-                  ? (
+              {serviceLinkedRole ? (
+                `${serviceLinkedRole.service} requires a service-linked role. Create it with the command below, then retry.`
+              ) : isGcp ? (
+                <>
+                  Your GCP account is missing permissions needed for this fix.
+                  {actions.length > 0 && (
                     <>
-                      Your GCP account is missing permissions needed for this fix.
-                      {actions.length > 0 && (
-                        <>
-                          {' '}Missing:{' '}
-                          {actions.map((a, i) => (
-                            <span key={a}>
-                              {i > 0 && ', '}
-                              <code className="font-mono">{a}</code>
-                            </span>
-                          ))}
-                        </>
-                      )}
-                    </>
-                  )
-                  : (
-                    <>
-                      The remediation role is missing permissions needed for this fix.
-                      {actions.length > 0 && (
-                        <>
-                          {' '}Required:{' '}
-                          {actions.map((a, i) => (
-                            <span key={a}>
-                              {i > 0 && ', '}
-                              <code className="font-mono">{a}</code>
-                            </span>
-                          ))}
-                        </>
-                      )}
+                      {' '}
+                      Missing:{' '}
+                      {actions.map((a, i) => (
+                        <span key={a}>
+                          {i > 0 && ', '}
+                          <code className="font-mono">{a}</code>
+                        </span>
+                      ))}
                     </>
                   )}
+                </>
+              ) : (
+                <>
+                  The remediation role is missing permissions needed for this fix.
+                  {actions.length > 0 && (
+                    <>
+                      {' '}
+                      Required:{' '}
+                      {actions.map((a, i) => (
+                        <span key={a}>
+                          {i > 0 && ', '}
+                          <code className="font-mono">{a}</code>
+                        </span>
+                      ))}
+                    </>
+                  )}
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -232,14 +280,16 @@ export function PermissionErrorPanel({
       {script && (
         <div className="rounded-md border bg-muted/30 p-3 space-y-2.5">
           <p className="text-xs font-medium">
-            Run this in {isAzure ? 'Azure' : isGcp ? 'Google' : 'AWS'} {shellName} to add the permission:
+            Run this in {isAzure ? 'Azure' : isGcp ? 'Google' : 'AWS'} {shellName} to add the
+            permission:
           </p>
           <pre className="overflow-x-auto rounded bg-muted p-2.5 text-[11px] leading-relaxed whitespace-pre-wrap break-all">
             {script}
           </pre>
           {isGcp && (
             <p className="text-[10px] text-muted-foreground/80">
-              Replace <code className="font-mono">YOUR_EMAIL</code> with your Google account email and <code className="font-mono">YOUR_PROJECT_ID</code> with your GCP project ID.
+              Replace <code className="font-mono">YOUR_EMAIL</code> with your Google account email
+              and <code className="font-mono">YOUR_PROJECT_ID</code> with your GCP project ID.
             </p>
           )}
           <div className="flex flex-wrap gap-2">
@@ -249,9 +299,13 @@ export function PermissionErrorPanel({
               className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               {copied ? (
-                <><Check className="h-3 w-3" /> Copied!</>
+                <>
+                  <Check className="h-3 w-3" /> Copied!
+                </>
               ) : (
-                <><Copy className="h-3 w-3" /> Copy Script</>
+                <>
+                  <Copy className="h-3 w-3" /> Copy Script
+                </>
               )}
             </button>
             <a
@@ -271,18 +325,20 @@ export function PermissionErrorPanel({
                 disabled={isRetrying || isWaiting}
                 className="h-auto px-3 py-1.5 text-xs"
               >
-                {(isRetrying || isWaiting) ? (
+                {isRetrying || isWaiting ? (
                   <RefreshCw className="mr-1.5 h-3 w-3 animate-spin" />
                 ) : (
                   <RefreshCw className="mr-1.5 h-3 w-3" />
                 )}
-                {isWaiting ? `Waiting for ${isAzure ? 'Azure' : isGcp ? 'GCP' : 'AWS'}...` : isRetrying ? 'Retrying...' : 'Retry'}
+                {isWaiting
+                  ? `Waiting for ${isAzure ? 'Azure' : isGcp ? 'GCP' : 'AWS'}...`
+                  : isRetrying
+                    ? 'Retrying...'
+                    : 'Retry'}
               </Button>
             )}
           </div>
-          <p className="text-[10px] text-muted-foreground/60">
-            {propagationText}
-          </p>
+          <p className="text-[10px] text-muted-foreground/60">{propagationText}</p>
         </div>
       )}
     </div>

@@ -2,14 +2,21 @@
 
 import { updateResidualRiskSchema } from '@/actions/schema';
 import { useRiskMutations } from '@/hooks/use-risk-mutations';
-import { Button } from '@trycompai/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@trycompai/ui/form';
-import { Slider } from '@trycompai/ui/slider';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@trycompai/ui/button';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+} from '@trycompai/ui/form';
+import { Slider } from '@trycompai/ui/slider';
 import { Loader2 } from 'lucide-react';
-import { useState } from 'react';
 import { useQueryState } from 'nuqs';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -122,16 +129,8 @@ export function VendorResidualRiskForm({
         />
 
         <div className="flex justify-end">
-          <Button
-            type="submit"
-            variant="default"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
+          <Button type="submit" variant="default" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
           </Button>
         </div>
       </form>

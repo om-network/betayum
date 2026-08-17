@@ -41,20 +41,23 @@ describe('task automation actions', () => {
     expect(result).toEqual({ success: true, data: { runId: 'ear_1' } });
   });
 
-  it('does not start manual runs without a published version', async () => {
-    const request = {
+  it('runs the draft script when no published version is selected', async () => {
+    serverApiPost.mockResolvedValue({
+      data: { success: true, run: { id: 'ear_2' } },
+      error: null,
+    });
+
+    const result = await executeAutomationScript({
       orgId: 'org_1',
       taskId: 'tsk_1',
       automationId: 'aut_1',
-    } as unknown as Parameters<typeof executeAutomationScript>[0];
-
-    const result = await executeAutomationScript(request);
-
-    expect(serverApiPost).not.toHaveBeenCalled();
-    expect(result).toEqual({
-      success: false,
-      error: 'Select a published automation version before running it.',
     });
+
+    expect(serverApiPost).toHaveBeenCalledWith(
+      '/v1/tasks/tsk_1/automations/aut_1/draft-script/run',
+      {},
+    );
+    expect(result).toEqual({ success: true, data: { runId: 'ear_2' } });
   });
 
   it('publishes versions through the first-party automation API', async () => {

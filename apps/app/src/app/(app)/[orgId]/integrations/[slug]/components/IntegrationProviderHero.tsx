@@ -15,6 +15,8 @@ type HeroProps = {
   onSelectConnection: (id: string) => void;
   onOpenSettings: () => void;
   onAddAccount: () => void;
+  vmLoginOnly?: boolean;
+  canUpdate?: boolean;
 };
 
 export function IntegrationProviderHero({
@@ -25,6 +27,8 @@ export function IntegrationProviderHero({
   onSelectConnection,
   onOpenSettings,
   onAddAccount,
+  vmLoginOnly = false,
+  canUpdate = true,
 }: HeroProps) {
   return (
     <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-muted/30 via-background to-muted/20 dark:from-muted/10 dark:via-background dark:to-muted/5">
@@ -48,7 +52,11 @@ export function IntegrationProviderHero({
                 <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
                   {provider.name}
                 </h1>
-                {isConnected ? (
+                {vmLoginOnly ? (
+                  <span className="inline-flex items-center rounded-full border border-border bg-muted/50 px-2 py-px text-[10px] font-medium text-muted-foreground">
+                    VM login only
+                  </span>
+                ) : isConnected ? (
                   <span className="inline-flex items-center rounded-full border border-emerald-500/25 bg-emerald-500/[0.08] px-2 py-px text-[10px] font-medium text-emerald-800 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-300">
                     {activeConnections.length === 1
                       ? 'Connected'
@@ -66,97 +74,100 @@ export function IntegrationProviderHero({
             </div>
           </div>
 
-          <div
-            className="flex w-full min-w-0 flex-col items-stretch gap-1.5 border-t border-border/40 pt-2 sm:items-end lg:w-auto lg:border-t-0 lg:pt-0"
-            role="toolbar"
-            aria-label="Integration actions"
-          >
-            {provider.docsUrl || isConnected ? (
-              <div className="flex w-full flex-wrap items-center justify-end gap-1.5">
-                {!isConnected && provider.docsUrl ? (
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    iconLeft={<Launch size={12} />}
-                    onClick={() => {
-                      window.open(provider.docsUrl!, '_blank', 'noopener,noreferrer');
-                    }}
-                  >
-                    Docs
-                  </Button>
-                ) : null}
-                {isConnected ? (
-                  <div className="flex w-full min-w-0 flex-col items-end gap-1.5">
-                    {/* Row 1: Docs + Settings */}
-                    <div className="inline-flex min-w-0 rounded-md border border-border">
-                      <div className="flex flex-nowrap items-stretch divide-x divide-border">
-                        {provider.docsUrl ? (
+          {!vmLoginOnly && (
+            <div
+              className="flex w-full min-w-0 flex-col items-stretch gap-1.5 border-t border-border/40 pt-2 sm:items-end lg:w-auto lg:border-t-0 lg:pt-0"
+              role="toolbar"
+              aria-label="Integration actions"
+            >
+              {provider.docsUrl || isConnected ? (
+                <div className="flex w-full flex-wrap items-center justify-end gap-1.5">
+                  {!isConnected && provider.docsUrl ? (
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      iconLeft={<Launch size={12} />}
+                      onClick={() => {
+                        window.open(provider.docsUrl!, '_blank', 'noopener,noreferrer');
+                      }}
+                    >
+                      Docs
+                    </Button>
+                  ) : null}
+                  {isConnected ? (
+                    <div className="flex w-full min-w-0 flex-col items-end gap-1.5">
+                      {/* Row 1: Docs + Settings */}
+                      <div className="inline-flex min-w-0 rounded-md border border-border">
+                        <div className="flex flex-nowrap items-stretch divide-x divide-border">
+                          {provider.docsUrl ? (
+                            <div className="flex shrink-0 items-center p-0.5">
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                iconLeft={<Launch size={12} />}
+                                onClick={() => {
+                                  window.open(provider.docsUrl!, '_blank', 'noopener,noreferrer');
+                                }}
+                              >
+                                Docs
+                              </Button>
+                            </div>
+                          ) : null}
                           <div className="flex shrink-0 items-center p-0.5">
                             <Button
                               variant="ghost"
                               size="xs"
-                              iconLeft={<Launch size={12} />}
-                              onClick={() => {
-                                window.open(provider.docsUrl!, '_blank', 'noopener,noreferrer');
-                              }}
+                              onClick={onOpenSettings}
+                              iconLeft={<Settings size={12} />}
                             >
-                              Docs
-                            </Button>
-                          </div>
-                        ) : null}
-                        <div className="flex shrink-0 items-center p-0.5">
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            onClick={onOpenSettings}
-                            iconLeft={<Settings size={12} />}
-                          >
-                            Settings
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Row 2: account + Add */}
-                    <div className="flex w-full max-w-full min-w-0 justify-end sm:max-w-sm">
-                      <div className="inline-flex w-full min-w-0 rounded-md border border-border sm:w-auto">
-                        <div className="flex min-w-0 flex-nowrap items-stretch divide-x divide-border">
-                          {activeConnections.length === 1 && selectedConnection ? (
-                            <div className="flex min-w-0 items-center px-2.5 py-1">
-                              <span className="flex items-center gap-1.5 truncate text-[11px] tabular-nums text-foreground">
-                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                                {getConnectionDisplayLabel(selectedConnection)}
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex min-w-0 flex-1 items-center px-1 py-0.5 sm:min-w-[9.5rem] sm:max-w-[13rem]">
-                              <AccountSelector
-                                compact
-                                embedded
-                                connections={activeConnections}
-                                selectedId={selectedConnection?.id ?? ''}
-                                onSelect={onSelectConnection}
-                              />
-                            </div>
-                          )}
-                          <div className="flex shrink-0 items-center p-0.5">
-                            <Button
-                              variant="ghost"
-                              size="xs"
-                              onClick={onAddAccount}
-                              iconLeft={<Add size={12} />}
-                              aria-label="Add another account"
-                            >
-                              Add
+                              Settings
                             </Button>
                           </div>
                         </div>
                       </div>
+                      {/* Row 2: account + Add */}
+                      <div className="flex w-full max-w-full min-w-0 justify-end sm:max-w-sm">
+                        <div className="inline-flex w-full min-w-0 rounded-md border border-border sm:w-auto">
+                          <div className="flex min-w-0 flex-nowrap items-stretch divide-x divide-border">
+                            {activeConnections.length === 1 && selectedConnection ? (
+                              <div className="flex min-w-0 items-center px-2.5 py-1">
+                                <span className="flex items-center gap-1.5 truncate text-[11px] tabular-nums text-foreground">
+                                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                                  {getConnectionDisplayLabel(selectedConnection)}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex min-w-0 flex-1 items-center px-1 py-0.5 sm:min-w-[9.5rem] sm:max-w-[13rem]">
+                                <AccountSelector
+                                  compact
+                                  embedded
+                                  connections={activeConnections}
+                                  selectedId={selectedConnection?.id ?? ''}
+                                  onSelect={onSelectConnection}
+                                />
+                              </div>
+                            )}
+                            <div className="flex shrink-0 items-center p-0.5">
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                onClick={onAddAccount}
+                                disabled={!canUpdate}
+                                iconLeft={<Add size={12} />}
+                                aria-label="Add another account"
+                              >
+                                Add
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
       </div>
     </div>

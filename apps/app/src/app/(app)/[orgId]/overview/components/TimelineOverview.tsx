@@ -1,25 +1,17 @@
 'use client';
 
-import {
-  Badge,
-  Card,
-  Stack,
-  Text,
-} from '@trycompai/design-system';
+import { useTimelines, type Timeline } from '@/hooks/use-timelines';
+import { Badge, Card, Stack, Text } from '@trycompai/design-system';
 import { Checkmark } from '@trycompai/design-system/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useTimelines, type Timeline } from '@/hooks/use-timelines';
 import { TimelinePhaseBar } from './TimelinePhaseBar';
 
 interface TimelineOverviewProps {
   initialData?: Timeline[];
 }
 
-const STATUS_VARIANT: Record<
-  Timeline['status'],
-  'default' | 'outline' | 'destructive'
-> = {
+const STATUS_VARIANT: Record<Timeline['status'], 'default' | 'outline' | 'destructive'> = {
   DRAFT: 'outline',
   ACTIVE: 'default',
   PAUSED: 'destructive',
@@ -45,12 +37,9 @@ function formatDate(date: string | Date | null): string {
 function getNextCycleDate(timeline: Timeline): string | null {
   if (timeline.status !== 'COMPLETED' || !timeline.completedAt) return null;
   const completedAt = new Date(timeline.completedAt);
-  const frameworkName =
-    timeline.frameworkInstance?.framework.name ?? '';
+  const frameworkName = timeline.frameworkInstance?.framework.name ?? '';
   const isSoc2Type2 =
-    /SOC 2/i.test(frameworkName) &&
-    !/v\.1/i.test(frameworkName) &&
-    !/Type 1/i.test(frameworkName);
+    /SOC 2/i.test(frameworkName) && !/v\.1/i.test(frameworkName) && !/Type 1/i.test(frameworkName);
   const monthsToAdd = isSoc2Type2 ? 6 : 12;
   const nextDate = new Date(completedAt);
   nextDate.setMonth(nextDate.getMonth() + monthsToAdd);
@@ -110,23 +99,11 @@ export function TimelineOverview({ initialData }: TimelineOverviewProps) {
   );
 }
 
-function FrameworkTimelines({
-  group,
-  orgId,
-}: {
-  group: FrameworkGroup;
-  orgId: string;
-}) {
+function FrameworkTimelines({ group, orgId }: { group: FrameworkGroup; orgId: string }) {
   // Year = how many cycles exist for this framework type (past + current)
   const year = group.pastCycles.length + 1;
 
-  return (
-    <TimelineCard
-      timeline={group.current}
-      orgId={orgId}
-      cycleLabel={`Year ${year}`}
-    />
-  );
+  return <TimelineCard timeline={group.current} orgId={orgId} cycleLabel={`Year ${year}`} />;
 }
 
 function TimelineCard({
@@ -140,8 +117,7 @@ function TimelineCard({
 }) {
   const isDraft = timeline.status === 'DRAFT';
   const isCompleted = timeline.status === 'COMPLETED';
-  const frameworkName =
-    timeline.frameworkInstance?.framework.name ?? 'Unknown Framework';
+  const frameworkName = timeline.frameworkInstance?.framework.name ?? 'Unknown Framework';
   const nextCycle = getNextCycleDate(timeline);
 
   const titleContent = (
@@ -165,20 +141,21 @@ function TimelineCard({
       href={`/${orgId}/frameworks/${timeline.frameworkInstanceId}`}
       className={`block transition-opacity hover:opacity-90 ${isDraft ? 'opacity-60' : ''}`}
     >
-      <Card
-        title={titleContent}
-        headerAction={statusBadge}
-      >
+      <Card title={titleContent} headerAction={statusBadge}>
         <TimelinePhaseBar phases={timeline.phases} showDates />
 
         {isDraft && (
           <div className="mt-3">
-            <Text size="xs" variant="muted">Awaiting start date</Text>
+            <Text size="xs" variant="muted">
+              Awaiting start date
+            </Text>
           </div>
         )}
         {isCompleted && nextCycle && (
           <div className="mt-3">
-            <Text size="xs" variant="muted">Next cycle: {nextCycle}</Text>
+            <Text size="xs" variant="muted">
+              Next cycle: {nextCycle}
+            </Text>
           </div>
         )}
       </Card>

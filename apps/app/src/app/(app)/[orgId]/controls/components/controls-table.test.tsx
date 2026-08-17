@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
   NO_PERMISSIONS,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -106,9 +106,7 @@ vi.mock('react', async () => {
 import { ControlsTable } from './controls-table';
 
 describe('ControlsTable', () => {
-  const mockPromises = createResolvedPromise([
-    { data: mockControlsData, pageCount: 1 },
-  ]);
+  const mockPromises = createResolvedPromise([{ data: mockControlsData, pageCount: 1 }]);
 
   beforeEach(() => {
     vi.clearAllMocks();

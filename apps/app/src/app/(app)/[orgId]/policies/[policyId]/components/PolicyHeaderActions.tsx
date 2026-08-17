@@ -1,8 +1,11 @@
 'use client';
 
 import { useAuditLogs } from '@/hooks/use-audit-logs';
+import { usePermissions } from '@/hooks/use-permissions';
+import type { Member, Policy, PolicyVersion, User } from '@db';
+import type { JSONContent } from '@tiptap/react';
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { Button } from '@trycompai/ui/button';
-import { useSWRConfig } from 'swr';
 import {
   Dialog,
   DialogContent,
@@ -19,16 +22,13 @@ import {
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
 import { Icons } from '@trycompai/ui/icons';
-import type { Member, Policy, PolicyVersion, User } from '@db';
-import type { JSONContent } from '@tiptap/react';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useSWRConfig } from 'swr';
 import { auditLogsKey } from '../hooks/useAuditLogs';
-import { usePolicy, policyKey } from '../hooks/usePolicy';
+import { policyKey, usePolicy } from '../hooks/usePolicy';
 import { policyVersionsKey } from '../hooks/usePolicyVersions';
-import { usePermissions } from '@/hooks/use-permissions';
 
 type PolicyWithVersion = Policy & {
   approver: (Member & { user: User }) | null;
@@ -268,10 +268,7 @@ export function PolicyHeaderActions({
             <Button variant="outline" onClick={() => setRegenerateConfirmOpen(false)}>
               Cancel
             </Button>
-            <Button
-              onClick={handleRegenerate}
-              disabled={isRegenerating}
-            >
+            <Button onClick={handleRegenerate} disabled={isRegenerating}>
               {isRegenerating ? 'Working…' : 'Confirm'}
             </Button>
           </DialogFooter>

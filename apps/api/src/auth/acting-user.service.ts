@@ -124,9 +124,7 @@ export class ActingUserResolver {
    */
   private buildCallerLabel(req: AuthenticatedRequest): string {
     if (req.isApiKey) {
-      return req.apiKeyName
-        ? `via API key "${req.apiKeyName}"`
-        : 'via API key';
+      return req.apiKeyName ? `via API key "${req.apiKeyName}"` : 'via API key';
     }
     if (req.isServiceToken) {
       return req.serviceName

@@ -54,7 +54,9 @@ export function EmployeeBackgroundCheck({
     employeeEmail: '',
     requesterNotes: '',
   });
-  const [orderErrors, setOrderErrors] = useState<Partial<Record<keyof OrderFormValues, string>>>({});
+  const [orderErrors, setOrderErrors] = useState<Partial<Record<keyof OrderFormValues, string>>>(
+    {},
+  );
   const [attachValues, setAttachValues] = useState<AttachFormValues>({
     vendor: 'checkr',
     reportDate: '',
@@ -210,9 +212,7 @@ export function EmployeeBackgroundCheck({
       return;
     }
 
-    toast.success(
-      next ? 'Employee exempted from background check' : 'Employee no longer exempt',
-    );
+    toast.success(next ? 'Employee exempted from background check' : 'Employee no longer exempt');
   };
 
   if (!backgroundCheckStepEnabled) {
@@ -280,5 +280,3 @@ export function EmployeeBackgroundCheck({
     />
   );
 }
-
-

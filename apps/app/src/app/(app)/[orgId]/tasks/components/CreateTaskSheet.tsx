@@ -2,9 +2,6 @@
 
 import { SelectAssignee } from '@/components/SelectAssignee';
 import { useTaskTemplates } from '@/hooks/use-task-template-api';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
-import { useMediaQuery } from '@trycompai/ui/hooks';
-import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
 import { Departments, Member, TaskFrequency, User } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -26,6 +23,9 @@ import {
   Textarea,
 } from '@trycompai/design-system';
 import { ArrowRight } from '@trycompai/design-system/icons';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
+import { useMediaQuery } from '@trycompai/ui/hooks';
+import MultipleSelector, { Option } from '@trycompai/ui/multiple-selector';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -64,7 +64,13 @@ interface CreateTaskSheetProps {
   createTask: (data: CreateTaskPayload) => Promise<void>;
 }
 
-export function CreateTaskSheet({ members, controls, open, onOpenChange, createTask }: CreateTaskSheetProps) {
+export function CreateTaskSheet({
+  members,
+  controls,
+  open,
+  onOpenChange,
+  createTask,
+}: CreateTaskSheetProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

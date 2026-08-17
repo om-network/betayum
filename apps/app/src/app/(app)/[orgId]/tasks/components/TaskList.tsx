@@ -1,6 +1,5 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import type { Member, Task, User } from '@db';
 import {
   Avatar,
@@ -15,7 +14,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Separator,
   Stack,
   Tabs,
   TabsContent,
@@ -23,8 +21,16 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
+import type { ReactNode } from 'react';
 
-import { Check, Circle, FolderTree, List, Search, XCircle } from 'lucide-react';
+import {
+  Checkmark,
+  CircleStroke,
+  CloseFilled,
+  FolderTree,
+  List,
+  Search,
+} from '@trycompai/design-system/icons';
 import { useParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
@@ -33,12 +39,12 @@ import { ModernTaskList } from './ModernTaskList';
 import { TasksByCategory } from './TasksByCategory';
 
 const statuses = [
-  { id: 'todo', label: 'Todo', icon: Circle, color: 'text-slate-400' },
-  { id: 'in_progress', label: 'In Progress', icon: Circle, color: 'text-blue-400' },
-  { id: 'in_review', label: 'In Review', icon: Circle, color: 'text-orange-400' },
-  { id: 'done', label: 'Done', icon: Check, color: 'text-emerald-400' },
-  { id: 'failed', label: 'Failed', icon: XCircle, color: 'text-red-400' },
-  { id: 'not_relevant', label: 'Not Relevant', icon: Circle, color: 'text-slate-500' },
+  { id: 'todo', label: 'Todo', icon: CircleStroke, color: 'text-slate-400' },
+  { id: 'in_progress', label: 'In Progress', icon: CircleStroke, color: 'text-blue-400' },
+  { id: 'in_review', label: 'In Review', icon: CircleStroke, color: 'text-orange-400' },
+  { id: 'done', label: 'Done', icon: Checkmark, color: 'text-emerald-400' },
+  { id: 'failed', label: 'Failed', icon: CloseFilled, color: 'text-red-400' },
+  { id: 'not_relevant', label: 'Not Relevant', icon: CircleStroke, color: 'text-slate-500' },
 ] as const;
 
 export function TaskList({
@@ -57,6 +63,7 @@ export function TaskList({
       id: string;
       isEnabled: boolean;
       name: string;
+      setupStatus?: string | null;
       runs?: Array<{
         status: string;
         success: boolean | null;
@@ -79,8 +86,7 @@ export function TaskList({
   const [statusFilter, setStatusFilter] = useQueryState('status');
   const [assigneeFilter, setAssigneeFilter] = useQueryState('assignee');
   const [frameworkFilter, setFrameworkFilter] = useQueryState('framework');
-  const [automationStatusFilter, setAutomationStatusFilter] =
-    useQueryState('automationStatus');
+  const [automationStatusFilter, setAutomationStatusFilter] = useQueryState('automationStatus');
   const [currentTab, setCurrentTab] = useState<'categories' | 'list'>(activeTab);
 
   // Sync activeTab prop with state when it changes
@@ -93,8 +99,7 @@ export function TaskList({
   useEffect(() => {
     if (!frameworkFilter) return;
     const isValid =
-      frameworkInstances.length > 0 &&
-      frameworkInstances.some((fw) => fw.id === frameworkFilter);
+      frameworkInstances.length > 0 && frameworkInstances.some((fw) => fw.id === frameworkFilter);
     if (!isValid) {
       setFrameworkFilter(null);
     }
@@ -584,225 +589,232 @@ export function TaskList({
 
       {/* Unified Control Module */}
       {showFiltersAndList && (
-      <Tabs value={currentTab} onValueChange={handleTabChange}>
-        <Stack gap="lg">
-          <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            {/* Filters */}
-            <div className="flex w-full flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-2 lg:flex-1">
-              <div className="w-full sm:flex-1 lg:max-w-[200px]">
-                <InputGroup>
-                  <InputGroupAddon>
-                    <Search size={16} />
-                  </InputGroupAddon>
-                  <InputGroupInput
-                    placeholder="Search evidence..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </InputGroup>
-              </div>
+        <Tabs value={currentTab} onValueChange={handleTabChange}>
+          <Stack gap="lg">
+            <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+              {/* Filters */}
+              <div className="flex w-full flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:gap-2 lg:flex-1">
+                <div className="w-full sm:flex-1 lg:max-w-[200px]">
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <Search size={16} />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      placeholder="Search evidence..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </InputGroup>
+                </div>
 
-              <div className="h-6 w-px bg-border hidden lg:block" />
+                <div className="h-6 w-px bg-border hidden lg:block" />
 
-              {/* Status + Assignee */}
-              <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center lg:gap-2">
-                <Select
-                  value={statusFilter || 'all'}
-                  onValueChange={(value) => setStatusFilter(value === 'all' ? null : value)}
-                >
-                  <SelectTrigger size="sm">
-                    <SelectValue placeholder="All statuses">
-                      {(() => {
-                        if (!statusFilter) return 'All statuses';
-                        const selectedStatus = statuses.find((s) => s.id === statusFilter);
-                        if (!selectedStatus) return 'All statuses';
-                        const StatusIcon = selectedStatus.icon;
-                        return (
-                          <div className="flex items-center gap-1.5">
-                            <StatusIcon className={`h-3.5 w-3.5 ${selectedStatus.color}`} />
-                            <span>{selectedStatus.label}</span>
-                          </div>
-                        );
-                      })()}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      <span className="text-xs">All statuses</span>
-                    </SelectItem>
-                    {statuses.map((status) => {
-                      const StatusIcon = status.icon;
-                      return (
-                        <SelectItem key={status.id} value={status.id}>
-                          <div className="flex items-center gap-2 text-xs">
-                            <StatusIcon className={`h-3.5 w-3.5 ${status.color}`} />
-                            <span>{status.label}</span>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-
-                {frameworkInstances.length > 0 && (
+                {/* Status + Assignee */}
+                <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center lg:gap-2">
                   <Select
-                    value={frameworkFilter || 'all'}
-                    onValueChange={(value) => setFrameworkFilter(value === 'all' ? null : value)}
+                    value={statusFilter || 'all'}
+                    onValueChange={(value) => setStatusFilter(value === 'all' ? null : value)}
                   >
                     <SelectTrigger size="sm">
-                      <SelectValue placeholder="All frameworks">
+                      <SelectValue placeholder="All statuses">
                         {(() => {
-                          if (!frameworkFilter) return 'All frameworks';
-                          const selectedFramework = frameworkInstances.find(
-                            (fw) => fw.id === frameworkFilter,
-                          );
-                          if (!selectedFramework) return 'All frameworks';
+                          if (!statusFilter) return 'All statuses';
+                          const selectedStatus = statuses.find((s) => s.id === statusFilter);
+                          if (!selectedStatus) return 'All statuses';
+                          const StatusIcon = selectedStatus.icon;
                           return (
-                            selectedFramework.framework?.name ??
-                            selectedFramework.customFramework?.name ??
-                            'Framework'
+                            <div className="flex items-center gap-1.5">
+                              <StatusIcon className={`h-3.5 w-3.5 ${selectedStatus.color}`} />
+                              <span>{selectedStatus.label}</span>
+                            </div>
                           );
                         })()}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">
-                        <span className="text-xs">All frameworks</span>
+                        <span className="text-xs">All statuses</span>
                       </SelectItem>
-                      {frameworkInstances.map((fw) => (
-                        <SelectItem key={fw.id} value={fw.id}>
-                          <span className="text-xs">
-                            {fw.framework?.name ??
-                              fw.customFramework?.name ??
-                              'Framework'}
-                          </span>
+                      {statuses.map((status) => {
+                        const StatusIcon = status.icon;
+                        return (
+                          <SelectItem key={status.id} value={status.id}>
+                            <div className="flex items-center gap-2 text-xs">
+                              <StatusIcon className={`h-3.5 w-3.5 ${status.color}`} />
+                              <span>{status.label}</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+
+                  {frameworkInstances.length > 0 && (
+                    <Select
+                      value={frameworkFilter || 'all'}
+                      onValueChange={(value) => setFrameworkFilter(value === 'all' ? null : value)}
+                    >
+                      <SelectTrigger size="sm">
+                        <SelectValue placeholder="All frameworks">
+                          {(() => {
+                            if (!frameworkFilter) return 'All frameworks';
+                            const selectedFramework = frameworkInstances.find(
+                              (fw) => fw.id === frameworkFilter,
+                            );
+                            if (!selectedFramework) return 'All frameworks';
+                            return (
+                              selectedFramework.framework?.name ??
+                              selectedFramework.customFramework?.name ??
+                              'Framework'
+                            );
+                          })()}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">
+                          <span className="text-xs">All frameworks</span>
+                        </SelectItem>
+                        {frameworkInstances.map((fw) => (
+                          <SelectItem key={fw.id} value={fw.id}>
+                            <span className="text-xs">
+                              {fw.framework?.name ?? fw.customFramework?.name ?? 'Framework'}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  <Select
+                    value={assigneeFilter || 'all'}
+                    onValueChange={(value) => setAssigneeFilter(value === 'all' ? null : value)}
+                  >
+                    <SelectTrigger size="sm" disabled={eligibleAssignees.length === 0}>
+                      <SelectValue placeholder="Everyone">
+                        {(() => {
+                          if (eligibleAssignees.length === 0) return 'No eligible members';
+                          if (!assigneeFilter) return 'Everyone';
+                          const selectedMember = eligibleAssignees.find(
+                            (member) => member.id === assigneeFilter,
+                          );
+                          if (!selectedMember) return 'Everyone';
+                          return (
+                            <div className="flex items-center gap-2">
+                              <Avatar size="xs">
+                                {selectedMember.user.image && (
+                                  <AvatarImage
+                                    src={selectedMember.user.image}
+                                    alt={selectedMember.user.name ?? 'Assignee'}
+                                  />
+                                )}
+                                <AvatarFallback>
+                                  {selectedMember.user.name?.charAt(0)?.toUpperCase() ?? '?'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="truncate">
+                                {selectedMember.user.name ?? 'Unknown member'}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Everyone</SelectItem>
+                      {eligibleAssignees.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          <div className="flex items-center gap-2 text-xs">
+                            <Avatar size="xs">
+                              {member.user.image && (
+                                <AvatarImage
+                                  src={member.user.image}
+                                  alt={member.user.name ?? 'Assignee'}
+                                />
+                              )}
+                              <AvatarFallback>
+                                {member.user.name?.charAt(0)?.toUpperCase() ?? '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{member.user.name ?? 'Unknown member'}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                )}
 
-                <Select
-                  value={assigneeFilter || 'all'}
-                  onValueChange={(value) => setAssigneeFilter(value === 'all' ? null : value)}
-                >
-                  <SelectTrigger size="sm" disabled={eligibleAssignees.length === 0}>
-                    <SelectValue placeholder="Everyone">
-                      {(() => {
-                        if (eligibleAssignees.length === 0) return 'No eligible members';
-                        if (!assigneeFilter) return 'Everyone';
-                        const selectedMember = eligibleAssignees.find(
-                          (member) => member.id === assigneeFilter,
-                        );
-                        if (!selectedMember) return 'Everyone';
-                        return (
-                          <div className="flex items-center gap-2">
-                            <Avatar size="xs">
-                              {selectedMember.user.image && (
-                                <AvatarImage
-                                  src={selectedMember.user.image}
-                                  alt={selectedMember.user.name ?? 'Assignee'}
-                                />
-                              )}
-                              <AvatarFallback>
-                                {selectedMember.user.name?.charAt(0)?.toUpperCase() ?? '?'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="truncate">
-                              {selectedMember.user.name ?? 'Unknown member'}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Everyone</SelectItem>
-                    {eligibleAssignees.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        <div className="flex items-center gap-2 text-xs">
-                          <Avatar size="xs">
-                            {member.user.image && (
-                              <AvatarImage
-                                src={member.user.image}
-                                alt={member.user.name ?? 'Assignee'}
-                              />
-                            )}
-                            <AvatarFallback>
-                              {member.user.name?.charAt(0)?.toUpperCase() ?? '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>{member.user.name ?? 'Unknown member'}</span>
-                        </div>
+                  <Select
+                    value={automationStatusFilter || 'all'}
+                    onValueChange={(value) =>
+                      setAutomationStatusFilter(value === 'all' ? null : value)
+                    }
+                  >
+                    <SelectTrigger size="sm">
+                      <SelectValue placeholder="All types">
+                        {!automationStatusFilter
+                          ? 'All types'
+                          : automationStatusFilter === 'AUTOMATED'
+                            ? 'Automated'
+                            : 'Manual'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        <span className="text-xs">All types</span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={automationStatusFilter || 'all'}
-                  onValueChange={(value) =>
-                    setAutomationStatusFilter(value === 'all' ? null : value)
-                  }
-                >
-                  <SelectTrigger size="sm">
-                    <SelectValue placeholder="All types">
-                      {!automationStatusFilter
-                        ? 'All types'
-                        : automationStatusFilter === 'AUTOMATED'
-                          ? 'Automated'
-                          : 'Manual'}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      <span className="text-xs">All types</span>
-                    </SelectItem>
-                    <SelectItem value="AUTOMATED">
-                      <span className="text-xs">Automated</span>
-                    </SelectItem>
-                    <SelectItem value="MANUAL">
-                      <span className="text-xs">Manual</span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Result Count */}
-              {(searchQuery || statusFilter || assigneeFilter || frameworkFilter || automationStatusFilter) && (
-                <div className="text-muted-foreground text-xs tabular-nums whitespace-nowrap lg:ml-auto">
-                  {filteredTasks.length} {filteredTasks.length === 1 ? 'result' : 'results'}
+                      <SelectItem value="AUTOMATED">
+                        <span className="text-xs">Automated</span>
+                      </SelectItem>
+                      <SelectItem value="MANUAL">
+                        <span className="text-xs">Manual</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </div>
+                {/* Result Count */}
+                {(searchQuery ||
+                  statusFilter ||
+                  assigneeFilter ||
+                  frameworkFilter ||
+                  automationStatusFilter) && (
+                  <div className="text-muted-foreground text-xs tabular-nums whitespace-nowrap lg:ml-auto">
+                    {filteredTasks.length} {filteredTasks.length === 1 ? 'result' : 'results'}
+                  </div>
+                )}
+              </div>
 
-            {/* Tabs - visible on all screens */}
-            <div className="flex w-full justify-start lg:w-auto lg:shrink-0">
-              <TabsList variant="default">
-                <TabsTrigger value="categories">
-                  <FolderTree className="h-2.5 w-2.5" />
-                  Categories
-                </TabsTrigger>
-                <TabsTrigger value="list">
-                  <List className="h-2.5 w-2.5" />
-                  List
-                </TabsTrigger>
-              </TabsList>
+              {/* Tabs - visible on all screens */}
+              <div className="flex w-full justify-start lg:w-auto lg:shrink-0">
+                <TabsList variant="default">
+                  <TabsTrigger value="categories">
+                    <FolderTree className="h-2.5 w-2.5" />
+                    Categories
+                  </TabsTrigger>
+                  <TabsTrigger value="list">
+                    <List className="h-2.5 w-2.5" />
+                    List
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             </div>
-          </div>
-          <div>
-            <TabsContent value="categories">
-              <TasksByCategory
-                tasks={filteredTasks}
-                members={members}
-                statusFilter={statusFilter}
-              />
-            </TabsContent>
-            <TabsContent value="list">
-              <ModernTaskList tasks={filteredTasks} members={members} statusFilter={statusFilter} evidenceApprovalEnabled={evidenceApprovalEnabled} />
-            </TabsContent>
-          </div>
-        </Stack>
-      </Tabs>
+            <div>
+              <TabsContent value="categories">
+                <TasksByCategory
+                  tasks={filteredTasks}
+                  members={members}
+                  statusFilter={statusFilter}
+                />
+              </TabsContent>
+              <TabsContent value="list">
+                <ModernTaskList
+                  tasks={filteredTasks}
+                  members={members}
+                  statusFilter={statusFilter}
+                  evidenceApprovalEnabled={evidenceApprovalEnabled}
+                />
+              </TabsContent>
+            </div>
+          </Stack>
+        </Tabs>
       )}
     </Stack>
   );

@@ -4,19 +4,19 @@
   "version": "1.0.0",
   "dependencies": {
     "@react-email/components": "^0.0.41",
-    "@react-email/render": "^1.1.2",
+    "@react-email/render": "^2.0.4",
     "@react-email/tailwind": "1.0.5",
     "@trycompai/utils": "workspace:*",
     "date-fns": "^4.1.0",
-    "react-email": "^4.0.15",
-    "resend": "^4.4.1",
+    "react-email": "^4.3.2",
+    "resend": "^6.4.2",
     "responsive-react-email": "^0.0.5"
   },
   "devDependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.0",
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.3",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
     "vitest": "^3.2.6"
   },
   "exports": {
@@ -41,8 +41,8 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "peerDependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.0"
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "publishConfig": {
     "access": "public"

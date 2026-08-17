@@ -28,6 +28,7 @@ const requiredPipelineSnippets = [
   '_APP_DATA_BUCKET',
   '_DEVICE_AGENT_ARTIFACTS_BUCKET',
   '_DB_JOB_SERVICE_ACCOUNT',
+  '_API_SERVICE_ACCOUNT',
   '--update-env-vars=BASE_URL=${_API_URL}',
   '--set-env-vars=BASE_URL=${_API_URL}',
   'NEXT_PUBLIC_API_URL=${_API_URL}',
@@ -38,6 +39,17 @@ const requiredPipelineSnippets = [
   'APP_GCP_ENDPOINT=https://storage.googleapis.com',
   'APP_GCP_REGION=auto',
   'APP_GCP_ORG_ASSETS_BUCKET=${_APP_DATA_BUCKET}',
+  'AUTH_GOOGLE_ID=betayum-${_ENVIRONMENT}-google-id:latest',
+  'AUTH_GOOGLE_SECRET=betayum-${_ENVIRONMENT}-google-secret:latest',
+  'GCP_OAUTH_CLIENT_ID=betayum-${_ENVIRONMENT}-google-id:latest',
+  'GCP_OAUTH_CLIENT_SECRET=betayum-${_ENVIRONMENT}-google-secret:latest',
+  'BROWSER_VM_GCP_PROJECT=$PROJECT_ID',
+  'BROWSER_VM_GCP_ZONE=${_BROWSER_VM_ZONE}',
+  '--network="${_BROWSER_VM_NETWORK}"',
+  '--subnet="${_BROWSER_VM_SUBNET}"',
+  '--network-tags=betayum-api',
+  '--vpc-egress=private-ranges-only',
+  'instance-templates list',
 ];
 
 const requiredTriggerSnippets = [
@@ -53,6 +65,10 @@ const requiredTriggerSnippets = [
   '_APP_DATA_BUCKET',
   '_DEVICE_AGENT_ARTIFACTS_BUCKET',
   '_DB_JOB_SERVICE_ACCOUNT',
+  '_API_SERVICE_ACCOUNT',
+  '_BROWSER_VM_NETWORK',
+  '_BROWSER_VM_SUBNET',
+  '_BROWSER_VM_ZONE',
 ];
 
 const requiredTriggerInputSnippets = [
@@ -62,6 +78,11 @@ const requiredTriggerInputSnippets = [
   'package.json',
   'tsconfig.json',
   'turbo.json',
+];
+
+const requiredDeployerRoleSnippets = [
+  '"roles/compute.networkUser"',
+  '"roles/compute.viewer"',
 ];
 
 const requiredRunbookSnippets = [
@@ -93,11 +114,12 @@ const expectedStepDependencies = {
   'run-migrations': ['deploy-migrator-job'],
   'run-seed': ['run-migrations', 'deploy-seeder-job'],
   'deploy-api': ['run-seed', 'push-api'],
+  'configure-api-browser-vm': ['deploy-api'],
   'deploy-app': ['run-seed', 'push-app'],
   'deploy-portal': ['run-seed', 'push-portal'],
-  'smoke-api': ['deploy-api', 'deploy-app', 'deploy-portal'],
-  'smoke-app': ['deploy-api', 'deploy-app', 'deploy-portal'],
-  'smoke-portal': ['deploy-api', 'deploy-app', 'deploy-portal'],
+  'smoke-api': ['configure-api-browser-vm', 'deploy-app', 'deploy-portal'],
+  'smoke-app': ['configure-api-browser-vm', 'deploy-app', 'deploy-portal'],
+  'smoke-portal': ['configure-api-browser-vm', 'deploy-app', 'deploy-portal'],
 };
 
 const serviceDeploySteps = ['deploy-api', 'deploy-app', 'deploy-portal'];
@@ -212,6 +234,11 @@ assertIncludes({
   source: infraVariables,
   snippets: requiredTriggerInputSnippets,
   label: 'Cloud Build trigger input allowlist',
+});
+assertIncludes({
+  source: readFileSync('infra/gcp/locals.tf', 'utf8'),
+  snippets: requiredDeployerRoleSnippets,
+  label: 'Cloud Build deployer roles',
 });
 assertIncludes({
   source: runbook,

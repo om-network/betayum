@@ -1,6 +1,5 @@
 'use client';
 
-import { useMediaQuery } from '@trycompai/ui/hooks';
 import {
   Drawer,
   DrawerContent,
@@ -12,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@trycompai/design-system';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -39,7 +39,9 @@ export function CreateVendorTaskSheet() {
           <SheetHeader>
             <SheetTitle>Create Vendor Task</SheetTitle>
           </SheetHeader>
-          <SheetBody>{/* <CreateVendorTaskForm assignees={assignees} onSuccess={handleSuccess} /> */}</SheetBody>
+          <SheetBody>
+            {/* <CreateVendorTaskForm assignees={assignees} onSuccess={handleSuccess} /> */}
+          </SheetBody>
         </SheetContent>
       </Sheet>
     );
@@ -51,7 +53,9 @@ export function CreateVendorTaskSheet() {
         <DrawerHeader>
           <DrawerTitle>Create Vendor Task</DrawerTitle>
         </DrawerHeader>
-        <div className="p-4">{/* <CreateVendorTaskForm assignees={assignees} onSuccess={handleSuccess} /> */}</div>
+        <div className="p-4">
+          {/* <CreateVendorTaskForm assignees={assignees} onSuccess={handleSuccess} /> */}
+        </div>
       </DrawerContent>
     </Drawer>
   );

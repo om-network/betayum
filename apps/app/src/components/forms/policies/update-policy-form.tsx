@@ -3,9 +3,8 @@
 import { updatePolicyOverviewSchema } from '@/actions/schema';
 import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicyMutations } from '@/hooks/use-policy-mutations';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import type { Policy } from '@db';
-import { Button } from '@trycompai/ui/button';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Accordion,
   AccordionContent,
@@ -15,7 +14,8 @@ import {
   Stack,
   Textarea,
 } from '@trycompai/design-system';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@trycompai/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -72,12 +72,7 @@ export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
                     <FormItem>
                       <FormLabel>Policy Title</FormLabel>
                       <FormControl>
-                        <Input
-                          {...field}
-                          autoFocus
-                          placeholder="Policy Title"
-                          autoCorrect="off"
-                        />
+                        <Input {...field} autoFocus placeholder="Policy Title" autoCorrect="off" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -100,7 +95,10 @@ export function UpdatePolicyForm({ policy, onSuccess }: UpdatePolicyFormProps) {
                   )}
                 />
                 <div className="flex justify-end">
-                  <Button type="submit" disabled={isSubmitting || !hasPermission('policy', 'update')}>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || !hasPermission('policy', 'update')}
+                  >
                     {isSubmitting ? 'Saving...' : 'Save'}
                   </Button>
                 </div>

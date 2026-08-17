@@ -1,7 +1,7 @@
-import { decrypt } from '@trycompai/app/src/lib/encryption';
-import { type DecryptFunction, getIntegrationHandler } from '@trycompai/integrations';
 import { db } from '@db/server';
 import { logger, schemaTask } from '@trigger.dev/sdk';
+import { decrypt } from '@trycompai/app/src/lib/encryption';
+import { type DecryptFunction, getIntegrationHandler } from '@trycompai/integrations';
 import { z } from 'zod';
 
 const getAwsRegion = (details: unknown): string | null => {

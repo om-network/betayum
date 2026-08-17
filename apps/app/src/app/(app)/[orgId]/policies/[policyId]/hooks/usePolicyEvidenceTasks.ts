@@ -40,9 +40,7 @@ export function usePolicyEvidenceTasks({
   const { data, error, isLoading, mutate } = useSWR(
     policyEvidenceTasksKey(policyId, organizationId),
     async () => {
-      const response = await apiClient.get<ApiResponse>(
-        `/v1/policies/${policyId}/evidence-tasks`,
-      );
+      const response = await apiClient.get<ApiResponse>(`/v1/policies/${policyId}/evidence-tasks`);
       if (response.error) throw new Error(response.error);
       return response.data ?? { data: [], count: 0 };
     },

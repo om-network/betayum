@@ -1,5 +1,7 @@
+import { BrandLogo } from '@/app/components/brand-logo';
 import { LoginForm } from '@/app/components/login-form';
 import { OtpSignIn } from '@/app/components/otp';
+import { ArrowRight } from '@trycompai/design-system/icons';
 import { Button } from '@trycompai/ui/button';
 import {
   Card,
@@ -9,9 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@trycompai/ui/card';
-import { Icons } from '@trycompai/ui/icons';
 import { brandConfig } from '@trycompai/utils/brand';
-import { ArrowRight } from '@trycompai/design-system/icons';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
@@ -51,7 +51,7 @@ export default async function Page({
       <main className="flex flex-1 items-center justify-center p-6">
         <Card className="w-full max-w-lg">
           <CardHeader className="text-center space-y-3 pt-10">
-            <Icons.Logo className="h-10 w-10 mx-auto" />
+            <BrandLogo className="mx-auto" />
             <CardTitle className="text-2xl tracking-tight text-card-foreground">
               Employee Portal
             </CardTitle>
@@ -69,8 +69,8 @@ export default async function Page({
                 {brandConfig.displayName} - AI that handles compliance for you in hours.
               </h3>
               <p className="text-muted-foreground mt-1 text-xs">
-                {brandConfig.displayName} makes SOC 2, ISO 27001, HIPAA and GDPR effortless. Eliminate compliance
-                busywork, win more deals and accelerate growth.
+                {brandConfig.displayName} makes SOC 2, ISO 27001, HIPAA and GDPR effortless.
+                Eliminate compliance busywork, win more deals and accelerate growth.
               </p>
               <Button variant="link" className="mt-2 p-0" asChild>
                 <Link

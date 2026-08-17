@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -12,10 +14,14 @@ import {
 } from '@trycompai/ui/dialog';
 import { Input } from '@trycompai/ui/input';
 import { Label } from '@trycompai/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { Textarea } from '@trycompai/ui/textarea';
-import { usePermissions } from '@/hooks/use-permissions';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';

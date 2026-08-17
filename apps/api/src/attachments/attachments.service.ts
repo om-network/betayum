@@ -6,9 +6,34 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import type { Readable } from 'node:stream';
 import { AttachmentResponseDto } from '../tasks/dto/task-responses.dto';
 import { UploadAttachmentDto } from './upload-attachment.dto';
 import { validateFileContent } from '../utils/file-type-validation';
+
+const MIME_TYPES_BY_EXTENSION: Readonly<Record<string, string>> = {
+  avif: 'image/avif',
+  bmp: 'image/bmp',
+  csv: 'text/csv; charset=utf-8',
+  gif: 'image/gif',
+  jpeg: 'image/jpeg',
+  jpg: 'image/jpeg',
+  json: 'application/json; charset=utf-8',
+  log: 'text/plain; charset=utf-8',
+  md: 'text/markdown; charset=utf-8',
+  mp3: 'audio/mpeg',
+  mp4: 'video/mp4',
+  ogg: 'audio/ogg',
+  pdf: 'application/pdf',
+  png: 'image/png',
+  txt: 'text/plain; charset=utf-8',
+  wav: 'audio/wav',
+  webm: 'video/webm',
+  webp: 'image/webp',
+  xml: 'application/xml; charset=utf-8',
+  yaml: 'text/yaml; charset=utf-8',
+  yml: 'text/yaml; charset=utf-8',
+};
 
 @Injectable()
 export class AttachmentsService {
@@ -142,17 +167,11 @@ export class AttachmentsService {
         },
       });
 
-      // Generate signed URL for immediate access
-      const downloadUrl = await this.generateSignedUrl({
-        organizationId,
-        objectKey,
-      });
-
       return {
         id: attachment.id,
         name: attachment.name,
         type: attachment.type,
-        downloadUrl,
+        downloadUrl: this.getProxyUrl(attachment.id),
         createdAt: attachment.createdAt,
         size: fileBuffer.length,
       };
@@ -184,24 +203,13 @@ export class AttachmentsService {
       },
     });
 
-    // Generate signed URLs for all attachments
-    const attachmentsWithUrls = await Promise.all(
-      attachments.map(async (attachment) => {
-        const downloadUrl = await this.generateSignedUrl({
-          organizationId,
-          objectKey: attachment.url,
-        });
-        return {
-          id: attachment.id,
-          name: attachment.name,
-          type: attachment.type,
-          downloadUrl,
-          createdAt: attachment.createdAt,
-        };
-      }),
-    );
-
-    return attachmentsWithUrls;
+    return attachments.map((attachment) => ({
+      id: attachment.id,
+      name: attachment.name,
+      type: attachment.type,
+      downloadUrl: this.getProxyUrl(attachment.id),
+      createdAt: attachment.createdAt,
+    }));
   }
 
   /**
@@ -231,43 +239,34 @@ export class AttachmentsService {
     }));
   }
 
-  /**
-   * Get download URL for an attachment
-   */
   async getAttachmentDownloadUrl(
     organizationId: string,
     attachmentId: string,
   ): Promise<{ downloadUrl: string; expiresIn: number }> {
-    try {
-      // Get attachment record
-      const attachment = await db.attachment.findFirst({
-        where: {
-          id: attachmentId,
-          organizationId,
-        },
-      });
+    const attachment = await db.attachment.findFirst({
+      where: { id: attachmentId, organizationId },
+    });
+    if (!attachment) throw new BadRequestException('Attachment not found');
+    return { downloadUrl: this.getProxyUrl(attachmentId), expiresIn: 0 };
+  }
 
-      if (!attachment) {
-        throw new BadRequestException('Attachment not found');
-      }
-
-      // Generate signed URL
-      const downloadUrl = await this.generateSignedUrl({
-        organizationId,
-        objectKey: attachment.url,
-      });
-
-      return {
-        downloadUrl,
-        expiresIn: this.SIGNED_URL_EXPIRY,
-      };
-    } catch (error) {
-      console.error('Error generating download URL:', error);
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to generate download URL');
-    }
+  async streamAttachmentContent(
+    organizationId: string,
+    attachmentId: string,
+  ): Promise<{ stream: Readable; contentType: string; fileName: string }> {
+    const attachment = await db.attachment.findFirst({
+      where: { id: attachmentId, organizationId },
+    });
+    if (!attachment) throw new BadRequestException('Attachment not found');
+    const stream = this.storage.streamObject({
+      organizationId,
+      key: attachment.url,
+    });
+    const contentType = this.mimeTypeForAttachment(
+      attachment.type,
+      attachment.name,
+    );
+    return { stream, contentType, fileName: attachment.name };
   }
 
   /**
@@ -489,6 +488,36 @@ export class AttachmentsService {
     throw new InternalServerErrorException(
       'Unsupported object storage stream chunk',
     );
+  }
+
+  private getProxyUrl(attachmentId: string): string {
+    const base = (process.env.BASE_URL ?? 'http://localhost:3333').replace(
+      /\/$/,
+      '',
+    );
+    return `${base}/v1/attachments/${attachmentId}/stream`;
+  }
+
+  private mimeTypeForAttachment(
+    type: AttachmentType | string,
+    fileName: string,
+  ): string {
+    const extension = fileName.split('.').pop()?.toLowerCase() ?? '';
+    const contentType = MIME_TYPES_BY_EXTENSION[extension];
+    if (contentType) return contentType;
+
+    switch (type) {
+      case AttachmentType.image:
+        return 'image/png';
+      case AttachmentType.video:
+        return 'video/mp4';
+      case AttachmentType.audio:
+        return 'audio/mpeg';
+      case AttachmentType.document:
+        return 'application/octet-stream';
+      default:
+        return 'application/octet-stream';
+    }
   }
 
   private sanitizeFileName(fileName: string): string {

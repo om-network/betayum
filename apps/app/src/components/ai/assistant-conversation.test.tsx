@@ -3,18 +3,11 @@ import type { UIMessage } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/ai-elements/conversation', () => ({
-  Conversation: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
+  Conversation: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ConversationContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ConversationEmptyState: ({ title }: { icon?: React.ReactNode; title: string }) => (
+    <div>{title}</div>
   ),
-  ConversationContent: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-  ConversationEmptyState: ({
-    title,
-  }: {
-    icon?: React.ReactNode;
-    title: string;
-  }) => <div>{title}</div>,
   ConversationScrollButton: () => null,
 }));
 
@@ -35,6 +28,18 @@ const baseProps = {
 };
 
 describe('AssistantConversation', () => {
+  it('greets with the first name when available', () => {
+    render(<AssistantConversation {...baseProps} />);
+
+    expect(screen.getByText('Hi Pat, how can I help you today?')).toBeInTheDocument();
+  });
+
+  it('greets without a name before the session resolves', () => {
+    render(<AssistantConversation {...baseProps} firstName="" />);
+
+    expect(screen.getByText('Hi, how can I help you today?')).toBeInTheDocument();
+  });
+
   it('shows a subtle loading state while chat history hydrates', () => {
     render(<AssistantConversation {...baseProps} isHydrating />);
 

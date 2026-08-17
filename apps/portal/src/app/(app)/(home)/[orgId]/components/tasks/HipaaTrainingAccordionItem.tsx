@@ -1,11 +1,11 @@
 'use client';
 
+import { useTrainingCompletions } from '@/hooks/use-training-completions';
 import {
   HIPAA_TRAINING_ID,
   hipaaAcknowledgements,
   hipaaTrainingSections,
 } from '@/lib/data/hipaa-training-content';
-import { useTrainingCompletions } from '@/hooks/use-training-completions';
 import {
   AccordionContent,
   AccordionItem,
@@ -30,9 +30,7 @@ export function HipaaTrainingAccordionItem() {
   const handleCheckChange = (index: number, checked: boolean) => {
     const updated = { ...checkedItems, [index]: checked };
     setCheckedItems(updated);
-    setAllChecked(
-      hipaaAcknowledgements.every((_, i) => updated[i] === true),
-    );
+    setAllChecked(hipaaAcknowledgements.every((_, i) => updated[i] === true));
   };
 
   const handleAcknowledge = async () => {
@@ -60,10 +58,7 @@ export function HipaaTrainingAccordionItem() {
                 </div>
               )}
               <span
-                className={cn(
-                  'text-base',
-                  isCompleted && 'text-muted-foreground line-through',
-                )}
+                className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}
               >
                 HIPAA Security Awareness Training
               </span>
@@ -73,9 +68,8 @@ export function HipaaTrainingAccordionItem() {
         <AccordionContent>
           <div className="px-4 pb-4 space-y-6">
             <p className="text-muted-foreground text-sm">
-              Read the following HIPAA security awareness training and
-              acknowledge each statement at the bottom to complete this
-              requirement.
+              Read the following HIPAA security awareness training and acknowledge each statement at
+              the bottom to complete this requirement.
             </p>
 
             {isCompleted ? (
@@ -105,9 +99,7 @@ function CompletedBanner({ completedAt }: { completedAt: Date | null }) {
         <CheckmarkFilled size={24} />
       </div>
       <div>
-        <p className="font-medium text-sm">
-          HIPAA training acknowledged
-        </p>
+        <p className="font-medium text-sm">HIPAA training acknowledged</p>
         <p className="text-muted-foreground text-xs">
           {completedAt
             ? `Completed on ${new Date(completedAt).toLocaleDateString('en-US', {
@@ -157,9 +149,7 @@ function TrainingSectionContent({ content }: { content: string }) {
     }
 
     if (inTable) {
-      elements.push(
-        <TrainingTable key={`table-${i}`} rows={tableRows} />,
-      );
+      elements.push(<TrainingTable key={`table-${i}`} rows={tableRows} />);
       tableRows = [];
       inTable = false;
     }
@@ -186,9 +176,7 @@ function TrainingSectionContent({ content }: { content: string }) {
   }
 
   if (inTable && tableRows.length > 0) {
-    elements.push(
-      <TrainingTable key="table-end" rows={tableRows} />,
-    );
+    elements.push(<TrainingTable key="table-end" rows={tableRows} />);
   }
 
   return <>{elements}</>;
@@ -204,10 +192,7 @@ function TrainingTable({ rows }: { rows: string[][] }) {
         <thead>
           <tr className="border-b bg-muted/50">
             {header.map((cell, i) => (
-              <th
-                key={i}
-                className="px-3 py-2 text-left font-medium text-foreground"
-              >
+              <th key={i} className="px-3 py-2 text-left font-medium text-foreground">
                 {cell}
               </th>
             ))}
@@ -217,10 +202,7 @@ function TrainingTable({ rows }: { rows: string[][] }) {
           {body.map((row, ri) => (
             <tr key={ri} className="border-b last:border-0">
               {row.map((cell, ci) => (
-                <td
-                  key={ci}
-                  className="px-3 py-2 text-muted-foreground"
-                >
+                <td key={ci} className="px-3 py-2 text-muted-foreground">
                   {cell}
                 </td>
               ))}
@@ -253,19 +235,14 @@ function AcknowledgementSection({
       </p>
       <div className="space-y-3">
         {hipaaAcknowledgements.map((statement, index) => (
-          <label
-            key={index}
-            className="flex items-start gap-3 cursor-pointer"
-          >
+          <label key={index} className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={checkedItems[index] ?? false}
               onChange={(e) => onCheckChange(index, e.target.checked)}
               className="mt-0.5 h-4 w-4 rounded border-border accent-primary shrink-0"
             />
-            <span className="text-sm text-foreground leading-snug">
-              {statement}
-            </span>
+            <span className="text-sm text-foreground leading-snug">{statement}</span>
           </label>
         ))}
       </div>

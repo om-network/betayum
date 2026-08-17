@@ -1,9 +1,9 @@
 'use client';
 
 import type { AccessRequest } from '@/hooks/use-access-requests';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
-import type { ColumnDef } from '@tanstack/react-table';
 
 export type RequestTableRow = AccessRequest;
 

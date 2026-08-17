@@ -60,7 +60,7 @@ export interface UseCommentsOptions extends UseApiSWROptions<Comment[]> {
 /**
  * Generic hook to fetch comments for any entity using SWR
  * Includes polling for real-time updates (e.g., when trigger.dev tasks create comments)
- * 
+ *
  * IMPORTANT: Always pass organizationId from URL params to ensure correct org context
  * when user navigates to a different org's page while active org is different.
  */
@@ -345,20 +345,14 @@ export function useTaskComments(taskId: string | null, options: UseCommentsOptio
 /**
  * Convenience hook for policy comments
  */
-export function usePolicyComments(
-  policyId: string | null,
-  options: UseCommentsOptions = {},
-) {
+export function usePolicyComments(policyId: string | null, options: UseCommentsOptions = {}) {
   return useComments(policyId, 'policy', options);
 }
 
 /**
  * Convenience hook for vendor comments
  */
-export function useVendorComments(
-  vendorId: string | null,
-  options: UseCommentsOptions = {},
-) {
+export function useVendorComments(vendorId: string | null, options: UseCommentsOptions = {}) {
   return useComments(vendorId, 'vendor', options);
 }
 

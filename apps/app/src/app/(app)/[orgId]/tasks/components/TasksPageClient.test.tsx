@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -64,25 +64,13 @@ vi.mock('@trycompai/design-system', () => ({
       {children}
     </button>
   ),
-  PageHeader: ({
-    title,
-    actions,
-  }: {
-    title: string;
-    actions?: React.ReactNode;
-  }) => (
+  PageHeader: ({ title, actions }: { title: string; actions?: React.ReactNode }) => (
     <div>
       <h1>{title}</h1>
       {actions}
     </div>
   ),
-  PageLayout: ({
-    children,
-    header,
-  }: {
-    children: React.ReactNode;
-    header: React.ReactNode;
-  }) => (
+  PageLayout: ({ children, header }: { children: React.ReactNode; header: React.ReactNode }) => (
     <div>
       {header}
       {children}
@@ -95,9 +83,21 @@ vi.mock('@trycompai/design-system', () => ({
   PopoverTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   PopoverTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Switch: () => <input type="checkbox" />,
-  Tabs: ({ children, defaultValue: _dv, onValueChange: _ovc }: { children: React.ReactNode; defaultValue?: string; onValueChange?: (v: string) => void }) => <div>{children}</div>,
-  TabsList: ({ children, variant: _v }: { children: React.ReactNode; variant?: string }) => <div>{children}</div>,
-  TabsTrigger: ({ children, value: _val }: { children: React.ReactNode; value: string }) => <div>{children}</div>,
+  Tabs: ({
+    children,
+    defaultValue: _dv,
+    onValueChange: _ovc,
+  }: {
+    children: React.ReactNode;
+    defaultValue?: string;
+    onValueChange?: (v: string) => void;
+  }) => <div>{children}</div>,
+  TabsList: ({ children, variant: _v }: { children: React.ReactNode; variant?: string }) => (
+    <div>{children}</div>
+  ),
+  TabsTrigger: ({ children, value: _val }: { children: React.ReactNode; value: string }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock('@trycompai/design-system/icons', () => ({
@@ -161,6 +161,25 @@ describe('TasksPageClient permission gating', () => {
 
     render(<TasksPageClient {...defaultProps} />);
 
+    expect(screen.getByTestId('task-list')).toBeInTheDocument();
+  });
+
+  it('shows export controls for read-only users with evidence export access', () => {
+    setMockPermissions(AUDITOR_PERMISSIONS);
+
+    render(<TasksPageClient {...defaultProps} hasEvidenceExportAccess />);
+
+    expect(screen.getByText('Export All Evidence')).toBeInTheDocument();
+    expect(screen.queryByText('Create Evidence')).not.toBeInTheDocument();
+    expect(screen.getByTestId('task-list')).toBeInTheDocument();
+  });
+
+  it('shows mutation controls for admins while keeping evidence data visible', () => {
+    setMockPermissions(ADMIN_PERMISSIONS);
+
+    render(<TasksPageClient {...defaultProps} />);
+
+    expect(screen.getByText('Create Evidence')).toBeInTheDocument();
     expect(screen.getByTestId('task-list')).toBeInTheDocument();
   });
 });

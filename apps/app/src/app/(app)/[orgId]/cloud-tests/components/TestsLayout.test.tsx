@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -98,12 +98,8 @@ vi.mock('@trycompai/design-system', () => ({
       {children}
     </div>
   ),
-  PageHeaderDescription: ({ children }: { children: React.ReactNode }) => (
-    <p>{children}</p>
-  ),
-  PageLayout: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  PageHeaderDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+  PageLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock('@trycompai/design-system/icons', () => ({
@@ -127,13 +123,16 @@ const mockProvider = {
   name: 'AWS',
   displayName: 'AWS Production',
   status: 'active',
-  lastRunAt: '2024-01-01',
+  lastRunAt: new Date('2024-01-01'),
   isLegacy: false,
   supportsMultipleConnections: false,
   requiredVariables: [],
   variables: {},
   accountId: '123456789012',
   regions: ['us-east-1'],
+  organizationId: 'org_123',
+  createdAt: new Date('2024-01-01'),
+  updatedAt: new Date('2024-01-01'),
 };
 
 const defaultProps = {
@@ -149,17 +148,17 @@ describe('TestsLayout permission gating', () => {
     // and renders the main layout (not EmptyState).
     // useSWR is called twice: first for findings, then for providers.
     let callCount = 0;
-    mockUseSWR.mockImplementation(() => {
+    (
+      mockUseSWR as unknown as { mockImplementation: (fn: () => unknown) => void }
+    ).mockImplementation(() => {
       callCount++;
       if (callCount % 2 === 1) {
-        // findings call
         return {
           data: { data: { data: [], count: 0 } },
           mutate: vi.fn(),
           isValidating: false,
         };
       }
-      // providers call
       return {
         data: { data: { data: [mockProvider], count: 1 } },
         mutate: vi.fn(),
@@ -220,13 +219,7 @@ describe('TestsLayout permission gating', () => {
       mutate: vi.fn(),
       isValidating: false,
     });
-    render(
-      <TestsLayout
-        initialFindings={[]}
-        initialProviders={[]}
-        orgId="org_123"
-      />,
-    );
+    render(<TestsLayout initialFindings={[]} initialProviders={[]} orgId="org_123" />);
     expect(screen.getByTestId('empty-state')).toBeInTheDocument();
   });
 });

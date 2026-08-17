@@ -32,7 +32,9 @@ function normalizeEnvValue(value: string | undefined): string | undefined {
   return trimmedValue.length > 0 ? trimmedValue : undefined;
 }
 
-function firstDefined(...values: Array<string | undefined>): string | undefined {
+function firstDefined(
+  ...values: Array<string | undefined>
+): string | undefined {
   return values.map(normalizeEnvValue).find(Boolean);
 }
 
@@ -190,7 +192,7 @@ export function extractS3KeyFromUrl(url: string): string {
       isGcsHost &&
       parsedUrl.hostname.toLowerCase() === 'storage.googleapis.com' &&
       pathSegments.length > 1 &&
-      knownBucketNames.includes(pathSegments[0]!)
+      knownBucketNames.includes(pathSegments[0])
     ) {
       key = pathSegments.slice(1).join('/');
     }
@@ -241,7 +243,9 @@ export async function getFleetAgent({
     throw new Error('S3 client not configured');
   }
 
-  const fleetBucketName = normalizeEnvValue(process.env.FLEET_AGENT_BUCKET_NAME);
+  const fleetBucketName = normalizeEnvValue(
+    process.env.FLEET_AGENT_BUCKET_NAME,
+  );
   const fleetAgentFileName = 'Comp AI Agent-1.0.0-arm64.dmg';
 
   if (!fleetBucketName) {

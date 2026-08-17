@@ -52,8 +52,8 @@ export function ExportEvidenceButton({ organizationName }: ExportEvidenceButtonP
           <SheetBody>
             <Stack gap="lg">
               <Text size="sm" variant="muted">
-                Download every task&apos;s uploaded evidence as a single ZIP so
-                you can hand it to your auditor or keep an offline snapshot.
+                Download every task&apos;s uploaded evidence as a single ZIP so you can hand it to
+                your auditor or keep an offline snapshot.
               </Text>
 
               <HStack justify="between" align="center">
@@ -62,19 +62,14 @@ export function ExportEvidenceButton({ organizationName }: ExportEvidenceButtonP
                     Include raw JSON files
                   </Text>
                   <Text size="xs" variant="muted">
-                    Adds machine-readable metadata alongside the evidence
-                    files.
+                    Adds machine-readable metadata alongside the evidence files.
                   </Text>
                 </Stack>
                 <Switch checked={includeJson} onCheckedChange={setIncludeJson} />
               </HStack>
 
               <HStack justify="end">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsOpen(false)}
-                  disabled={isDownloading}
-                >
+                <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isDownloading}>
                   Cancel
                 </Button>
                 <Button

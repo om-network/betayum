@@ -202,8 +202,9 @@ export class FrameworksService {
           controlsMap.set(rm.control.id, {
             ...controlData,
             policies: policyLinks.map(
-              (link: { policy: { id: string; name: string; status: string } }) =>
-                link.policy,
+              (link: {
+                policy: { id: string; name: string; status: string };
+              }) => link.policy,
             ),
             controlDocumentTypes: documentLinks.map(
               (documentType: { formType: EvidenceFormType }) => ({
@@ -742,7 +743,10 @@ export class FrameworksService {
       (result): result is PromiseRejectedResult => result.status === 'rejected',
     );
     if (failedTrigger) {
-      this.logger.error('Failed to trigger policy update', failedTrigger.reason);
+      this.logger.error(
+        'Failed to trigger policy update',
+        failedTrigger.reason,
+      );
       throw new Error('Failed to trigger policy update');
     }
   }
@@ -846,11 +850,8 @@ export class FrameworksService {
       relatedControls: relatedControls.map((relatedControl) => ({
         ...relatedControl,
         control: (() => {
-          const {
-            frameworkPolicyLinks,
-            frameworkDocumentLinks,
-            ...control
-          } = relatedControl.control;
+          const { frameworkPolicyLinks, frameworkDocumentLinks, ...control } =
+            relatedControl.control;
           return {
             ...control,
             policies: frameworkPolicyLinks.map((link) => link.policy),
@@ -920,9 +921,7 @@ export class FrameworksService {
     );
 
     const latestByFramework = new Map(
-      latestVersions
-        .filter(Boolean)
-        .map((v) => [v!.frameworkId, v!]),
+      latestVersions.filter(Boolean).map((v) => [v!.frameworkId, v!]),
     );
 
     return instances

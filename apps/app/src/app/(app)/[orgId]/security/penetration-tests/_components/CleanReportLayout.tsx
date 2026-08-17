@@ -1,11 +1,8 @@
 'use client';
 
+import type { PentestAgentEvent, PentestRun } from '@/lib/security/penetration-tests-client';
 import { Button } from '@trycompai/design-system';
 import { Document, Download } from '@trycompai/design-system/icons';
-import type {
-  PentestAgentEvent,
-  PentestRun,
-} from '@/lib/security/penetration-tests-client';
 
 interface CleanReportLayoutProps {
   run: PentestRun;
@@ -53,16 +50,11 @@ export function CleanReportLayout({
 
       <SeveritySummaryLine />
 
-      <AttachToAuditCta
-        onDownloadMarkdown={onDownloadMarkdown}
-        onDownloadPdf={onDownloadPdf}
-      />
+      <AttachToAuditCta onDownloadMarkdown={onDownloadMarkdown} onDownloadPdf={onDownloadPdf} />
 
       {onReRun ? (
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            Re-run for an updated attestation when your stack changes.
-          </span>
+          <span>Re-run for an updated attestation when your stack changes.</span>
           <button
             type="button"
             onClick={onReRun}
@@ -101,13 +93,11 @@ function HeroRow({ run, durationMs }: HeroRowProps) {
             nothing than to print "< 1m" for a multi-hour assessment.
             The real duration is in the `pentest.completed` webhook
             payload; persisting it is a follow-up. */}
-        {durationMs >= 60_000
-          ? ` · Completed in ${formatDurationLabel(durationMs)}`
-          : ''}
+        {durationMs >= 60_000 ? ` · Completed in ${formatDurationLabel(durationMs)}` : ''}
       </p>
       <p className="mt-3 max-w-prose text-xs text-muted-foreground">
-        The downloaded report is the complete assessment record —
-        always reference it for full context.
+        The downloaded report is the complete assessment record — always reference it for full
+        context.
       </p>
     </section>
   );
@@ -126,10 +116,7 @@ interface AttachToAuditCtaProps {
   onDownloadPdf: () => void;
 }
 
-function AttachToAuditCta({
-  onDownloadMarkdown,
-  onDownloadPdf,
-}: AttachToAuditCtaProps) {
+function AttachToAuditCta({ onDownloadMarkdown, onDownloadPdf }: AttachToAuditCtaProps) {
   return (
     <section className="rounded-[var(--radius)] bg-muted/40 p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -161,11 +148,7 @@ function AttachToAuditCta({
 function computeDurationMs(start: string, end: string): number {
   const startMs = new Date(start).getTime();
   const endMs = new Date(end).getTime();
-  if (
-    !Number.isFinite(startMs) ||
-    !Number.isFinite(endMs) ||
-    endMs < startMs
-  ) {
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs) {
     return 0;
   }
   return endMs - startMs;

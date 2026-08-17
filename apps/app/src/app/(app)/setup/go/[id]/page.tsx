@@ -17,9 +17,7 @@ export default async function RunPage({ params }: PageProps) {
   const cookieStore = await cookies();
   const publicAccessToken = cookieStore.get('publicAccessToken')?.value || undefined;
 
-  const onboardingRes = await serverApi.get<OnboardingResponse>(
-    '/v1/organization/onboarding',
-  );
+  const onboardingRes = await serverApi.get<OnboardingResponse>('/v1/organization/onboarding');
 
   const triggerJobId = onboardingRes.data?.triggerJobId;
 

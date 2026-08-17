@@ -1,15 +1,11 @@
 'use client';
 
-import { FindingsTab } from '../components/FindingsTab';
-import { OverviewTabs } from '../components/OverviewTabs';
 import { usePermissions } from '@/hooks/use-permissions';
-import {
-  Button,
-  PageHeader,
-  PageLayout,
-} from '@trycompai/design-system';
+import { Button, PageHeader, PageLayout } from '@trycompai/design-system';
 import { Add } from '@trycompai/design-system/icons';
 import { useState } from 'react';
+import { FindingsTab } from '../components/FindingsTab';
+import { OverviewTabs } from '../components/OverviewTabs';
 
 /**
  * Client wrapper for the Findings route. Hosts the "Add finding" action in the
@@ -29,11 +25,7 @@ export function FindingsPage({ orgId }: { orgId: string }) {
           tabs={<OverviewTabs />}
           actions={
             canCreate ? (
-              <Button
-                size="sm"
-                iconLeft={<Add size={16} />}
-                onClick={() => setCreateOpen(true)}
-              >
+              <Button size="sm" iconLeft={<Add size={16} />} onClick={() => setCreateOpen(true)}>
                 Add finding
               </Button>
             ) : null

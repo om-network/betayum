@@ -86,7 +86,11 @@ export class ControlsController {
     @Param('id') id: string,
     @Query('frameworkInstanceId') frameworkInstanceId?: string,
   ) {
-    return this.controlsService.findOne(id, organizationId, frameworkInstanceId);
+    return this.controlsService.findOne(
+      id,
+      organizationId,
+      frameworkInstanceId,
+    );
   }
 
   @Post()

@@ -38,7 +38,10 @@ import { AuditRead } from '../audit/skip-audit-log.decorator';
 import { AuthContext, OrganizationId } from '../auth/auth-context.decorator';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
-import { RequirePermission, RequirePermissions } from '../auth/require-permission.decorator';
+import {
+  RequirePermission,
+  RequirePermissions,
+} from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { CreatePolicyDto } from './dto/create-policy.dto';
 import { UpdatePolicyDto } from './dto/update-policy.dto';
@@ -287,7 +290,10 @@ export class PoliciesController {
     { resource: 'policy', actions: ['read'] },
     { resource: 'task', actions: ['read'] },
   ])
-  @ApiOperation({ summary: 'Get tasks that serve as evidence for a policy, grouped by control' })
+  @ApiOperation({
+    summary:
+      'Get tasks that serve as evidence for a policy, grouped by control',
+  })
   @ApiParam(POLICY_PARAMS.policyId)
   async getPolicyEvidenceTasks(
     @Param('id') id: string,

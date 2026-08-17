@@ -1,10 +1,9 @@
 'use client';
 
 import { completeInvitation } from '@/actions/organization/accept-invitation';
+import { BrandLogo } from '@/components/brand-logo';
 import { authClient } from '@/utils/auth-client';
-import { Button } from '@trycompai/ui/button';
-import { Icons } from '@trycompai/ui/icons';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@trycompai/design-system';
 import { useAction } from 'next-safe-action/hooks';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -52,7 +51,7 @@ export function AcceptInvite({
     <div className="bg-card relative w-full max-w-[440px] rounded-sm border p-8 shadow-lg">
       <div className="mb-8 flex justify-center">
         <Link href="/">
-          <Icons.Logo />
+          <BrandLogo />
         </Link>
       </div>
 
@@ -68,15 +67,8 @@ export function AcceptInvite({
         </p>
       </div>
 
-      <Button onClick={handleAccept} className="w-full" size="sm" disabled={isPending}>
-        {isPending ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Accepting...
-          </>
-        ) : (
-          'Accept Invitation'
-        )}
+      <Button onClick={handleAccept} width="full" size="sm" loading={isPending}>
+        {isPending ? 'Accepting...' : 'Accept Invitation'}
       </Button>
     </div>
   );

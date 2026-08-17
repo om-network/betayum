@@ -13,8 +13,8 @@ import {
 import type { EvidenceFormAnalysisResult } from '@/app/api/evidence-forms/analyze/route';
 import { FileUploader } from '@/components/file-uploader';
 import { api } from '@/lib/api-client';
-import { meetingFields } from '@trycompai/company';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { meetingFields } from '@trycompai/company';
 import {
   Alert,
   Button,
@@ -177,15 +177,12 @@ export function CompanySubmissionWizard({
     try {
       const fileData = await fileToBase64(file);
       const submitFormType = isMeeting ? selectedMeetingType : formType;
-      const response = await api.post<EvidenceFormFile>(
-        '/v1/evidence-forms/uploads',
-        {
-          formType: submitFormType,
-          fileName: file.name,
-          fileType: file.type || 'application/octet-stream',
-          fileData,
-        },
-      );
+      const response = await api.post<EvidenceFormFile>('/v1/evidence-forms/uploads', {
+        formType: submitFormType,
+        fileName: file.name,
+        fileType: file.type || 'application/octet-stream',
+        fileData,
+      });
 
       if (response.error || !response.data) {
         throw new Error(response.error ?? 'Upload failed');
@@ -410,10 +407,7 @@ export function CompanySubmissionWizard({
 
     const submitFormType = isMeeting ? selectedMeetingType : formType;
 
-    const response = await api.post(
-      `/v1/evidence-forms/${submitFormType}/submissions`,
-      payload,
-    );
+    const response = await api.post(`/v1/evidence-forms/${submitFormType}/submissions`, payload);
 
     if (response.error) {
       toast.error(response.error);
@@ -869,8 +863,7 @@ export function CompanySubmissionWizard({
                                         [],
                                       ];
                                     }
-                                    if (trimmed === '.xls')
-                                      return ['application/vnd.ms-excel', []];
+                                    if (trimmed === '.xls') return ['application/vnd.ms-excel', []];
                                     return null;
                                   })
                                   .filter((entry): entry is [string, string[]] => entry !== null),

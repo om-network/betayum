@@ -115,20 +115,20 @@ model BillingCreditBalance {
 }
 
 model BillingCreditEvent {
-  id                String   @id @default(dbgenerated("generate_prefixed_cuid('bce'::text)"))
-  organizationId    String   @map("organization_id")
-  balanceId         String   @map("balance_id")
-  productKey        String   @map("product_key")
-  skuKey            String?  @map("sku_key")
-  eventType         String   @map("event_type")
-  quantity          Int
-  source            String
-  note              String?
-  adminUserId       String?  @map("admin_user_id")
-  sourceResourceId  String?  @map("source_resource_id")
-  linkedEventId     String?  @map("linked_event_id")
-  idempotencyKey    String   @unique @map("idempotency_key")
-  createdAt         DateTime @default(now()) @map("created_at")
+  id               String   @id @default(dbgenerated("generate_prefixed_cuid('bce'::text)"))
+  organizationId   String   @map("organization_id")
+  balanceId        String   @map("balance_id")
+  productKey       String   @map("product_key")
+  skuKey           String?  @map("sku_key")
+  eventType        String   @map("event_type")
+  quantity         Int
+  source           String
+  note             String?
+  adminUserId      String?  @map("admin_user_id")
+  sourceResourceId String?  @map("source_resource_id")
+  linkedEventId    String?  @map("linked_event_id")
+  idempotencyKey   String   @unique @map("idempotency_key")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   balance      BillingCreditBalance @relation(fields: [balanceId], references: [id], onDelete: Cascade)

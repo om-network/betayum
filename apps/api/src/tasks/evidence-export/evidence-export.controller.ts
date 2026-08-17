@@ -184,10 +184,7 @@ export class EvidenceExportController {
       );
 
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${filename}"`,
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
     pipeArchiveToResponse({
       archive,
@@ -257,10 +254,7 @@ export class AuditorEvidenceExportController {
       );
 
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${filename}"`,
-    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
     pipeArchiveToResponse({
       archive,

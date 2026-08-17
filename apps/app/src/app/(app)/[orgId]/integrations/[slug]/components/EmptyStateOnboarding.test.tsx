@@ -45,8 +45,7 @@ vi.mock('@trycompai/integration-platform', () => ({
   getAwsCloudShellUrl: () => 'https://console.aws.amazon.com/cloudshell',
   getAwsCloudShellScript: () => '',
   getAwsRemediationScript: () => '',
-  normalizeAwsEnvironment: (value: unknown) =>
-    value === 'aws-us-gov' ? 'aws-us-gov' : 'aws',
+  normalizeAwsEnvironment: (value: unknown) => (value === 'aws-us-gov' ? 'aws-us-gov' : 'aws'),
 }));
 
 vi.mock('sonner', () => ({
@@ -67,18 +66,20 @@ describe('EmptyStateOnboarding', () => {
 
     render(
       <EmptyStateOnboarding
-        provider={{
-          id: 'dynamic-security',
-          slug: 'dynamic-security',
-          name: 'Dynamic Security',
-          description: 'Dynamic integration',
-          category: 'Security',
-          logoUrl: '',
-          authType: 'custom',
-          capabilities: ['checks'],
-          isActive: true,
-          docsUrl: 'https://example.com/docs',
-        } as any}
+        provider={
+          {
+            id: 'dynamic-security',
+            slug: 'dynamic-security',
+            name: 'Dynamic Security',
+            description: 'Dynamic integration',
+            category: 'Security',
+            logoUrl: '',
+            authType: 'custom',
+            capabilities: ['checks'],
+            isActive: true,
+            docsUrl: 'https://example.com/docs',
+          } as any
+        }
         orgId="org_1"
         onConnected={onConnected}
       />,
@@ -98,17 +99,19 @@ describe('EmptyStateOnboarding', () => {
 
     render(
       <EmptyStateOnboarding
-        provider={{
-          id: 'dynamic-api',
-          slug: 'dynamic-api',
-          name: 'Dynamic API',
-          description: 'Dynamic API integration',
-          category: 'Security',
-          logoUrl: '',
-          authType: 'api_key',
-          capabilities: ['checks'],
-          isActive: true,
-        } as any}
+        provider={
+          {
+            id: 'dynamic-api',
+            slug: 'dynamic-api',
+            name: 'Dynamic API',
+            description: 'Dynamic API integration',
+            category: 'Security',
+            logoUrl: '',
+            authType: 'api_key',
+            capabilities: ['checks'],
+            isActive: true,
+          } as any
+        }
         orgId="org_1"
         onConnected={vi.fn()}
       />,
@@ -126,4 +129,3 @@ describe('EmptyStateOnboarding', () => {
     });
   });
 });
-

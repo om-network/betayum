@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { Member, User } from '@db';
+import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -12,9 +13,8 @@ import {
 } from '@trycompai/ui/dialog';
 import { Label } from '@trycompai/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@trycompai/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
-import { Member, User } from '@db';
 import { Loader2, UserIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useTasks } from '../hooks/useTasks';
 

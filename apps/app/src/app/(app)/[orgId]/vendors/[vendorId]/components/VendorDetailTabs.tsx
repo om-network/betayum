@@ -1,28 +1,21 @@
 'use client';
 
 import { isFailureRunStatus } from '@/app/(app)/[orgId]/cloud-tests/status';
-import { VendorRiskAssessmentSkeleton } from '@/components/vendor-risk-assessment/VendorRiskAssessmentSkeleton';
-import { VendorRiskAssessmentView } from '@/components/vendor-risk-assessment/VendorRiskAssessmentView';
-import { VendorNewsLoadingPlaceholder } from '@/components/vendor-risk-assessment/VendorNewsLoadingPlaceholder';
-import { parseVendorRiskAssessmentDescription } from '@/components/vendor-risk-assessment/parse-vendor-risk-assessment-description';
 import { Comments } from '@/components/comments/Comments';
 import { RecentAuditLogs } from '@/components/RecentAuditLogs';
-import { useAuditLogs } from '@/hooks/use-audit-logs';
-import { TaskItems } from '@/components/task-items/TaskItems';
-import { useTaskItems, useTaskItemActions } from '@/hooks/use-task-items';
-import { useVendor, useVendorActions, type VendorResponse } from '@/hooks/use-vendors';
-import { usePermissions } from '@/hooks/use-permissions';
-import { SecondaryFields } from './secondary-fields/secondary-fields';
-import { VendorResearchBadges, VendorResearchLinks } from './VendorResearchSection';
-import { VendorResearchFeed } from './VendorResearchFeed';
-import { VendorInherentRiskChart } from './VendorInherentRiskChart';
-import { VendorResidualRiskChart } from './VendorResidualRiskChart';
 import { TreatmentPlanTab } from '@/components/risks/treatment-plan/TreatmentPlanTab';
-import type { Member, RiskTreatmentType, User, Vendor } from '@db';
+import { TaskItems } from '@/components/task-items/TaskItems';
+import { parseVendorRiskAssessmentDescription } from '@/components/vendor-risk-assessment/parse-vendor-risk-assessment-description';
+import { VendorNewsLoadingPlaceholder } from '@/components/vendor-risk-assessment/VendorNewsLoadingPlaceholder';
+import { VendorRiskAssessmentSkeleton } from '@/components/vendor-risk-assessment/VendorRiskAssessmentSkeleton';
+import { VendorRiskAssessmentView } from '@/components/vendor-risk-assessment/VendorRiskAssessmentView';
+import { useAuditLogs } from '@/hooks/use-audit-logs';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useTaskItemActions, useTaskItems } from '@/hooks/use-task-items';
+import { useVendor, useVendorActions, type VendorResponse } from '@/hooks/use-vendors';
+import type { Member, Prisma, RiskTreatmentType, User, Vendor } from '@db';
 import { CommentEntityType } from '@db';
-import type { Prisma } from '@db';
 import { useRealtimeRun } from '@trigger.dev/react-hooks';
-import { AnimatePresence, motion } from 'motion/react';
 import {
   Breadcrumb,
   Button,
@@ -34,11 +27,17 @@ import {
   TabsTrigger,
   Text,
 } from '@trycompai/design-system';
+import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { SecondaryFields } from './secondary-fields/secondary-fields';
+import { VendorInherentRiskChart } from './VendorInherentRiskChart';
+import { VendorResearchFeed } from './VendorResearchFeed';
+import { VendorResearchBadges, VendorResearchLinks } from './VendorResearchSection';
+import { VendorResidualRiskChart } from './VendorResidualRiskChart';
 
 type VendorWithRiskAssessment = Vendor & {
   assignee: { user: User | null } | null;
@@ -117,7 +116,13 @@ export function VendorDetailTabs({
   });
 
   const { data: taskItemsData, mutate: refreshTaskItems } = useTaskItems(
-    vendorId, 'vendor', 1, 50, 'createdAt', 'desc', {},
+    vendorId,
+    'vendor',
+    1,
+    50,
+    'createdAt',
+    'desc',
+    {},
     { refreshInterval: 0, revalidateOnFocus: true },
   );
 
@@ -130,8 +135,14 @@ export function VendorDetailTabs({
     if (swrVendor) return normalizeVendor(swrVendor);
     return {
       ...initialVendor,
-      createdAt: initialVendor.createdAt instanceof Date ? initialVendor.createdAt : new Date(initialVendor.createdAt),
-      updatedAt: initialVendor.updatedAt instanceof Date ? initialVendor.updatedAt : new Date(initialVendor.updatedAt),
+      createdAt:
+        initialVendor.createdAt instanceof Date
+          ? initialVendor.createdAt
+          : new Date(initialVendor.createdAt),
+      updatedAt:
+        initialVendor.updatedAt instanceof Date
+          ? initialVendor.updatedAt
+          : new Date(initialVendor.updatedAt),
       riskAssessmentUpdatedAt: initialVendor.riskAssessmentUpdatedAt
         ? initialVendor.riskAssessmentUpdatedAt instanceof Date
           ? initialVendor.riskAssessmentUpdatedAt
@@ -162,7 +173,8 @@ export function VendorDetailTabs({
     const meta = assessmentRun.metadata as Record<string, unknown>;
     type MessageType = 'searching' | 'found' | 'analyzing' | 'error';
     const validTypes = new Set<string>(['searching', 'found', 'analyzing', 'error']);
-    const rawMessages = (meta.messages as Array<{ text: string; type: string; timestamp: number }>) ?? [];
+    const rawMessages =
+      (meta.messages as Array<{ text: string; type: string; timestamp: number }>) ?? [];
     return {
       phase: (meta.phase as string) ?? 'starting',
       messages: rawMessages.map((m) => ({
@@ -213,7 +225,10 @@ export function VendorDetailTabs({
 
   useEffect(() => {
     if (!isRiskAssessmentGenerating) return;
-    const interval = setInterval(() => { void refreshTaskItems(); void refreshVendor(); }, 3000);
+    const interval = setInterval(() => {
+      void refreshTaskItems();
+      void refreshVendor();
+    }, 3000);
     return () => clearInterval(interval);
   }, [isRiskAssessmentGenerating, refreshTaskItems, refreshVendor]);
 
@@ -230,8 +245,11 @@ export function VendorDetailTabs({
   };
 
   const saveTitleEdit = async () => {
-    const current = isViewingTask ? (selectedTaskTitle || '') : resolvedVendor.name;
-    if (!titleValue.trim() || titleValue === current) { setIsEditingTitle(false); return; }
+    const current = isViewingTask ? selectedTaskTitle || '' : resolvedVendor.name;
+    if (!titleValue.trim() || titleValue === current) {
+      setIsEditingTitle(false);
+      return;
+    }
     try {
       if (isViewingTask && taskItemId) {
         await updateTaskItem(taskItemId, { title: titleValue.trim() });
@@ -255,7 +273,10 @@ export function VendorDetailTabs({
   };
 
   const saveDescriptionEdit = async () => {
-    if (descriptionValue === (resolvedVendor.description || '')) { setIsEditingDescription(false); return; }
+    if (descriptionValue === (resolvedVendor.description || '')) {
+      setIsEditingDescription(false);
+      return;
+    }
     try {
       await updateVendor(vendorId, { description: descriptionValue.trim() });
       toast.success('Description updated');
@@ -325,12 +346,9 @@ export function VendorDetailTabs({
     [fetchActiveVendorAutoLinkRun, vendorId],
   );
 
-  const handleDiscardAutoLinkRun = useCallback(
-    async () => {
-      await discardVendorAutoLinkRun(vendorId);
-    },
-    [discardVendorAutoLinkRun, vendorId],
-  );
+  const handleDiscardAutoLinkRun = useCallback(async () => {
+    await discardVendorAutoLinkRun(vendorId);
+  }, [discardVendorAutoLinkRun, vendorId]);
 
   const handleUpdateDescription = async (description: string) => {
     await updateVendor(vendorId, { treatmentStrategyDescription: description });
@@ -358,13 +376,16 @@ export function VendorDetailTabs({
 
   const riskAssessmentData = resolvedVendor.riskAssessmentData;
   const riskAssessmentUpdatedAt = resolvedVendor.riskAssessmentUpdatedAt ?? null;
-  const showSkeleton = resolvedVendor.status === 'in_progress' || isRiskAssessmentGenerating || isRealtimeRunActive;
+  const showSkeleton =
+    resolvedVendor.status === 'in_progress' || isRiskAssessmentGenerating || isRealtimeRunActive;
 
   // Check if risk assessment data has news
   const hasNews = useMemo(() => {
     if (!riskAssessmentData) return false;
     const parsed = parseVendorRiskAssessmentDescription(
-      typeof riskAssessmentData === 'string' ? riskAssessmentData : JSON.stringify(riskAssessmentData),
+      typeof riskAssessmentData === 'string'
+        ? riskAssessmentData
+        : JSON.stringify(riskAssessmentData),
     );
     return (parsed?.news?.length ?? 0) > 0;
   }, [riskAssessmentData]);
@@ -381,7 +402,13 @@ export function VendorDetailTabs({
     (isRegenerating && !researchMetadata?.coreReady) ||
     (isRealtimeRunActive && researchMetadata && !riskAssessmentData) ||
     (isVendorInProgress && !isRealtimeRunActive);
-  const showNewsPlaceholder = isRealtimeRunActive && riskAssessmentData && !isRegenerating && !hasNews && researchMetadata && !researchMetadata.newsReady;
+  const showNewsPlaceholder =
+    isRealtimeRunActive &&
+    riskAssessmentData &&
+    !isRegenerating &&
+    !hasNews &&
+    researchMetadata &&
+    !researchMetadata.newsReady;
 
   return (
     <>
@@ -389,13 +416,29 @@ export function VendorDetailTabs({
         items={
           isViewingTask && taskItemId
             ? [
-                { label: 'Vendors', href: `/${orgId}/vendors`, props: { render: <Link href={`/${orgId}/vendors`} /> } },
-                { label: resolvedVendor.name, href: `/${orgId}/vendors/${vendorId}`, props: { render: <Link href={`/${orgId}/vendors/${vendorId}`} /> } },
-                { label: 'Tasks', href: `/${orgId}/vendors/${vendorId}?tab=tasks`, props: { render: <Link href={`/${orgId}/vendors/${vendorId}?tab=tasks`} /> } },
+                {
+                  label: 'Vendors',
+                  href: `/${orgId}/vendors`,
+                  props: { render: <Link href={`/${orgId}/vendors`} /> },
+                },
+                {
+                  label: resolvedVendor.name,
+                  href: `/${orgId}/vendors/${vendorId}`,
+                  props: { render: <Link href={`/${orgId}/vendors/${vendorId}`} /> },
+                },
+                {
+                  label: 'Tasks',
+                  href: `/${orgId}/vendors/${vendorId}?tab=tasks`,
+                  props: { render: <Link href={`/${orgId}/vendors/${vendorId}?tab=tasks`} /> },
+                },
                 { label: selectedTaskTitle || 'Task', isCurrent: true },
               ]
             : [
-                { label: 'Vendors', href: `/${orgId}/vendors`, props: { render: <Link href={`/${orgId}/vendors`} /> } },
+                {
+                  label: 'Vendors',
+                  href: `/${orgId}/vendors`,
+                  props: { render: <Link href={`/${orgId}/vendors`} /> },
+                },
                 { label: resolvedVendor.name, isCurrent: true },
               ]
         }
@@ -420,7 +463,7 @@ export function VendorDetailTabs({
               onClick={(isViewingTask ? canUpdateTask : canUpdate) ? startEditingTitle : undefined}
               className={`text-2xl font-semibold tracking-tight ${(isViewingTask ? canUpdateTask : canUpdate) ? 'cursor-pointer rounded px-1 -mx-1 hover:bg-muted/50 transition-colors' : ''}`}
             >
-              {isViewingTask ? (selectedTaskTitle || 'Task') : resolvedVendor.name}
+              {isViewingTask ? selectedTaskTitle || 'Task' : resolvedVendor.name}
             </h1>
           )}
           {!isViewingTask && !isRegenerating && !isVendorInProgress && (
@@ -436,41 +479,40 @@ export function VendorDetailTabs({
             </div>
           )}
         </div>
-          {!isViewingTask && (
-            isEditingDescription ? (
-              <textarea
-                value={descriptionValue}
-                onChange={(e) => {
-                  setDescriptionValue(e.target.value);
-                  const el = e.target;
-                  el.style.height = 'auto';
-                  el.style.height = `${el.scrollHeight}px`;
-                }}
-                onFocus={(e) => {
-                  const el = e.target;
-                  el.style.height = 'auto';
-                  el.style.height = `${el.scrollHeight}px`;
-                }}
-                onBlur={saveDescriptionEdit}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') setIsEditingDescription(false);
-                }}
-                className="text-sm text-muted-foreground bg-transparent border-b border-primary outline-none resize-none overflow-hidden w-full"
-                rows={1}
-                autoFocus
-              />
-            ) : (
-              <Text
-                size="sm"
-                variant="muted"
-                as="p"
-                onClick={startEditingDescription}
-                style={canUpdate ? { cursor: 'pointer' } : undefined}
-              >
-                {resolvedVendor.description || (canUpdate ? 'Add a description...' : '')}
-              </Text>
-            )
-          )}
+        {!isViewingTask &&
+          (isEditingDescription ? (
+            <textarea
+              value={descriptionValue}
+              onChange={(e) => {
+                setDescriptionValue(e.target.value);
+                const el = e.target;
+                el.style.height = 'auto';
+                el.style.height = `${el.scrollHeight}px`;
+              }}
+              onFocus={(e) => {
+                const el = e.target;
+                el.style.height = 'auto';
+                el.style.height = `${el.scrollHeight}px`;
+              }}
+              onBlur={saveDescriptionEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setIsEditingDescription(false);
+              }}
+              className="text-sm text-muted-foreground bg-transparent border-b border-primary outline-none resize-none overflow-hidden w-full"
+              rows={1}
+              autoFocus
+            />
+          ) : (
+            <Text
+              size="sm"
+              variant="muted"
+              as="p"
+              onClick={startEditingDescription}
+              style={canUpdate ? { cursor: 'pointer' } : undefined}
+            >
+              {resolvedVendor.description || (canUpdate ? 'Add a description...' : '')}
+            </Text>
+          ))}
         {!isViewingTask && !isRegenerating && !isVendorInProgress && (
           <VendorResearchLinks riskAssessmentData={resolvedVendor.riskAssessmentData} />
         )}
@@ -494,106 +536,114 @@ export function VendorDetailTabs({
 
             {activeTab === 'overview' && (
               <TabsContent value="overview">
-                <SecondaryFields vendor={resolvedVendor} assignees={assignees} onUpdate={refreshVendor} />
+                <SecondaryFields
+                  vendor={resolvedVendor}
+                  assignees={assignees}
+                  onUpdate={refreshVendor}
+                />
               </TabsContent>
             )}
 
             {activeTab === 'treatment-plan' && (
-            <TabsContent value="treatment-plan">
-              <TreatmentPlanTab
-                orgId={orgId}
-                entity={{
-                  id: resolvedVendor.id,
-                  inherentLikelihood: resolvedVendor.inherentProbability,
-                  inherentImpact: resolvedVendor.inherentImpact,
-                  residualLikelihood: resolvedVendor.residualProbability,
-                  residualImpact: resolvedVendor.residualImpact,
-                  treatmentStrategy: resolvedVendor.treatmentStrategy,
-                  treatmentStrategyDescription: resolvedVendor.treatmentStrategyDescription,
-                  strategyDescriptions:
-                    (resolvedVendor as { strategyDescriptions?: unknown })
-                      .strategyDescriptions as
-                      | Partial<Record<RiskTreatmentType, string>>
-                      | null
-                      | undefined ?? null,
-                  tasks: swrVendor?.tasks ?? [],
-                }}
-                canUpdate={canUpdate}
-                onUpdateStrategy={handleUpdateStrategy}
-                onUpdateDescription={handleUpdateDescription}
-                onRegenerate={handleRegenerateMitigation}
-                regenerating={isMitigationLoading}
-                onSuggest={handleSuggest}
-                onApply={handleApply}
-                // Gate the unlink affordance behind vendor:update so it
-                // doesn't render for read-only users. The Next API route
-                // also enforces this check server-side.
-                onUnlinkTask={canUpdate ? handleUnlinkTask : undefined}
-                onResumeAutoLink={handleResumeAutoLink}
-                onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
-                regenRun={regenRun}
-                onRegenSettled={handleRegenSettled}
-              />
-            </TabsContent>
+              <TabsContent value="treatment-plan">
+                <TreatmentPlanTab
+                  orgId={orgId}
+                  entity={{
+                    id: resolvedVendor.id,
+                    inherentLikelihood: resolvedVendor.inherentProbability,
+                    inherentImpact: resolvedVendor.inherentImpact,
+                    residualLikelihood: resolvedVendor.residualProbability,
+                    residualImpact: resolvedVendor.residualImpact,
+                    treatmentStrategy: resolvedVendor.treatmentStrategy,
+                    treatmentStrategyDescription: resolvedVendor.treatmentStrategyDescription,
+                    strategyDescriptions:
+                      ((resolvedVendor as { strategyDescriptions?: unknown })
+                        .strategyDescriptions as
+                        | Partial<Record<RiskTreatmentType, string>>
+                        | null
+                        | undefined) ?? null,
+                    tasks: swrVendor?.tasks ?? [],
+                  }}
+                  canUpdate={canUpdate}
+                  onUpdateStrategy={handleUpdateStrategy}
+                  onUpdateDescription={handleUpdateDescription}
+                  onRegenerate={handleRegenerateMitigation}
+                  regenerating={isMitigationLoading}
+                  onSuggest={handleSuggest}
+                  onApply={handleApply}
+                  // Gate the unlink affordance behind vendor:update so it
+                  // doesn't render for read-only users. The Next API route
+                  // also enforces this check server-side.
+                  onUnlinkTask={canUpdate ? handleUnlinkTask : undefined}
+                  onResumeAutoLink={handleResumeAutoLink}
+                  onDiscardAutoLinkRun={handleDiscardAutoLinkRun}
+                  regenRun={regenRun}
+                  onRegenSettled={handleRegenSettled}
+                />
+              </TabsContent>
             )}
 
             {activeTab === 'risk-matrix' && (
-            <TabsContent value="risk-matrix">
-              <Stack gap="lg">
-                <VendorInherentRiskChart vendor={resolvedVendor} />
-                <VendorResidualRiskChart vendor={resolvedVendor} />
-              </Stack>
-            </TabsContent>
+              <TabsContent value="risk-matrix">
+                <Stack gap="lg">
+                  <VendorInherentRiskChart vendor={resolvedVendor} />
+                  <VendorResidualRiskChart vendor={resolvedVendor} />
+                </Stack>
+              </TabsContent>
             )}
 
             {activeTab === 'risk-assessment' && (
-            <TabsContent value="risk-assessment">
-              <Stack gap="md">
-                <AnimatePresence mode="wait">
-                  {showResearchFeed ? (
-                    <motion.div
-                      key="research-feed"
-                      initial={{ opacity: 1 }}
-                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    >
-                      <VendorResearchFeed
-                        messages={researchMetadata?.messages ?? []}
-                        isActive={isRealtimeRunActive || isVendorInProgress}
-                        vendorName={resolvedVendor.name}
-                      />
-                    </motion.div>
-                  ) : riskAssessmentData ? (
-                    <motion.div
-                      key="assessment-data"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.4 }}
-                    >
-                      <VendorRiskAssessmentView
-                        source={{
-                          title: 'Risk Assessment',
-                          description: JSON.stringify(riskAssessmentData),
-                          createdAt: (riskAssessmentUpdatedAt ?? resolvedVendor.updatedAt).toISOString(),
-                          entityType: 'vendor',
-                          createdByName: null,
-                          createdByEmail: null,
-                        }}
-                      />
-                      {showNewsPlaceholder && <VendorNewsLoadingPlaceholder />}
-                    </motion.div>
-                  ) : (
-                    <div className="rounded-lg border border-border bg-card p-8 text-center">
-                      {showSkeleton ? (
-                        <VendorRiskAssessmentSkeleton />
-                      ) : (
-                        <Text variant="muted" size="sm">No risk assessment found yet.</Text>
-                      )}
-                    </div>
-                  )}
-                </AnimatePresence>
-              </Stack>
-            </TabsContent>
+              <TabsContent value="risk-assessment">
+                <Stack gap="md">
+                  <AnimatePresence mode="wait">
+                    {showResearchFeed ? (
+                      <motion.div
+                        key="research-feed"
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      >
+                        <VendorResearchFeed
+                          messages={researchMetadata?.messages ?? []}
+                          isActive={isRealtimeRunActive || isVendorInProgress}
+                          vendorName={resolvedVendor.name}
+                        />
+                      </motion.div>
+                    ) : riskAssessmentData ? (
+                      <motion.div
+                        key="assessment-data"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.4 }}
+                      >
+                        <VendorRiskAssessmentView
+                          source={{
+                            title: 'Risk Assessment',
+                            description: JSON.stringify(riskAssessmentData),
+                            createdAt: (
+                              riskAssessmentUpdatedAt ?? resolvedVendor.updatedAt
+                            ).toISOString(),
+                            entityType: 'vendor',
+                            createdByName: null,
+                            createdByEmail: null,
+                          }}
+                        />
+                        {showNewsPlaceholder && <VendorNewsLoadingPlaceholder />}
+                      </motion.div>
+                    ) : (
+                      <div className="rounded-lg border border-border bg-card p-8 text-center">
+                        {showSkeleton ? (
+                          <VendorRiskAssessmentSkeleton />
+                        ) : (
+                          <Text variant="muted" size="sm">
+                            No risk assessment found yet.
+                          </Text>
+                        )}
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </Stack>
+              </TabsContent>
             )}
 
             {activeTab === 'tasks' && (
@@ -604,40 +654,49 @@ export function VendorDetailTabs({
 
             {activeTab === 'comments' && (
               <TabsContent value="comments">
-                <Comments entityId={vendorId} entityType={CommentEntityType.vendor} organizationId={orgId} />
+                <Comments
+                  entityId={vendorId}
+                  entityType={CommentEntityType.vendor}
+                  organizationId={orgId}
+                />
               </TabsContent>
             )}
 
             {activeTab === 'activity' && (
               <TabsContent value="activity">
-                <VendorActivitySection vendorId={vendorId} taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []} />
+                <VendorActivitySection
+                  vendorId={vendorId}
+                  taskItemIds={taskItemsData?.data?.data?.map((t) => t.id) || []}
+                />
               </TabsContent>
             )}
 
             {activeTab === 'settings' && (
-            <TabsContent value="settings">
-              <Stack gap="lg">
-                {canUpdate && (
-                  <HStack justify="between" align="center">
-                    <Stack gap="none">
-                      <Text size="sm" weight="medium">Regenerate Risk Assessment</Text>
-                      <Text size="xs" variant="muted">
-                        Generate or regenerate the AI risk assessment for this vendor
-                      </Text>
-                    </Stack>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRegenerateAssessment}
-                      disabled={isAssessmentLoading}
-                      loading={isAssessmentLoading}
-                    >
-                      Regenerate Assessment
-                    </Button>
-                  </HStack>
-                )}
-              </Stack>
-            </TabsContent>
+              <TabsContent value="settings">
+                <Stack gap="lg">
+                  {canUpdate && (
+                    <HStack justify="between" align="center">
+                      <Stack gap="none">
+                        <Text size="sm" weight="medium">
+                          Regenerate Risk Assessment
+                        </Text>
+                        <Text size="xs" variant="muted">
+                          Generate or regenerate the AI risk assessment for this vendor
+                        </Text>
+                      </Stack>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRegenerateAssessment}
+                        disabled={isAssessmentLoading}
+                        loading={isAssessmentLoading}
+                      >
+                        Regenerate Assessment
+                      </Button>
+                    </HStack>
+                  )}
+                </Stack>
+              </TabsContent>
             )}
           </Stack>
         </Tabs>
@@ -646,7 +705,13 @@ export function VendorDetailTabs({
   );
 }
 
-function VendorActivitySection({ vendorId, taskItemIds }: { vendorId: string; taskItemIds: string[] }) {
+function VendorActivitySection({
+  vendorId,
+  taskItemIds,
+}: {
+  vendorId: string;
+  taskItemIds: string[];
+}) {
   const entityIds = [vendorId, ...taskItemIds].join(',');
   const entityTypes = taskItemIds.length > 0 ? 'vendor,task' : 'vendor';
   const { logs } = useAuditLogs({ entityType: entityTypes, entityId: entityIds });

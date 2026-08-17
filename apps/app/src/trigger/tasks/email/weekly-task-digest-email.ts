@@ -37,7 +37,12 @@ export const sendWeeklyTaskDigestEmailTask = task({
     await tags.add([`org:${payload.organizationId}`]);
 
     try {
-      const unsubscribed = await isUserUnsubscribed(db, payload.email, 'weeklyTaskDigest', payload.organizationId);
+      const unsubscribed = await isUserUnsubscribed(
+        db,
+        payload.email,
+        'weeklyTaskDigest',
+        payload.organizationId,
+      );
       if (unsubscribed) {
         logger.info('User is unsubscribed from email notifications, skipping', {
           email: payload.email,

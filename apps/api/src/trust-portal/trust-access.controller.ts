@@ -456,10 +456,7 @@ export class TrustAccessController {
     @Param('token') token: string,
     @Param('policyId') policyId: string,
   ) {
-    return this.trustAccessService.downloadPolicyByAccessToken(
-      token,
-      policyId,
-    );
+    return this.trustAccessService.downloadPolicyByAccessToken(token, policyId);
   }
 
   @Get('access/:token/policies/download-all-zip')

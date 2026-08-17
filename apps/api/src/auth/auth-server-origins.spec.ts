@@ -81,9 +81,9 @@ describe('isStaticTrustedOrigin', () => {
   const defaults = getTrustedOriginsLogic(undefined);
 
   it('should allow static trusted origins', () => {
-    expect(isStaticTrustedOriginLogic('https://app.betayum.com', defaults)).toBe(
-      true,
-    );
+    expect(
+      isStaticTrustedOriginLogic('https://app.betayum.com', defaults),
+    ).toBe(true);
   });
 
   it('should allow trust portal subdomains of betayum.com', () => {

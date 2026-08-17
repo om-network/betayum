@@ -3,14 +3,14 @@
 import * as React from 'react';
 import { Label, Pie, PieChart } from 'recharts';
 
+import { Card, HStack, Stack, Text } from '@trycompai/design-system';
+import { Information } from '@trycompai/design-system/icons';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@trycompai/ui/chart';
-import { Card, HStack, Stack, Text } from '@trycompai/design-system';
-import { Information } from '@trycompai/design-system/icons';
 
 interface PolicyOverviewData {
   totalPolicies: number;

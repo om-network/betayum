@@ -45,9 +45,7 @@ export class OffboardingChecklistController {
   @Get('pending')
   @RequirePermission('member', 'read')
   @ApiOperation({ summary: 'Get members with pending offboarding checklists' })
-  async getPendingOffboardings(
-    @OrganizationId() organizationId: string,
-  ) {
+  async getPendingOffboardings(@OrganizationId() organizationId: string) {
     return this.offboardingChecklistService.getPendingOffboardings(
       organizationId,
     );
@@ -120,7 +118,9 @@ export class OffboardingChecklistController {
       where: { id: organizationId },
       select: { name: true },
     });
-    const safeOrgName = (org?.name ?? 'org').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+    const safeOrgName = (org?.name ?? 'org')
+      .replace(/[^a-zA-Z0-9]/g, '-')
+      .toLowerCase();
     const date = new Date().toISOString().split('T')[0];
     res.set({
       'Content-Type': 'application/zip',
@@ -256,16 +256,29 @@ export class OffboardingChecklistController {
     @Param('memberId') memberId: string,
     @Param('vendorId') vendorId: string,
     @AuthContext() authContext: AuthContextType,
-    @Body() body: { notes?: string; fileName?: string; fileType?: string; fileData?: string },
+    @Body()
+    body: {
+      notes?: string;
+      fileName?: string;
+      fileType?: string;
+      fileData?: string;
+    },
   ) {
     const evidenceFields = [body?.fileName, body?.fileType, body?.fileData];
     const providedCount = evidenceFields.filter(Boolean).length;
     if (providedCount > 0 && providedCount < 3) {
-      throw new BadRequestException('fileName, fileType, and fileData must all be provided together');
+      throw new BadRequestException(
+        'fileName, fileType, and fileData must all be provided together',
+      );
     }
-    const evidence = body?.fileName && body?.fileType && body?.fileData
-      ? { fileName: body.fileName, fileType: body.fileType, fileData: body.fileData }
-      : undefined;
+    const evidence =
+      body?.fileName && body?.fileType && body?.fileData
+        ? {
+            fileName: body.fileName,
+            fileType: body.fileType,
+            fileData: body.fileData,
+          }
+        : undefined;
     return this.offboardingChecklistService.revokeVendorAccess({
       organizationId,
       memberId,
@@ -292,5 +305,4 @@ export class OffboardingChecklistController {
       vendorId,
     });
   }
-
 }

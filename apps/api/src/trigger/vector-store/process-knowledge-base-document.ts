@@ -21,9 +21,7 @@ async function extractContentFromKnowledgeBaseDocument(
   const knowledgeBaseBucket = getKnowledgeBaseBucketName();
 
   if (!knowledgeBaseBucket) {
-    throw new Error(
-      'Knowledge base bucket is not configured.',
-    );
+    throw new Error('Knowledge base bucket is not configured.');
   }
 
   const buffer = await readObjectStreamToBuffer(

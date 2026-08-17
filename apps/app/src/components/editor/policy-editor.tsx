@@ -1,8 +1,8 @@
 'use client';
 
-import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
 import type { Extension } from '@tiptap/core';
 import type { JSONContent, Editor as TipTapEditor } from '@tiptap/react';
+import { validateAndFixTipTapContent } from '@trycompai/ui/editor';
 import AdvancedEditor from './advanced-editor';
 
 interface PolicyEditorProps {

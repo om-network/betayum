@@ -10,6 +10,8 @@ import { getSignedUrl as _getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export const getSignedUrl = _getSignedUrl as unknown as (
   client: import('@aws-sdk/client-s3').S3Client,
-  command: import('@aws-sdk/client-s3').GetObjectCommand | import('@aws-sdk/client-s3').PutObjectCommand,
+  command:
+    | import('@aws-sdk/client-s3').GetObjectCommand
+    | import('@aws-sdk/client-s3').PutObjectCommand,
   options?: { expiresIn?: number },
 ) => Promise<string>;

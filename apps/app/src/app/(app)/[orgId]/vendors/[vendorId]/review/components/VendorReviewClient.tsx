@@ -14,19 +14,13 @@ interface VendorReviewClientProps {
  * Client component for vendor risk assessment review
  * Uses SWR with polling to auto-refresh when risk assessment completes
  */
-export function VendorReviewClient({
-  vendorId,
-  initialVendor,
-}: VendorReviewClientProps) {
+export function VendorReviewClient({ vendorId, initialVendor }: VendorReviewClientProps) {
   // Use SWR for real-time updates with polling (5s default)
   const { vendor: swrVendor } = useVendor(vendorId, {
     initialData: initialVendor,
   });
 
-  const {
-    data: taskItemsResponse,
-    mutate: refreshTaskItems,
-  } = useTaskItems(
+  const { data: taskItemsResponse, mutate: refreshTaskItems } = useTaskItems(
     vendorId,
     'vendor',
     1,
@@ -93,12 +87,10 @@ export function VendorReviewClient({
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
           </div>
           <div className="flex flex-col items-center gap-1.5 text-center">
-            <p className="text-sm font-medium text-foreground">
-              Analyzing vendor risk profile
-            </p>
+            <p className="text-sm font-medium text-foreground">Analyzing vendor risk profile</p>
             <p className="text-sm text-muted-foreground max-w-md">
-              We're researching this vendor and generating a comprehensive risk
-              assessment. This typically takes 3-8 minutes.
+              We're researching this vendor and generating a comprehensive risk assessment. This
+              typically takes 3-8 minutes.
             </p>
           </div>
         </div>

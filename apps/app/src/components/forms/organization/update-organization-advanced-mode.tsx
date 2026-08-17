@@ -2,6 +2,8 @@
 
 import { useApi } from '@/hooks/use-api';
 import { usePermissions } from '@/hooks/use-permissions';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Switch } from '@trycompai/design-system';
 import {
   Card,
   CardContent,
@@ -11,8 +13,6 @@ import {
   CardTitle,
 } from '@trycompai/ui/card';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@trycompai/ui/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Switch } from '@trycompai/design-system';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';

@@ -252,9 +252,7 @@ export const VariableSchema = z.object({
   required: z.boolean().optional(),
   default: z.unknown().optional(),
   helpText: z.string().optional(),
-  options: z
-    .array(z.object({ value: z.string(), label: z.string() }))
-    .optional(),
+  options: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
 });
 
 // ============================================================================
@@ -338,32 +336,33 @@ export const DynamicIntegrationDefinitionSchema = z.object({
   capabilities: z.array(z.enum(['checks', 'webhook', 'sync'])).default(['checks']),
   supportsMultipleConnections: z.boolean().optional(),
   syncDefinition: SyncDefinitionSchema.optional(),
-  services: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      description: z.string(),
-      enabledByDefault: z.boolean().optional(),
-      implemented: z.boolean().optional(),
-    }),
-  ).optional(),
+  services: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string(),
+        enabledByDefault: z.boolean().optional(),
+        implemented: z.boolean().optional(),
+      }),
+    )
+    .optional(),
   checks: z.array(
     z.object({
-      checkSlug: z.string().regex(/^[a-z0-9_]+$/, 'Check slug must be lowercase alphanumeric with underscores'),
+      checkSlug: z
+        .string()
+        .regex(/^[a-z0-9_]+$/, 'Check slug must be lowercase alphanumeric with underscores'),
       name: z.string().min(1),
       description: z.string().min(1),
       taskMapping: z.string().optional(),
       defaultSeverity: z.enum(['info', 'low', 'medium', 'high', 'critical']).optional(),
       service: z.string().optional(),
       definition: CheckDefinitionSchema,
-      variables: z.array(VariableSchema)
-        .optional(),
+      variables: z.array(VariableSchema).optional(),
       isEnabled: z.boolean().optional(),
       sortOrder: z.number().optional(),
     }),
   ),
 });
 
-export type DynamicIntegrationDefinition = z.infer<
-  typeof DynamicIntegrationDefinitionSchema
->;
+export type DynamicIntegrationDefinition = z.infer<typeof DynamicIntegrationDefinitionSchema>;

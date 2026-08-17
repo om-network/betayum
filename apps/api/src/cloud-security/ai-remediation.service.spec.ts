@@ -29,7 +29,7 @@ function basePlan(overrides: Partial<FixPlan> = {}): FixPlan {
     rollbackSupported: false,
     requiresAcknowledgment: false,
     ...overrides,
-  } as FixPlan;
+  };
 }
 
 describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
@@ -43,9 +43,24 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({
         fixSteps: [
-          { service: 'cloudtrail', command: 'CreateTrailCommand', params: {}, purpose: 'Create trail' },
-          { service: 's3', command: 'CreateBucketCommand', params: {}, purpose: 'Create bucket' },
-          { service: 'cloudtrail', command: 'StartLoggingCommand', params: {}, purpose: 'Start logging' },
+          {
+            service: 'cloudtrail',
+            command: 'CreateTrailCommand',
+            params: {},
+            purpose: 'Create trail',
+          },
+          {
+            service: 's3',
+            command: 'CreateBucketCommand',
+            params: {},
+            purpose: 'Create bucket',
+          },
+          {
+            service: 'cloudtrail',
+            command: 'StartLoggingCommand',
+            params: {},
+            purpose: 'Start logging',
+          },
         ],
       }),
     });
@@ -77,7 +92,12 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({
         fixSteps: [
-          { service: 'iam', command: 'UpdateAccountPasswordPolicyCommand', params: {}, purpose: 'Update password policy' },
+          {
+            service: 'iam',
+            command: 'UpdateAccountPasswordPolicyCommand',
+            params: {},
+            purpose: 'Update password policy',
+          },
         ],
       }),
     });
@@ -108,10 +128,30 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({
         fixSteps: [
-          { service: 'iam', command: 'CreateServiceLinkedRoleCommand', params: { AWSServiceName: 'config.amazonaws.com' }, purpose: 'Create SLR for AWS Config' },
-          { service: 'config-service', command: 'PutConfigurationRecorderCommand', params: {}, purpose: 'Create recorder' },
-          { service: 'config-service', command: 'PutDeliveryChannelCommand', params: {}, purpose: 'Configure delivery' },
-          { service: 'config-service', command: 'StartConfigurationRecorderCommand', params: {}, purpose: 'Start recorder' },
+          {
+            service: 'iam',
+            command: 'CreateServiceLinkedRoleCommand',
+            params: { AWSServiceName: 'config.amazonaws.com' },
+            purpose: 'Create SLR for AWS Config',
+          },
+          {
+            service: 'config-service',
+            command: 'PutConfigurationRecorderCommand',
+            params: {},
+            purpose: 'Create recorder',
+          },
+          {
+            service: 'config-service',
+            command: 'PutDeliveryChannelCommand',
+            params: {},
+            purpose: 'Configure delivery',
+          },
+          {
+            service: 'config-service',
+            command: 'StartConfigurationRecorderCommand',
+            params: {},
+            purpose: 'Start recorder',
+          },
         ],
       }),
     });
@@ -146,7 +186,12 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
     generateObjectMock.mockResolvedValueOnce({
       object: basePlan({
         readSteps: [
-          { service: 's3', command: 'GetBucketVersioningCommand', params: {}, purpose: 'check' },
+          {
+            service: 's3',
+            command: 'GetBucketVersioningCommand',
+            params: {},
+            purpose: 'check',
+          },
         ],
       }),
     });
@@ -202,8 +247,18 @@ describe('AiRemediationService.generateFixPlan empty-state backstop', () => {
         currentState: { recorder: 'not configured' },
         proposedState: { recorder: 'configured' },
         fixSteps: [
-          { service: 'iam', command: 'CreateServiceLinkedRoleCommand', params: {}, purpose: 'Create SLR for AWS Config' },
-          { service: 'config-service', command: 'PutConfigurationRecorderCommand', params: { ConfigurationRecorder: {} }, purpose: 'Create recorder' },
+          {
+            service: 'iam',
+            command: 'CreateServiceLinkedRoleCommand',
+            params: {},
+            purpose: 'Create SLR for AWS Config',
+          },
+          {
+            service: 'config-service',
+            command: 'PutConfigurationRecorderCommand',
+            params: { ConfigurationRecorder: {} },
+            purpose: 'Create recorder',
+          },
         ],
       }),
     });

@@ -1,5 +1,6 @@
 'use client';
 
+import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 import {
   Badge,
   HStack,
@@ -18,7 +19,6 @@ import { ArrowDown, ArrowUp, ArrowsVertical, Search } from '@trycompai/design-sy
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
 
 type SortColumn = 'name' | 'compliance' | 'controls';
 type SortDirection = 'asc' | 'desc';
@@ -41,15 +41,15 @@ const FRAMEWORK_BADGES: Record<string, string> = {
   'SOC 2': '/badges/soc2.svg',
   'ISO 27001': '/badges/iso27001.svg',
   'ISO 42001': '/badges/iso42001.svg',
-  'HIPAA': '/badges/hipaa.svg',
-  'GDPR': '/badges/gdpr.svg',
+  HIPAA: '/badges/hipaa.svg',
+  GDPR: '/badges/gdpr.svg',
   'PCI DSS': '/badges/pci-dss.svg',
   'PCI DSS Level 1': '/badges/pci-dss.svg',
   'NEN 7510': '/badges/nen7510.svg',
   'ISO 9001': '/badges/iso9001.svg',
   'SOC 2 Type 1': '/badges/soc2.svg',
-  'CCPA': '/badges/ccpa.svg',
-  'PIPEDA': '/badges/pipeda.svg',
+  CCPA: '/badges/ccpa.svg',
+  PIPEDA: '/badges/pipeda.svg',
 };
 
 function getFrameworkBadge(name: string): string | null {

@@ -1,3 +1,4 @@
+import { useVendorActions, type Vendor } from '@/hooks/use-vendors';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,7 +10,6 @@ import {
   AlertDialogTitle,
 } from '@trycompai/ui/alert-dialog';
 import { Button } from '@trycompai/ui/button';
-import { useVendorActions, type Vendor } from '@/hooks/use-vendors';
 import { Trash2 } from 'lucide-react';
 import * as React from 'react';
 import { toast } from 'sonner';

@@ -36,64 +36,51 @@ export function useBrowserContext() {
     }
   }, []);
 
-  const startAuth = useCallback(
-    async (url: string) => {
-      let startedSessionId: string | null = null;
-      try {
-        setIsStartingAuth(true);
+  const startAuth = useCallback(async (url: string) => {
+    let startedSessionId: string | null = null;
+    try {
+      setIsStartingAuth(true);
 
-        // Get or create org context
-        const contextRes = await apiClient.post<ContextResponse>(
-          '/v1/browserbase/org-context',
-          {},
-        );
-        if (contextRes.error || !contextRes.data) {
-          throw new Error(contextRes.error || 'Failed to create context');
-        }
-        setContextId(contextRes.data.contextId);
+      // Get or create org context
+      const contextRes = await apiClient.post<ContextResponse>('/v1/browserbase/org-context', {});
+      if (contextRes.error || !contextRes.data) {
+        throw new Error(contextRes.error || 'Failed to create context');
+      }
+      setContextId(contextRes.data.contextId);
 
-        // Create session
-        const sessionRes = await apiClient.post<SessionResponse>(
-          '/v1/browserbase/session',
-          { contextId: contextRes.data.contextId },
-        );
-        if (sessionRes.error || !sessionRes.data) {
-          throw new Error(sessionRes.error || 'Failed to create session');
-        }
-        startedSessionId = sessionRes.data.sessionId;
-        setSessionId(startedSessionId);
-        setLiveViewUrl(sessionRes.data.liveViewUrl);
+      // Create session
+      const sessionRes = await apiClient.post<SessionResponse>('/v1/browserbase/session', {
+        contextId: contextRes.data.contextId,
+      });
+      if (sessionRes.error || !sessionRes.data) {
+        throw new Error(sessionRes.error || 'Failed to create session');
+      }
+      startedSessionId = sessionRes.data.sessionId;
+      setSessionId(startedSessionId);
+      setLiveViewUrl(sessionRes.data.liveViewUrl);
 
-        // Navigate to the URL
-        await apiClient.post(
-          '/v1/browserbase/navigate',
-          { sessionId: startedSessionId, url },
-        );
+      // Navigate to the URL
+      await apiClient.post('/v1/browserbase/navigate', { sessionId: startedSessionId, url });
 
-        setShowAuthFlow(true);
-        setIsStartingAuth(false);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Failed to start authentication');
-        setShowAuthFlow(false);
-        setLiveViewUrl(null);
-        setSessionId(null);
-        setIsStartingAuth(false);
+      setShowAuthFlow(true);
+      setIsStartingAuth(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start authentication');
+      setShowAuthFlow(false);
+      setLiveViewUrl(null);
+      setSessionId(null);
+      setIsStartingAuth(false);
 
-        // If we created a session but navigation failed, close it to avoid orphaned sessions
-        if (startedSessionId) {
-          try {
-            await apiClient.post(
-              '/v1/browserbase/session/close',
-              { sessionId: startedSessionId },
-            );
-          } catch {
-            // Ignore cleanup errors (don't mask original error)
-          }
+      // If we created a session but navigation failed, close it to avoid orphaned sessions
+      if (startedSessionId) {
+        try {
+          await apiClient.post('/v1/browserbase/session/close', { sessionId: startedSessionId });
+        } catch {
+          // Ignore cleanup errors (don't mask original error)
         }
       }
-    },
-    [],
-  );
+    }
+  }, []);
 
   const checkAuth = useCallback(
     async (url: string) => {
@@ -102,10 +89,10 @@ export function useBrowserContext() {
       try {
         setStatus('checking');
 
-        const res = await apiClient.post<AuthStatusResponse>(
-          '/v1/browserbase/check-auth',
-          { sessionId, url },
-        );
+        const res = await apiClient.post<AuthStatusResponse>('/v1/browserbase/check-auth', {
+          sessionId,
+          url,
+        });
 
         // Close session
         await apiClient.post('/v1/browserbase/session/close', { sessionId });

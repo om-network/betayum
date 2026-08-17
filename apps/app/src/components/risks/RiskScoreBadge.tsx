@@ -1,10 +1,5 @@
+import { LEVEL_COLOR, LEVEL_LABEL, getRiskLevelFromScore, getRiskScore } from '@/lib/risk-score';
 import { cn } from '@/lib/utils';
-import {
-  LEVEL_COLOR,
-  LEVEL_LABEL,
-  getRiskLevelFromScore,
-  getRiskScore,
-} from '@/lib/risk-score';
 import type { Impact, Likelihood } from '@db';
 
 export interface RiskScoreBadgeProps {

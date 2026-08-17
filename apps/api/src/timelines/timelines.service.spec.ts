@@ -77,7 +77,7 @@ describe('TimelinesService', () => {
       templateId: 'tml_1',
       cycleNumber: 2,
       status: 'ACTIVE',
-      startDate: '2026-01-01T00:00:00.000Z',
+      startDate: null,
       pausedAt: null,
       completedAt: null,
       phases: [
@@ -87,7 +87,7 @@ describe('TimelinesService', () => {
           orderIndex: 0,
           status: 'IN_PROGRESS',
           completionType: 'AUTO_POLICIES',
-          completedAt: null,
+          completedAt: null as string | null,
         },
         {
           id: 'p2',
@@ -137,27 +137,32 @@ describe('TimelinesService', () => {
       people: { total: 5, completed: 5 },
     });
 
-    lifecycle.completePhase.mockImplementation(async (_instanceId: string, phaseId: string) => {
-      const phase = timelineState.phases.find((p) => p.id === phaseId);
-      if (!phase) return cloneTimeline(timelineState);
+    lifecycle.completePhase.mockImplementation(
+      async (_instanceId: string, phaseId: string) => {
+        const phase = timelineState.phases.find((p) => p.id === phaseId);
+        if (!phase) return cloneTimeline(timelineState);
 
-      phase.status = 'COMPLETED';
-      phase.completedAt = '2026-01-10T00:00:00.000Z';
+        phase.status = 'COMPLETED';
+        phase.completedAt = '2026-01-10T00:00:00.000Z';
 
-      const nextPending = timelineState.phases.find((p) => p.status === 'PENDING');
-      if (nextPending) {
-        const allPriorComplete = timelineState.phases
-          .filter((p) => p.orderIndex < nextPending.orderIndex)
-          .every((p) => p.status === 'COMPLETED');
+        const nextPending = timelineState.phases.find(
+          (p) => p.status === 'PENDING',
+        );
+        if (nextPending) {
+          const allPriorComplete = timelineState.phases
+            .filter((p) => p.orderIndex < nextPending.orderIndex)
+            .every((p) => p.status === 'COMPLETED');
 
-        if (allPriorComplete) {
-          nextPending.status = 'IN_PROGRESS';
+          if (allPriorComplete) {
+            nextPending.status = 'IN_PROGRESS';
+          }
         }
-      }
 
-      return cloneTimeline(timelineState);
-    });
+        return cloneTimeline(timelineState);
+      },
+    );
 
+    await service.reconcileAutoPhasesForOrganization(orgId);
     const result = await service.findAllForOrganization(orgId);
 
     expect(lifecycle.completePhase).toHaveBeenCalledTimes(3);
@@ -272,18 +277,21 @@ describe('TimelinesService', () => {
     (mockDb.timelineInstance.findMany as jest.Mock).mockImplementation(() =>
       Promise.resolve([cloneTimeline(timelineState)]),
     );
-    (mockDb.timelinePhase.update as jest.Mock).mockImplementation(async ({ where, data }: any) => {
-      const phase = timelineState.phases.find((p) => p.id === where.id);
-      if (!phase) return null;
-      Object.assign(phase, data);
-      return phase;
-    });
+    (mockDb.timelinePhase.update as jest.Mock).mockImplementation(
+      async ({ where, data }: any) => {
+        const phase = timelineState.phases.find((p) => p.id === where.id);
+        if (!phase) return null;
+        Object.assign(phase, data);
+        return phase;
+      },
+    );
     (getOverviewScores as jest.Mock).mockResolvedValue({
       policies: { total: 10, published: 8 },
       tasks: { total: 1, done: 1 },
       people: { total: 1, completed: 1 },
     });
 
+    await service.reconcileAutoPhasesForOrganization(orgId);
     const result = await service.findAllForOrganization(orgId);
 
     expect(mockDb.timelinePhase.update).toHaveBeenCalledWith({
@@ -368,6 +376,7 @@ describe('TimelinesService', () => {
             return phase;
           }),
         },
+        timelineInstance: { updateMany: jest.fn() },
       };
       return fn(tx);
     });
@@ -378,6 +387,7 @@ describe('TimelinesService', () => {
       people: { total: 2, completed: 1 },
     });
 
+    await service.reconcileAutoPhasesForOrganization(orgId);
     const result = await service.findAllForOrganization(orgId);
 
     expect(mockDb.$transaction).toHaveBeenCalledTimes(1);
@@ -464,6 +474,7 @@ describe('TimelinesService', () => {
             return phase;
           }),
         },
+        timelineInstance: { updateMany: jest.fn() },
       };
       return fn(tx);
     });
@@ -474,6 +485,7 @@ describe('TimelinesService', () => {
       people: { total: 1, completed: 1 },
     });
 
+    await service.reconcileAutoPhasesForOrganization(orgId);
     const result = await service.findAllForOrganization(orgId);
 
     expect(mockDb.$transaction).toHaveBeenCalledTimes(1);
@@ -612,7 +624,9 @@ describe('TimelinesService', () => {
       include: { phases: { orderBy: { orderIndex: 'asc' } } },
     });
     expect(createSpy).not.toHaveBeenCalled();
-    expect(result).toEqual(expect.objectContaining({ id: 'tli_3', cycleNumber: 3 }));
+    expect(result).toEqual(
+      expect.objectContaining({ id: 'tli_3', cycleNumber: 3 }),
+    );
   });
 
   it('checks for existing next cycle within the same track only', async () => {
@@ -672,23 +686,25 @@ describe('TimelinesService', () => {
 
     jest.spyOn(service, 'findOne').mockResolvedValue({
       id: 'tli_1',
-      phases: [
-        { id: 'p1' },
-        { id: 'p2' },
-      ],
+      phases: [{ id: 'p1' }, { id: 'p2' }],
     } as any);
 
     const tx = {
       timelinePhase: { update: jest.fn() },
       timelineInstance: { update: jest.fn() },
     };
-    (mockDb.$transaction as jest.Mock).mockImplementation(async (fn: any) => fn(tx));
+    (mockDb.$transaction as jest.Mock).mockImplementation(async (fn: any) =>
+      fn(tx),
+    );
 
     const refreshed = { id: 'tli_1', status: 'DRAFT' };
-    jest.spyOn(service, 'findOne').mockResolvedValueOnce({
-      id: 'tli_1',
-      phases: [{ id: 'p1' }, { id: 'p2' }],
-    } as any).mockResolvedValueOnce(refreshed as any);
+    jest
+      .spyOn(service, 'findOne')
+      .mockResolvedValueOnce({
+        id: 'tli_1',
+        phases: [{ id: 'p1' }, { id: 'p2' }],
+      } as any)
+      .mockResolvedValueOnce(refreshed as any);
 
     const result = await service.resetInstance('tli_1', 'org_1');
 
@@ -735,9 +751,12 @@ describe('TimelinesService', () => {
       },
     ]);
 
+    const reconcileSpy = jest
+      .spyOn(service, 'reconcileAutoPhasesForOrganization')
+      .mockResolvedValue(undefined);
     const findAllSpy = jest
       .spyOn(service, 'findAllForOrganization')
-      .mockResolvedValue([] as any);
+      .mockResolvedValue([]);
 
     await service.recreateAllForOrganization('org_1');
 
@@ -746,7 +765,7 @@ describe('TimelinesService', () => {
       frameworkInstance: expect.objectContaining({ id: 'fi_1' }),
       forceRefresh: true,
     });
-    expect(findAllSpy).toHaveBeenLastCalledWith('org_1', {
+    expect(reconcileSpy).toHaveBeenCalledWith('org_1', {
       bypassRegressionGrace: true,
     });
   });

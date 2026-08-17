@@ -291,7 +291,9 @@ export class RolesService {
     // Include built-in roles info (with effective obligations: override or default)
     const builtInRoles = BUILT_IN_ROLES.map((name) => {
       const override = overrideByName.get(name);
-      const parsed = override ? parseObligationsField(override.obligations) : null;
+      const parsed = override
+        ? parseObligationsField(override.obligations)
+        : null;
       return {
         name,
         isBuiltIn: true,
@@ -539,7 +541,10 @@ export class RolesService {
     const distinctRoles = new Set<string>();
     for (const m of members) {
       if (!m.role) continue;
-      for (const r of m.role.split(',').map((r) => r.trim()).filter(Boolean)) {
+      for (const r of m.role
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean)) {
         distinctRoles.add(r);
       }
     }
@@ -578,7 +583,9 @@ export class RolesService {
         .split(',')
         .map((r) => r.trim())
         .filter(Boolean);
-      return roles.some((r) => permsByRole.get(r)?.[resource]?.includes(action));
+      return roles.some((r) =>
+        permsByRole.get(r)?.[resource]?.includes(action),
+      );
     });
   }
 
@@ -636,7 +643,9 @@ export class RolesService {
       );
     }
 
-    const permissions = JSON.stringify(BUILT_IN_ROLE_PERMISSIONS[roleName] ?? {});
+    const permissions = JSON.stringify(
+      BUILT_IN_ROLE_PERMISSIONS[roleName] ?? {},
+    );
     const obligationsJson = JSON.stringify(obligations);
 
     const role = await db.organizationRole.upsert({
@@ -672,7 +681,9 @@ export class RolesService {
       where: { organizationId, name: roleName },
       select: { obligations: true },
     });
-    const parsed = override ? parseObligationsField(override.obligations) : null;
+    const parsed = override
+      ? parseObligationsField(override.obligations)
+      : null;
     return resolveEffectiveObligations(roleName, parsed);
   }
 

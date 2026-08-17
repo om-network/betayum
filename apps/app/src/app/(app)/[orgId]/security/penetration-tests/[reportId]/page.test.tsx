@@ -93,7 +93,9 @@ describe('Penetration Test detail page', () => {
   });
 
   it('returns the correct metadata title', async () => {
-    const metadata = await generateMetadata({ params: Promise.resolve({ orgId: 'org_1', reportId: 'run_1' }) });
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ orgId: 'org_1', reportId: 'run_1' }),
+    });
 
     expect(metadata).toEqual({ title: 'Penetration Test run_1' });
   });

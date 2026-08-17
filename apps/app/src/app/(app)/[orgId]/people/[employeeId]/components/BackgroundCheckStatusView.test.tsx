@@ -270,7 +270,9 @@ describe('BackgroundCheckStatusView', () => {
       );
       expect(writeText).toHaveBeenCalledWith(expect.stringContaining('KEY FINDINGS'));
       expect(writeText).toHaveBeenCalledWith(
-        expect.stringContaining('Employment verified. (Company profile: https://example.com/source)'),
+        expect.stringContaining(
+          'Employment verified. (Company profile: https://example.com/source)',
+        ),
       );
       expect(writeText).toHaveBeenCalledWith(
         expect.stringContaining('SOURCES\n- Company profile: https://example.com/source'),

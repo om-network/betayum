@@ -1,7 +1,7 @@
 import 'server-only';
 
-import { vectorIndex } from './client';
 import { logger } from '@/utils/logger';
+import { vectorIndex } from './client';
 import { generateEmbedding } from './generate-embedding';
 
 /**
@@ -21,22 +21,18 @@ export async function deleteOrganizationEmbeddings(organizationId: string): Prom
 
   try {
     const allIds: string[] = [];
-    
+
     // Use multiple search queries to find all types of embeddings
     // Since Upstash Vector doesn't support metadata filtering in query,
     // we use broad searches and filter results
-    const searchQueries = [
-      'policy security compliance',
-      'context question answer',
-      organizationId,
-    ];
+    const searchQueries = ['policy security compliance', 'context question answer', organizationId];
 
     logger.info('Searching for embeddings to delete', { organizationId });
 
     for (const query of searchQueries) {
       try {
         const queryEmbedding = await generateEmbedding(query);
-        
+
         const results = await vectorIndex.query({
           vector: queryEmbedding,
           topK: 1000, // Max allowed by Upstash Vector
@@ -52,7 +48,7 @@ export async function deleteOrganizationEmbeddings(organizationId: string): Prom
           .map((result) => String(result.id));
 
         allIds.push(...orgResults);
-        
+
         logger.info('Found embeddings in search query', {
           query,
           found: orgResults.length,
@@ -81,19 +77,19 @@ export async function deleteOrganizationEmbeddings(organizationId: string): Prom
     // Delete in batches (Upstash Vector supports batch delete)
     const batchSize = 100;
     let deletedCount = 0;
-    
+
     for (let i = 0; i < uniqueIds.length; i += batchSize) {
       const batch = uniqueIds.slice(i, i + batchSize);
-      
+
       try {
         await vectorIndex.delete(batch);
         deletedCount += batch.length;
-        
-          logger.info('Deleted batch of embeddings', {
-            batchSize: batch.length,
-            totalDeleted: deletedCount,
-            remaining: uniqueIds.length - deletedCount,
-          });
+
+        logger.info('Deleted batch of embeddings', {
+          batchSize: batch.length,
+          totalDeleted: deletedCount,
+          remaining: uniqueIds.length - deletedCount,
+        });
       } catch (error) {
         logger.warn('Failed to delete batch', {
           batchSize: batch.length,
@@ -116,4 +112,3 @@ export async function deleteOrganizationEmbeddings(organizationId: string): Prom
     throw error;
   }
 }
-

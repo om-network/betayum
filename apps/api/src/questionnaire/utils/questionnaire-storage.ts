@@ -119,9 +119,7 @@ export async function uploadQuestionnaireFile(params: {
 }): Promise<{ s3Key: string; fileSize: number } | null> {
   const bucket = getQuestionnaireUploadBucketName();
   if (!bucket) {
-    throw new Error(
-      'Questionnaire upload bucket is not configured',
-    );
+    throw new Error('Questionnaire upload bucket is not configured');
   }
 
   const fileBuffer = Buffer.from(params.fileData, 'base64');

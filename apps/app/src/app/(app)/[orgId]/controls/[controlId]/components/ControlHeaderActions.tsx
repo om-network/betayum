@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
+import type { Control } from '@db';
 import { Button } from '@trycompai/ui/button';
 import {
   DropdownMenu,
@@ -7,11 +9,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
-import type { Control } from '@db';
 import { MoreVertical, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { ControlDeleteDialog } from './ControlDeleteDialog';
-import { usePermissions } from '@/hooks/use-permissions';
 
 interface ControlHeaderActionsProps {
   control: Control;

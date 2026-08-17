@@ -1,3 +1,4 @@
+import { BrandLogo } from '@/components/brand-logo';
 import { LoginForm } from '@/components/login-form';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
@@ -10,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@trycompai/ui/card';
-import { Icons } from '@trycompai/ui/icons';
 import { brandConfig } from '@trycompai/utils/brand';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
@@ -51,7 +51,7 @@ export default async function Page({
       <main className="flex flex-1 items-center justify-center p-6">
         <Card className="w-full max-w-lg">
           <CardHeader className="text-center space-y-3 pt-10">
-            <Icons.Logo className="h-10 w-10 mx-auto" />
+            <BrandLogo className="mx-auto" />
             <CardTitle className="text-2xl tracking-tight text-card-foreground">
               Get Started with {brandConfig.displayName}
             </CardTitle>

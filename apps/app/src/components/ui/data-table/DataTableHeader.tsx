@@ -1,9 +1,9 @@
 'use client';
 
-import { cn } from '@trycompai/ui/cn';
-import { TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
 import type { Table } from '@tanstack/react-table';
 import { flexRender } from '@tanstack/react-table';
+import { cn } from '@trycompai/ui/cn';
+import { TableHead, TableHeader, TableRow } from '@trycompai/ui/table';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 
 interface DataTableHeaderProps<TData> {

@@ -1,5 +1,6 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-permissions';
 import { authClient } from '@/utils/auth-client';
 import type { Member, Policy, User } from '@db';
 import {
@@ -16,7 +17,6 @@ import { format } from 'date-fns';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { usePermissions } from '@/hooks/use-permissions';
 import { usePolicy } from '../hooks/usePolicy';
 
 interface PolicyAlertsProps {

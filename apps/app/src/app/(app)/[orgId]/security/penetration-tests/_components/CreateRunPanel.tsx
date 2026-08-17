@@ -66,11 +66,9 @@ const createRunSchema = z.object({
       ]),
     )
     .min(1, 'Select at least one check.'),
-  authorized: z
-    .boolean()
-    .refine((value) => value === true, {
-      message: 'Confirm you own or are authorized to test this target.',
-    }),
+  authorized: z.boolean().refine((value) => value === true, {
+    message: 'Confirm you own or are authorized to test this target.',
+  }),
 });
 
 export type CreateRunForm = z.infer<typeof createRunSchema>;
@@ -267,7 +265,12 @@ export function CreateRunPanel({
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <div className="w-full sm:w-auto">
-              <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
             </div>
@@ -290,10 +293,9 @@ export function CreateRunPanel({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm impact-proof scan</AlertDialogTitle>
             <AlertDialogDescription>
-              Impact-proof validation actively exploits findings to demonstrate real-world
-              impact. This may trigger WAF alerts, rate limits, or temporary service
-              degradation on the target. Proceed only if you've coordinated with the target
-              owner.
+              Impact-proof validation actively exploits findings to demonstrate real-world impact.
+              This may trigger WAF alerts, rate limits, or temporary service degradation on the
+              target. Proceed only if you've coordinated with the target owner.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

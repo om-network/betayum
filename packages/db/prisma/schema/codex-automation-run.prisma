@@ -1,0 +1,62 @@
+enum CodexAutomationRunStatus {
+  pending
+  dispatched
+  completed
+  promoting
+  promoted
+  failed
+  timed_out
+}
+
+model CodexAutomationRun {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('car'::text)"))
+
+  organizationId String
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  taskId         String
+  task           Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  automationId   String
+  automation     EvidenceAutomation    @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  browserVmId    String
+  browserVm      OrganizationBrowserVm @relation(fields: [browserVmId], references: [id], onDelete: Restrict)
+
+  triggerRunId        String?
+  triggerWaitpointId  String?                  @unique
+  status              CodexAutomationRunStatus @default(pending)
+  prompt              String
+  evidenceDescription String
+  capabilityTokenHash String                   @unique
+  capabilityExpiresAt DateTime
+  summary             String?
+  errorMessage        String?
+  completedAt         DateTime?
+  promotedAt          DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  screenshots CodexAutomationScreenshot[]
+
+  @@index([organizationId, status])
+  @@index([taskId, createdAt])
+}
+
+model CodexAutomationScreenshot {
+  id String @id @default(dbgenerated("generate_prefixed_cuid('cas'::text)"))
+
+  runId String
+  run   CodexAutomationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  stagedObjectKey String
+  finalObjectKey  String?
+  fileName        String
+  mimeType        String
+  checksumSha256  String
+  sizeBytes       Int
+  attachmentId    String?     @unique
+  attachment      Attachment? @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([runId, stagedObjectKey])
+  @@index([runId])
+}

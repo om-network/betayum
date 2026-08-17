@@ -1,7 +1,7 @@
 import { authClient } from '@/utils/auth-client';
+import { Member, User } from '@db';
 import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@trycompai/ui/select';
-import { Member, User } from '@db';
 import { UserIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -118,11 +118,7 @@ export const SelectAssignee = ({
             </div>
           </SelectItem>
           {assignees.map((assignee) => (
-            <SelectItem
-              key={assignee.id}
-              value={assignee.id}
-              className="cursor-pointer pl-2"
-            >
+            <SelectItem key={assignee.id} value={assignee.id} className="cursor-pointer pl-2">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <Avatar className="h-5 w-5 shrink-0">
                   <AvatarImage

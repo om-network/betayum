@@ -1,5 +1,4 @@
 import { db } from '@db/server';
-import { upsertEntityEmbeddings, findSimilarTasks, waitForIndexed } from './index';
 import { linkSuggestions } from '../link-suggestions';
 import {
   rerankSuggestions,
@@ -7,6 +6,7 @@ import {
   type RerankedCandidate,
   type RerankSource,
 } from '../rerank-suggestions';
+import { findSimilarTasks, upsertEntityEmbeddings, waitForIndexed } from './index';
 
 /**
  * Phase emitted by `runLinkage` via the optional `onPhase` callback.
@@ -148,11 +148,7 @@ function riskQueryText(risk: {
     .join('\n');
 }
 
-function vendorQueryText(vendor: {
-  name: string;
-  description: string;
-  category: string;
-}): string {
+function vendorQueryText(vendor: { name: string; description: string; category: string }): string {
   return [vendor.name, vendor.description, `Category: ${vendor.category}`].join('\n');
 }
 
@@ -349,9 +345,7 @@ async function rerankForAutonomousPersist({
   }
 
   // Sorted desc by rerankScore (rerankSuggestions guarantees this).
-  const highConfidence = reranked.filter(
-    (r) => r.rerankScore >= AUTONOMOUS_MIN_RERANK_SCORE,
-  );
+  const highConfidence = reranked.filter((r) => r.rerankScore >= AUTONOMOUS_MIN_RERANK_SCORE);
   // If the reranker was conservative for this entity, fall back to the
   // top-N by score so the risk isn't left with zero links. The user
   // reviews via the Linked Work column; better to have 3 decent matches
@@ -428,10 +422,7 @@ export async function runLinkage({
     db.task.findMany({
       where: {
         organizationId,
-        OR: [
-          { controls: { some: { archivedAt: null } } },
-          { controls: { none: {} } },
-        ],
+        OR: [{ controls: { some: { archivedAt: null } } }, { controls: { none: {} } }],
       },
       select: {
         id: true,
@@ -453,9 +444,7 @@ export async function runLinkage({
   // When suggestionsOnly is set, skip this step entirely (no DB writes).
   if (replace && !suggestionsOnly) {
     await Promise.all([
-      ...risks.map((r) =>
-        db.risk.update({ where: { id: r.id }, data: { tasks: { set: [] } } }),
-      ),
+      ...risks.map((r) => db.risk.update({ where: { id: r.id }, data: { tasks: { set: [] } } })),
       ...vendors.map((v) =>
         db.vendor.update({ where: { id: v.id }, data: { tasks: { set: [] } } }),
       ),
@@ -611,131 +600,129 @@ export async function runLinkage({
 
   const [riskOutcomes, vendorOutcomes] = await Promise.all([
     mapWithConcurrency(risks, MATCH_CONCURRENCY, async (risk) => {
-    const similar = await findSimilarTasks({
-      organizationId,
-      queryText: riskQueryText(risk),
-      topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : AUTONOMOUS_QUERY_TOP_K,
-    });
-    console.info(
-      `[linkage] risk "${risk.title}" → cosine returned ${similar.length} candidates` +
-        (similar.length > 0
-          ? ` (top scores: ${similar
-              .slice(0, 3)
-              .map((s) => s.score.toFixed(2))
-              .join(', ')})`
-          : ''),
-    );
-    // Both paths feed the reranker — autonomous needs it just as badly to
-    // get past the 0.4-0.6 cosine band that dominates compliance prose.
-    const links = linkSuggestions({
-      source: { department: risk.department ?? undefined },
-      candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
-      threshold: 0,
-      topK: suggestionsOnly ? SUGGESTIONS_RERANK_INPUT_TOP_K : AUTONOMOUS_RERANK_INPUT_TOP_K,
-    });
-    let count = 0;
-    let perEntitySuggestions: RunLinkageOutput['suggestions'];
-    const inScopeMatches = links.filter((l) => taskById.has(l.id)).length;
-    if (inScopeMatches !== links.length) {
-      console.warn(
-        `[linkage] risk "${risk.title}" → ${links.length - inScopeMatches} of ${links.length} cosine matches dropped (not in task scope after filter)`,
+      const similar = await findSimilarTasks({
+        organizationId,
+        queryText: riskQueryText(risk),
+        topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : AUTONOMOUS_QUERY_TOP_K,
+      });
+      console.info(
+        `[linkage] risk "${risk.title}" → cosine returned ${similar.length} candidates` +
+          (similar.length > 0
+            ? ` (top scores: ${similar
+                .slice(0, 3)
+                .map((s) => s.score.toFixed(2))
+                .join(', ')})`
+            : ''),
       );
-    }
-    if (links.length > 0) {
-      const source: RerankSource = {
-        kind: 'risk',
-        title: risk.title,
-        description: risk.description,
-        category: risk.category,
-        department: risk.department ?? undefined,
-      };
-      if (suggestionsOnly) {
-        const taskScores = await rerankAndBuildScoreMap({
-          source,
-          links,
-          taskById,
-        });
-        const built = await buildSuggestions({ organizationId, taskScores });
-        perEntitySuggestions = { forRiskId: risk.id, ...built };
-        count = taskScores.size;
-        console.info(
-          `[linkage] risk "${risk.title}" → suggestions: ${count} tasks, ${built.controls.length} controls`,
-        );
-      } else {
-        const idsToConnect = await rerankForAutonomousPersist({
-          source,
-          links,
-          taskById,
-        });
-        if (idsToConnect.length > 0) {
-          await db.risk.update({
-            where: { id: risk.id },
-            data: { tasks: { connect: idsToConnect.map((id) => ({ id })) } },
-          });
-        }
-        count = idsToConnect.length;
-        console.info(
-          `[linkage] risk "${risk.title}" → persisted ${count} task link(s)`,
+      // Both paths feed the reranker — autonomous needs it just as badly to
+      // get past the 0.4-0.6 cosine band that dominates compliance prose.
+      const links = linkSuggestions({
+        source: { department: risk.department ?? undefined },
+        candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
+        threshold: 0,
+        topK: suggestionsOnly ? SUGGESTIONS_RERANK_INPUT_TOP_K : AUTONOMOUS_RERANK_INPUT_TOP_K,
+      });
+      let count = 0;
+      let perEntitySuggestions: RunLinkageOutput['suggestions'];
+      const inScopeMatches = links.filter((l) => taskById.has(l.id)).length;
+      if (inScopeMatches !== links.length) {
+        console.warn(
+          `[linkage] risk "${risk.title}" → ${links.length - inScopeMatches} of ${links.length} cosine matches dropped (not in task scope after filter)`,
         );
       }
-    } else {
-      console.warn(
-        `[linkage] risk "${risk.title}" → 0 candidates after linkSuggestions; skipping rerank`,
-      );
-    }
-    completedRisks += 1;
-    onPhase?.({ name: 'matching-risks', current: completedRisks, total: risks.length });
-    return { count, perEntitySuggestions };
+      if (links.length > 0) {
+        const source: RerankSource = {
+          kind: 'risk',
+          title: risk.title,
+          description: risk.description,
+          category: risk.category,
+          department: risk.department ?? undefined,
+        };
+        if (suggestionsOnly) {
+          const taskScores = await rerankAndBuildScoreMap({
+            source,
+            links,
+            taskById,
+          });
+          const built = await buildSuggestions({ organizationId, taskScores });
+          perEntitySuggestions = { forRiskId: risk.id, ...built };
+          count = taskScores.size;
+          console.info(
+            `[linkage] risk "${risk.title}" → suggestions: ${count} tasks, ${built.controls.length} controls`,
+          );
+        } else {
+          const idsToConnect = await rerankForAutonomousPersist({
+            source,
+            links,
+            taskById,
+          });
+          if (idsToConnect.length > 0) {
+            await db.risk.update({
+              where: { id: risk.id },
+              data: { tasks: { connect: idsToConnect.map((id) => ({ id })) } },
+            });
+          }
+          count = idsToConnect.length;
+          console.info(`[linkage] risk "${risk.title}" → persisted ${count} task link(s)`);
+        }
+      } else {
+        console.warn(
+          `[linkage] risk "${risk.title}" → 0 candidates after linkSuggestions; skipping rerank`,
+        );
+      }
+      completedRisks += 1;
+      onPhase?.({ name: 'matching-risks', current: completedRisks, total: risks.length });
+      return { count, perEntitySuggestions };
     }),
     mapWithConcurrency(vendors, MATCH_CONCURRENCY, async (vendor) => {
-    const similar = await findSimilarTasks({
-      organizationId,
-      queryText: vendorQueryText(vendor),
-      topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : AUTONOMOUS_QUERY_TOP_K,
-    });
-    const links = linkSuggestions({
-      source: {},
-      candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
-      threshold: 0,
-      topK: suggestionsOnly ? SUGGESTIONS_RERANK_INPUT_TOP_K : AUTONOMOUS_RERANK_INPUT_TOP_K,
-    });
-    let count = 0;
-    let perEntitySuggestions: RunLinkageOutput['suggestions'];
-    if (links.length > 0) {
-      const source: RerankSource = {
-        kind: 'vendor',
-        title: vendor.name,
-        description: vendor.description,
-        category: vendor.category,
-      };
-      if (suggestionsOnly) {
-        const taskScores = await rerankAndBuildScoreMap({
-          source,
-          links,
-          taskById,
-        });
-        const built = await buildSuggestions({ organizationId, taskScores });
-        perEntitySuggestions = { forVendorId: vendor.id, ...built };
-        count = taskScores.size;
-      } else {
-        const idsToConnect = await rerankForAutonomousPersist({
-          source,
-          links,
-          taskById,
-        });
-        if (idsToConnect.length > 0) {
-          await db.vendor.update({
-            where: { id: vendor.id },
-            data: { tasks: { connect: idsToConnect.map((id) => ({ id })) } },
+      const similar = await findSimilarTasks({
+        organizationId,
+        queryText: vendorQueryText(vendor),
+        topK: suggestionsOnly ? SUGGESTIONS_QUERY_TOP_K : AUTONOMOUS_QUERY_TOP_K,
+      });
+      const links = linkSuggestions({
+        source: {},
+        candidates: similar.map((s) => ({ id: s.id, score: s.score, department: s.department })),
+        threshold: 0,
+        topK: suggestionsOnly ? SUGGESTIONS_RERANK_INPUT_TOP_K : AUTONOMOUS_RERANK_INPUT_TOP_K,
+      });
+      let count = 0;
+      let perEntitySuggestions: RunLinkageOutput['suggestions'];
+      if (links.length > 0) {
+        const source: RerankSource = {
+          kind: 'vendor',
+          title: vendor.name,
+          description: vendor.description,
+          category: vendor.category,
+        };
+        if (suggestionsOnly) {
+          const taskScores = await rerankAndBuildScoreMap({
+            source,
+            links,
+            taskById,
           });
+          const built = await buildSuggestions({ organizationId, taskScores });
+          perEntitySuggestions = { forVendorId: vendor.id, ...built };
+          count = taskScores.size;
+        } else {
+          const idsToConnect = await rerankForAutonomousPersist({
+            source,
+            links,
+            taskById,
+          });
+          if (idsToConnect.length > 0) {
+            await db.vendor.update({
+              where: { id: vendor.id },
+              data: { tasks: { connect: idsToConnect.map((id) => ({ id })) } },
+            });
+          }
+          count = idsToConnect.length;
         }
-        count = idsToConnect.length;
       }
-    }
-    completedVendors += 1;
-    onPhase?.({ name: 'matching-vendors', current: completedVendors, total: vendors.length });
-    return { count, perEntitySuggestions };
-  }),
+      completedVendors += 1;
+      onPhase?.({ name: 'matching-vendors', current: completedVendors, total: vendors.length });
+      return { count, perEntitySuggestions };
+    }),
   ]);
 
   const riskLinks = riskOutcomes.reduce((sum, r) => sum + r.count, 0);

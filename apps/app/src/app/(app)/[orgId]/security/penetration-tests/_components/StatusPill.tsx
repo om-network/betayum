@@ -1,12 +1,6 @@
 import { cn } from '@trycompai/design-system/cn';
 
-type StatusKind =
-  | 'provisioning'
-  | 'cloning'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+type StatusKind = 'provisioning' | 'cloning' | 'running' | 'completed' | 'failed' | 'cancelled';
 
 interface StatusPillProps {
   status: StatusKind | string;
@@ -23,10 +17,7 @@ interface StatusPillProps {
   className?: string;
 }
 
-const STATUS_CONFIG: Record<
-  StatusKind,
-  { label: string; dotClass: string; textClass: string }
-> = {
+const STATUS_CONFIG: Record<StatusKind, { label: string; dotClass: string; textClass: string }> = {
   provisioning: {
     label: 'Provisioning',
     dotClass: 'bg-muted-foreground animate-pulse',

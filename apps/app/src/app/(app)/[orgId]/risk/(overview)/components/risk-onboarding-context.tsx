@@ -17,14 +17,8 @@ interface RiskOnboardingProviderProps {
   children: React.ReactNode;
 }
 
-export function RiskOnboardingProvider({
-  statuses,
-  children,
-}: RiskOnboardingProviderProps) {
-  const getStatus = React.useCallback(
-    (riskId: string) => statuses[riskId],
-    [statuses],
-  );
+export function RiskOnboardingProvider({ statuses, children }: RiskOnboardingProviderProps) {
+  const getStatus = React.useCallback((riskId: string) => statuses[riskId], [statuses]);
 
   return (
     <RiskOnboardingContext.Provider value={{ getStatus }}>
@@ -42,4 +36,3 @@ export function useRiskOnboardingStatus(riskId: string) {
 
   return context.getStatus(riskId);
 }
-

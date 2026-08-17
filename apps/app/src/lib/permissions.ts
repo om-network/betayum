@@ -155,8 +155,19 @@ export function getDefaultRoute(permissions: UserPermissions, orgId: string): st
 
 /** Compliance route segments — used to determine if the Compliance rail icon should show. */
 const COMPLIANCE_ROUTE_SEGMENTS = [
-  'overview', 'frameworks', 'controls', 'policies', 'tasks', 'documents', 'people',
-  'risk', 'vendors', 'questionnaire', 'integrations', 'cloud-tests', 'auditor',
+  'overview',
+  'frameworks',
+  'controls',
+  'policies',
+  'tasks',
+  'documents',
+  'people',
+  'risk',
+  'vendors',
+  'questionnaire',
+  'integrations',
+  'cloud-tests',
+  'auditor',
 ] as const;
 
 /**
@@ -211,7 +222,7 @@ export function resolveBuiltInPermissions(roleString: string | null | undefined)
     if (BUILT_IN_ROLE_NAMES.includes(roleName)) {
       const role = allRoles[roleName as RoleName];
       if (role) {
-        mergePermissions(combined, role.statements as Record<string, string[]>);
+        mergePermissions(combined, role.statements as unknown as Record<string, string[]>);
       }
     }
   }

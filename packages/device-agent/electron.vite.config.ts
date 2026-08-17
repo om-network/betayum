@@ -13,18 +13,10 @@ export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin({ exclude: ['electron-store'] })],
     define: {
-      __PORTAL_URL__: JSON.stringify(
-        buildEnv.portalUrl,
-      ),
-      __API_URL__: JSON.stringify(
-        buildEnv.apiUrl,
-      ),
-      __AGENT_VERSION__: JSON.stringify(
-        buildEnv.agentVersion || pkg.version,
-      ),
-      __AUTO_UPDATE_URL__: JSON.stringify(
-        buildEnv.autoUpdateUrl,
-      ),
+      __PORTAL_URL__: JSON.stringify(buildEnv.portalUrl),
+      __API_URL__: JSON.stringify(buildEnv.apiUrl),
+      __AGENT_VERSION__: JSON.stringify(buildEnv.agentVersion || pkg.version),
+      __AUTO_UPDATE_URL__: JSON.stringify(buildEnv.autoUpdateUrl),
     },
     build: {
       outDir: 'dist/main',

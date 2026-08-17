@@ -11,7 +11,9 @@ jest.mock('@db', () => ({ db: mockDb }));
 import { ActingUserResolver } from './acting-user.service';
 import type { AuthenticatedRequest } from './types';
 
-function makeReq(overrides: Partial<AuthenticatedRequest> = {}): AuthenticatedRequest {
+function makeReq(
+  overrides: Partial<AuthenticatedRequest> = {},
+): AuthenticatedRequest {
   return {
     organizationId: 'org_1',
     authType: 'session',

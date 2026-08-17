@@ -1,8 +1,8 @@
 import 'server-only';
 
+import { openai } from '@ai-sdk/openai';
 import { Departments } from '@db';
 import { Index } from '@upstash/vector';
-import { openai } from '@ai-sdk/openai';
 import { embedMany } from 'ai';
 import { createHash } from 'node:crypto';
 
@@ -123,9 +123,7 @@ export async function upsertEntityEmbeddings({
     entity,
     hash: computeEntityContentHash({ text: entity.text, department: entity.department }),
   }));
-  const toEmbed = withHashes.filter(
-    ({ entity, hash }) => existingHashes?.get(entity.id) !== hash,
-  );
+  const toEmbed = withHashes.filter(({ entity, hash }) => existingHashes?.get(entity.id) !== hash);
   const skippedCount = withHashes.length - toEmbed.length;
   if (toEmbed.length === 0) {
     return { appliedHashes: [], skippedCount };

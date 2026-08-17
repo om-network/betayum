@@ -1,10 +1,17 @@
 import 'server-only';
 
+import { logger } from '@/utils/logger';
 import { vectorIndex } from './client';
 import { generateEmbedding } from './generate-embedding';
-import { logger } from '@/utils/logger';
 
-export type SourceType = 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer' | 'knowledge_base_document';
+export type SourceType =
+  | 'policy'
+  | 'context'
+  | 'document_hub'
+  | 'attachment'
+  | 'questionnaire'
+  | 'manual_answer'
+  | 'knowledge_base_document';
 
 export interface EmbeddingMetadata {
   organizationId: string;
@@ -33,7 +40,8 @@ export async function upsertEmbedding(
   metadata: EmbeddingMetadata,
 ): Promise<void> {
   if (!vectorIndex) {
-    const errorMsg = 'Upstash Vector is not configured - check UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN';
+    const errorMsg =
+      'Upstash Vector is not configured - check UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN';
     logger.error(errorMsg, {
       id,
       sourceType: metadata.sourceType,
@@ -62,7 +70,9 @@ export async function upsertEmbedding(
       ...(metadata.contextQuestion && { contextQuestion: metadata.contextQuestion }),
       ...(metadata.vendorId && { vendorId: metadata.vendorId }),
       ...(metadata.vendorName && { vendorName: metadata.vendorName }),
-      ...(metadata.questionnaireQuestion && { questionnaireQuestion: metadata.questionnaireQuestion }),
+      ...(metadata.questionnaireQuestion && {
+        questionnaireQuestion: metadata.questionnaireQuestion,
+      }),
       ...(metadata.manualAnswerQuestion && { manualAnswerQuestion: metadata.manualAnswerQuestion }),
       ...(metadata.documentName && { documentName: metadata.documentName }),
       ...(metadata.updatedAt && { updatedAt: metadata.updatedAt }),
@@ -74,7 +84,7 @@ export async function upsertEmbedding(
         id,
         embeddingId: id,
         vectorLength: embedding.length,
-        vectorPreview: embedding.slice(0, 5).map(v => v.toFixed(6)), // First 5 dimensions
+        vectorPreview: embedding.slice(0, 5).map((v) => v.toFixed(6)), // First 5 dimensions
         vectorStats: {
           min: Math.min(...embedding),
           max: Math.max(...embedding),
@@ -142,9 +152,7 @@ export async function batchUpsertEmbeddings(
 
   try {
     // Step 1: Generate all embeddings in parallel (much faster)
-    const embeddings = await Promise.all(
-      validItems.map((item) => generateEmbedding(item.text)),
-    );
+    const embeddings = await Promise.all(validItems.map((item) => generateEmbedding(item.text)));
 
     // Step 2: Upsert all embeddings in parallel
     // Check vectorIndex before using it (TypeScript safety)
@@ -167,7 +175,9 @@ export async function batchUpsertEmbeddings(
             sourceId: item.metadata.sourceId,
             content: item.text.substring(0, 1000), // Store first 1000 chars for reference
             ...(item.metadata.policyName && { policyName: item.metadata.policyName }),
-            ...(item.metadata.contextQuestion && { contextQuestion: item.metadata.contextQuestion }),
+            ...(item.metadata.contextQuestion && {
+              contextQuestion: item.metadata.contextQuestion,
+            }),
             ...(item.metadata.vendorId && { vendorId: item.metadata.vendorId }),
             ...(item.metadata.vendorName && { vendorName: item.metadata.vendorName }),
             ...(item.metadata.questionnaireQuestion && {
@@ -190,4 +200,3 @@ export async function batchUpsertEmbeddings(
     throw error;
   }
 }
-

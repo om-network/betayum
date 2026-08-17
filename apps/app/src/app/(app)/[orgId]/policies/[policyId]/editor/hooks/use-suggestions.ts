@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { suggestionsPluginKey } from '@trycompai/ui/editor';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { markdownToTipTapJSON } from '../components/ai/markdown-utils';
 import { buildPositionMap } from '../lib/build-position-map';
 import { computeSuggestionRanges } from '../lib/compute-suggestion-ranges';
@@ -52,15 +52,9 @@ export function useSuggestions({
     rangesHistoryRef.current.push([...rangesRef.current]);
   }, []);
 
-  const pendingRanges = useMemo(
-    () => ranges.filter((r) => r.decision === 'pending'),
-    [ranges],
-  );
+  const pendingRanges = useMemo(() => ranges.filter((r) => r.decision === 'pending'), [ranges]);
 
-  const loadingRanges = useMemo(
-    () => ranges.filter((r) => r.decision === 'loading'),
-    [ranges],
-  );
+  const loadingRanges = useMemo(() => ranges.filter((r) => r.decision === 'loading'), [ranges]);
 
   // Lock/unlock editor based on whether there are active suggestions.
   // Save the original editable state so we restore it correctly
@@ -99,16 +93,14 @@ export function useSuggestions({
       const editorDom = editor.view.dom;
       const actionBars = editorDom.querySelectorAll('.suggestion-change-group');
       const { node } = editor.view.domAtPos(range.from);
-      const contentEl =
-        node instanceof HTMLElement ? node : node.parentElement;
+      const contentEl = node instanceof HTMLElement ? node : node.parentElement;
 
       // Find the action bar closest to (and before) the content element
       let target: Element | null = null;
       for (const bar of actionBars) {
         if (
           contentEl &&
-          (bar.compareDocumentPosition(contentEl) &
-            Node.DOCUMENT_POSITION_FOLLOWING)
+          bar.compareDocumentPosition(contentEl) & Node.DOCUMENT_POSITION_FOLLOWING
         ) {
           target = bar;
         }
@@ -120,8 +112,9 @@ export function useSuggestions({
 
       // Find the scrollable container and scroll so the target sits
       // near the top with some breathing room, not dead center.
-      const scrollContainer = scrollTarget.closest('[class*="overflow"]')
-        ?? scrollTarget.closest('.ProseMirror')?.parentElement;
+      const scrollContainer =
+        scrollTarget.closest('[class*="overflow"]') ??
+        scrollTarget.closest('.ProseMirror')?.parentElement;
       if (scrollContainer) {
         const containerRect = scrollContainer.getBoundingClientRect();
         const targetRect = scrollTarget.getBoundingClientRect();
@@ -138,10 +131,7 @@ export function useSuggestions({
     (prevRanges: SuggestionRange[]) => {
       if (!editor || !proposedMarkdownRef.current) return [];
       const positionMap = buildPositionMap(editor.state.doc);
-      const freshRanges = computeSuggestionRanges(
-        positionMap,
-        proposedMarkdownRef.current,
-      );
+      const freshRanges = computeSuggestionRanges(positionMap, proposedMarkdownRef.current);
       // Carry over decisions by matching content identity
       const decisionMap = new Map<string, SuggestionRange['decision']>();
       for (const r of prevRanges) {
@@ -223,7 +213,11 @@ export function useSuggestions({
   useEffect(() => {
     if (!editor) return;
 
-    const handleTransaction = ({ transaction }: { transaction: { getMeta: (key: string) => unknown } }) => {
+    const handleTransaction = ({
+      transaction,
+    }: {
+      transaction: { getMeta: (key: string) => unknown };
+    }) => {
       // ProseMirror's history plugin sets 'history$' meta on undo/redo
       const historyMeta = transaction.getMeta('history$');
       if (!historyMeta) return;
@@ -263,18 +257,14 @@ export function useSuggestions({
       } else if (range.type === 'insert') {
         // Insert at the end of the anchor position, not replacing it
         const jsonNodes = markdownToTipTapJSON(range.proposedText);
-        const pmNodes = jsonNodes.map((json) =>
-          editor.state.schema.nodeFromJSON(json),
-        );
+        const pmNodes = jsonNodes.map((json) => editor.state.schema.nodeFromJSON(json));
         if (pmNodes.length > 0) {
           tr.insert(range.to, pmNodes);
         }
       } else {
         // Modify: replace old content with new
         const jsonNodes = markdownToTipTapJSON(range.proposedText);
-        const pmNodes = jsonNodes.map((json) =>
-          editor.state.schema.nodeFromJSON(json),
-        );
+        const pmNodes = jsonNodes.map((json) => editor.state.schema.nodeFromJSON(json));
         if (pmNodes.length > 0) {
           tr.replaceWith(range.from, range.to, pmNodes);
         }
@@ -297,9 +287,7 @@ export function useSuggestions({
       // which creates phantom ranges when inserted content doesn't
       // round-trip identically through markdown extraction.
       setRanges((prev) =>
-        prev.map((r) =>
-          r.id === id ? { ...r, decision: 'accepted' as const } : r,
-        ),
+        prev.map((r) => (r.id === id ? { ...r, decision: 'accepted' as const } : r)),
       );
     },
     [applyRangeToDoc, pushRangesSnapshot],
@@ -309,9 +297,7 @@ export function useSuggestions({
     (id: string) => {
       pushRangesSnapshot();
       setRanges((prev) =>
-        prev.map((r) =>
-          r.id === id ? { ...r, decision: 'rejected' as const } : r,
-        ),
+        prev.map((r) => (r.id === id ? { ...r, decision: 'rejected' as const } : r)),
       );
     },
     [pushRangesSnapshot],
@@ -337,8 +323,7 @@ export function useSuggestions({
 
   const goToPrev = useCallback(() => {
     if (pendingRanges.length === 0) return;
-    const prevIndex =
-      (currentIndex - 1 + pendingRanges.length) % pendingRanges.length;
+    const prevIndex = (currentIndex - 1 + pendingRanges.length) % pendingRanges.length;
     setCurrentIndex(prevIndex);
     const range = pendingRanges[prevIndex];
     if (range) scrollToRange(range);
@@ -359,17 +344,13 @@ export function useSuggestions({
         tr.delete(range.from, range.to);
       } else if (range.type === 'insert') {
         const jsonNodes = markdownToTipTapJSON(range.proposedText);
-        const pmNodes = jsonNodes.map((json) =>
-          editor.state.schema.nodeFromJSON(json),
-        );
+        const pmNodes = jsonNodes.map((json) => editor.state.schema.nodeFromJSON(json));
         if (pmNodes.length > 0) {
           tr.insert(range.to, pmNodes);
         }
       } else {
         const jsonNodes = markdownToTipTapJSON(range.proposedText);
-        const pmNodes = jsonNodes.map((json) =>
-          editor.state.schema.nodeFromJSON(json),
-        );
+        const pmNodes = jsonNodes.map((json) => editor.state.schema.nodeFromJSON(json));
         if (pmNodes.length > 0) {
           tr.replaceWith(range.from, range.to, pmNodes);
         }
@@ -378,22 +359,14 @@ export function useSuggestions({
     editor.view.dispatch(tr);
 
     setRanges((prev) =>
-      prev.map((r) =>
-        r.decision === 'pending'
-          ? { ...r, decision: 'accepted' as const }
-          : r,
-      ),
+      prev.map((r) => (r.decision === 'pending' ? { ...r, decision: 'accepted' as const } : r)),
     );
   }, [editor, pushRangesSnapshot]);
 
   const rejectAll = useCallback(() => {
     pushRangesSnapshot();
     setRanges((prev) =>
-      prev.map((r) =>
-        r.decision === 'pending'
-          ? { ...r, decision: 'rejected' as const }
-          : r,
-      ),
+      prev.map((r) => (r.decision === 'pending' ? { ...r, decision: 'rejected' as const } : r)),
     );
   }, [pushRangesSnapshot]);
 
@@ -403,57 +376,46 @@ export function useSuggestions({
     rangesHistoryRef.current = [];
   }, []);
 
-  const giveFeedback = useCallback(
-    async (id: string, feedback: string) => {
-      const range = rangesRef.current.find((r) => r.id === id);
-      if (!range) return;
+  const giveFeedback = useCallback(async (id: string, feedback: string) => {
+    const range = rangesRef.current.find((r) => r.id === id);
+    if (!range) return;
 
-      setEditingRangeId(null);
+    setEditingRangeId(null);
+    setRanges((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, decision: 'loading' as const } : r)),
+    );
+
+    try {
+      const policyId = window.location.pathname.match(/policies\/([^/]+)/)?.[1];
+      const res = await fetch(`/api/policies/${policyId}/edit-section`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          sectionText: range.proposedText,
+          feedback,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to edit section');
+      const { updatedText } = (await res.json()) as { updatedText: string };
+
       setRanges((prev) =>
         prev.map((r) =>
-          r.id === id ? { ...r, decision: 'loading' as const } : r,
+          r.id === id ? { ...r, proposedText: updatedText, decision: 'pending' as const } : r,
         ),
       );
-
-      try {
-        const policyId = window.location.pathname.match(/policies\/([^/]+)/)?.[1];
-        const res = await fetch(`/api/policies/${policyId}/edit-section`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            sectionText: range.proposedText,
-            feedback,
-          }),
-        });
-
-        if (!res.ok) throw new Error('Failed to edit section');
-        const { updatedText } = await res.json() as { updatedText: string };
-
-        setRanges((prev) =>
-          prev.map((r) =>
-            r.id === id
-              ? { ...r, proposedText: updatedText, decision: 'pending' as const }
-              : r,
-          ),
-        );
-      } catch (err) {
-        console.error('Section edit failed:', err);
-        setRanges((prev) =>
-          prev.map((r) =>
-            r.id === id ? { ...r, decision: 'pending' as const } : r,
-          ),
-        );
-      }
-    },
-    [],
-  );
+    } catch (err) {
+      console.error('Section edit failed:', err);
+      setRanges((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, decision: 'pending' as const } : r)),
+      );
+    }
+  }, []);
 
   const resetLoading = useCallback(() => {
     setRanges((prev) =>
-      prev.map((r) =>
-        r.decision === 'loading' ? { ...r, decision: 'pending' as const } : r,
-      ),
+      prev.map((r) => (r.decision === 'loading' ? { ...r, decision: 'pending' as const } : r)),
     );
   }, []);
 

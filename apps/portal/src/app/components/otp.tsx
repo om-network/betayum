@@ -1,13 +1,13 @@
 'use client';
 
 import { authClient } from '@/app/lib/auth-client';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Spinner } from '@trycompai/design-system';
+import { ArrowRight } from '@trycompai/design-system/icons';
 import { Button } from '@trycompai/ui/button';
 import { cn } from '@trycompai/ui/cn';
 import { Form, FormControl, FormField, FormItem } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Spinner } from '@trycompai/design-system';
-import { ArrowRight } from '@trycompai/design-system/icons';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';

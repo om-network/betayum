@@ -4,7 +4,7 @@ import { toTaskTemplateKey, toTsStringLiteral } from './generate-task-types';
 describe('toTsStringLiteral', () => {
   it('serializes task metadata as safe TypeScript string literals', () => {
     expect(toTsStringLiteral("owner's laptop\\desktop\n${notAPlaceholder}<script>")).toBe(
-      "\"owner's laptop\\\\desktop\\n${notAPlaceholder}<script>\"",
+      '"owner\'s laptop\\\\desktop\\n${notAPlaceholder}<script>"',
     );
   });
 });

@@ -119,7 +119,7 @@ export class CloudSecurityController {
       'Mark a finding as an exception so it no longer appears in the active Scan Results list',
     description:
       'Accepts session, API key, or service token auth. For API key / service token callers ' +
-      'without an explicit user attribution, the action is attributed to the org\'s owner and ' +
+      "without an explicit user attribution, the action is attributed to the org's owner and " +
       'the audit log description records the calling key/service name.',
   })
   async markFindingAsException(
@@ -155,7 +155,7 @@ export class CloudSecurityController {
       'Switch the AWS scan engine for a connection (Betayum scanners ↔ Security Hub)',
     description:
       'Accepts session, API key, or service token auth. For API key / service token callers ' +
-      'without an explicit user attribution, the action is attributed to the org\'s owner.',
+      "without an explicit user attribution, the action is attributed to the org's owner.",
   })
   async updateAwsScanMode(
     @Param('connectionId') connectionId: string,
@@ -187,7 +187,7 @@ export class CloudSecurityController {
     summary: 'Revoke an exception, reopening the finding',
     description:
       'Accepts session, API key, or service token auth. For API key / service token callers ' +
-      'without an explicit user attribution, the action is attributed to the org\'s owner.',
+      "without an explicit user attribution, the action is attributed to the org's owner.",
   })
   async revokeException(
     @Param('exceptionId') exceptionId: string,
@@ -377,11 +377,10 @@ export class CloudSecurityController {
       // Fetch projects per org in parallel
       const orgsWithProjects = await Promise.all(
         rawOrgs.map(async (org) => {
-          const projects =
-            await this.gcpSecurityService.detectProjectsForOrg(
-              accessToken,
-              org.id,
-            );
+          const projects = await this.gcpSecurityService.detectProjectsForOrg(
+            accessToken,
+            org.id,
+          );
           return {
             id: org.id,
             displayName: org.displayName,
@@ -402,10 +401,7 @@ export class CloudSecurityController {
         );
       }
 
-      const variables = (connection.variables ?? {}) as Record<
-        string,
-        unknown
-      >;
+      const variables = (connection.variables ?? {}) as Record<string, unknown>;
 
       // Return only explicitly selected projects — never auto-select
       const existingProjectIds = this.readProjectIds(variables);
@@ -439,10 +435,7 @@ export class CloudSecurityController {
     @OrganizationId() organizationId: string,
   ) {
     if (!body?.projectIds?.length) {
-      throw new HttpException(
-        'projectIds is required',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('projectIds is required', HttpStatus.BAD_REQUEST);
     }
     if (body.gcpOrganizationId) {
       await this.cloudSecurityService.saveConnectionVariable(
@@ -567,9 +560,7 @@ export class CloudSecurityController {
    * Only reads the new `project_ids` array — the old `project_id` string
    * was auto-saved by previous code and does NOT represent user choice.
    */
-  private readProjectIds(
-    variables: Record<string, unknown>,
-  ): string[] {
+  private readProjectIds(variables: Record<string, unknown>): string[] {
     if (Array.isArray(variables.project_ids)) {
       return variables.project_ids as string[];
     }
@@ -619,8 +610,7 @@ export class CloudSecurityController {
 
     // For API enablement, use override or first selected project
     const selectedIds = this.readProjectIds(variables);
-    const projectId =
-      overrideProjectId || selectedIds[0] || projects[0]?.id;
+    const projectId = overrideProjectId || selectedIds[0] || projects[0]?.id;
 
     if (!projectId) {
       throw new Error(

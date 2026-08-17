@@ -1,18 +1,24 @@
 'use client';
 
-import { usePermissions } from '@/hooks/use-permissions';
-import { usePolicyMutations } from '@/hooks/use-policy-mutations';
 import { updatePolicyFormSchema } from '@/actions/schema';
 import { StatusIndicator } from '@/components/status-indicator';
+import { usePermissions } from '@/hooks/use-permissions';
+import { usePolicyMutations } from '@/hooks/use-policy-mutations';
 import { useSession } from '@/utils/auth-client';
+import { Departments, Frequency, type Policy, type PolicyStatus } from '@db';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@trycompai/ui/button';
 import { Calendar } from '@trycompai/ui/calendar';
 import { cn } from '@trycompai/ui/cn';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@trycompai/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
-import { Departments, Frequency, type Policy, type PolicyStatus } from '@db';
-import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { useState } from 'react';
@@ -195,16 +201,8 @@ export function UpdatePolicyOverview({ policy }: { policy: Policy }) {
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button
-            type="submit"
-            variant="default"
-            disabled={isSubmitting || !canUpdate}
-          >
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Save'
-            )}
+          <Button type="submit" variant="default" disabled={isSubmitting || !canUpdate}>
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
           </Button>
         </div>
       </form>

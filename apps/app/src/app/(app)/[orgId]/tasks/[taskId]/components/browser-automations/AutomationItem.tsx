@@ -1,19 +1,11 @@
 'use client';
 
+import { ScheduleSummary } from '@/components/schedule-summary';
 import { cn } from '@/lib/utils';
 import { Button } from '@trycompai/ui/button';
-import {
-  ChevronDown,
-  Loader2,
-  MonitorPlay,
-  Pencil,
-  Power,
-  PowerOff,
-  Trash2,
-} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { ChevronDown, Loader2, MonitorPlay, Pencil, Power, PowerOff, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { ScheduleSummary } from '@/components/schedule-summary';
 import type { BrowserAutomation, BrowserAutomationRun } from '../../hooks/types';
 import { RunHistory } from './RunHistory';
 
@@ -126,14 +118,17 @@ export function AutomationItem({
             </Button>
           )}
 
-          {!readOnly && (
-            confirmDelete ? (
+          {!readOnly &&
+            (confirmDelete ? (
               <div className="flex items-center gap-1">
                 <Button
                   variant="destructive"
                   size="sm"
                   className="h-7 text-xs"
-                  onClick={() => { onDelete(); setConfirmDelete(false); }}
+                  onClick={() => {
+                    onDelete();
+                    setConfirmDelete(false);
+                  }}
                 >
                   Confirm
                 </Button>
@@ -156,16 +151,10 @@ export function AutomationItem({
               >
                 <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
               </Button>
-            )
-          )}
+            ))}
 
           {!readOnly && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRun}
-              disabled={isRunning || isDisabled}
-            >
+            <Button variant="outline" size="sm" onClick={onRun} disabled={isRunning || isDisabled}>
               {isRunning ? (
                 <>
                   <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
@@ -208,5 +197,3 @@ export function AutomationItem({
     </div>
   );
 }
-
-

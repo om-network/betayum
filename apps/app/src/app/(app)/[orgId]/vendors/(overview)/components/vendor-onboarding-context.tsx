@@ -32,4 +32,3 @@ export function useVendorOnboardingStatus() {
   }
   return context.statuses;
 }
-

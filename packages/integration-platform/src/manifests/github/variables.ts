@@ -43,9 +43,7 @@ export const targetReposVariable: CheckVariable = {
       const allAccessibleRepos = await ctx.fetchAllPages<GitHubRepo>(
         '/user/repos?affiliation=owner,collaborator,organization_member&visibility=all',
       );
-      const orgRepos = allAccessibleRepos.filter(
-        (repo) => repo.owner?.type === 'Organization',
-      );
+      const orgRepos = allAccessibleRepos.filter((repo) => repo.owner?.type === 'Organization');
       for (const repo of orgRepos) {
         addRepo(repo);
       }

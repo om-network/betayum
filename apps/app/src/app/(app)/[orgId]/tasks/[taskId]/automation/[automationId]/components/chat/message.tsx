@@ -1,6 +1,6 @@
-import { UserIcon } from 'lucide-react';
+import { User as UserIcon } from '@trycompai/design-system/icons';
 import Image from 'next/image';
-import { createContext, memo, useContext, useEffect, useState } from 'react';
+import { createContext, memo, useContext, useEffect, useMemo, useState } from 'react';
 import { MessagePart } from './message-part';
 import type { ChatUIMessage } from './types';
 
@@ -31,9 +31,13 @@ export const Message = memo(function Message({
 }: Props) {
   const [expandedReasoningIndex, setExpandedReasoningIndex] = useState<number | null>(null);
 
-  const reasoningParts = message.parts
-    .map((part, index) => ({ part, index }))
-    .filter(({ part }) => part.type === 'reasoning');
+  const reasoningParts = useMemo(
+    () =>
+      message.parts
+        .map((part, index) => ({ part, index }))
+        .filter(({ part }) => part.type === 'reasoning'),
+    [message.parts],
+  );
 
   useEffect(() => {
     // Prefer expanding the latest streaming reasoning part if present.
@@ -312,7 +316,7 @@ export const Message = memo(function Message({
             <div className="relative">
               <div className="w-8 h-8 rounded-full bg-white border border-primary/25 overflow-hidden flex items-center justify-center">
                 <Image
-                  src="/compailogo.jpg"
+                  src="/betayum-icon.png"
                   alt="Betayum"
                   width={32}
                   height={32}

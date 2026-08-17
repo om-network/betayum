@@ -1,11 +1,14 @@
 model EvidenceAutomation {
-  id                String        @id @default(dbgenerated("generate_prefixed_cuid('aut'::text)"))
-  name              String
-  description       String?
-  createdAt         DateTime      @default(now())
-  isEnabled         Boolean       @default(false)
-  scheduleFrequency TaskFrequency @default(daily)
-  lastRunAt         DateTime?
+  id                   String                 @id @default(dbgenerated("generate_prefixed_cuid('aut'::text)"))
+  name                 String
+  description          String?
+  createdAt            DateTime               @default(now())
+  isEnabled            Boolean                @default(false)
+  scheduleFrequency    TaskFrequency          @default(daily)
+  lastRunAt            DateTime?
+  setupStatus          AutomationSetupStatus?
+  setupTask            String?
+  setupStatusUpdatedAt DateTime?
 
   chatHistory        String?
   evaluationCriteria String?
@@ -16,8 +19,116 @@ model EvidenceAutomation {
   task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   // Relations
-  runs     EvidenceAutomationRun[]
-  versions EvidenceAutomationVersion[]
+  runs            EvidenceAutomationRun[]
+  versions        EvidenceAutomationVersion[]
+  codexRuns       CodexAutomationRun[]
+  setupQueueItems AutomationSetupQueueItem[]
+  assistantRun    AutomationAssistantRun?
 
   @@index([taskId])
+}
+
+model AutomationAssistantRun {
+  id                String                       @id @default(dbgenerated("generate_prefixed_cuid('aar'::text)"))
+  automationId      String                       @unique
+  automation        EvidenceAutomation           @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  requestedByUserId String
+  generation        Int                          @default(1)
+  status            AutomationAssistantRunStatus @default(queued)
+  triggerRunId      String?
+  heartbeatAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  errorMessage      String?
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  commands          AutomationAssistantCommand[]
+
+  @@index([status, heartbeatAt])
+}
+
+model AutomationAssistantCommand {
+  id                String                           @id @default(dbgenerated("generate_prefixed_cuid('aac'::text)"))
+  runId             String
+  run               AutomationAssistantRun           @relation(fields: [runId], references: [id], onDelete: Cascade)
+  clientRequestId   String                           @unique
+  text              String
+  submittedByUserId String
+  status            AutomationAssistantCommandStatus @default(pending)
+  consumedAt        DateTime?
+  createdAt         DateTime                         @default(now())
+  updatedAt         DateTime                         @updatedAt
+
+  @@index([runId, status, createdAt])
+}
+
+model AutomationSetupQueue {
+  id                String                     @id @default(dbgenerated("generate_prefixed_cuid('asq'::text)"))
+  organizationId    String                     @unique
+  organization      Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  status            AutomationSetupQueueStatus @default(active)
+  currentPosition   Int                        @default(0)
+  currentItemId     String?
+  triggerRunId      String?
+  requestedByUserId String
+  heartbeatAt       DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  completedAt       DateTime?
+  items             AutomationSetupQueueItem[]
+}
+
+model AutomationSetupQueueItem {
+  id           String                    @id @default(dbgenerated("generate_prefixed_cuid('asi'::text)"))
+  queueId      String
+  queue        AutomationSetupQueue      @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  taskId       String
+  task         Task                      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  automationId String?
+  automation   EvidenceAutomation?       @relation(fields: [automationId], references: [id], onDelete: SetNull)
+  position     Int
+  status       AutomationSetupItemStatus @default(queued)
+  remarks      String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  @@unique([queueId, position])
+  @@unique([queueId, taskId])
+  @@index([taskId])
+  @@index([automationId])
+}
+
+enum AutomationSetupStatus {
+  building
+  ready
+  action_needed
+  failed
+}
+
+enum AutomationSetupQueueStatus {
+  active
+  completed
+}
+
+enum AutomationSetupItemStatus {
+  queued
+  building
+  ready
+  action_needed
+  failed
+}
+
+enum AutomationAssistantRunStatus {
+  queued
+  running
+  waiting_for_input
+  completed
+  failed
+}
+
+enum AutomationAssistantCommandStatus {
+  pending
+  consumed
 }

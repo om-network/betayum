@@ -30,13 +30,7 @@ describe('OrganizationDetail — background-check toggle', () => {
   });
 
   it('shows the toggle in its current state', () => {
-    render(
-      <OrganizationDetail
-        org={baseOrg}
-        currentOrgId="org_1"
-        hasAccess={true}
-      />,
-    );
+    render(<OrganizationDetail org={baseOrg} currentOrgId="org_1" hasAccess={true} />);
 
     const toggle = screen.getByRole('switch', {
       name: /require background checks/i,
@@ -47,13 +41,7 @@ describe('OrganizationDetail — background-check toggle', () => {
   it('toggles off and PATCHes the new value', async () => {
     const user = userEvent.setup();
 
-    render(
-      <OrganizationDetail
-        org={baseOrg}
-        currentOrgId="org_1"
-        hasAccess={true}
-      />,
-    );
+    render(<OrganizationDetail org={baseOrg} currentOrgId="org_1" hasAccess={true} />);
 
     const toggle = screen.getByRole('switch', {
       name: /require background checks/i,
@@ -62,10 +50,9 @@ describe('OrganizationDetail — background-check toggle', () => {
     await user.click(toggle);
 
     await waitFor(() => {
-      expect(patchMock).toHaveBeenCalledWith(
-        '/v1/admin/organizations/org_1',
-        { backgroundCheckStepEnabled: false },
-      );
+      expect(patchMock).toHaveBeenCalledWith('/v1/admin/organizations/org_1', {
+        backgroundCheckStepEnabled: false,
+      });
     });
   });
 
@@ -73,13 +60,7 @@ describe('OrganizationDetail — background-check toggle', () => {
     patchMock.mockResolvedValue({ error: 'server error' });
     const user = userEvent.setup();
 
-    render(
-      <OrganizationDetail
-        org={baseOrg}
-        currentOrgId="org_1"
-        hasAccess={true}
-      />,
-    );
+    render(<OrganizationDetail org={baseOrg} currentOrgId="org_1" hasAccess={true} />);
 
     const toggle = screen.getByRole('switch', {
       name: /require background checks/i,

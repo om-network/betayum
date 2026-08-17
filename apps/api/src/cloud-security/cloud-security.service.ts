@@ -349,7 +349,7 @@ export class CloudSecurityService {
                 ...currentVars,
                 detectedServices: [...existingDetected],
                 disabledServices: [...disabledSet],
-              } as unknown as Prisma.InputJsonValue,
+              },
             },
           });
           this.logger.log(
@@ -472,7 +472,9 @@ export class CloudSecurityService {
           detectedServices: [...existingDetected],
           disabledServices: [...updatedDisabled],
           serviceDetectionCompletedAt: new Date().toISOString(),
-          ...(gcpServicesByProject && { servicesByProject: gcpServicesByProject }),
+          ...(gcpServicesByProject && {
+            servicesByProject: gcpServicesByProject,
+          }),
         },
       },
     });
@@ -602,7 +604,7 @@ export class CloudSecurityService {
       new Set(
         findings
           .map((f) => {
-            const evidence = f.evidence as Record<string, unknown> | undefined;
+            const evidence = f.evidence;
             const serviceId = evidence?.serviceId;
             return typeof serviceId === 'string' ? serviceId : null;
           })
@@ -641,7 +643,9 @@ export class CloudSecurityService {
             description: finding.description ?? '',
             severity: finding.passed ? 'info' : finding.severity,
             remediation: finding.remediation ?? null,
-            evidence: (finding.evidence || {}) as object,
+            evidence: JSON.parse(
+              JSON.stringify(finding.evidence ?? {}),
+            ) as Prisma.InputJsonValue,
             collectedAt: new Date(finding.createdAt),
           })),
         });

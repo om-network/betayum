@@ -4,6 +4,7 @@ import { Button } from '@trycompai/ui/button';
 import { Icons } from '@trycompai/ui/icons';
 import { Sheet, SheetContent } from '@trycompai/ui/sheet';
 import { useState } from 'react';
+import { BrandLogo } from './brand-logo';
 import { MainMenu } from './main-menu';
 
 export function MobileMenu() {
@@ -23,7 +24,7 @@ export function MobileMenu() {
       </div>
       <SheetContent side="left" className="-ml-2 rounded-sm border-none">
         <div className="mb-8 ml-2">
-          <Icons.Logo />
+          <BrandLogo />
         </div>
 
         <MainMenu onSelect={() => setOpen(false)} />

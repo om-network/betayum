@@ -1,5 +1,10 @@
 import { createGatewayProvider } from '@ai-sdk/gateway';
-import { db, FrameworkEditorFramework, FrameworkEditorPolicyTemplate, type Policy } from '@db/server';
+import {
+  db,
+  FrameworkEditorFramework,
+  FrameworkEditorPolicyTemplate,
+  type Policy,
+} from '@db/server';
 import type { JSONContent } from '@tiptap/react';
 import { logger } from '@trigger.dev/sdk';
 import { generateObject } from 'ai';
@@ -52,10 +57,7 @@ function setTextAtPath(nodes: JsonNode[], path: number[], newText: string): void
  * targeted LLM call. Only fires when cue lines are detected — most
  * policies skip this entirely.
  */
-async function refineCueLines(
-  content: JsonNode[],
-  policyName: string,
-): Promise<JsonNode[]> {
+async function refineCueLines(content: JsonNode[], policyName: string): Promise<JsonNode[]> {
   const cueLines = findCueLines(content);
   if (cueLines.length === 0) return content;
 

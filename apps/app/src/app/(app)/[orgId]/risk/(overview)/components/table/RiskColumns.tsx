@@ -1,8 +1,8 @@
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { StatusIndicator } from '@/components/status-indicator';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Avatar, AvatarFallback, AvatarImage } from '@trycompai/ui/avatar';
 import { Badge } from '@trycompai/ui/badge';
-import type { ColumnDef } from '@tanstack/react-table';
 import { Loader2, UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { RiskRow } from '../../RisksTable';
@@ -78,19 +78,12 @@ export const columns = (orgId: string): ColumnDef<RiskRow>[] => [
       return (
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage
-              src={user.image || undefined}
-              alt={user.name || user.email || ''}
-            />
+            <AvatarImage src={user.image || undefined} alt={user.name || user.email || ''} />
             <AvatarFallback>
-              {user.name?.charAt(0) ||
-                user.email?.charAt(0).toUpperCase() ||
-                '?'}
+              {user.name?.charAt(0) || user.email?.charAt(0).toUpperCase() || '?'}
             </AvatarFallback>
           </Avatar>
-          <p className="text-sm font-medium">
-            {user.name || user.email}
-          </p>
+          <p className="text-sm font-medium">{user.name || user.email}</p>
         </div>
       );
     },

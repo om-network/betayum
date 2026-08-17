@@ -1,5 +1,5 @@
 import { Departments } from '@db';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const upsertMock = vi.fn();
 const queryMock = vi.fn();
@@ -25,12 +25,7 @@ vi.mock('ai', () => ({
   })),
 }));
 
-import {
-  upsertEntityEmbeddings,
-  findSimilarTasks,
-  waitForIndexed,
-  type EntityKind,
-} from './index';
+import { findSimilarTasks, upsertEntityEmbeddings, waitForIndexed } from './index';
 
 beforeEach(() => {
   upsertMock.mockReset();
@@ -82,9 +77,7 @@ describe('upsertEntityEmbeddings', () => {
       ],
     });
     expect(upsertMock).toHaveBeenCalledTimes(1);
-    expect(upsertMock).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'task_org_1_tsk_c' }),
-    );
+    expect(upsertMock).toHaveBeenCalledWith(expect.objectContaining({ id: 'task_org_1_tsk_c' }));
     expect(result.appliedHashes.map((h) => h.id)).toEqual(['tsk_c']);
   });
 
@@ -92,9 +85,7 @@ describe('upsertEntityEmbeddings', () => {
     await upsertEntityEmbeddings({
       organizationId: 'org_1',
       kind: 'task',
-      entities: [
-        { id: 'tsk_a', text: 'hr task', department: Departments.hr },
-      ],
+      entities: [{ id: 'tsk_a', text: 'hr task', department: Departments.hr }],
     });
     expect(upsertMock).toHaveBeenCalledWith(
       expect.objectContaining({

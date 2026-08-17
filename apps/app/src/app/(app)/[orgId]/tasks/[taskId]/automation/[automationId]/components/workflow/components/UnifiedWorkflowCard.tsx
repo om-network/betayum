@@ -80,9 +80,7 @@ export function UnifiedWorkflowCard({
         <div className="flex items-center gap-2 mb-4">
           {(integrationsUsed?.length ? integrationsUsed : [{ link: 'betayum.com' }]).map(
             (integration) => (
-              <div
-                key={`https://img.logo.dev/${integration.link}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}
-              >
+              <div key={`https://img.logo.dev/${integration.link}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}>
                 <Image
                   src={`https://img.logo.dev/${integration.link}?token=pk_AZatYxV5QDSfWpRDaBxzRQ`}
                   alt={integration.link}
@@ -205,7 +203,11 @@ export function UnifiedWorkflowCard({
             }}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors animate-in fade-in duration-500 pointer-events-auto"
           >
-            {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+            {isTesting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
             {isTesting ? 'Testing...' : 'Test Integration'}
           </button>
         )}

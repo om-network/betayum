@@ -90,10 +90,7 @@ export function BackgroundCheckExemptForm({
         <LabelRow htmlFor="bg-exempt-reason" required>
           Reason for exemption
         </LabelRow>
-        <Select
-          value={values.reason}
-          onValueChange={(next) => setField('reason', next ?? '')}
-        >
+        <Select value={values.reason} onValueChange={(next) => setField('reason', next ?? '')}>
           <SelectTrigger id="bg-exempt-reason">
             <SelectValue placeholder="Select a reason…" />
           </SelectTrigger>

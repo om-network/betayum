@@ -1,7 +1,13 @@
 'use client';
 
 import { Button } from '@trycompai/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@trycompai/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@trycompai/ui/select';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DataTablePaginationProps {

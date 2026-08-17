@@ -124,9 +124,7 @@ export function AwsAccountSettingsBody({
       return;
     }
     const expectedPrefix =
-      awsEnvironment === 'aws-us-gov'
-        ? 'arn:aws-us-gov:iam::'
-        : 'arn:aws:iam::';
+      awsEnvironment === 'aws-us-gov' ? 'arn:aws-us-gov:iam::' : 'arn:aws:iam::';
     if (!roleArn.startsWith(expectedPrefix)) {
       toast.error('Role ARN must match the selected AWS environment');
       return;
@@ -139,9 +137,7 @@ export function AwsAccountSettingsBody({
 
   const handleSaveRemediation = useCallback(async () => {
     const expectedPrefix =
-      awsEnvironment === 'aws-us-gov'
-        ? 'arn:aws-us-gov:iam::'
-        : 'arn:aws:iam::';
+      awsEnvironment === 'aws-us-gov' ? 'arn:aws-us-gov:iam::' : 'arn:aws:iam::';
     if (remediationRoleArn && !remediationRoleArn.startsWith(expectedPrefix)) {
       toast.error('Remediation Role ARN must match the selected AWS environment');
       return;

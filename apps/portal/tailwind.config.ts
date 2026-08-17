@@ -1,7 +1,7 @@
+import uiConfig from '@trycompai/ui/tailwind.config';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Config } from 'tailwindcss';
-import uiConfig from '@trycompai/ui/tailwind.config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

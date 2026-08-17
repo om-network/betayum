@@ -60,12 +60,7 @@ export function CancelOnboardingButton({
       >
         {cancelAction.isExecuting ? 'Canceling...' : 'Yes, cancel'}
       </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() => setConfirming(false)}
-      >
+      <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)}>
         No
       </Button>
     </div>

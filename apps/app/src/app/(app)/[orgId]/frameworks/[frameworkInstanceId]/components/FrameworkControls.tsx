@@ -277,9 +277,7 @@ function RequirementCell({
     );
   }
 
-  const label = requirements
-    .map((r) => r.identifier || r.name)
-    .join(', ');
+  const label = requirements.map((r) => r.identifier || r.name).join(', ');
 
   return (
     <span className="block max-w-[200px] truncate text-sm" title={label}>

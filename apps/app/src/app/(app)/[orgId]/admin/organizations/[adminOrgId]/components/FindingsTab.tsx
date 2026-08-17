@@ -1,8 +1,8 @@
 'use client';
 
 import { CreateFindingSheet } from '@/app/(app)/[orgId]/overview/components/CreateFindingSheet';
-import { api } from '@/lib/api-client';
 import type { CreateFindingData } from '@/hooks/use-findings-api';
+import { api } from '@/lib/api-client';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,8 +23,8 @@ import {
 import { Add } from '@trycompai/design-system/icons';
 import { useCallback, useEffect, useState, type MouseEvent } from 'react';
 import { toast } from 'sonner';
-import { EditFindingSheet } from './EditFindingSheet';
 import { AdminFindingRow, getTargetLabel, type AdminFinding } from './AdminFindingRow';
+import { EditFindingSheet } from './EditFindingSheet';
 
 export function FindingsTab({ orgId }: { orgId: string }) {
   const [findings, setFindings] = useState<AdminFinding[]>([]);
@@ -37,9 +37,7 @@ export function FindingsTab({ orgId }: { orgId: string }) {
 
   const fetchFindings = useCallback(async () => {
     setLoading(true);
-    const res = await api.get<AdminFinding[]>(
-      `/v1/admin/organizations/${orgId}/findings`,
-    );
+    const res = await api.get<AdminFinding[]>(`/v1/admin/organizations/${orgId}/findings`);
     if (res.data) setFindings(res.data);
     setLoading(false);
   }, [orgId]);
@@ -50,10 +48,9 @@ export function FindingsTab({ orgId }: { orgId: string }) {
 
   const handleStatusChange = async (findingId: string, newStatus: string) => {
     setUpdatingId(findingId);
-    const res = await api.patch(
-      `/v1/admin/organizations/${orgId}/findings/${findingId}`,
-      { status: newStatus },
-    );
+    const res = await api.patch(`/v1/admin/organizations/${orgId}/findings/${findingId}`, {
+      status: newStatus,
+    });
     if (!res.error) {
       setFindings((prev) =>
         prev.map((f) => (f.id === findingId ? { ...f, status: newStatus } : f)),
@@ -64,10 +61,7 @@ export function FindingsTab({ orgId }: { orgId: string }) {
 
   const adminCreateFn = useCallback(
     async (payload: CreateFindingData) => {
-      const res = await api.post(
-        `/v1/admin/organizations/${orgId}/findings`,
-        payload,
-      );
+      const res = await api.post(`/v1/admin/organizations/${orgId}/findings`, payload);
       if (res.error) throw new Error(res.error);
     },
     [orgId],
@@ -81,9 +75,7 @@ export function FindingsTab({ orgId }: { orgId: string }) {
     event.preventDefault();
     if (!deletingFinding || deleting) return;
     setDeleting(true);
-    const res = await api.delete(
-      `/v1/admin/organizations/${orgId}/findings/${deletingFinding.id}`,
-    );
+    const res = await api.delete(`/v1/admin/organizations/${orgId}/findings/${deletingFinding.id}`);
     if (res.error) {
       toast.error(res.error);
     } else {
@@ -178,9 +170,7 @@ export function FindingsTab({ orgId }: { orgId: string }) {
           if (!open) setEditingFinding(null);
         }}
         onSaved={(updated) => {
-          setFindings((prev) =>
-            prev.map((f) => (f.id === updated.id ? { ...f, ...updated } : f)),
-          );
+          setFindings((prev) => prev.map((f) => (f.id === updated.id ? { ...f, ...updated } : f)));
           setEditingFinding(null);
         }}
       />
@@ -195,8 +185,8 @@ export function FindingsTab({ orgId }: { orgId: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete finding?</AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes the finding and its activity history. This
-              action cannot be undone.
+              This permanently removes the finding and its activity history. This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

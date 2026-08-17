@@ -134,7 +134,9 @@ function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, str
  * @param options.headers - The request headers (must include cookies)
  * @returns The session data or null if not authenticated
  */
-async function getSession(options: { headers: ReadonlyHeaders | Headers }): Promise<Session | null> {
+async function getSession(options: {
+  headers: ReadonlyHeaders | Headers;
+}): Promise<Session | null> {
   try {
     const response = await fetch(`${API_URL}/api/auth/get-session`, {
       method: 'GET',
@@ -340,7 +342,9 @@ async function setActiveOrganization(options: {
       console.error('[auth] Failed to set active organization:', error);
     }
     if (options.asResponse) {
-      return new Response(JSON.stringify({ error: 'Failed to set active organization' }), { status: 500 });
+      return new Response(JSON.stringify({ error: 'Failed to set active organization' }), {
+        status: 500,
+      });
     }
     return null;
   }

@@ -12,6 +12,7 @@ import useSWR from 'swr';
 import { z } from 'zod';
 
 import { Button } from '@trycompai/ui/button';
+import { Checkbox } from '@trycompai/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,6 @@ import {
   FormMessage,
 } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
-import { Checkbox } from '@trycompai/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/ui/tabs';
 import { MultiRoleCombobox } from './MultiRoleCombobox';
 
@@ -93,13 +93,12 @@ export function InviteMembersModal({
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
 
   // Fetch custom roles from the API
-  const { data: customRolesData } = useSWR(
-    open ? `/v1/roles` : null,
-    async (endpoint: string) => {
-      const res = await api.get<{ customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }> }>(endpoint);
-      return res.data?.customRoles ?? [];
-    },
-  );
+  const { data: customRolesData } = useSWR(open ? `/v1/roles` : null, async (endpoint: string) => {
+    const res = await api.get<{
+      customRoles: Array<{ id: string; name: string; permissions: Record<string, string[]> }>;
+    }>(endpoint);
+    return res.data?.customRoles ?? [];
+  });
   const customRoles = customRolesData ?? [];
   const customRoleNames = customRoles.map((r) => r.name);
 
@@ -289,7 +288,8 @@ export function InviteMembersModal({
           }
 
           // Parse CSV rows into invite items, validating locally first
-          const csvInvites: Array<{ email: string; roles: string[]; sendPortalEmail: boolean }> = [];
+          const csvInvites: Array<{ email: string; roles: string[]; sendPortalEmail: boolean }> =
+            [];
           const clientErrors: { email: string; error: string }[] = [];
 
           for (const row of dataRows) {

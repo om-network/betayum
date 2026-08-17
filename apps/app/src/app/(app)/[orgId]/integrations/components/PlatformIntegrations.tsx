@@ -9,6 +9,17 @@ import {
 } from '@/hooks/use-integration-platform';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useVendors } from '@/hooks/use-vendors';
+import {
+  AiGenerate,
+  ArrowRight,
+  CheckmarkFilled,
+  Flash,
+  Plug,
+  Renew,
+  SettingsAdjust,
+  Warning,
+  WarningAlt,
+} from '@trycompai/design-system/icons';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@trycompai/ui/card';
@@ -21,17 +32,6 @@ import {
 } from '@trycompai/ui/dialog';
 import { Skeleton } from '@trycompai/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@trycompai/ui/tooltip';
-import {
-  AlertCircle,
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-  Plug,
-  Settings2,
-  Sparkles,
-  Zap,
-} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -193,7 +193,10 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
   const unifiedIntegrations = useMemo<UnifiedIntegration[]>(() => {
     const platformSortTier = (item: UnifiedIntegration & { type: 'platform' }): 0 | 1 | 2 => {
       const { provider, connection } = item;
-      const isComingSoon = provider.authType === 'oauth2' && provider.oauthConfigured === false;
+      const isComingSoon =
+        provider.id !== 'github' &&
+        provider.authType === 'oauth2' &&
+        provider.oauthConfigured === false;
       if (isComingSoon) return 2;
 
       const hasEstablishedConnection =
@@ -485,8 +488,12 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                     connection?.variables as Record<string, unknown> | null,
                   );
 
+                const githubBrowserLoginOnly =
+                  provider.id === 'github' && provider.oauthConfigured === false;
                 const isComingSoon =
-                  provider.authType === 'oauth2' && provider.oauthConfigured === false;
+                  provider.id !== 'github' &&
+                  provider.authType === 'oauth2' &&
+                  provider.oauthConfigured === false;
 
                 /** Primary CTA is Connect / Set up — card still opens details on click; hide redundant “View details” row */
                 const showConnectOrSetup =
@@ -548,12 +555,12 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                               <CardTitle className="text-base font-semibold flex items-center gap-2">
                                 {provider.name}
                                 {isConnected && !needsConfiguration && (
-                                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                                  <CheckmarkFilled className="h-4 w-4 text-primary" />
                                 )}
                                 {needsConfiguration && (
-                                  <AlertTriangle className="h-4 w-4 text-warning" />
+                                  <WarningAlt className="h-4 w-4 text-warning" />
                                 )}
-                                {hasError && <AlertCircle className="h-4 w-4 text-destructive" />}
+                                {hasError && <Warning className="h-4 w-4 text-destructive" />}
                               </CardTitle>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <p className="text-xs text-muted-foreground">{provider.category}</p>
@@ -574,7 +581,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                 handleOpenProviderSettings(provider);
                               }}
                             >
-                              <Settings2 className="h-4 w-4" />
+                              <SettingsAdjust className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
@@ -695,7 +702,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                 >
                                   {isConnecting ? (
                                     <>
-                                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                      <Renew className="h-3 w-3 mr-2 animate-spin" />
                                       Reconnecting...
                                     </>
                                   ) : (
@@ -704,6 +711,19 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                                 </Button>
                               )}
                             </div>
+                          ) : githubBrowserLoginOnly ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                router.push(`/${orgId}/integrations/${provider.id}`);
+                              }}
+                            >
+                              Set up VM login
+                            </Button>
                           ) : provider.authType === 'oauth2' &&
                             provider.oauthConfigured === false ? (
                             <Button size="sm" variant="outline" className="w-full" disabled>
@@ -722,7 +742,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                             >
                               {isConnecting ? (
                                 <>
-                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                  <Renew className="h-3 w-3 mr-2 animate-spin" />
                                   Connecting...
                                 </>
                               ) : provider.authType === 'oauth2' ? (
@@ -804,7 +824,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
             <div className="max-w-xl mx-auto space-y-6">
               <div className="space-y-3">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10">
-                  <Sparkles className="w-8 h-8 text-primary" />
+                  <AiGenerate className="w-8 h-8 text-primary" />
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold text-foreground">Just ask the agent</h3>
@@ -942,7 +962,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                     </p>
                     {selectedCustomIntegration.setupHint && (
                       <div className="flex items-start gap-2 pt-2 border-t border-border/50">
-                        <CheckCircle2 className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <CheckmarkFilled className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                         <p className="text-xs text-muted-foreground">
                           <span className="font-medium text-foreground">Typically requires:</span>{' '}
                           {selectedCustomIntegration.setupHint}
@@ -956,7 +976,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="w-4 h-4 text-primary" />
+                        <AiGenerate className="w-4 h-4 text-primary" />
                       </div>
                       <h4 className="text-base font-semibold text-foreground">Example Prompts</h4>
                     </div>
@@ -979,7 +999,7 @@ export function PlatformIntegrations({ className, taskTemplates }: PlatformInteg
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Zap className="w-4 h-4 text-primary" />
+                      <Flash className="w-4 h-4 text-primary" />
                     </div>
                     <h4 className="text-base font-semibold text-foreground">Relevant Tasks</h4>
                   </div>

@@ -8,6 +8,7 @@ import { CredentialVaultService } from '../services/credential-vault.service';
 import { OAuthCredentialsService } from '../services/oauth-credentials.service';
 import { AutoCheckRunnerService } from '../services/auto-check-runner.service';
 import { ProviderRepository } from '../repositories/provider.repository';
+import { ConnectionRepository } from '../repositories/connection.repository';
 
 jest.mock('../../auth/auth.server', () => ({
   auth: { api: { getSession: jest.fn() } },
@@ -49,6 +50,7 @@ describe('ConnectionsController', () => {
   const mockConnectionService = {
     getOrganizationConnections: jest.fn(),
     getConnection: jest.fn(),
+    getConnectionForOrg: jest.fn(),
     createConnection: jest.fn(),
     activateConnection: jest.fn(),
     pauseConnection: jest.fn(),
@@ -98,6 +100,7 @@ describe('ConnectionsController', () => {
           useValue: mockAutoCheckRunnerService,
         },
         { provide: ProviderRepository, useValue: mockProviderRepository },
+        { provide: ConnectionRepository, useValue: {} },
       ],
     })
       .overrideGuard(HybridAuthGuard)
@@ -110,6 +113,18 @@ describe('ConnectionsController', () => {
 
     jest.clearAllMocks();
     mockAutoCheckRunnerService.tryAutoRunChecks.mockResolvedValue(false);
+    mockConnectionService.getConnectionForOrg.mockImplementation(
+      async (id: string, organizationId: string) => {
+        const connection = await mockConnectionService.getConnection(id);
+        if (
+          connection?.organizationId &&
+          connection.organizationId !== organizationId
+        ) {
+          throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
+        }
+        return connection;
+      },
+    );
   });
 
   describe('listProviders', () => {
@@ -176,7 +191,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should throw NOT_FOUND when provider does not exist', async () => {
-      mockedGetManifest.mockReturnValue(undefined as never);
+      mockedGetManifest.mockReturnValue(undefined);
 
       await expect(controller.getProvider('nonexistent')).rejects.toThrow(
         HttpException,
@@ -234,9 +249,9 @@ describe('ConnectionsController', () => {
         updatedAt: new Date(),
       };
       mockConnectionService.getConnection.mockResolvedValue(connection);
-      mockedGetManifest.mockReturnValue(undefined as never);
+      mockedGetManifest.mockReturnValue(undefined);
 
-      const result = await controller.getConnection('conn_1');
+      const result = await controller.getConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.getConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -291,7 +306,7 @@ describe('ConnectionsController', () => {
     });
 
     it('should throw NOT_FOUND when provider does not exist', async () => {
-      mockedGetManifest.mockReturnValue(undefined as never);
+      mockedGetManifest.mockReturnValue(undefined);
 
       await expect(
         controller.createConnection('org_1', {
@@ -323,9 +338,9 @@ describe('ConnectionsController', () => {
         provider: undefined,
       });
 
-      await expect(controller.testConnection('conn_1')).rejects.toThrow(
-        HttpException,
-      );
+      await expect(
+        controller.testConnection('conn_1', 'org_1'),
+      ).rejects.toThrow(HttpException);
     });
 
     it('should throw BAD_REQUEST when no credentials found', async () => {
@@ -337,9 +352,9 @@ describe('ConnectionsController', () => {
         null,
       );
 
-      await expect(controller.testConnection('conn_1')).rejects.toThrow(
-        HttpException,
-      );
+      await expect(
+        controller.testConnection('conn_1', 'org_1'),
+      ).rejects.toThrow(HttpException);
     });
 
     it('should activate connection when no handler is defined', async () => {
@@ -356,7 +371,7 @@ describe('ConnectionsController', () => {
       } as never);
       mockConnectionService.activateConnection.mockResolvedValue(undefined);
 
-      const result = await controller.testConnection('conn_1');
+      const result = await controller.testConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.activateConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -372,7 +387,7 @@ describe('ConnectionsController', () => {
         status: 'paused',
       });
 
-      const result = await controller.pauseConnection('conn_1');
+      const result = await controller.pauseConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.pauseConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -388,7 +403,7 @@ describe('ConnectionsController', () => {
         status: 'active',
       });
 
-      const result = await controller.resumeConnection('conn_1');
+      const result = await controller.resumeConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.activateConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -404,7 +419,7 @@ describe('ConnectionsController', () => {
         status: 'disconnected',
       });
 
-      const result = await controller.disconnectConnection('conn_1');
+      const result = await controller.disconnectConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.disconnectConnection).toHaveBeenCalledWith(
         'conn_1',
@@ -417,7 +432,7 @@ describe('ConnectionsController', () => {
     it('should call service.deleteConnection', async () => {
       mockConnectionService.deleteConnection.mockResolvedValue(undefined);
 
-      const result = await controller.deleteConnection('conn_1');
+      const result = await controller.deleteConnection('conn_1', 'org_1');
 
       expect(mockConnectionService.deleteConnection).toHaveBeenCalledWith(
         'conn_1',

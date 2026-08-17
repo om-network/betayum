@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 
+import { StatusIndicator } from '@/components/status-indicator';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   Button,
   DataTableFilters,
@@ -19,9 +21,7 @@ import {
 import { ArrowDown, ArrowUp } from '@trycompai/design-system/icons';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ControlWithRelations } from '../data/queries';
-import { StatusIndicator } from '@/components/status-indicator';
 import { getControlStatus } from '../lib/utils';
-import { usePermissions } from '@/hooks/use-permissions';
 
 const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
@@ -133,7 +133,12 @@ export function ControlsTable({ promises }: ControlsTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>
-              <HStack gap="xs" align="center" style={{ cursor: 'pointer' }} onClick={handleSortByName}>
+              <HStack
+                gap="xs"
+                align="center"
+                style={{ cursor: 'pointer' }}
+                onClick={handleSortByName}
+              >
                 <span>Control Name</span>
                 <SortIcon direction={sortDirection} />
               </HStack>

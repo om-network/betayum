@@ -56,10 +56,7 @@ export function useTrustPortalSettings() {
 
   const updateFrameworkSettings = useCallback(
     async (data: FrameworkSettingsData) => {
-      const response = await api.put(
-        '/v1/trust-portal/settings/frameworks',
-        data,
-      );
+      const response = await api.put('/v1/trust-portal/settings/frameworks', data);
       if (response.error) throw new Error(response.error);
       return response.data;
     },
@@ -109,10 +106,7 @@ export function useTrustPortalSettings() {
 
   const updateVendorTrustSettings = useCallback(
     async (vendorId: string, data: VendorTrustSettingsData) => {
-      const response = await api.post(
-        `/v1/trust-portal/vendors/${vendorId}/trust-settings`,
-        data,
-      );
+      const response = await api.post(`/v1/trust-portal/vendors/${vendorId}/trust-settings`, data);
       if (response.error) throw new Error(response.error);
       return response.data;
     },
@@ -121,10 +115,7 @@ export function useTrustPortalSettings() {
 
   const updateAllowedDomains = useCallback(
     async (domains: string[]) => {
-      const response = await api.put(
-        '/v1/trust-portal/settings/allowed-domains',
-        { domains },
-      );
+      const response = await api.put('/v1/trust-portal/settings/allowed-domains', { domains });
       if (response.error) throw new Error(response.error);
       return response.data;
     },
@@ -133,10 +124,11 @@ export function useTrustPortalSettings() {
 
   const uploadFavicon = useCallback(
     async (fileName: string, fileType: string, fileData: string) => {
-      const response = await api.post<FaviconUploadResponse>(
-        '/v1/trust-portal/favicon',
-        { fileName, fileType, fileData },
-      );
+      const response = await api.post<FaviconUploadResponse>('/v1/trust-portal/favicon', {
+        fileName,
+        fileType,
+        fileData,
+      });
       if (response.error) throw new Error(response.error);
       return response.data;
     },

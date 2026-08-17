@@ -29,7 +29,9 @@ export interface RenderOverlayInput {
  * Failure-mode contract: throws on malformed input; callers should handle
  * and fall back to the raw image.
  */
-export async function renderOverlay(input: RenderOverlayInput): Promise<Buffer> {
+export async function renderOverlay(
+  input: RenderOverlayInput,
+): Promise<Buffer> {
   const { buffer, instruction, sourceUrl, capturedAt } = input;
 
   const sourceMeta = await sharp(buffer).metadata();
@@ -54,9 +56,7 @@ export async function renderOverlay(input: RenderOverlayInput): Promise<Buffer> 
     timestamp: timestampText,
   });
 
-  const bannerBuffer = await sharp(Buffer.from(bannerSvg))
-    .png()
-    .toBuffer();
+  const bannerBuffer = await sharp(Buffer.from(bannerSvg)).png().toBuffer();
 
   const extended = await sharp(buffer)
     .extend({

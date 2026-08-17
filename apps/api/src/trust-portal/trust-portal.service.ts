@@ -6,9 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  db,
-} from '@db';
+import { db } from '@db';
 import {
   DomainStatusResponseDto,
   DomainVerificationDto,
@@ -25,10 +23,7 @@ import {
   decideDomainVerification,
   deriveDnsVerified,
 } from './domain-verification';
-import {
-  getOrgAssetsBucketName,
-  objectStorage,
-} from '../app/object-storage';
+import { getOrgAssetsBucketName, objectStorage } from '../app/object-storage';
 import {
   DeleteTrustDocumentDto,
   TrustDocumentResponseDto,
@@ -1730,8 +1725,7 @@ export class TrustPortalService {
                 [...extractedTypes].some((t) => !currentTypes.has(t));
 
               if (isDifferent) {
-                updates.complianceBadges =
-                  extractedBadges as unknown as Prisma.InputJsonValue;
+                updates.complianceBadges = extractedBadges;
                 hasUpdates = true;
               }
             }

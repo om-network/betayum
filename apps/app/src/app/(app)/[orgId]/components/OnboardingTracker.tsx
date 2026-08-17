@@ -1,9 +1,9 @@
 'use client';
 
-import { Button } from '@trycompai/ui/button';
-import { Card, CardContent } from '@trycompai/ui/card';
 import type { Onboarding } from '@db';
 import { useRun } from '@trigger.dev/react-hooks';
+import { Button } from '@trycompai/ui/button';
+import { Card, CardContent } from '@trycompai/ui/card';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -63,10 +63,13 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
   const [isPoliciesExpanded, setIsPoliciesExpanded] = useState(false);
   const [isVendorsExpanded, setIsVendorsExpanded] = useState(false);
   const [isRisksExpanded, setIsRisksExpanded] = useState(false);
-  const spinnerStyle = useMemo(() => ({
-    animation: 'spin 1s linear infinite',
-    animationDelay: `${-(Date.now() % 1000)}ms`,
-  }), []);
+  const spinnerStyle = useMemo(
+    () => ({
+      animation: 'spin 1s linear infinite',
+      animationDelay: `${-(Date.now() % 1000)}ms`,
+    }),
+    [],
+  );
 
   const { run, error } = useRun(triggerJobId || '', {
     refreshInterval: 1000,
@@ -299,7 +302,11 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
 
     const map = new Map<
       string,
-      { vendor: { id: string; name: string }; rank: number; status: 'pending' | 'processing' | 'assessing' | 'completed' }
+      {
+        vendor: { id: string; name: string };
+        rank: number;
+        status: 'pending' | 'processing' | 'assessing' | 'completed';
+      }
     >();
 
     stepStatus.vendorsInfo.forEach((vendor) => {
@@ -531,11 +538,18 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 const isCurrent = currentStep?.key === step.key;
                 const isCompleted = stepStatus[step.key as keyof typeof stepStatus] === true;
 
-                const isProcessing = !isCompleted && (
-                  (step.key === 'policies' && Object.values(stepStatus.policiesStatus).some((s) => s === 'processing')) ||
-                  (step.key === 'vendorMitigations' && Object.values(stepStatus.vendorsStatus).some((s) => s === 'processing' || s === 'assessing')) ||
-                  (step.key === 'riskMitigations' && Object.values(stepStatus.risksStatus).some((s) => s === 'processing' || s === 'assessing'))
-                );
+                const isProcessing =
+                  !isCompleted &&
+                  ((step.key === 'policies' &&
+                    Object.values(stepStatus.policiesStatus).some((s) => s === 'processing')) ||
+                    (step.key === 'vendorMitigations' &&
+                      Object.values(stepStatus.vendorsStatus).some(
+                        (s) => s === 'processing' || s === 'assessing',
+                      )) ||
+                    (step.key === 'riskMitigations' &&
+                      Object.values(stepStatus.risksStatus).some(
+                        (s) => s === 'processing' || s === 'assessing',
+                      )));
 
                 const stepIcon = isCompleted ? (
                   <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
@@ -546,25 +560,44 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 );
 
                 const stepTextClass = `text-sm ${
-                  isCompleted ? 'text-primary' : isCurrent || isProcessing ? 'text-primary font-medium' : 'text-muted-foreground'
+                  isCompleted
+                    ? 'text-primary'
+                    : isCurrent || isProcessing
+                      ? 'text-primary font-medium'
+                      : 'text-muted-foreground'
                 }`;
 
                 // Expandable step with per-entity items
                 if (step.key === 'vendorMitigations' && stepStatus.vendorsTotal > 0) {
                   return (
                     <div key={step.key} className="flex flex-col gap-2">
-                      <button onClick={() => setIsVendorsExpanded(!isVendorsExpanded)} className="flex items-center gap-2 w-full text-left">
+                      <button
+                        onClick={() => setIsVendorsExpanded(!isVendorsExpanded)}
+                        className="flex items-center gap-2 w-full text-left"
+                      >
                         {stepIcon}
                         <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
                           <span className={stepTextClass}>{step.label}</span>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-muted-foreground text-sm">{uniqueVendorsCounts.completed}/{uniqueVendorsCounts.total}</span>
-                            {isVendorsExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                            <span className="text-muted-foreground text-sm">
+                              {uniqueVendorsCounts.completed}/{uniqueVendorsCounts.total}
+                            </span>
+                            {isVendorsExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
                           </div>
                         </div>
                       </button>
                       {isVendorsExpanded && uniqueVendorsInfo.length > 0 && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
                           <div className="flex flex-col gap-1.5 pl-7">
                             {uniqueVendorsInfo.map((vendor) => {
                               const status = stepStatus.vendorsStatus[vendor.id] || 'pending';
@@ -572,13 +605,35 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const active = status === 'processing' || status === 'assessing';
                               const content = (
                                 <>
-                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : active ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />}
-                                  <span className={`text-sm truncate pointer-events-none ${done || active ? 'text-primary' : 'text-muted-foreground'}`}>{vendor.name}</span>
+                                  {done ? (
+                                    <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
+                                  ) : active ? (
+                                    <Loader2
+                                      className="h-4 w-4 shrink-0 text-primary pointer-events-none"
+                                      style={spinnerStyle}
+                                    />
+                                  ) : (
+                                    <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
+                                  )}
+                                  <span
+                                    className={`text-sm truncate pointer-events-none ${done || active ? 'text-primary' : 'text-muted-foreground'}`}
+                                  >
+                                    {vendor.name}
+                                  </span>
                                 </>
                               );
                               return (
                                 <div key={vendor.id} className="flex items-center gap-2">
-                                  {done && orgId ? <Link href={`/${orgId}/vendors/${vendor.id}?tab=treatment-plan`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
+                                  {done && orgId ? (
+                                    <Link
+                                      href={`/${orgId}/vendors/${vendor.id}?tab=treatment-plan`}
+                                      className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer"
+                                    >
+                                      {content}
+                                    </Link>
+                                  ) : (
+                                    content
+                                  )}
                                 </div>
                               );
                             })}
@@ -592,18 +647,33 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 if (step.key === 'riskMitigations' && stepStatus.risksTotal > 0) {
                   return (
                     <div key={step.key} className="flex flex-col gap-2">
-                      <button onClick={() => setIsRisksExpanded(!isRisksExpanded)} className="flex items-center gap-2 w-full text-left">
+                      <button
+                        onClick={() => setIsRisksExpanded(!isRisksExpanded)}
+                        className="flex items-center gap-2 w-full text-left"
+                      >
                         {stepIcon}
                         <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
                           <span className={stepTextClass}>{step.label}</span>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-muted-foreground text-sm">{stepStatus.risksCompleted}/{stepStatus.risksTotal}</span>
-                            {isRisksExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                            <span className="text-muted-foreground text-sm">
+                              {stepStatus.risksCompleted}/{stepStatus.risksTotal}
+                            </span>
+                            {isRisksExpanded ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
                           </div>
                         </div>
                       </button>
                       {isRisksExpanded && stepStatus.risksInfo.length > 0 && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
                           <div className="flex flex-col gap-1.5 pl-7">
                             {stepStatus.risksInfo.map((risk) => {
                               const status = stepStatus.risksStatus[risk.id] || 'pending';
@@ -611,13 +681,35 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const active = status === 'processing' || status === 'assessing';
                               const content = (
                                 <>
-                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : active ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />}
-                                  <span className={`text-sm truncate pointer-events-none ${done || active ? 'text-primary' : 'text-muted-foreground'}`}>{risk.name}</span>
+                                  {done ? (
+                                    <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
+                                  ) : active ? (
+                                    <Loader2
+                                      className="h-4 w-4 shrink-0 text-primary pointer-events-none"
+                                      style={spinnerStyle}
+                                    />
+                                  ) : (
+                                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
+                                  )}
+                                  <span
+                                    className={`text-sm truncate pointer-events-none ${done || active ? 'text-primary' : 'text-muted-foreground'}`}
+                                  >
+                                    {risk.name}
+                                  </span>
                                 </>
                               );
                               return (
                                 <div key={risk.id} className="flex items-center gap-2">
-                                  {done && orgId ? <Link href={`/${orgId}/risk/${risk.id}?tab=treatment-plan`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
+                                  {done && orgId ? (
+                                    <Link
+                                      href={`/${orgId}/risk/${risk.id}?tab=treatment-plan`}
+                                      className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer"
+                                    >
+                                      {content}
+                                    </Link>
+                                  ) : (
+                                    content
+                                  )}
                                 </div>
                               );
                             })}
@@ -631,18 +723,34 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 if (step.key === 'policies' && stepStatus.policiesTotal > 0) {
                   return (
                     <div key={step.key} className="flex flex-col gap-2">
-                      <button onClick={() => setIsPoliciesExpanded(!isPoliciesExpanded)} className="flex items-center gap-2 w-full text-left">
+                      <button
+                        onClick={() => setIsPoliciesExpanded(!isPoliciesExpanded)}
+                        className="flex items-center gap-2 w-full text-left"
+                      >
                         {stepIcon}
                         <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
                           <span className={stepTextClass}>{step.label}</span>
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-muted-foreground text-sm">{stepStatus.policiesCompleted}/{stepStatus.policiesTotal}</span>
-                            {!isCompleted && (isPoliciesExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />)}
+                            <span className="text-muted-foreground text-sm">
+                              {stepStatus.policiesCompleted}/{stepStatus.policiesTotal}
+                            </span>
+                            {!isCompleted &&
+                              (isPoliciesExpanded ? (
+                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              ))}
                           </div>
                         </div>
                       </button>
                       {isPoliciesExpanded && stepStatus.policiesInfo.length > 0 && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
                           <div className="flex flex-col gap-1.5 pl-7">
                             {stepStatus.policiesInfo.map((policy) => {
                               const status = stepStatus.policiesStatus[policy.id] || 'queued';
@@ -651,13 +759,37 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                               const queued = status === 'queued' || status === 'pending';
                               const content = (
                                 <>
-                                  {done ? <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" /> : processing ? <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={spinnerStyle} /> : queued ? <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" /> : <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />}
-                                  <span className={`text-sm truncate pointer-events-none ${done || processing ? 'text-primary' : 'text-muted-foreground'}`}>{policy.name}</span>
+                                  {done ? (
+                                    <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
+                                  ) : processing ? (
+                                    <Loader2
+                                      className="h-4 w-4 shrink-0 text-primary pointer-events-none"
+                                      style={spinnerStyle}
+                                    />
+                                  ) : queued ? (
+                                    <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
+                                  ) : (
+                                    <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
+                                  )}
+                                  <span
+                                    className={`text-sm truncate pointer-events-none ${done || processing ? 'text-primary' : 'text-muted-foreground'}`}
+                                  >
+                                    {policy.name}
+                                  </span>
                                 </>
                               );
                               return (
                                 <div key={policy.id} className="flex items-center gap-2">
-                                  {done && orgId ? <Link href={`/${orgId}/policies/${policy.id}`} className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer">{content}</Link> : content}
+                                  {done && orgId ? (
+                                    <Link
+                                      href={`/${orgId}/policies/${policy.id}`}
+                                      className="flex items-center gap-2 flex-1 min-w-0 hover:underline transition-all cursor-pointer"
+                                    >
+                                      {content}
+                                    </Link>
+                                  ) : (
+                                    content
+                                  )}
                                 </div>
                               );
                             })}
@@ -669,18 +801,26 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                 }
 
                 // Simple step row (creation, linkage)
-                const total = step.key === 'vendors' ? uniqueVendorsCounts.total
-                  : step.key === 'risk' ? stepStatus.risksTotal
-                  : null;
-                const created = step.key === 'vendors' && stepStatus.vendors ? uniqueVendorsCounts.total
-                  : step.key === 'risk' && stepStatus.risk ? stepStatus.risksTotal
-                  : 0;
+                const total =
+                  step.key === 'vendors'
+                    ? uniqueVendorsCounts.total
+                    : step.key === 'risk'
+                      ? stepStatus.risksTotal
+                      : null;
+                const created =
+                  step.key === 'vendors' && stepStatus.vendors
+                    ? uniqueVendorsCounts.total
+                    : step.key === 'risk' && stepStatus.risk
+                      ? stepStatus.risksTotal
+                      : 0;
                 return (
                   <div key={step.key} className="flex items-center gap-2">
                     {stepIcon}
                     <span className={`${stepTextClass} flex-1`}>{step.label}</span>
                     {total !== null && total > 0 && (
-                      <span className="text-muted-foreground text-sm">{created}/{total}</span>
+                      <span className="text-muted-foreground text-sm">
+                        {created}/{total}
+                      </span>
                     )}
                   </div>
                 );
@@ -717,9 +857,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
 
             <div className="flex-1 flex flex-col justify-center">
               <div className="flex flex-col gap-2">
-                <p className="text-primary text-base font-medium">
-                  Your organization is ready!
-                </p>
+                <p className="text-primary text-base font-medium">Your organization is ready!</p>
                 <p className="text-muted-foreground text-sm">
                   All onboarding steps have been completed successfully.
                 </p>

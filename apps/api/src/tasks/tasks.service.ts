@@ -119,6 +119,11 @@ export class TasksService {
                   id: true,
                   isEnabled: true,
                   name: true,
+                  setupStatus: true,
+                  setupTask: true,
+                  assistantRun: {
+                    select: { status: true },
+                  },
                   runs: {
                     orderBy: { createdAt: 'desc' as const },
                     take: 3,
@@ -312,6 +317,27 @@ export class TasksService {
     });
 
     return runs;
+  }
+
+  async getAutomationRunById(
+    organizationId: string,
+    taskId: string,
+    runId: string,
+  ) {
+    await this.verifyTaskAccess(organizationId, taskId);
+    const run = await db.evidenceAutomationRun.findFirst({
+      where: { id: runId, evidenceAutomation: { taskId } },
+      select: {
+        id: true,
+        status: true,
+        success: true,
+        output: true,
+        error: true,
+        createdAt: true,
+        completedAt: true,
+      },
+    });
+    return { run };
   }
 
   /**
@@ -730,8 +756,7 @@ export class TasksService {
               newValue: updateData.status,
               ...(updateData.status === TaskStatus.not_relevant &&
                 updateData.notRelevantJustification && {
-                  notRelevantJustification:
-                    updateData.notRelevantJustification,
+                  notRelevantJustification: updateData.notRelevantJustification,
                 }),
             },
           },

@@ -2,9 +2,9 @@
 
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { usePermissions } from '@/hooks/use-permissions';
-import { Add, Download } from '@trycompai/design-system/icons';
 import type { Policy } from '@db';
 import { Button, HStack } from '@trycompai/design-system';
+import { Add, Download } from '@trycompai/design-system/icons';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { PolicyDownloadSheet } from './PolicyDownloadSheet';
@@ -32,11 +32,7 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
     <>
       <HStack gap="sm" align="center">
         {policies.length > 0 && (
-          <Button
-            variant="outline"
-            iconLeft={<Download />}
-            onClick={handleOpenDownloadSheet}
-          >
+          <Button variant="outline" iconLeft={<Download />} onClick={handleOpenDownloadSheet}>
             Download All
           </Button>
         )}

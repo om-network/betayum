@@ -27,6 +27,7 @@ lib/vector/
 
 2. **Add Environment Variables**
    Add to your `.env` file:
+
    ```
    UPSTASH_VECTOR_REST_URL=your_vector_rest_url
    UPSTASH_VECTOR_REST_TOKEN=your_vector_rest_token
@@ -46,9 +47,9 @@ lib/vector/
 import { findSimilarContent } from '@/lib/vector';
 
 const results = await findSimilarContent(
-  "How do we handle encryption?",
+  'How do we handle encryption?',
   organizationId,
-  5 // limit
+  5, // limit
 );
 
 // Results contain:
@@ -66,17 +67,13 @@ const results = await findSimilarContent(
 ```typescript
 import { upsertEmbedding } from '@/lib/vector';
 
-await upsertEmbedding(
-  'policy_pol123_chunk0',
-  'Text content to embed...',
-  {
-    organizationId: 'org_123',
-    sourceType: 'policy',
-    sourceId: 'pol_123',
-    content: 'Text content...',
-    policyName: 'Security Policy',
-  }
-);
+await upsertEmbedding('policy_pol123_chunk0', 'Text content to embed...', {
+  organizationId: 'org_123',
+  sourceType: 'policy',
+  sourceId: 'pol_123',
+  content: 'Text content...',
+  policyName: 'Security Policy',
+});
 ```
 
 ### Utilities
@@ -94,18 +91,21 @@ const text = extractTextFromPolicy(policy);
 ## Files
 
 ### Core (`core/`)
+
 - `client.ts` - Upstash Vector client initialization
 - `generate-embedding.ts` - OpenAI embedding generation
 - `find-similar.ts` - Semantic search function
 - `upsert-embedding.ts` - Embedding storage
 
 ### Utils (`utils/`)
+
 - `chunk-text.ts` - Text chunking utility
 - `extract-policy-text.ts` - TipTap JSON to text conversion
 
 ## Next Steps
 
 After setting up vector search, you can:
+
 1. Use `findSimilarContent()` in your auto-answer functionality
 2. Create scheduled jobs to keep embeddings up-to-date
 3. Add document hub support for additional context sources

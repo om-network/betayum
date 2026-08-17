@@ -1,12 +1,12 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
   NO_PERMISSIONS,
   mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -29,8 +29,9 @@ const {
   mockUseVendors: vi.fn(),
 }));
 
-const { mockRouterPush, mockUseSearchParams } = vi.hoisted(() => ({
+const { mockRouterPush, mockRouterReplace, mockUseSearchParams } = vi.hoisted(() => ({
   mockRouterPush: vi.fn(),
+  mockRouterReplace: vi.fn(),
   mockUseSearchParams: vi.fn(() => new URLSearchParams()),
 }));
 
@@ -91,7 +92,7 @@ vi.mock('next/link', () => ({
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
   useParams: () => ({ orgId: 'org-1' }),
-  useRouter: () => ({ push: mockRouterPush }),
+  useRouter: () => ({ push: mockRouterPush, replace: mockRouterReplace }),
   useSearchParams: mockUseSearchParams,
 }));
 
@@ -109,7 +110,11 @@ vi.mock('@trycompai/ui/button', () => ({
 }));
 
 vi.mock('@trycompai/ui/card', () => ({
-  Card: ({ children, ...props }: any) => <div data-testid="card" {...props}>{children}</div>,
+  Card: ({ children, ...props }: any) => (
+    <div data-testid="card" {...props}>
+      {children}
+    </div>
+  ),
   CardContent: ({ children }: any) => <div>{children}</div>,
   CardDescription: ({ children }: any) => <p>{children}</p>,
   CardHeader: ({ children }: any) => <div>{children}</div>,
@@ -117,7 +122,7 @@ vi.mock('@trycompai/ui/card', () => ({
 }));
 
 vi.mock('@trycompai/ui/dialog', () => ({
-  Dialog: ({ children, open }: any) => open ? <div data-testid="dialog">{children}</div> : null,
+  Dialog: ({ children, open }: any) => (open ? <div data-testid="dialog">{children}</div> : null),
   DialogContent: ({ children }: any) => <div>{children}</div>,
   DialogDescription: ({ children }: any) => <p>{children}</p>,
   DialogHeader: ({ children }: any) => <div>{children}</div>,
@@ -150,9 +155,7 @@ import { toast } from 'sonner';
 import { PlatformIntegrations } from './PlatformIntegrations';
 
 const defaultProps = {
-  taskTemplates: [
-    { id: 'tmpl-1', taskId: 'task-1', name: 'Test Task', description: 'desc' },
-  ],
+  taskTemplates: [{ id: 'tmpl-1', taskId: 'task-1', name: 'Test Task', description: 'desc' }],
 };
 
 describe('PlatformIntegrations', () => {
@@ -194,6 +197,34 @@ describe('PlatformIntegrations', () => {
   });
 
   describe('Permission gating', () => {
+    it('keeps GitHub open for VM login when OAuth credentials are unavailable', () => {
+      setMockPermissions(ADMIN_PERMISSIONS);
+      mockUseIntegrationProviders.mockReturnValue({
+        providers: [
+          {
+            id: 'github',
+            name: 'GitHub',
+            description: 'Code hosting',
+            category: 'Development',
+            logoUrl: '/github.png',
+            authType: 'oauth2',
+            oauthConfigured: false,
+            isActive: true,
+            requiredVariables: [],
+            mappedTasks: [],
+            supportsMultipleConnections: false,
+          },
+        ],
+        isLoading: false,
+      });
+
+      render(<PlatformIntegrations {...defaultProps} />);
+
+      screen.getByRole('button', { name: 'Set up VM login' }).click();
+      expect(mockRouterPush).toHaveBeenCalledWith('/org-1/integrations/github');
+      expect(screen.queryByText('Coming Soon')).not.toBeInTheDocument();
+    });
+
     it('renders Connect button for platform providers when user has integration:create permission', () => {
       setMockPermissions(ADMIN_PERMISSIONS);
 
@@ -335,9 +366,7 @@ describe('PlatformIntegrations', () => {
 
       render(<PlatformIntegrations {...defaultProps} />);
 
-      expect(toast.success).toHaveBeenCalledWith(
-        'Google Workspace connected successfully!',
-      );
+      expect(toast.success).toHaveBeenCalledWith('Google Workspace connected successfully!');
       expect(toast.info).toHaveBeenCalledWith(
         'Import your Google Workspace users',
         expect.objectContaining({
@@ -396,15 +425,13 @@ describe('PlatformIntegrations', () => {
 
       render(<PlatformIntegrations {...defaultProps} />);
 
-      expect(toast.success).toHaveBeenCalledWith(
-        'GitHub connected successfully!',
-      );
+      expect(toast.success).toHaveBeenCalledWith('GitHub connected successfully!');
       expect(toast.info).not.toHaveBeenCalled();
     });
   });
 
   describe('Vendor-prioritized ordering', () => {
-    it('shows integrations from vendor list before non-vendor integrations', () => {
+    it('shows connected integrations before vendor-listed integrations', () => {
       mockUseIntegrationProviders.mockReturnValue({
         providers: [
           {
@@ -471,8 +498,8 @@ describe('PlatformIntegrations', () => {
         .map((heading) => heading.textContent?.trim())
         .filter(Boolean);
 
-      expect(integrationTitles[0]).toBe('Slack');
-      expect(integrationTitles[1]).toBe('GitHub');
+      expect(integrationTitles[0]).toBe('GitHub');
+      expect(integrationTitles[1]).toBe('Slack');
     });
   });
 });

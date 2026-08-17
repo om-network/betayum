@@ -1,3 +1,4 @@
+import { canAccessRoute, type UserPermissions } from '@/lib/permissions';
 import {
   Catalog,
   Chemistry,
@@ -14,7 +15,6 @@ import {
   TaskComplete,
   Warning,
 } from '@carbon/icons-react';
-import { canAccessRoute, type UserPermissions } from '@/lib/permissions';
 import type { CommandSearchGroup } from '@trycompai/design-system';
 import type { ReactNode } from 'react';
 

@@ -25,9 +25,7 @@ export interface SignedUrlResult {
  */
 export function validateS3Config(): void {
   if (!getKnowledgeBaseBucketName()) {
-    throw new Error(
-      'Knowledge base bucket is not configured.',
-    );
+    throw new Error('Knowledge base bucket is not configured.');
   }
 }
 

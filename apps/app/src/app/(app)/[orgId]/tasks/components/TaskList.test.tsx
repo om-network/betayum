@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Track automation status filter state for assertions
@@ -82,13 +81,7 @@ vi.mock('@trycompai/design-system', () => ({
     </div>
   ),
   SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SelectItem: ({
-    children,
-    value,
-  }: {
-    children: React.ReactNode;
-    value: string;
-  }) => (
+  SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => (
     <option value={value} data-testid={`select-item-${value}`}>
       {children}
     </option>
@@ -100,12 +93,9 @@ vi.mock('@trycompai/design-system', () => ({
     size?: string;
     disabled?: boolean;
   }) => <div>{children}</div>,
-  SelectValue: ({
-    children,
-  }: {
-    children: React.ReactNode;
-    placeholder?: string;
-  }) => <div>{children}</div>,
+  SelectValue: ({ children }: { children: React.ReactNode; placeholder?: string }) => (
+    <div>{children}</div>
+  ),
   Separator: () => <hr />,
   Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Tabs: ({

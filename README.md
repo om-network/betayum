@@ -1,7 +1,7 @@
 <!-- PROJECT LOGO -->
 <p align="center">
   <a href="https://github.com/trycompai/comp">
-   <img src="https://cdn.betayum.com/logo.png" alt="Logo" width="10%">
+   <img src="./logos/Betayum_Main_Colors.png" alt="Betayum" width="25%">
   </a>
 
   <h3 align="center">Betayum</h3>

@@ -1,6 +1,5 @@
 'use client';
 
-import { useMediaQuery } from '@trycompai/ui/hooks';
 import type { Risk } from '@db';
 import {
   Drawer,
@@ -14,6 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@trycompai/design-system';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { useCallback } from 'react';
 
 import { UpdateRiskForm } from '../forms/risks/update-risk-form';

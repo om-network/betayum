@@ -1,5 +1,13 @@
 'use client';
 
+import {
+  type ColumnDef,
+  type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { cn } from '@trycompai/ui/cn';
@@ -13,14 +21,6 @@ import {
 } from '@trycompai/ui/dropdown-menu';
 import { Input } from '@trycompai/ui/input';
 import { Table, TableBody, TableCell, TableRow } from '@trycompai/ui/table';
-import {
-  type ColumnDef,
-  type SortingState,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
 import { Filter, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { DataTableHeader } from './DataTableHeader';

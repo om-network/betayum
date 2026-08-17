@@ -166,7 +166,10 @@ export class PoliciesService {
       organizationId,
       timelinesService: this.timelinesService,
     }).catch((err) => {
-      this.logger.warn('timeline auto-complete check failed after publish-all', err);
+      this.logger.warn(
+        'timeline auto-complete check failed after publish-all',
+        err,
+      );
     });
 
     return {
@@ -637,9 +640,10 @@ export class PoliciesService {
       sourceVersion = requestedVersion;
     }
 
-    const contentForVersion = (sourceVersion
-      ? (sourceVersion.content as Prisma.InputJsonValue[])
-      : (policy.content as Prisma.InputJsonValue[])) ?? [];
+    const contentForVersion =
+      (sourceVersion
+        ? (sourceVersion.content as Prisma.InputJsonValue[])
+        : (policy.content as Prisma.InputJsonValue[])) ?? [];
     const sourcePdfUrl = sourceVersion?.pdfUrl ?? policy.pdfUrl;
 
     // S3 copy is done AFTER the transaction to prevent orphaned files on retry
@@ -924,8 +928,8 @@ export class PoliciesService {
           organizationId,
           timelinesService: this.timelinesService,
         }).catch((err) => {
-        this.logger.warn('timeline auto-complete check failed', err);
-      });
+          this.logger.warn('timeline auto-complete check failed', err);
+        });
 
         return result;
       } catch (error) {
@@ -988,8 +992,8 @@ export class PoliciesService {
       organizationId,
       timelinesService: this.timelinesService,
     }).catch((err) => {
-        this.logger.warn('timeline auto-complete check failed', err);
-      });
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     return {
       versionId: version.id,
@@ -1148,8 +1152,8 @@ export class PoliciesService {
       organizationId,
       timelinesService: this.timelinesService,
     }).catch((err) => {
-        this.logger.warn('timeline auto-complete check failed', err);
-      });
+      this.logger.warn('timeline auto-complete check failed', err);
+    });
 
     return { versionId: version.id, version: version.version };
   }
@@ -1268,10 +1272,7 @@ export class PoliciesService {
   /**
    * Download all published policies as a single PDF bundle (no watermark)
    */
-  async downloadAllPoliciesPdf(
-    organizationId: string,
-    policyIds?: string[],
-  ) {
+  async downloadAllPoliciesPdf(organizationId: string, policyIds?: string[]) {
     // Get organization info
     const organization = await db.organization.findUnique({
       where: { id: organizationId },
@@ -1288,9 +1289,7 @@ export class PoliciesService {
         organizationId,
         isArchived: false,
         archivedAt: null,
-        ...(policyIds && policyIds.length > 0
-          ? { id: { in: policyIds } }
-          : {}),
+        ...(policyIds && policyIds.length > 0 ? { id: { in: policyIds } } : {}),
       },
       select: {
         id: true,

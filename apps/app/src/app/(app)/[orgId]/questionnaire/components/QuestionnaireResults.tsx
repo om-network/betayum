@@ -2,10 +2,10 @@
 
 import { ScrollArea } from '@trycompai/ui/scroll-area';
 import { Search } from 'lucide-react';
-import type { QuestionAnswer } from './types';
 import { QuestionnaireResultsCards } from './QuestionnaireResultsCards';
 import { QuestionnaireResultsHeader } from './QuestionnaireResultsHeader';
 import { QuestionnaireResultsTable } from './QuestionnaireResultsTable';
+import type { QuestionAnswer } from './types';
 
 interface QuestionnaireResultsProps {
   orgId: string;
@@ -111,18 +111,18 @@ export function QuestionnaireResults({
                         editingAnswer={editingAnswer}
                         onEditingAnswerChange={onEditingAnswerChange}
                         expandedSources={expandedSources}
-                      questionStatuses={questionStatuses}
-                      answeringQuestionIndex={answeringQuestionIndex}
-                      answerQueue={answerQueue}
-                      isAutoAnswering={isAutoAnswering}
-                      hasClickedAutoAnswer={hasClickedAutoAnswer}
-                      isSaving={isSaving}
-                      savingIndex={savingIndex}
-                      onEditAnswer={onEditAnswer}
-                      onSaveAnswer={onSaveAnswer}
-                      onCancelEdit={onCancelEdit}
-                      onAnswerSingleQuestion={onAnswerSingleQuestion}
-                      onToggleSource={onToggleSource}
+                        questionStatuses={questionStatuses}
+                        answeringQuestionIndex={answeringQuestionIndex}
+                        answerQueue={answerQueue}
+                        isAutoAnswering={isAutoAnswering}
+                        hasClickedAutoAnswer={hasClickedAutoAnswer}
+                        isSaving={isSaving}
+                        savingIndex={savingIndex}
+                        onEditAnswer={onEditAnswer}
+                        onSaveAnswer={onSaveAnswer}
+                        onCancelEdit={onCancelEdit}
+                        onAnswerSingleQuestion={onAnswerSingleQuestion}
+                        onToggleSource={onToggleSource}
                       />
                     </div>
 
@@ -163,4 +163,3 @@ export function QuestionnaireResults({
     </div>
   );
 }
-

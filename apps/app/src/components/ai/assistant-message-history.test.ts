@@ -43,7 +43,10 @@ describe('assistant message history', () => {
           {
             id: 'msg-user',
             role: 'user',
-            parts: [{ type: 'text', text: 'First line' }, { type: 'text', text: 'Second line' }],
+            parts: [
+              { type: 'text', text: 'First line' },
+              { type: 'text', text: 'Second line' },
+            ],
           },
           {
             id: 'msg-empty',

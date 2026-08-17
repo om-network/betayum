@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -97,16 +97,12 @@ describe('PolicyAlerts', () => {
     });
 
     it('renders nothing when policy is null', () => {
-      const { container } = render(
-        <PolicyAlerts policy={null} isPendingApproval={false} />,
-      );
+      const { container } = render(<PolicyAlerts policy={null} isPendingApproval={false} />);
       expect(container.innerHTML).toBe('');
     });
 
     it('renders nothing when not pending and not archived', () => {
-      const { container } = render(
-        <PolicyAlerts policy={basePolicy} isPendingApproval={false} />,
-      );
+      const { container } = render(<PolicyAlerts policy={basePolicy} isPendingApproval={false} />);
       expect(container.innerHTML).toBe('');
     });
 
@@ -115,13 +111,9 @@ describe('PolicyAlerts', () => {
         ...basePolicy,
         isArchived: true,
       };
-      render(
-        <PolicyAlerts policy={archivedPolicy} isPendingApproval={false} />,
-      );
+      render(<PolicyAlerts policy={archivedPolicy} isPendingApproval={false} />);
       expect(screen.getByText('This policy is archived')).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: /restore/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /restore/i })).toBeInTheDocument();
     });
 
     it('renders pending approval notice for non-approver', () => {
@@ -134,9 +126,7 @@ describe('PolicyAlerts', () => {
           user: { name: 'Other User', email: 'other@test.com' },
         },
       };
-      render(
-        <PolicyAlerts policy={pendingPolicy} isPendingApproval={true} />,
-      );
+      render(<PolicyAlerts policy={pendingPolicy} isPendingApproval={true} />);
       expect(screen.getByText('Pending approval')).toBeInTheDocument();
     });
 
@@ -150,9 +140,7 @@ describe('PolicyAlerts', () => {
           user: { name: 'Other User', email: 'other@test.com' },
         },
       };
-      const { container } = render(
-        <PolicyAlerts policy={stalePolicy} isPendingApproval={true} />,
-      );
+      const { container } = render(<PolicyAlerts policy={stalePolicy} isPendingApproval={true} />);
       expect(container.innerHTML).toBe('');
     });
   });
@@ -167,13 +155,9 @@ describe('PolicyAlerts', () => {
         ...basePolicy,
         isArchived: true,
       };
-      render(
-        <PolicyAlerts policy={archivedPolicy} isPendingApproval={false} />,
-      );
+      render(<PolicyAlerts policy={archivedPolicy} isPendingApproval={false} />);
       expect(screen.getByText('This policy is archived')).toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', { name: /restore/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /restore/i })).not.toBeInTheDocument();
     });
 
     it('still renders pending approval notice for non-approver', () => {
@@ -186,9 +170,7 @@ describe('PolicyAlerts', () => {
           user: { name: 'Other User', email: 'other@test.com' },
         },
       };
-      render(
-        <PolicyAlerts policy={pendingPolicy} isPendingApproval={true} />,
-      );
+      render(<PolicyAlerts policy={pendingPolicy} isPendingApproval={true} />);
       expect(screen.getByText('Pending approval')).toBeInTheDocument();
     });
   });

@@ -603,8 +603,7 @@ export class RemediationService {
           plan: plannedFix,
           validationErrors: fixErrors,
           finding: findingCtx,
-          syntheticErrorPrefix:
-            'Pre-execution validator rejected this step:',
+          syntheticErrorPrefix: 'Pre-execution validator rejected this step:',
         });
         fixErrors = validatePlanSteps(plannedFix.fixSteps);
       }
@@ -653,7 +652,9 @@ export class RemediationService {
         // payload). For all OTHER unrecoverable execution errors fall
         // back to manual steps so the customer sees real instructions
         // rather than the raw AWS message.
-        if (parseAwsPermissionError(fixResult.error.message).isPermissionError) {
+        if (
+          parseAwsPermissionError(fixResult.error.message).isPermissionError
+        ) {
           throw new Error(fixResult.error.message);
         }
         return await this.respondWithManualSteps({

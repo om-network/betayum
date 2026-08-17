@@ -119,7 +119,7 @@ describe('GET /api/people/agent-devices', () => {
 
   it('returns hasActiveAgentSession=true for devices with an unexpired linked session, false otherwise', async () => {
     const future = new Date(FIXED_NOW.getTime() + 60 * 60 * 1000); // 1 hour ahead
-    const past = new Date(FIXED_NOW.getTime() - 60 * 60 * 1000);   // 1 hour ago
+    const past = new Date(FIXED_NOW.getTime() - 60 * 60 * 1000); // 1 hour ago
 
     mockedFindMany.mockResolvedValue([
       deviceRow({ id: 'dev_active', agentSession: { expiresAt: future } }),
@@ -129,9 +129,7 @@ describe('GET /api/people/agent-devices', () => {
 
     const res = await GET();
     const body = await res.json();
-    const byId = Object.fromEntries(
-      body.data.map((d: { id: string }) => [d.id, d]),
-    );
+    const byId = Object.fromEntries(body.data.map((d: { id: string }) => [d.id, d]));
 
     expect(byId['dev_active'].hasActiveAgentSession).toBe(true);
     expect(byId['dev_none'].hasActiveAgentSession).toBe(false);

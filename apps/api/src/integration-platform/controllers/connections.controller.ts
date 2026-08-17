@@ -604,9 +604,7 @@ export class ConnectionsController {
     const roleAssumerArn = getAwsRoleAssumerArn(partition);
     if (!roleAssumerArn) {
       const envName = getAwsRoleAssumerEnvName(partition);
-      this.logger.error(
-        `Missing ${envName} environment variable`,
-      );
+      this.logger.error(`Missing ${envName} environment variable`);
       return {
         success: false,
         message: 'Server configuration error - contact support',
@@ -693,7 +691,10 @@ export class ConnectionsController {
       return {
         success: true,
         message,
-        details: { account: identity.Account ?? parsedRoleArn.accountId, regions },
+        details: {
+          account: identity.Account ?? parsedRoleArn.accountId,
+          regions,
+        },
       };
     } catch (err) {
       const errorMessage =
@@ -766,9 +767,7 @@ export class ConnectionsController {
     }
 
     try {
-      const isValid = await manifest.handler.testConnection(
-        credentials as IntegrationCredentials,
-      );
+      const isValid = await manifest.handler.testConnection(credentials);
 
       if (isValid) {
         await this.connectionService.activateConnection(connection.id);
@@ -1098,9 +1097,7 @@ export class ConnectionsController {
 
     const raw = connection.variables;
     const existingVariables: Record<string, unknown> =
-      raw && typeof raw === 'object' && !Array.isArray(raw)
-        ? (raw as Record<string, unknown>)
-        : {};
+      raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
 
     // Get ALL possible services from the manifest
     const provider = await db.integrationProvider.findUnique({

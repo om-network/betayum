@@ -118,7 +118,7 @@ describe('EvidenceExportController', () => {
       'tsk_1',
       'true',
       req as unknown as import('express').Request,
-      res as unknown as import('express').Response,
+      res,
     );
 
     expect(tasks.verifyTaskAccess).toHaveBeenCalledWith('org_1', 'tsk_1');
@@ -152,7 +152,7 @@ describe('EvidenceExportController', () => {
       'tsk_1',
       undefined as unknown as string,
       req as unknown as import('express').Request,
-      res as unknown as import('express').Response,
+      res,
     );
 
     expect(service.streamTaskEvidenceZip).toHaveBeenCalledWith(
@@ -176,7 +176,7 @@ describe('EvidenceExportController', () => {
       'tsk_1',
       'false',
       req as unknown as import('express').Request,
-      res as unknown as import('express').Response,
+      res,
     );
 
     expect(archive.abort).not.toHaveBeenCalled();
@@ -205,7 +205,7 @@ describe('EvidenceExportController', () => {
       'tsk_1',
       'false',
       req as unknown as import('express').Request,
-      res as unknown as import('express').Response,
+      res,
     );
 
     // Successful flow: archiver finishes, writableFinished becomes true before
@@ -258,7 +258,7 @@ describe('AuditorEvidenceExportController', () => {
       'org_1',
       'true',
       req as unknown as import('express').Request,
-      res as unknown as import('express').Response,
+      res,
     );
 
     expect(service.streamOrganizationEvidenceZip).toHaveBeenCalledWith(

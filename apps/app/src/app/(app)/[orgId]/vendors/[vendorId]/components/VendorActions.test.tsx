@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  setMockPermissions,
-  mockHasPermission,
   ADMIN_PERMISSIONS,
   AUDITOR_PERMISSIONS,
+  mockHasPermission,
+  setMockPermissions,
 } from '@/test-utils/mocks/permissions';
+import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock usePermissions
 vi.mock('@/hooks/use-permissions', () => ({
@@ -43,9 +43,7 @@ vi.mock('sonner', () => ({
 vi.mock('@trycompai/design-system', () => ({
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
   DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
-  DropdownMenuItem: ({ children, ...props }: any) => (
-    <button {...props}>{children}</button>
-  ),
+  DropdownMenuItem: ({ children, ...props }: any) => <button {...props}>{children}</button>,
   DropdownMenuTrigger: ({ children, ...props }: any) => (
     <button data-testid="vendor-actions-trigger" {...props}>
       {children}
@@ -82,10 +80,7 @@ describe('VendorActions', () => {
     setMockPermissions({});
 
     const { container } = render(
-      <VendorActions
-        vendorId="vendor-1"
-        onOpenEditSheet={mockOnOpenEditSheet}
-      />,
+      <VendorActions vendorId="vendor-1" onOpenEditSheet={mockOnOpenEditSheet} />,
     );
 
     expect(container.innerHTML).toBe('');
@@ -95,10 +90,7 @@ describe('VendorActions', () => {
     setMockPermissions(AUDITOR_PERMISSIONS);
 
     const { container } = render(
-      <VendorActions
-        vendorId="vendor-1"
-        onOpenEditSheet={mockOnOpenEditSheet}
-      />,
+      <VendorActions vendorId="vendor-1" onOpenEditSheet={mockOnOpenEditSheet} />,
     );
 
     expect(container.innerHTML).toBe('');
@@ -107,12 +99,7 @@ describe('VendorActions', () => {
   it('renders the dropdown trigger when user has vendor:update permission', () => {
     setMockPermissions(ADMIN_PERMISSIONS);
 
-    render(
-      <VendorActions
-        vendorId="vendor-1"
-        onOpenEditSheet={mockOnOpenEditSheet}
-      />,
-    );
+    render(<VendorActions vendorId="vendor-1" onOpenEditSheet={mockOnOpenEditSheet} />);
 
     expect(screen.getByTestId('vendor-actions-trigger')).toBeInTheDocument();
   });
@@ -120,12 +107,7 @@ describe('VendorActions', () => {
   it('renders Edit, Mitigation, and Assessment menu items when permitted', () => {
     setMockPermissions({ vendor: ['create', 'read', 'update', 'delete'] });
 
-    render(
-      <VendorActions
-        vendorId="vendor-1"
-        onOpenEditSheet={mockOnOpenEditSheet}
-      />,
-    );
+    render(<VendorActions vendorId="vendor-1" onOpenEditSheet={mockOnOpenEditSheet} />);
 
     expect(screen.getByText('Edit')).toBeInTheDocument();
     expect(screen.getByText('Mitigation')).toBeInTheDocument();

@@ -2,9 +2,9 @@
 
 import { useApi } from '@/hooks/use-api';
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
+import type { GlobalVendors } from '@db';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Input } from '@trycompai/ui/input';
-import type { GlobalVendors } from '@db';
 import { useMemo, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import type { CreateVendorFormValues } from './create-vendor-form-schema';
@@ -196,4 +196,3 @@ export function VendorNameAutocompleteField({ form }: Props) {
     />
   );
 }
-

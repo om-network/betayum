@@ -1,5 +1,6 @@
 'use client';
 
+import { useRealtimeRun } from '@trigger.dev/react-hooks';
 import { Badge } from '@trycompai/ui/badge';
 import { Button } from '@trycompai/ui/button';
 import { Checkbox } from '@trycompai/ui/checkbox';
@@ -22,14 +23,13 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { toast } from 'sonner';
 import {
-  startBatchFix,
   cancelBatchFix,
-  skipBatchFinding,
   retryFinding,
+  skipBatchFinding,
+  startBatchFix,
 } from '../actions/batch-fix';
 
 interface Finding {
@@ -58,7 +58,14 @@ interface BatchRemediationDialogProps {
   } | null;
 }
 
-type FindingStatus = 'pending' | 'fixing' | 'fixed' | 'needs_permissions' | 'skipped' | 'failed' | 'cancelled';
+type FindingStatus =
+  | 'pending'
+  | 'fixing'
+  | 'fixed'
+  | 'needs_permissions'
+  | 'skipped'
+  | 'failed'
+  | 'cancelled';
 
 interface FindingProgress {
   id: string;
@@ -135,7 +142,12 @@ function FindingPermissions({
           <div key={svc} className="flex items-center gap-1">
             <span className="text-[9px] text-muted-foreground font-medium">{svc}:</span>
             {actions.map((a) => (
-              <span key={a} className="rounded bg-muted px-1 py-0.5 text-[9px] font-mono text-foreground/70">{a}</span>
+              <span
+                key={a}
+                className="rounded bg-muted px-1 py-0.5 text-[9px] font-mono text-foreground/70"
+              >
+                {a}
+              </span>
             ))}
           </div>
         ))}
@@ -151,7 +163,11 @@ function FindingPermissions({
           }}
           className="inline-flex items-center gap-1 rounded border bg-background px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
         >
-          {copied ? <Check className="h-2.5 w-2.5 text-emerald-500" /> : <Copy className="h-2.5 w-2.5" />}
+          {copied ? (
+            <Check className="h-2.5 w-2.5 text-emerald-500" />
+          ) : (
+            <Copy className="h-2.5 w-2.5" />
+          )}
           {copied ? 'Copied' : 'Copy'}
         </button>
         <a
@@ -173,7 +189,11 @@ function FindingPermissions({
           disabled={retrying}
           className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/10 transition-colors"
         >
-          {retrying ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <RefreshCw className="h-2.5 w-2.5" />}
+          {retrying ? (
+            <Loader2 className="h-2.5 w-2.5 animate-spin" />
+          ) : (
+            <RefreshCw className="h-2.5 w-2.5" />
+          )}
           {retrying ? 'Retrying...' : 'Retry'}
         </button>
       </div>
@@ -221,14 +241,14 @@ function MissingPermsBanner({
   // Uses jq (available in AWS CloudShell) to avoid overwriting existing perms
   const newPermsJson = JSON.stringify(allMissing);
   const script = [
-    '# Merge new permissions with existing (won\'t overwrite)',
+    "# Merge new permissions with existing (won't overwrite)",
     'ROLE="CompAI-Remediator"',
     'POLICY="CompAI-BatchPermissions"',
     `NEW_PERMS='${newPermsJson}'`,
     '',
-    '# Get existing permissions (empty array if policy doesn\'t exist yet)',
+    "# Get existing permissions (empty array if policy doesn't exist yet)",
     'EXISTING=$(aws iam get-role-policy --role-name "$ROLE" --policy-name "$POLICY" \\',
-    '  --query \'PolicyDocument.Statement[0].Action\' --output json 2>/dev/null || echo \'[]\')',
+    "  --query 'PolicyDocument.Statement[0].Action' --output json 2>/dev/null || echo '[]')",
     '',
     '# Merge and deduplicate',
     'MERGED=$(echo "$EXISTING $NEW_PERMS" | jq -s \'add | unique\')',
@@ -257,7 +277,8 @@ function MissingPermsBanner({
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium">
-            {allMissing.length} permission{allMissing.length !== 1 ? 's' : ''} needed across {serviceCount} service{serviceCount !== 1 ? 's' : ''}
+            {allMissing.length} permission{allMissing.length !== 1 ? 's' : ''} needed across{' '}
+            {serviceCount} service{serviceCount !== 1 ? 's' : ''}
           </p>
           <p className="text-[11px] text-muted-foreground mt-0.5">
             Run the script below — it merges with existing permissions, nothing gets overwritten.
@@ -269,10 +290,15 @@ function MissingPermsBanner({
       <div className="ml-[34px] space-y-1.5">
         {Object.entries(grouped).map(([svc, actions]) => (
           <div key={svc} className="flex items-start gap-2">
-            <span className="text-[10px] font-medium text-muted-foreground w-20 shrink-0 pt-0.5 text-right">{svc}</span>
+            <span className="text-[10px] font-medium text-muted-foreground w-20 shrink-0 pt-0.5 text-right">
+              {svc}
+            </span>
             <div className="flex flex-wrap gap-1">
               {actions.map((a) => (
-                <span key={a} className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-mono text-foreground/70">
+                <span
+                  key={a}
+                  className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-mono text-foreground/70"
+                >
                   {a}
                 </span>
               ))}
@@ -338,14 +364,20 @@ export function BatchRemediationDialog({
     enabled: Boolean(runId && accessToken),
   });
 
-  const progress = (run?.metadata as { progress?: BatchProgress } | undefined)
-    ?.progress ?? null;
+  const progress = (run?.metadata as { progress?: BatchProgress } | undefined)?.progress ?? null;
 
   // Detect if the trigger run itself is finished (cancelled, failed, completed)
   const runStatus = run?.status;
-  const runFinished = runStatus === 'COMPLETED' || runStatus === 'FAILED' || runStatus === 'CANCELED' || runStatus === 'SYSTEM_FAILURE';
+  const runFinished =
+    runStatus === 'COMPLETED' ||
+    runStatus === 'FAILED' ||
+    runStatus === 'CANCELED' ||
+    runStatus === 'SYSTEM_FAILURE';
 
-  const isRunning = Boolean(runId) && !runFinished && (!progress || progress.phase === 'running' || progress.phase === 'retrying');
+  const isRunning =
+    Boolean(runId) &&
+    !runFinished &&
+    (!progress || progress.phase === 'running' || progress.phase === 'retrying');
   const isWaitingPerms = progress?.phase === 'waiting_for_permissions';
   const isScanning = progress?.phase === 'scanning';
   const isDone = progress?.phase === 'done' || progress?.phase === 'cancelled' || runFinished;
@@ -389,7 +421,11 @@ export function BatchRemediationDialog({
     if (runId) {
       return findings
         .filter((f) => selected.has(f.id))
-        .map((f) => ({ id: f.id, title: f.title ?? 'Untitled', status: 'pending' as FindingStatus }));
+        .map((f) => ({
+          id: f.id,
+          title: f.title ?? 'Untitled',
+          status: 'pending' as FindingStatus,
+        }));
     }
     return [];
   }, [progress, runId, findings, selected, activeBatch]);
@@ -508,10 +544,15 @@ export function BatchRemediationDialog({
           <>
             <div className="flex items-center gap-2 border-b pb-2">
               <Checkbox checked={allSelected} onCheckedChange={handleToggleAll} id="select-all" />
-              <label htmlFor="select-all" className="text-xs font-medium text-muted-foreground cursor-pointer select-none">
+              <label
+                htmlFor="select-all"
+                className="text-xs font-medium text-muted-foreground cursor-pointer select-none"
+              >
                 {allSelected ? 'Deselect all' : 'Select all'}
               </label>
-              <span className="ml-auto text-xs text-muted-foreground">{selectedCount} selected</span>
+              <span className="ml-auto text-xs text-muted-foreground">
+                {selectedCount} selected
+              </span>
             </div>
 
             <div className="overflow-y-auto max-h-[40vh] -mx-1 px-1 space-y-0.5">
@@ -520,24 +561,46 @@ export function BatchRemediationDialog({
                   key={f.id}
                   className="flex items-center gap-2.5 rounded-md px-2 py-2 hover:bg-muted/40 cursor-pointer transition-colors"
                 >
-                  <Checkbox checked={selected.has(f.id)} onCheckedChange={() => handleToggle(f.id)} />
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[f.severity.toLowerCase()] ?? 'bg-gray-300'}`} />
+                  <Checkbox
+                    checked={selected.has(f.id)}
+                    onCheckedChange={() => handleToggle(f.id)}
+                  />
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[f.severity.toLowerCase()] ?? 'bg-gray-300'}`}
+                  />
                   <span className="text-sm truncate min-w-0 flex-1">{f.title ?? 'Untitled'}</span>
-                  <Badge variant="outline" className="shrink-0 text-[9px]">{f.severity}</Badge>
+                  <Badge variant="outline" className="shrink-0 text-[9px]">
+                    {f.severity}
+                  </Badge>
                 </label>
               ))}
             </div>
 
             <div className="space-y-3 border-t pt-3">
               <label className="flex items-start gap-2.5 cursor-pointer">
-                <Checkbox checked={acknowledged} onCheckedChange={(v) => setAcknowledged(v === true)} className="mt-0.5" />
+                <Checkbox
+                  checked={acknowledged}
+                  onCheckedChange={(v) => setAcknowledged(v === true)}
+                  className="mt-0.5"
+                />
                 <span className="text-xs leading-relaxed text-muted-foreground">
-                  I have reviewed the findings above and understand this will modify my cloud infrastructure.
+                  I have reviewed the findings above and understand this will modify my cloud
+                  infrastructure.
                 </span>
               </label>
-              <Button onClick={handleStart} disabled={!acknowledged || selectedCount === 0 || starting} className="w-full">
-                {starting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-                {starting ? 'Starting...' : `Fix ${selectedCount} Finding${selectedCount !== 1 ? 's' : ''}`}
+              <Button
+                onClick={handleStart}
+                disabled={!acknowledged || selectedCount === 0 || starting}
+                className="w-full"
+              >
+                {starting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Play className="h-4 w-4 mr-2" />
+                )}
+                {starting
+                  ? 'Starting...'
+                  : `Fix ${selectedCount} Finding${selectedCount !== 1 ? 's' : ''}`}
               </Button>
             </div>
           </>
@@ -556,16 +619,28 @@ export function BatchRemediationDialog({
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  {isScanning ? 'Re-scanning to verify...'
-                    : isDone ? (progress?.phase === 'cancelled' ? 'Cancelled' : 'Complete')
-                    : isWaitingPerms ? `Waiting for permissions... (${progress?.permChecksLeft ?? 0} checks left)`
-                    : progress?.phase === 'retrying' ? 'Retrying with new permissions...'
-                    : `Fixing ${progress?.current ?? 0} of ${progress?.total ?? selectedCount}...`}
+                  {isScanning
+                    ? 'Re-scanning to verify...'
+                    : isDone
+                      ? progress?.phase === 'cancelled'
+                        ? 'Cancelled'
+                        : 'Complete'
+                      : isWaitingPerms
+                        ? `Waiting for permissions... (${progress?.permChecksLeft ?? 0} checks left)`
+                        : progress?.phase === 'retrying'
+                          ? 'Retrying with new permissions...'
+                          : `Fixing ${progress?.current ?? 0} of ${progress?.total ?? selectedCount}...`}
                 </span>
                 <div className="flex gap-3">
-                  {(progress?.fixed ?? 0) > 0 && <span className="text-emerald-600">{progress!.fixed} fixed</span>}
-                  {(progress?.skipped ?? 0) > 0 && <span className="text-amber-600">{progress!.skipped} skipped</span>}
-                  {(progress?.failed ?? 0) > 0 && <span className="text-red-600">{progress!.failed} failed</span>}
+                  {(progress?.fixed ?? 0) > 0 && (
+                    <span className="text-emerald-600">{progress!.fixed} fixed</span>
+                  )}
+                  {(progress?.skipped ?? 0) > 0 && (
+                    <span className="text-amber-600">{progress!.skipped} skipped</span>
+                  )}
+                  {(progress?.failed ?? 0) > 0 && (
+                    <span className="text-red-600">{progress!.failed} failed</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -576,7 +651,10 @@ export function BatchRemediationDialog({
                 const config = STATUS_CONFIG[f.status] ?? STATUS_CONFIG.pending;
                 const Icon = config.icon;
                 const canSkip = f.status === 'pending' && !isDone;
-                const isMissingPerms = f.status === 'needs_permissions' && f.missingPermissions && f.missingPermissions.length > 0;
+                const isMissingPerms =
+                  f.status === 'needs_permissions' &&
+                  f.missingPermissions &&
+                  f.missingPermissions.length > 0;
 
                 return (
                   <div
@@ -585,14 +663,20 @@ export function BatchRemediationDialog({
                   >
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-5 w-5 shrink-0 items-center justify-center">
-                        <Icon className={`h-3.5 w-3.5 ${config.color} ${f.status === 'fixing' ? 'animate-spin' : ''}`} />
+                        <Icon
+                          className={`h-3.5 w-3.5 ${config.color} ${f.status === 'fixing' ? 'animate-spin' : ''}`}
+                        />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm truncate ${f.status === 'fixing' ? 'font-medium' : f.status === 'pending' ? 'text-muted-foreground' : ''}`}>
+                        <p
+                          className={`text-sm truncate ${f.status === 'fixing' ? 'font-medium' : f.status === 'pending' ? 'text-muted-foreground' : ''}`}
+                        >
                           {f.title}
                         </p>
                         {f.error && !isMissingPerms && (
-                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">{f.error}</p>
+                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                            {f.error}
+                          </p>
                         )}
                       </div>
                       {canSkip && (
@@ -605,8 +689,14 @@ export function BatchRemediationDialog({
                           <X className="h-3 w-3" />
                         </button>
                       )}
-                      {f.status === 'fixed' && <span className="text-[10px] text-emerald-600 font-medium shrink-0">Done</span>}
-                      {f.status === 'cancelled' && <span className="text-[10px] text-muted-foreground shrink-0">Removed</span>}
+                      {f.status === 'fixed' && (
+                        <span className="text-[10px] text-emerald-600 font-medium shrink-0">
+                          Done
+                        </span>
+                      )}
+                      {f.status === 'cancelled' && (
+                        <span className="text-[10px] text-muted-foreground shrink-0">Removed</span>
+                      )}
                     </div>
                     {/* Per-finding permissions — only shows for THIS finding */}
                     {isMissingPerms && (
@@ -637,7 +727,11 @@ export function BatchRemediationDialog({
             <div className="flex justify-end gap-2 border-t pt-3">
               {!isDone && !isScanning && (
                 <Button variant="outline" size="sm" onClick={handleCancel} disabled={cancelling}>
-                  {cancelling ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <X className="h-3 w-3 mr-1.5" />}
+                  {cancelling ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                  ) : (
+                    <X className="h-3 w-3 mr-1.5" />
+                  )}
                   {cancelling ? 'Cancelling...' : 'Cancel All'}
                 </Button>
               )}
@@ -648,8 +742,17 @@ export function BatchRemediationDialog({
                 </Button>
               )}
               {isDone && hasSkippedOrFailed && (
-                <Button variant="outline" size="sm" onClick={handleRetrySkipped} disabled={starting}>
-                  {starting ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <RefreshCw className="h-3 w-3 mr-1.5" />}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetrySkipped}
+                  disabled={starting}
+                >
+                  {starting ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3 mr-1.5" />
+                  )}
                   Retry Skipped
                 </Button>
               )}

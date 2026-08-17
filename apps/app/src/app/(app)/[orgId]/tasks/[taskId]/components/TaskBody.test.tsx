@@ -1,5 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { setMockPermissions } from '@/test-utils/mocks/permissions';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { mockCanUpdateTask } = vi.hoisted(() => ({ mockCanUpdateTask: vi.fn(() => true) }));
+vi.mock('@/hooks/use-permissions', () => ({
+  usePermissions: () => ({ hasPermission: mockCanUpdateTask }),
+}));
 
 // Mock the task API hooks
 const mockRefreshAttachments = vi.fn();
@@ -17,18 +23,28 @@ vi.mock('@/hooks/use-tasks-api', () => ({
 }));
 
 // Mock UI components to simplify rendering
-vi.mock('@trycompai/ui/button', () => ({
-  Button: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) => (
-    <button {...props}>{children}</button>
+vi.mock('@trycompai/design-system', () => ({
+  Button: ({
+    children,
+    disabled,
+    onClick,
+  }: React.PropsWithChildren<
+    React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: string }
+  >) => (
+    <button disabled={disabled} onClick={onClick}>
+      {children}
+    </button>
   ),
-}));
-vi.mock('@trycompai/ui/dialog', () => ({
   Dialog: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   DialogContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   DialogDescription: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   DialogFooter: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   DialogHeader: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   DialogTitle: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
+}));
+vi.mock('./AttachmentPreviewDialog', () => ({
+  AttachmentPreviewDialog: ({ attachment }: { attachment: { name: string } | null }) =>
+    attachment ? <div>Previewing {attachment.name}</div> : null,
 }));
 
 import { useTaskAttachments } from '@/hooks/use-tasks-api';
@@ -39,6 +55,36 @@ const mockUseTaskAttachments = vi.mocked(useTaskAttachments);
 describe('TaskBody', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCanUpdateTask.mockReturnValue(true);
+    setMockPermissions({ task: ['read', 'update'] });
+  });
+
+  it('disables attachment mutations but keeps previews available for read-only users', () => {
+    mockCanUpdateTask.mockReturnValue(false);
+    mockUseTaskAttachments.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: 'att_123',
+            name: 'evidence.json',
+            type: 'document',
+            createdAt: '2026-07-24T00:00:00.000Z',
+          },
+        ],
+        status: 200,
+      } as never,
+      error: undefined,
+      isLoading: false,
+      mutate: mockRefreshAttachments,
+      isValidating: false,
+    });
+    render(<TaskBody taskId="tsk_123" />);
+    const attachmentButton = screen.getByRole('button', { name: 'evidence.json' });
+    expect(attachmentButton).toBeEnabled();
+    fireEvent.click(attachmentButton);
+    expect(screen.getByText('Previewing evidence.json')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /drag and drop files here/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete evidence.json' })).toBeDisabled();
   });
 
   it('should show upload dropzone even when attachments are loading', () => {
@@ -126,5 +172,32 @@ describe('TaskBody', () => {
 
     const skeletons = container.querySelectorAll('.animate-pulse');
     expect(skeletons.length).toBe(0);
+  });
+
+  it('opens an attachment preview instead of downloading on filename click', () => {
+    mockUseTaskAttachments.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: 'att_123',
+            name: 'evidence.json',
+            type: 'document',
+            createdAt: '2026-07-24T00:00:00.000Z',
+          },
+        ],
+        status: 200,
+      } as never,
+      error: undefined,
+      isLoading: false,
+      mutate: mockRefreshAttachments,
+      isValidating: false,
+    });
+
+    render(<TaskBody taskId="tsk_123" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'evidence.json' }));
+
+    expect(screen.getByText('Previewing evidence.json')).toBeInTheDocument();
+    expect(mockGetDownloadUrl).not.toHaveBeenCalled();
   });
 });

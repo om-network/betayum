@@ -56,6 +56,7 @@ import { TimelinesModule } from './timelines/timelines.module';
 import { BackgroundChecksModule } from './background-checks/background-checks.module';
 import { BillingModule } from './billing/billing.module';
 import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-checklist.module';
+import { IntegrationBrowserModule } from './integration-browser/integration-browser.module';
 
 @Module({
   imports: [
@@ -124,6 +125,7 @@ import { OffboardingChecklistModule } from './offboarding-checklist/offboarding-
     AdminFeatureFlagsModule,
     TimelinesModule,
     OffboardingChecklistModule,
+    IntegrationBrowserModule,
   ],
   controllers: [AppController],
   providers: [

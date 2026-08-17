@@ -1,14 +1,21 @@
 import 'server-only';
 
+import { logger } from '@/utils/logger';
 import { vectorIndex } from './client';
 import { generateEmbedding } from './generate-embedding';
-import { logger } from '@/utils/logger';
 
 export interface SimilarContentResult {
   id: string;
   score: number;
   content: string;
-  sourceType: 'policy' | 'context' | 'document_hub' | 'attachment' | 'questionnaire' | 'manual_answer' | 'knowledge_base_document';
+  sourceType:
+    | 'policy'
+    | 'context'
+    | 'document_hub'
+    | 'attachment'
+    | 'questionnaire'
+    | 'manual_answer'
+    | 'knowledge_base_document';
   sourceId: string;
   policyName?: string;
   contextQuestion?: string;
@@ -54,10 +61,10 @@ export async function findSimilarContent(
     });
 
     // Filter by organizationId and map to our result format
-    // Also filter by minimum similarity score (cosine similarity typically ranges from -1 to 1, 
+    // Also filter by minimum similarity score (cosine similarity typically ranges from -1 to 1,
     // but Upstash Vector uses dot product which can vary, so we use a low threshold)
     const MIN_SIMILARITY_SCORE = 0.1; // Minimum threshold for relevance
-    
+
     const filteredResults: SimilarContentResult[] = results
       .filter((result) => {
         const metadata = result.metadata as any;
@@ -104,4 +111,3 @@ export async function findSimilarContent(
     throw error;
   }
 }
-

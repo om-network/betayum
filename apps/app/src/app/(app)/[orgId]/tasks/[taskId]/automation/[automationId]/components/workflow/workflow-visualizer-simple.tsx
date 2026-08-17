@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { useChat } from '@ai-sdk/react';
+import { EvidenceAutomationVersion } from '@db';
 import { Button } from '@trycompai/ui/button';
 import {
   Dialog,
@@ -19,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@trycompai/ui/dropdown-menu';
-import { EvidenceAutomationVersion } from '@db';
 import { Code, Loader2, RotateCcw, Upload, Zap } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -34,7 +33,6 @@ import {
 import { useAutomationVersions } from '../../hooks/use-automation-versions';
 import { useSharedChatContext } from '../../lib/chat-context';
 import { useTaskAutomationStore } from '../../lib/task-automation-store';
-import type { ChatUIMessage } from '../chat/types';
 import { Panel, PanelHeader } from '../panels/panels';
 import { PublishDialog } from '../PublishDialog';
 import {
@@ -52,14 +50,16 @@ interface Props {
 }
 
 export function WorkflowVisualizerSimple({ className }: Props) {
-  const { scriptGenerated, viewMode, setViewMode, setScriptUrl } = useTaskAutomationStore();
+  const scriptGenerated = useTaskAutomationStore((s) => s.scriptGenerated);
+  const viewMode = useTaskAutomationStore((s) => s.viewMode);
+  const { setViewMode, setScriptUrl } = useTaskAutomationStore.getState();
   const { orgId, taskId, automationId } = useParams<{
     orgId: string;
     taskId: string;
     automationId: string;
   }>();
   const { chat, automationIdRef } = useSharedChatContext();
-  const { sendMessage } = useChat<ChatUIMessage>({ chat });
+  const { sendMessage } = chat;
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState<EvidenceAutomationVersion | null>(null);

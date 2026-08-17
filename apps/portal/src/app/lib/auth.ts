@@ -93,7 +93,9 @@ function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, str
 /**
  * Get the current session from the API.
  */
-async function getSession(options: { headers: ReadonlyHeaders | Headers }): Promise<Session | null> {
+async function getSession(options: {
+  headers: ReadonlyHeaders | Headers;
+}): Promise<Session | null> {
   try {
     const response = await fetch(`${API_URL}/api/auth/get-session`, {
       method: 'GET',

@@ -165,11 +165,17 @@ export function DeviceAgentAccordionItem({
           <AccordionTrigger>
             <div className="flex items-center gap-3">
               {isCompleted ? (
-                <div className="text-primary"><CheckmarkFilled size={20} /></div>
+                <div className="text-primary">
+                  <CheckmarkFilled size={20} />
+                </div>
               ) : (
-                <div className="text-muted-foreground"><CircleDash size={20} /></div>
+                <div className="text-muted-foreground">
+                  <CircleDash size={20} />
+                </div>
               )}
-              <span className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}>
+              <span
+                className={cn('text-base', isCompleted && 'text-muted-foreground line-through')}
+              >
                 Device Agent
               </span>
               {!hasAnyAgentDevice && hasFleetDevice && failedPoliciesCount > 0 && (
@@ -203,9 +209,13 @@ export function DeviceAgentAccordionItem({
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           {device.isCompliant ? (
-                            <div className="text-primary"><CheckmarkFilled size={16} /></div>
+                            <div className="text-primary">
+                              <CheckmarkFilled size={16} />
+                            </div>
                           ) : (
-                            <div className="text-amber-600 dark:text-amber-400"><CircleDash size={16} /></div>
+                            <div className="text-amber-600 dark:text-amber-400">
+                              <CircleDash size={16} />
+                            </div>
                           )}
                           <span className="text-sm">
                             {device.isCompliant
@@ -216,7 +226,11 @@ export function DeviceAgentAccordionItem({
                         <p className="text-muted-foreground text-xs">
                           {device.platform} &middot; {device.osVersion}
                           {device.lastCheckIn && (
-                            <> &middot; Last check-in: {new Date(device.lastCheckIn).toLocaleDateString()}</>
+                            <>
+                              {' '}
+                              &middot; Last check-in:{' '}
+                              {new Date(device.lastCheckIn).toLocaleDateString()}
+                            </>
                           )}
                         </p>
                       </div>
@@ -237,7 +251,11 @@ export function DeviceAgentAccordionItem({
                       variant="ghost"
                       onClick={handleRefresh}
                       disabled={isLoading}
-                      iconLeft={<div className={cn(isLoading && 'animate-spin')}><Renew size={16} /></div>}
+                      iconLeft={
+                        <div className={cn(isLoading && 'animate-spin')}>
+                          <Renew size={16} />
+                        </div>
+                      }
                     >
                       Refresh
                     </Button>
@@ -281,7 +299,9 @@ export function DeviceAgentAccordionItem({
                       <div className="w-[136px]">
                         <Select
                           value={detectedOS || 'macos'}
-                          onValueChange={(value) => { if (value) setDetectedOS(value as SupportedOS); }}
+                          onValueChange={(value) => {
+                            if (value) setDetectedOS(value as SupportedOS);
+                          }}
                         >
                           <SelectTrigger>
                             <span>{detectedOS === 'macos-intel' ? 'Intel' : 'Apple Silicon'}</span>
@@ -330,7 +350,8 @@ export function DeviceAgentAccordionItem({
                     <AccordionContent>
                       <div className="px-4 pb-4 text-muted-foreground space-y-2 text-sm">
                         <p>
-                          <strong>Operating Systems:</strong> macOS 14+, Windows 10+, Linux (Ubuntu 20.04+)
+                          <strong>Operating Systems:</strong> macOS 14+, Windows 10+, Linux (Ubuntu
+                          20.04+)
                         </p>
                         <p>
                           <strong>Memory:</strong> 512MB RAM minimum
@@ -355,18 +376,20 @@ export function DeviceAgentAccordionItem({
                     <AccordionContent>
                       <div className="px-4 pb-4 text-muted-foreground space-y-2 text-sm">
                         <p>
-                          Betayum Device Monitor is a lightweight agent that helps ensure your device
-                          meets security compliance requirements.
+                          Betayum Device Monitor is a lightweight agent that helps ensure your
+                          device meets security compliance requirements.
                         </p>
                         <p>
-                          It monitors device configuration, installed software, and security settings to
-                          help maintain a secure work environment.
+                          It monitors device configuration, installed software, and security
+                          settings to help maintain a secure work environment.
                         </p>
                         <p>
-                          <strong>Security powered by Betayum:</strong> Your organization uses Betayum to
-                          maintain security and compliance standards.
+                          <strong>Security powered by Betayum:</strong> Your organization uses
+                          Betayum to maintain security and compliance standards.
                         </p>
-                        <p className="text-xs">If you have questions, contact your IT administrator.</p>
+                        <p className="text-xs">
+                          If you have questions, contact your IT administrator.
+                        </p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>

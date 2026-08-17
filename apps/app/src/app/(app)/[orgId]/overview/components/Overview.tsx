@@ -1,7 +1,7 @@
 'use client';
 
-import { FrameworkEditorFramework, Policy, Task } from '@db';
 import type { FrameworkInstanceWithControls } from '@/lib/types/framework';
+import { FrameworkEditorFramework, Policy, Task } from '@db';
 import { ComplianceOverview } from './ComplianceOverview';
 import { FrameworksOverview } from './FrameworksOverview';
 import { OffboardingBanner } from './OffboardingBanner';

@@ -40,6 +40,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
 
   const provider = providerResult.data;
   const connections = (connectionsResult.data ?? []).filter((c) => c.providerSlug === slug);
+  const browserConnectionId = (connectionsResult.data ?? []).find(
+    (connection) =>
+      (connection.providerSlug === 'gcp' || connection.providerSlug === 'github') &&
+      connection.status === 'active',
+  )?.id;
   const taskTemplates = (tasksResult.data?.data ?? [])
     .filter((task) => task.taskTemplateId)
     .map((task) => ({
@@ -57,6 +62,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         initialConnections={connections}
         taskTemplates={taskTemplates}
         gcpOAuthJustConnected={gcpOAuthJustConnected}
+        browserConnectionId={browserConnectionId}
       />
     </PageLayout>
   );

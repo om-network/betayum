@@ -2,7 +2,6 @@
 
 import { UpdatePolicyForm } from '@/components/forms/policies/update-policy-form';
 import type { Policy } from '@db';
-import { useMediaQuery } from '@trycompai/ui/hooks';
 import {
   Drawer,
   DrawerContent,
@@ -14,6 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@trycompai/design-system';
+import { useMediaQuery } from '@trycompai/ui/hooks';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 

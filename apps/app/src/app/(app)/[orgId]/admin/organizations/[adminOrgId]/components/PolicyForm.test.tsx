@@ -53,10 +53,9 @@ describe('PolicyForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /create policy/i }));
 
     await waitFor(() => {
-      expect(mockPost).toHaveBeenCalledWith(
-        '/v1/admin/organizations/org_1/policies',
-        { name: 'New Security Policy' },
-      );
+      expect(mockPost).toHaveBeenCalledWith('/v1/admin/organizations/org_1/policies', {
+        name: 'New Security Policy',
+      });
     });
 
     expect(onCreated).toHaveBeenCalled();

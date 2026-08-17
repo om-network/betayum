@@ -2,13 +2,13 @@
 
 import { usePermissions } from '@/hooks/use-permissions';
 import { useVendorActions } from '@/hooks/use-vendors';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { Impact, Likelihood } from '@db';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@trycompai/ui/button';
 import { Select, SelectItem, Stack } from '@trycompai/design-system';
-import { useState } from 'react';
+import { Button } from '@trycompai/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@trycompai/ui/form';
 import { useQueryState } from 'nuqs';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
@@ -115,7 +115,9 @@ export function ResidualRiskForm({
           />
 
           <div className="flex justify-end pt-4">
-            <Button type="submit" disabled={isSubmitting || !hasPermission('vendor', 'update')}>Save</Button>
+            <Button type="submit" disabled={isSubmitting || !hasPermission('vendor', 'update')}>
+              Save
+            </Button>
           </div>
         </Stack>
       </form>

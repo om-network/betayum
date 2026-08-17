@@ -15,7 +15,10 @@ export interface EmployeeDevicesListProps {
 
 export const EmployeeDevicesList = ({ devices, isCurrentUserOwner }: EmployeeDevicesListProps) => {
   const [selectedRow, setSelectedRow] = useState<Host | null>(null);
-  const columns = useMemo(() => getEmployeeDevicesColumns(isCurrentUserOwner), [isCurrentUserOwner]);
+  const columns = useMemo(
+    () => getEmployeeDevicesColumns(isCurrentUserOwner),
+    [isCurrentUserOwner],
+  );
 
   const { table } = useDataTable({
     data: devices,
