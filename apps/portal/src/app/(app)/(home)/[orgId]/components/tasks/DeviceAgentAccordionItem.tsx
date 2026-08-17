@@ -160,8 +160,7 @@ export function DeviceAgentAccordionItem({
   }, []);
 
   return (
-    <div className="border rounded-xs">
-      <AccordionItem value="device-agent">
+    <AccordionItem value="device-agent">
         <div className="px-4">
           <AccordionTrigger>
             <div className="flex items-center gap-3">
@@ -399,7 +398,6 @@ export function DeviceAgentAccordionItem({
             </div>
           </div>
         </AccordionContent>
-      </AccordionItem>
-    </div>
+    </AccordionItem>
   );
 }

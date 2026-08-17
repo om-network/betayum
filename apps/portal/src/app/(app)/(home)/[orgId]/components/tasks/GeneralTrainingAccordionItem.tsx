@@ -33,8 +33,7 @@ export function GeneralTrainingAccordionItem() {
   const totalCount = generalTrainingVideoIds.length;
 
   return (
-    <div className="border rounded-xs">
-      <AccordionItem value="general-training">
+    <AccordionItem value="general-training">
         <div className="px-4">
           <AccordionTrigger>
             <div className="flex items-center gap-3">
@@ -72,7 +71,6 @@ export function GeneralTrainingAccordionItem() {
             <VideoCarousel />
           </div>
         </AccordionContent>
-      </AccordionItem>
-    </div>
+    </AccordionItem>
   );
 }

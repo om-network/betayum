@@ -44,8 +44,7 @@ export function HipaaTrainingAccordionItem() {
   };
 
   return (
-    <div className="border rounded-xs">
-      <AccordionItem value="hipaa-training">
+    <AccordionItem value="hipaa-training">
         <div className="px-4">
           <AccordionTrigger>
             <div className="flex items-center gap-3">
@@ -89,8 +88,7 @@ export function HipaaTrainingAccordionItem() {
             )}
           </div>
         </AccordionContent>
-      </AccordionItem>
-    </div>
+    </AccordionItem>
   );
 }
 

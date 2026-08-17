@@ -201,7 +201,7 @@ export const EmployeeTasksList = ({
       </div>
 
       <div className="space-y-3">
-        <Accordion>
+        <Accordion variant="bordered">
           {accordionItems.map((item, idx) => (
             <div key={item.title ?? idx}>{item.content}</div>
           ))}

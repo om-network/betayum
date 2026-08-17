@@ -13,6 +13,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  */
 export default {
   ...uiConfig,
+  theme: {
+    ...uiConfig.theme,
+    extend: {
+      ...uiConfig.theme?.extend,
+      colors: {
+        ...uiConfig.theme?.extend?.colors,
+        border: 'var(--border)',
+        input: 'var(--input)',
+        ring: 'var(--ring)',
+      },
+    },
+  },
   content: [
     path.join(__dirname, 'src', '**', '*.{ts,tsx}'),
     path.join(__dirname, '..', '..', 'packages', 'ui', 'src', '**', '*.{ts,tsx}'),
