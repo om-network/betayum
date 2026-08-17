@@ -62,8 +62,7 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
   };
 
   return (
-    <div className="border rounded-xs">
-      <AccordionItem value="policies">
+    <AccordionItem value="policies">
         <div className="px-4 [&[data-state=open]]:pb-2">
           <AccordionTrigger>
             <div className="flex items-center gap-3">
@@ -128,7 +127,6 @@ export function PoliciesAccordionItem({ policies, member }: PoliciesAccordionIte
             )}
           </div>
         </AccordionContent>
-      </AccordionItem>
-    </div>
+    </AccordionItem>
   );
 }
