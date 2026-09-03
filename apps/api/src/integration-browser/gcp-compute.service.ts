@@ -72,12 +72,6 @@ export class GcpComputeService {
       url: url.toString(),
       data: {
         name: instanceName,
-        serviceAccounts: [
-          {
-            email: `betayum-codex-${instanceName.slice(-16)}@${this.projectId}.iam.gserviceaccount.com`,
-            scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-          },
-        ],
       },
     });
 

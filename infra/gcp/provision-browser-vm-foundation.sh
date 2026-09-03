@@ -10,9 +10,7 @@ SUBNET_RANGE="${BETAYUM_BROWSER_VM_SUBNET_RANGE:-10.80.0.0/24}"
 ROUTER="${BETAYUM_BROWSER_VM_ROUTER:-${NETWORK}}"
 NAT="${BETAYUM_BROWSER_VM_NAT:-${NETWORK}}"
 API_SERVICE="${BETAYUM_API_SERVICE:-betayum-${ENVIRONMENT}-api}"
-ROLE_ID="${BETAYUM_BROWSER_VM_ROLE_ID:-betayumBrowserVmManager}"
 CONFIGURE_CLOUD_RUN="${BETAYUM_CONFIGURE_CLOUD_RUN:-false}"
-CONFIGURE_IAM="${BETAYUM_CONFIGURE_IAM:-true}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STARTUP_SCRIPT="${SCRIPT_DIR}/browser-vm-startup.sh"
 MACHINE_TYPE="e2-medium"
@@ -24,7 +22,7 @@ IAP_FIREWALL="betayum-${ENVIRONMENT}-browser-iap-ssh"
 TEMPLATE_HASH="$(
   {
     sha256sum "${STARTUP_SCRIPT}"
-    printf '%s\n' "${MACHINE_TYPE}|${IMAGE_FAMILY}|${NETWORK}|${SUBNET}"
+    printf '%s\n' "${MACHINE_TYPE}|${IMAGE_FAMILY}|${NETWORK}|${SUBNET}|untagged"
   } | sha256sum | cut -c1-12
 )"
 TEMPLATE="betayum-${ENVIRONMENT}-browser-${TEMPLATE_HASH}"
@@ -54,7 +52,6 @@ require_command sha256sum
 log "Enabling required APIs in ${PROJECT_ID}"
 gcloud services enable \
   compute.googleapis.com \
-  iam.googleapis.com \
   run.googleapis.com \
   --project="${PROJECT_ID}" \
   --quiet
@@ -159,7 +156,7 @@ if gcloud compute firewall-rules describe "${VIEWER_FIREWALL}" \
     --project="${PROJECT_ID}" \
     --rules=tcp:22,tcp:6080 \
     --source-tags=betayum-api \
-    --target-tags=betayum-browser-vm \
+    --target-tags= \
     --quiet
 else
   gcloud compute firewall-rules create "${VIEWER_FIREWALL}" \
@@ -169,7 +166,6 @@ else
     --action=ALLOW \
     --rules=tcp:22,tcp:6080 \
     --source-tags=betayum-api \
-    --target-tags=betayum-browser-vm \
     --quiet
 fi
 log "Viewer firewall ${VIEWER_FIREWALL} is configured"
@@ -180,7 +176,7 @@ if gcloud compute firewall-rules describe "${IAP_FIREWALL}" \
     --project="${PROJECT_ID}" \
     --rules=tcp:22 \
     --source-ranges=35.235.240.0/20 \
-    --target-tags=betayum-browser-vm \
+    --target-tags= \
     --quiet
 else
   gcloud compute firewall-rules create "${IAP_FIREWALL}" \
@@ -190,7 +186,6 @@ else
     --action=ALLOW \
     --rules=tcp:22 \
     --source-ranges=35.235.240.0/20 \
-    --target-tags=betayum-browser-vm \
     --quiet
 fi
 log "IAP SSH firewall ${IAP_FIREWALL} is configured"
@@ -210,8 +205,6 @@ else
     --network="projects/${PROJECT_ID}/global/networks/${NETWORK}" \
     --subnet="projects/${PROJECT_ID}/regions/${REGION}/subnetworks/${SUBNET}" \
     --no-address \
-    --tags=betayum-browser-vm \
-    --labels=component=browser-automation,purpose=organization-browser \
     --metadata=enable-oslogin=FALSE,block-project-ssh-keys=TRUE \
     --metadata-from-file="startup-script=${STARTUP_SCRIPT}" \
     --no-service-account \
@@ -220,62 +213,6 @@ else
     --shielded-vtpm \
     --shielded-integrity-monitoring \
     --quiet
-fi
-
-if [[ "${CONFIGURE_IAM}" == "true" ]]; then
-  API_SERVICE_ACCOUNT="${BETAYUM_API_SERVICE_ACCOUNT:-$(
-    gcloud run services describe "${API_SERVICE}" \
-      --project="${PROJECT_ID}" \
-      --region="${REGION}" \
-      --format='value(spec.template.spec.serviceAccountName)'
-  )}"
-  if [[ -z "${API_SERVICE_ACCOUNT}" ]]; then
-    printf 'Could not resolve the runtime service account for %s\n' \
-      "${API_SERVICE}" >&2
-    exit 1
-  fi
-  ROLE_PERMISSIONS="$(
-    printf '%s\n' \
-      compute.disks.create \
-      compute.disks.delete \
-      compute.disks.use \
-      compute.instanceTemplates.useReadOnly \
-      compute.instances.create \
-      compute.instances.delete \
-      compute.instances.get \
-      compute.instances.setMetadata \
-      compute.instances.start \
-      compute.instances.stop \
-      compute.projects.get \
-      compute.subnetworks.use \
-      compute.zoneOperations.get |
-      paste -sd, -
-  )"
-
-  if gcloud iam roles describe "${ROLE_ID}" \
-    --project="${PROJECT_ID}" >/dev/null 2>&1; then
-    gcloud iam roles update "${ROLE_ID}" \
-      --project="${PROJECT_ID}" \
-      --title='Betayum Browser VM Manager' \
-      --description='Manage organization browser VMs from the Betayum API.' \
-      --permissions="${ROLE_PERMISSIONS}" \
-      --stage=GA \
-      --quiet
-  else
-    gcloud iam roles create "${ROLE_ID}" \
-      --project="${PROJECT_ID}" \
-      --title='Betayum Browser VM Manager' \
-      --description='Manage organization browser VMs from the Betayum API.' \
-      --permissions="${ROLE_PERMISSIONS}" \
-      --stage=GA \
-      --quiet
-  fi
-
-  gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
-    --member="serviceAccount:${API_SERVICE_ACCOUNT}" \
-    --role="projects/${PROJECT_ID}/roles/${ROLE_ID}" \
-    --quiet >/dev/null
-  log "API service account can manage organization browser VMs"
 fi
 
 TEMPLATE_LINK="projects/${PROJECT_ID}/global/instanceTemplates/${TEMPLATE}"
