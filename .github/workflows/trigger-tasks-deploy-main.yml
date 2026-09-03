@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: warp-ubuntu-latest-arm64-4x
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 20.x
