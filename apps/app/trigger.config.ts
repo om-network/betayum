@@ -2,9 +2,14 @@ import { puppeteer } from '@trigger.dev/build/extensions/puppeteer';
 import { defineConfig } from '@trigger.dev/sdk';
 import { prismaExtension } from './customPrismaExtension';
 
+const triggerProjectId = process.env.TRIGGER_PROJECT_ID;
+if (!triggerProjectId) {
+  throw new Error('TRIGGER_PROJECT_ID must be configured before deploying Trigger.dev tasks');
+}
+
 export default defineConfig({
   runtime: 'node-22',
-  project: process.env.TRIGGER_PROJECT_ID ?? 'proj_rxaglrggzjmdjgexjhoz',
+  project: triggerProjectId,
   logLevel: 'log',
   // PrismaInstrumentation was emitting a `prisma:client:operation` span for
   // every query, drowning out our own task logs. We rely on per-task
