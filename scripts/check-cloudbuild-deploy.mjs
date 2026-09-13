@@ -43,12 +43,10 @@ const requiredPipelineSnippets = [
   'AUTH_GOOGLE_SECRET=betayum-${_ENVIRONMENT}-google-secret:latest',
   'GCP_OAUTH_CLIENT_ID=betayum-${_ENVIRONMENT}-google-id:latest',
   'GCP_OAUTH_CLIENT_SECRET=betayum-${_ENVIRONMENT}-google-secret:latest',
-  'BROWSER_VM_GCP_PROJECT=$PROJECT_ID',
-  'BROWSER_VM_GCP_ZONE=${_BROWSER_VM_ZONE}',
-  '--network="${_BROWSER_VM_NETWORK}"',
-  '--subnet="${_BROWSER_VM_SUBNET}"',
-  '--network-tags=betayum-api',
-  '--vpc-egress=private-ranges-only',
+];
+
+const forbiddenPipelineSnippets = [
+  'configure-api-browser-vm',
   'instance-templates list',
 ];
 
@@ -114,12 +112,11 @@ const expectedStepDependencies = {
   'run-migrations': ['deploy-migrator-job'],
   'run-seed': ['run-migrations', 'deploy-seeder-job'],
   'deploy-api': ['run-seed', 'push-api'],
-  'configure-api-browser-vm': ['deploy-api'],
   'deploy-app': ['run-seed', 'push-app'],
   'deploy-portal': ['run-seed', 'push-portal'],
-  'smoke-api': ['configure-api-browser-vm', 'deploy-app', 'deploy-portal'],
-  'smoke-app': ['configure-api-browser-vm', 'deploy-app', 'deploy-portal'],
-  'smoke-portal': ['configure-api-browser-vm', 'deploy-app', 'deploy-portal'],
+  'smoke-api': ['deploy-api', 'deploy-app', 'deploy-portal'],
+  'smoke-app': ['deploy-api', 'deploy-app', 'deploy-portal'],
+  'smoke-portal': ['deploy-api', 'deploy-app', 'deploy-portal'],
 };
 
 const serviceDeploySteps = ['deploy-api', 'deploy-app', 'deploy-portal'];
@@ -128,6 +125,14 @@ function assertIncludes({ source, snippets, label }) {
   for (const snippet of snippets) {
     if (!source.includes(snippet)) {
       throw new Error(`${label} is missing: ${snippet}`);
+    }
+  }
+}
+
+function assertExcludes({ source, snippets, label }) {
+  for (const snippet of snippets) {
+    if (source.includes(snippet)) {
+      throw new Error(`${label} must not contain: ${snippet}`);
     }
   }
 }
@@ -222,6 +227,11 @@ function assertGatedParallelGraph(source) {
 assertIncludes({
   source: cloudbuild,
   snippets: requiredPipelineSnippets,
+  label: 'cloudbuild.yaml',
+});
+assertExcludes({
+  source: cloudbuild,
+  snippets: forbiddenPipelineSnippets,
   label: 'cloudbuild.yaml',
 });
 assertGatedParallelGraph(cloudbuild);
