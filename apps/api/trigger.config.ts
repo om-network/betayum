@@ -5,7 +5,14 @@ import { emailExtension } from './emailExtension';
 import { integrationPlatformExtension } from './integrationPlatformExtension';
 import dotenv from 'dotenv';
 dotenv.config();
+const triggerProjectId = process.env.TRIGGER_PROJECT_ID;
+
+if (!triggerProjectId) {
+  throw new Error('No TRIGGER_PROJECT_ID is configured.');
+}
+
 export default defineConfig({
+  project: triggerProjectId,
   runtime: 'node-22',
   logLevel: 'log',
   maxDuration: 300, // 5 minutes
