@@ -1,7 +1,6 @@
 import { db } from '@db/server';
 import { logger, queue, tags, task } from '@trigger.dev/sdk';
-import { AllPolicyNotificationEmail } from '@trycompai/email';
-import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
+import { AllPolicyNotificationEmail, isUserUnsubscribed } from '@trycompai/email';
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
 
 const allPolicyEmailQueue = queue({

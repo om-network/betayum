@@ -176,6 +176,7 @@ export default async function Layout({
 
   return (
     <TriggerTokenProvider
+      baseURL={process.env.TRIGGER_API_URL ?? 'https://api.trigger.dev'}
       triggerJobId={onboarding?.triggerJobId || undefined}
       initialToken={publicAccessToken || undefined}
     >

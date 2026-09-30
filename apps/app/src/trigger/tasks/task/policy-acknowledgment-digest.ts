@@ -4,9 +4,9 @@ import { logger, schedules } from '@trigger.dev/sdk';
 import {
   PolicyAcknowledgmentDigestEmail,
   computePolicyAcknowledgmentDigestSubject,
+  getUnsubscribedEmails,
   type PolicyAcknowledgmentDigestOrg,
 } from '@trycompai/email';
-import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
 
 import { render } from '@react-email/render';
 import { sendBatchEmailViaApi } from '../../lib/send-email-via-api';

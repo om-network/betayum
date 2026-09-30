@@ -24,9 +24,13 @@ vi.mock('../../lib/send-email-via-api', () => ({
   sendBatchEmailViaApi: vi.fn(),
 }));
 
-vi.mock('@trycompai/email/lib/check-unsubscribe', () => ({
-  getUnsubscribedEmails: vi.fn(),
-}));
+vi.mock('@trycompai/email', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@trycompai/email')>();
+  return {
+    ...mod,
+    getUnsubscribedEmails: vi.fn(),
+  };
+});
 
 vi.mock('@trigger.dev/sdk', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
@@ -36,7 +40,7 @@ vi.mock('@trigger.dev/sdk', () => ({
 }));
 
 import { db } from '@db/server';
-import { getUnsubscribedEmails } from '@trycompai/email/lib/check-unsubscribe';
+import { getUnsubscribedEmails } from '@trycompai/email';
 import { sendBatchEmailViaApi } from '../../lib/send-email-via-api';
 import { policyAcknowledgmentDigest } from './policy-acknowledgment-digest';
 import { filterDigestMembersByCompliance } from './policy-acknowledgment-digest-helpers';

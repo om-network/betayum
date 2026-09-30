@@ -15,11 +15,13 @@ The production approval record is part of the ISO deployment evidence set.
 ## Pipeline Order
 
 The pipeline uses one Cloud Build trigger per environment. API, app, portal,
-migrator, and seeder do not have separate Cloud Build triggers.
+migrator, seeder, and Trigger.dev tasks do not have separate deployment
+triggers.
 
-1. Build API, app, migrator, and seeder images in parallel. Build the portal image
-   after the app image so only one frontend `next build` runs at a time on the
-   Cloud Build worker.
+1. Build API, app, migrator, seeder, and the small Trigger.dev deployer image in
+   parallel. Package the Trigger task source in a separate parallel lane. Build
+   the portal image after the app image so only one frontend `next build` runs
+   at a time on the Cloud Build worker.
 2. Tag every image with `$COMMIT_SHA`.
 3. Push each image to the environment Artifact Registry repository after its
    matching build finishes. Image pushes can run in parallel.
@@ -31,11 +33,13 @@ migrator, and seeder do not have separate Cloud Build triggers.
 6. Stop the deployment if the migration job exits non-zero.
 7. Execute the seed job with `--wait` after migrations pass.
 8. Stop the deployment if the seed job exits non-zero.
-9. Deploy API, app, and portal Cloud Run revisions after migrations and seed
-   pass and each service image has been pushed. The three service deploys run in
-   parallel.
-10. Smoke check API `/v1/health`, app `/api/health`, and the portal root after
-    all three service deploys finish. The smoke checks can run in parallel.
+9. Transfer the packaged task source to the private Trigger.dev VM through IAP
+   and deploy the consolidated task image after migrations and seed pass.
+10. Deploy API, app, and portal Cloud Run revisions with the self-hosted
+    `TRIGGER_API_URL` after migrations and seed pass. These deploys run in
+    parallel with the Trigger.dev task lane.
+11. Smoke check API `/v1/health`, app `/api/health`, and the portal root after
+    the service and Trigger.dev task deployments finish.
 
 The migration job and seed job are the required gates before service rollout.
 This gated-parallel shape keeps deployment evidence in one Cloud Build run while
@@ -54,11 +58,17 @@ Frontend public values are passed as explicit substitutions:
 - `_PORTAL_URL`
 - `_AUTH_PRIMARY_DOMAIN`
 - `_AUTH_STAGING_DOMAIN`
+- `_TRIGGER_URL`
+- `_TRIGGER_VM`
+- `_TRIGGER_ZONE`
 
 Cloud Build sets the same non-secret runtime URLs and auth domains on updated
 Cloud Run revisions. Runtime secrets remain in Secret Manager. The pipeline does
 not read committed env files and does not inject secret values into build
 arguments.
+
+The Trigger.dev deployment details and one-time secret bootstrap are documented
+in [`trigger-self-hosting-gcp.md`](trigger-self-hosting-gcp.md).
 
 ## Evidence Locations
 

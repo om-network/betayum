@@ -1,0 +1,9 @@
+.gcloudignore
+.git
+.git/**
+
+#!include:.gitignore
+
+# The Dockerfiles require the tracked Bun lockfile, while .gitignore keeps
+# editors from creating lockfile churn.
+!bun.lock

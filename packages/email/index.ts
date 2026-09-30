@@ -8,6 +8,7 @@ export * from './emails/otp';
 export * from './emails/policy-acknowledgment-digest';
 export * from './emails/policy-notification';
 export * from './emails/reminders/task-status-notification';
+export * from './emails/reminders/weekly-task-digest';
 export * from './emails/training-completed';
 export * from './emails/unassigned-items-notification';
 

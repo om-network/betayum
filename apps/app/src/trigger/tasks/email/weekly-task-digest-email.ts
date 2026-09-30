@@ -1,7 +1,6 @@
 import { db } from '@db/server';
 import { logger, queue, tags, task } from '@trigger.dev/sdk';
-import WeeklyTaskDigestEmail from '@trycompai/email/emails/reminders/weekly-task-digest';
-import { isUserUnsubscribed } from '@trycompai/email/lib/check-unsubscribe';
+import { isUserUnsubscribed, WeeklyTaskDigestEmail } from '@trycompai/email';
 import { sendEmailViaApi } from '../../lib/send-email-via-api';
 
 const weeklyTaskDigestQueue = queue({

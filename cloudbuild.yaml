@@ -24,9 +24,9 @@ substitutions:
   _DEVICE_AGENT_ARTIFACTS_BUCKET: betayum-staging-device-agent-artifacts
   _API_SERVICE_ACCOUNT: betayum-staging-api@centered-kiln-498405-h8.iam.gserviceaccount.com
   _DB_JOB_SERVICE_ACCOUNT: betayum-staging-migrator@centered-kiln-498405-h8.iam.gserviceaccount.com
-  _BROWSER_VM_NETWORK: betayum-staging-browser
-  _BROWSER_VM_SUBNET: betayum-staging-browser
-  _BROWSER_VM_ZONE: us-central1-a
+  _TRIGGER_URL: https://trigger.34-8-88-115.sslip.io
+  _TRIGGER_VM: betayum-staging-trigger
+  _TRIGGER_ZONE: us-central1-a
 
 steps:
   - id: build-api
@@ -100,6 +100,30 @@ steps:
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/seeder:$COMMIT_SHA
       - .
 
+  - id: build-trigger-deployer
+    name: gcr.io/cloud-builders/docker
+    waitFor:
+      - '-'
+    args:
+      - build
+      - -f
+      - infra/gcp/trigger/deployer.Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/trigger-deployer:$COMMIT_SHA
+      - .
+
+  - id: package-trigger-source
+    name: alpine:3.22
+    waitFor:
+      - '-'
+    entrypoint: sh
+    args:
+      - -euc
+      - >-
+        tar --exclude=.git --exclude=.next --exclude=node_modules --exclude=.turbo
+        --exclude='.env*' --exclude='**/.env*' --exclude='betayum-trigger-*.tar.gz'
+        -czf "/workspace/betayum-trigger-$COMMIT_SHA.tar.gz" -C /workspace .
+
   - id: push-api
     name: gcr.io/cloud-builders/docker
     waitFor:
@@ -139,6 +163,14 @@ steps:
     args:
       - push
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/seeder:$COMMIT_SHA
+
+  - id: push-trigger-deployer
+    name: gcr.io/cloud-builders/docker
+    waitFor:
+      - build-trigger-deployer
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/trigger-deployer:$COMMIT_SHA
 
   - id: deploy-migrator-job
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -209,6 +241,22 @@ steps:
       - --wait
       - --quiet
 
+  - id: deploy-trigger-tasks
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    waitFor:
+      - run-seed
+      - package-trigger-source
+      - push-trigger-deployer
+    env:
+      - PROJECT_ID=$PROJECT_ID
+      - COMMIT_SHA=$COMMIT_SHA
+      - TRIGGER_ZONE=${_TRIGGER_ZONE}
+      - TRIGGER_VM=${_TRIGGER_VM}
+      - TRIGGER_DEPLOYER_IMAGE=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/trigger-deployer:$COMMIT_SHA
+    args:
+      - scripts/deploy-trigger-tasks-gce.sh
+
   - id: deploy-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
@@ -227,8 +275,8 @@ steps:
       - --service-account=${_API_SERVICE_ACCOUNT}
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},TRUST_APP_URL=${_PORTAL_URL},PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN},CODEX_AUTOMATION_API_BASE_URL=${_API_URL},BETAYUM_LOGO_URL=${_APP_URL}/brand/betayum-icon-color.png,APP_OBJECT_STORAGE_BUCKET=${_APP_DATA_BUCKET},APP_DEVICE_AGENT_ARTIFACTS_BUCKET=${_DEVICE_AGENT_ARTIFACTS_BUCKET},APP_GCP_BUCKET_NAME=${_APP_DATA_BUCKET},APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_ORG_ASSETS_BUCKET=${_APP_DATA_BUCKET}
-      - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,SECRET_KEY=betayum-${_ENVIRONMENT}-secret-key:latest,AUTH_SECRET=betayum-${_ENVIRONMENT}-auth-secret:latest,AUTH_GOOGLE_ID=betayum-${_ENVIRONMENT}-google-id:latest,AUTH_GOOGLE_SECRET=betayum-${_ENVIRONMENT}-google-secret:latest,GCP_OAUTH_CLIENT_ID=betayum-${_ENVIRONMENT}-google-id:latest,GCP_OAUTH_CLIENT_SECRET=betayum-${_ENVIRONMENT}-google-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest,UPSTASH_REDIS_REST_URL=betayum-${_ENVIRONMENT}-upstash-redis-rest-url:latest,UPSTASH_REDIS_REST_TOKEN=betayum-${_ENVIRONMENT}-upstash-redis-rest-token:latest,BETTER_AUTH_API_KEY=betayum-${_ENVIRONMENT}-better-auth-api-key:latest,SERVICE_TOKEN_TRIGGER=betayum-${_ENVIRONMENT}-service-token-trigger:latest,ENCRYPTION_KEY=betayum-${_ENVIRONMENT}-encryption-key:latest
+      - --update-env-vars=BASE_URL=${_API_URL},NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},TRUST_APP_URL=${_PORTAL_URL},PORTAL_URL=${_PORTAL_URL},AUTH_PRIMARY_DOMAIN=${_AUTH_PRIMARY_DOMAIN},AUTH_STAGING_DOMAIN=${_AUTH_STAGING_DOMAIN},CODEX_AUTOMATION_API_BASE_URL=${_API_URL},BETAYUM_LOGO_URL=${_APP_URL}/brand/betayum-icon-color.png,APP_OBJECT_STORAGE_BUCKET=${_APP_DATA_BUCKET},APP_DEVICE_AGENT_ARTIFACTS_BUCKET=${_DEVICE_AGENT_ARTIFACTS_BUCKET},APP_GCP_BUCKET_NAME=${_APP_DATA_BUCKET},APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_ORG_ASSETS_BUCKET=${_APP_DATA_BUCKET},TRIGGER_API_URL=${_TRIGGER_URL}
+      - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,SECRET_KEY=betayum-${_ENVIRONMENT}-secret-key:latest,AUTH_SECRET=betayum-${_ENVIRONMENT}-auth-secret:latest,AUTH_GOOGLE_ID=betayum-${_ENVIRONMENT}-google-id:latest,AUTH_GOOGLE_SECRET=betayum-${_ENVIRONMENT}-google-secret:latest,GCP_OAUTH_CLIENT_ID=betayum-${_ENVIRONMENT}-google-id:latest,GCP_OAUTH_CLIENT_SECRET=betayum-${_ENVIRONMENT}-google-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest,UPSTASH_REDIS_REST_URL=betayum-${_ENVIRONMENT}-upstash-redis-rest-url:latest,UPSTASH_REDIS_REST_TOKEN=betayum-${_ENVIRONMENT}-upstash-redis-rest-token:latest,BETTER_AUTH_API_KEY=betayum-${_ENVIRONMENT}-better-auth-api-key:latest,SERVICE_TOKEN_TRIGGER=betayum-${_ENVIRONMENT}-service-token-trigger:latest,ENCRYPTION_KEY=betayum-${_ENVIRONMENT}-encryption-key:latest,TRIGGER_SECRET_KEY=betayum-${_ENVIRONMENT}-trigger-secret-key:latest
       - --quiet
 
   - id: deploy-app
@@ -248,7 +296,7 @@ steps:
       - --port=3000
       - --ingress=internal-and-cloud-load-balancing
       - --add-cloudsql-instances=${_CLOUD_SQL_INSTANCE}
-      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${_STRIPE_PUBLISHABLE_KEY},APP_OBJECT_STORAGE_BUCKET=${_APP_DATA_BUCKET},APP_GCP_BUCKET_NAME=${_APP_DATA_BUCKET},APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_QUESTIONNAIRE_UPLOAD_BUCKET=${_APP_DATA_BUCKET},APP_GCP_KNOWLEDGE_BASE_BUCKET=${_APP_DATA_BUCKET},APP_GCP_ORG_ASSETS_BUCKET=${_APP_DATA_BUCKET}
+      - --update-env-vars=NEXT_PUBLIC_API_URL=${_API_URL},NEXT_PUBLIC_BETTER_AUTH_URL=${_API_URL},NEXT_PUBLIC_PORTAL_URL=${_PORTAL_URL},NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${_STRIPE_PUBLISHABLE_KEY},APP_OBJECT_STORAGE_BUCKET=${_APP_DATA_BUCKET},APP_GCP_BUCKET_NAME=${_APP_DATA_BUCKET},APP_GCP_ENDPOINT=https://storage.googleapis.com,APP_GCP_REGION=auto,APP_GCP_QUESTIONNAIRE_UPLOAD_BUCKET=${_APP_DATA_BUCKET},APP_GCP_KNOWLEDGE_BASE_BUCKET=${_APP_DATA_BUCKET},APP_GCP_ORG_ASSETS_BUCKET=${_APP_DATA_BUCKET},TRIGGER_API_URL=${_TRIGGER_URL}
       - --remove-secrets=BETTER_AUTH_API_KEY
       - --update-secrets=DATABASE_URL=betayum-${_ENVIRONMENT}-database-url:latest,AUTH_SECRET=betayum-${_ENVIRONMENT}-auth-secret:latest,RESEND_API_KEY=betayum-${_ENVIRONMENT}-resend-api-key:latest,TRIGGER_SECRET_KEY=betayum-${_ENVIRONMENT}-trigger-secret-key:latest,SERVICE_TOKEN_TRIGGER=betayum-${_ENVIRONMENT}-service-token-trigger:latest,OPENAI_API_KEY=betayum-${_ENVIRONMENT}-openai-api-key:latest,REVALIDATION_SECRET=betayum-${_ENVIRONMENT}-revalidation-secret:latest
       - --quiet
@@ -282,6 +330,7 @@ steps:
       - deploy-api
       - deploy-app
       - deploy-portal
+      - deploy-trigger-tasks
     args:
       - -c
       - curl --fail --retry 5 --retry-delay 10 "${_API_URL}/v1/health"
@@ -293,6 +342,7 @@ steps:
       - deploy-api
       - deploy-app
       - deploy-portal
+      - deploy-trigger-tasks
     args:
       - -c
       - curl --fail --retry 5 --retry-delay 10 "${_APP_URL}/api/health"
@@ -304,6 +354,7 @@ steps:
       - deploy-api
       - deploy-app
       - deploy-portal
+      - deploy-trigger-tasks
     args:
       - -c
       - curl --fail --retry 5 --retry-delay 10 "${_PORTAL_URL}/"

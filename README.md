@@ -211,12 +211,12 @@ If an environment variable is not loading, keep the value in the appropriate ign
 
 #### 1. Trigger.dev
 
-- Create an account on [https://cloud.trigger.dev](https://cloud.trigger.dev)
-- Create a project and copy the Project ID
-- In `comp/apps/app/trigger.config.ts`, set:
-  ```ts
-  project: 'proj_****az***ywb**ob*';
-  ```
+- Start a local or self-hosted Trigger.dev v4.5.9 instance.
+- Create a project and set its `proj_...` reference as `TRIGGER_PROJECT_ID`.
+- Set `TRIGGER_API_URL` to the self-hosted dashboard/API origin and use that
+  project's environment key as `TRIGGER_SECRET_KEY`.
+- The production GCP topology and bootstrap procedure are documented in
+  [`docs/deploy/trigger-self-hosting-gcp.md`](docs/deploy/trigger-self-hosting-gcp.md).
 
 #### 2. Google OAuth
 

@@ -10,6 +10,7 @@ const requiredFiles = [
   'iam.tf',
   'services.tf',
   'edge.tf',
+  'trigger.tf',
   'cloudbuild.tf',
   'outputs.tf',
   'terraform.tfvars.example',
@@ -40,6 +41,8 @@ const requiredSnippets = [
   'google_compute_managed_ssl_certificate',
   'google_compute_region_network_endpoint_group',
   'google_compute_backend_service',
+  'google_compute_instance',
+  'google_compute_router_nat',
   'google_logging_project_bucket_config',
 ];
 

@@ -14,6 +14,12 @@ describe('resolveSslConfig', () => {
     expect(resolveSslConfig('postgresql://u:p@[::1]:5432/x', {})).toBeUndefined();
   });
 
+  it('returns undefined when sslmode explicitly disables TLS', () => {
+    expect(
+      resolveSslConfig('postgresql://u:p@cloud-sql-proxy:5432/x?sslmode=disable', {}),
+    ).toBeUndefined();
+  });
+
   it('returns rejectUnauthorized:false when PRISMA_ALLOW_INSECURE_TLS=1', () => {
     expect(
       resolveSslConfig('postgresql://u:p@db.prod.example.com:5432/x', {

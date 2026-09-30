@@ -21,9 +21,18 @@ function isLocalhostUrl(connectionString: string): boolean {
   }
 }
 
+export function shouldUseTls(connectionString: string): boolean {
+  try {
+    const url = new URL(connectionString);
+    return url.searchParams.get('sslmode') !== 'disable' && !isLocalhostUrl(connectionString);
+  } catch {
+    return true;
+  }
+}
+
 function createPrismaClient(): PrismaClient {
   const rawUrl = process.env.DATABASE_URL!;
-  const isLocalhost = isLocalhostUrl(rawUrl);
+  const useTls = shouldUseTls(rawUrl);
   const allowInsecure = process.env.PRISMA_ALLOW_INSECURE_TLS === '1';
 
   // Verified TLS via Node's default trust store, which includes Amazon Root
@@ -39,11 +48,11 @@ function createPrismaClient(): PrismaClient {
   // chain failed to validate. Surfaced as P1011 TlsConnectionError /
   // "unable to get local issuer certificate" at runtime.
   const ssl: undefined | { checkServerIdentity: () => undefined } | { rejectUnauthorized: false } =
-    isLocalhost
-      ? undefined
-      : allowInsecure
+    useTls
+      ? allowInsecure
         ? { rejectUnauthorized: false }
-        : { checkServerIdentity: () => undefined };
+        : { checkServerIdentity: () => undefined }
+      : undefined;
 
   const url = ssl !== undefined ? stripSslMode(rawUrl) : rawUrl;
   const adapter = new PrismaPg({ connectionString: url, ssl });

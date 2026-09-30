@@ -26,6 +26,11 @@ variable "environments" {
     device_agent_artifacts_bucket_name = optional(string)
     cloud_sql_instance_connection_name = optional(string)
     stripe_publishable_key             = optional(string, "")
+    trigger_domain                     = optional(string)
+    trigger_zone                       = optional(string)
+    trigger_machine_type               = optional(string, "e2-standard-4")
+    trigger_disk_size_gb               = optional(number, 100)
+    trigger_subnet_cidr                = optional(string, "10.30.0.0/24")
     cloudbuild_included_files = optional(list(string), [
       ".dockerignore",
       "apps/**",
@@ -37,6 +42,7 @@ variable "environments" {
       "apps/api/Dockerfile.multistage",
       "cloudbuild.yaml",
       "infra/gcp/**",
+      "scripts/deploy-trigger-tasks-gce.sh",
       "tsconfig.json",
       "turbo.json",
     ])
@@ -105,8 +111,25 @@ variable "secret_names" {
     "auth-microsoft-client-secret",
     "resend-api-key",
     "trigger-secret-key",
+    "trigger-access-token",
+    "trigger-project-id",
+    "trigger-postgres-password",
+    "trigger-clickhouse-password",
+    "trigger-session-secret",
+    "trigger-magic-link-secret",
+    "trigger-encryption-key",
+    "trigger-provider-secret",
+    "trigger-coordinator-secret",
+    "trigger-managed-worker-secret",
+    "trigger-registry-password",
+    "trigger-object-store-secret-access-key",
+    "trigger-task-database-url",
     "service-token-trigger",
     "openai-api-key",
+    "anthropic-api-key",
+    "groq-api-key",
+    "firecrawl-api-key",
+    "novu-api-key",
     "encryption-key",
     "revalidation-secret",
     "upstash-redis-rest-url",
@@ -115,6 +138,43 @@ variable "secret_names" {
     "app-gcp-secret-access-key",
     "stripe-secret-key",
     "stripe-webhook-secret",
+  ]
+}
+
+variable "trigger_runtime_secret_names" {
+  description = "Secret shells the self-hosted Trigger.dev platform and task builder may read."
+  type        = list(string)
+  default = [
+    "database-url",
+    "secret-key",
+    "auth-secret",
+    "resend-api-key",
+    "trigger-secret-key",
+    "trigger-access-token",
+    "trigger-project-id",
+    "trigger-postgres-password",
+    "trigger-clickhouse-password",
+    "trigger-session-secret",
+    "trigger-magic-link-secret",
+    "trigger-encryption-key",
+    "trigger-provider-secret",
+    "trigger-coordinator-secret",
+    "trigger-managed-worker-secret",
+    "trigger-registry-password",
+    "trigger-object-store-secret-access-key",
+    "trigger-task-database-url",
+    "service-token-trigger",
+    "openai-api-key",
+    "anthropic-api-key",
+    "groq-api-key",
+    "firecrawl-api-key",
+    "novu-api-key",
+    "encryption-key",
+    "revalidation-secret",
+    "upstash-redis-rest-url",
+    "upstash-redis-rest-token",
+    "app-gcp-access-key-id",
+    "app-gcp-secret-access-key",
   ]
 }
 

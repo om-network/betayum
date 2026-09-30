@@ -7,6 +7,7 @@ locals {
     "compute.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
+    "iap.googleapis.com",
     "logging.googleapis.com",
     "monitoring.googleapis.com",
     "run.googleapis.com",
@@ -23,6 +24,21 @@ locals {
     }
     portal = {
       port = 3000
+    }
+  }
+
+  trigger_hosts = {
+    for env_name, env in var.environments : env_name => {
+      project_id = env.project_id
+      region     = env.region
+      zone       = coalesce(try(env.trigger_zone, null), "${env.region}-a")
+      domain = coalesce(
+        try(env.trigger_domain, null),
+        replace(env.domains.app, "app.", "trigger."),
+      )
+      machine_type = try(env.trigger_machine_type, "e2-standard-4")
+      disk_size_gb = try(env.trigger_disk_size_gb, 100)
+      subnet_cidr  = try(env.trigger_subnet_cidr, "10.30.0.0/24")
     }
   }
 
@@ -135,6 +151,19 @@ locals {
     ]) : item.key => item
   }
 
+  trigger_secret_bindings = {
+    for item in flatten([
+      for env_name, host in local.trigger_hosts : [
+        for secret_name in var.trigger_runtime_secret_names : {
+          key        = "${env_name}.${secret_name}"
+          env_name   = env_name
+          project_id = host.project_id
+          secret_key = "${env_name}.${secret_name}"
+        }
+      ]
+    ]) : item.key => item
+  }
+
   migrator_jobs = {
     for env_name, env in var.environments : env_name => {
       name       = "betayum-${env_name}-migrator"
@@ -172,7 +201,9 @@ locals {
     "roles/logging.viewer",
     "roles/run.admin",
     "roles/cloudsql.client",
+    "roles/compute.osAdminLogin",
     "roles/compute.networkUser",
     "roles/compute.viewer",
+    "roles/iap.tunnelResourceAccessor",
   ])
 }

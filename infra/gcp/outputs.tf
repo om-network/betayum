@@ -66,3 +66,16 @@ output "object_storage_buckets" {
     }
   }
 }
+
+output "trigger_hosts" {
+  description = "Self-hosted Trigger.dev VM and managed domain by environment."
+  value = {
+    for env_name, instance in google_compute_instance.trigger : env_name => {
+      project     = instance.project
+      zone        = instance.zone
+      name        = instance.name
+      internal_ip = instance.network_interface[0].network_ip
+      url         = "https://${local.trigger_hosts[env_name].domain}"
+    }
+  }
+}

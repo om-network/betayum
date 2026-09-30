@@ -11,11 +11,11 @@ This file is a brief overview for Docker-based self-hosting.
 
 Docker uses **separate env files** (not a root `.env`):
 
-| File | Services |
-|------|----------|
+| File               | Services         |
+| ------------------ | ---------------- |
 | `packages/db/.env` | migrator, seeder |
-| `apps/app/.env` | app |
-| `apps/portal/.env` | portal |
+| `apps/app/.env`    | app              |
+| `apps/portal/.env` | portal           |
 
 ### Minimal Required Environment
 
@@ -46,6 +46,7 @@ use a separate prefix when the cookie domain matches `AUTH_STAGING_DOMAIN`, so
 staging and production browser sessions do not collide.
 
 **Self-Hosted Mode:**
+
 - Set `NEXT_PUBLIC_SELF_HOSTED=true` in `apps/app/.env` to mark the instance as self-hosted
 - When enabled, organizations are automatically approved and bypass the payment/booking flow
 - `STRIPE_SECRET_KEY` is not required for self-hosted instances
@@ -55,7 +56,8 @@ staging and production browser sessions do not collide.
 - Docker Desktop or Docker Engine
 - External PostgreSQL 14+ with SSL
 - [Resend](https://resend.com) account for email
-- [Trigger.dev](https://cloud.trigger.dev) account for workflows
+- A Trigger.dev instance; the GCP baseline includes the supported Docker worker
+  on Compute Engine
 
 ### Build & Run
 
@@ -83,13 +85,17 @@ docker compose up -d app portal
 
 ### Trigger.dev Deployment
 
-Deploy tasks from your workstation (not inside Docker):
+Point the CLI at your self-hosted instance when deploying from a workstation:
 
 ```bash
 cd apps/app
-bunx trigger.dev@latest login
-bunx trigger.dev@latest deploy
+TRIGGER_API_URL=https://trigger.yourdomain.com bunx trigger.dev@4.5.9 login
+TRIGGER_API_URL=https://trigger.yourdomain.com bunx trigger.dev@4.5.9 deploy
 ```
+
+For Google Cloud, Cloud Build owns task deployment. Follow
+[`docs/deploy/trigger-self-hosting-gcp.md`](docs/deploy/trigger-self-hosting-gcp.md)
+instead of deploying manually.
 
 ### Troubleshooting
 

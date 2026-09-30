@@ -29,6 +29,9 @@ is created or updated by Cloud Build using the migration job runtime identity.
 - Private Google Cloud Storage buckets for app data and device-agent artifacts.
 - Secret Manager secret shells with environment-scoped names.
 - Cloud Run services for API, app, and portal.
+- A private Compute Engine host for the pinned Trigger.dev Docker stack.
+- A dedicated Trigger.dev VPC, subnet, Cloud NAT, IAP SSH rule, and load-balancer
+  backend.
 - A Cloud Run migration job plus Cloud Build substitutions for the seed job that
   runs before service rollout.
 - Cloud SQL attachments and IAM client grants when an environment provides a
@@ -107,6 +110,9 @@ Required decisions before `plan`:
   project ID, environment, and bucket purpose.
 - Optional Cloud Armor security policy IDs.
 - Final Cloud Build GitHub App connection authorization.
+- Trigger.dev domain, VM zone, and VM sizing. See
+  [`../../docs/deploy/trigger-self-hosting-gcp.md`](../../docs/deploy/trigger-self-hosting-gcp.md)
+  for the two-stage secret and project bootstrap.
 
 ## Safe Workflow
 

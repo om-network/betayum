@@ -102,6 +102,33 @@ resource "google_secret_manager_secret_iam_member" "migrator_secret_access" {
   member    = google_service_account.migrator[each.value.env_name].member
 }
 
+resource "google_secret_manager_secret_iam_member" "trigger_secret_access" {
+  for_each = local.trigger_secret_bindings
+
+  project   = each.value.project_id
+  secret_id = google_secret_manager_secret.secrets[each.value.secret_key].secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = google_service_account.trigger[each.value.env_name].member
+}
+
+resource "google_artifact_registry_repository_iam_member" "trigger_artifact_reader" {
+  for_each = local.trigger_hosts
+
+  project    = each.value.project_id
+  location   = google_artifact_registry_repository.services[each.key].location
+  repository = google_artifact_registry_repository.services[each.key].name
+  role       = "roles/artifactregistry.reader"
+  member     = google_service_account.trigger[each.key].member
+}
+
+resource "google_service_account_iam_member" "deployer_can_use_trigger_runtime" {
+  for_each = local.trigger_hosts
+
+  service_account_id = google_service_account.trigger[each.key].name
+  role               = "roles/iam.serviceAccountUser"
+  member             = google_service_account.deployer[each.key].member
+}
+
 resource "google_project_iam_member" "runtime_cloud_sql_client" {
   for_each = {
     for key, service in local.env_services : key => service
@@ -122,6 +149,14 @@ resource "google_project_iam_member" "migrator_cloud_sql_client" {
   project = each.value.project_id
   role    = "roles/cloudsql.client"
   member  = google_service_account.migrator[each.key].member
+}
+
+resource "google_project_iam_member" "trigger_cloud_sql_client" {
+  for_each = local.trigger_hosts
+
+  project = each.value.project_id
+  role    = "roles/cloudsql.client"
+  member  = google_service_account.trigger[each.key].member
 }
 
 locals {
@@ -158,6 +193,14 @@ resource "google_storage_bucket_iam_member" "api_app_data_object_admin" {
   bucket = google_storage_bucket.app_data[each.key].name
   role   = "roles/storage.objectAdmin"
   member = google_service_account.runtime["${each.key}.api"].member
+}
+
+resource "google_storage_bucket_iam_member" "trigger_app_data_object_admin" {
+  for_each = local.trigger_hosts
+
+  bucket = google_storage_bucket.app_data[each.key].name
+  role   = "roles/storage.objectAdmin"
+  member = google_service_account.trigger[each.key].member
 }
 
 resource "google_storage_bucket_iam_member" "api_device_agent_object_viewer" {

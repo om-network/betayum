@@ -5,12 +5,14 @@ import { TriggerProvider } from '@/components/trigger-provider';
 import { useEffect, useState } from 'react';
 
 interface TriggerTokenProviderProps {
+  baseURL: string;
   triggerJobId?: string;
   initialToken?: string;
   children: React.ReactNode;
 }
 
 export function TriggerTokenProvider({
+  baseURL,
   triggerJobId,
   initialToken,
   children,
@@ -56,10 +58,10 @@ export function TriggerTokenProvider({
   }
 
   // If no trigger job needed, just render children
-  if (!triggerJobId) {
-    return <>{children}</>;
-  }
-
-  // Wrap everything in TriggerProvider with the token
-  return <TriggerProvider accessToken={token || ''}>{children}</TriggerProvider>;
+  // Task-specific hooks also need the self-hosted endpoint when no onboarding run exists.
+  return (
+    <TriggerProvider accessToken={token || ''} baseURL={baseURL}>
+      {children}
+    </TriggerProvider>
+  );
 }

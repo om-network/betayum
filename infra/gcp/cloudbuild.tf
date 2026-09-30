@@ -44,5 +44,8 @@ resource "google_cloudbuild_trigger" "deploy" {
     _BROWSER_VM_NETWORK            = "betayum-${each.key}-browser"
     _BROWSER_VM_SUBNET             = "betayum-${each.key}-browser"
     _BROWSER_VM_ZONE               = "${each.value.region}-a"
+    _TRIGGER_URL                   = "https://${local.trigger_hosts[each.key].domain}"
+    _TRIGGER_VM                    = google_compute_instance.trigger[each.key].name
+    _TRIGGER_ZONE                  = local.trigger_hosts[each.key].zone
   }
 }
