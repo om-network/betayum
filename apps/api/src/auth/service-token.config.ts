@@ -54,7 +54,7 @@ export function resolveServiceByToken(
   const tokenBuffer = Buffer.from(token);
 
   for (const [key, definition] of Object.entries(SERVICE_DEFINITIONS)) {
-    const expectedToken = process.env[definition.envVar];
+    const expectedToken = process.env[definition.envVar]?.replace(/\r?\n$/, '');
     if (!expectedToken) continue;
 
     const expectedBuffer = Buffer.from(expectedToken);
