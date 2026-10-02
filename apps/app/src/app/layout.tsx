@@ -3,7 +3,7 @@ import '@trycompai/design-system/globals.css';
 import { env } from '@/env.mjs';
 import { auth } from '@/utils/auth';
 import { Analytics as DubAnalytics } from '@dub/analytics/react';
-import { cn } from '@trycompai/ui/cn';
+import { cn } from '@trycompai/design-system';
 import { brandConfig } from '@trycompai/utils/brand';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { GeistMono } from 'geist/font/mono';
@@ -100,7 +100,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
           <Providers session={session}>{children}</Providers>
         </NuqsAdapter>
         <Toaster richColors />
-        <VercelAnalytics />
+        {process.env.VERCEL === '1' && <VercelAnalytics />}
       </body>
     </html>
   );
