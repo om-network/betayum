@@ -12,7 +12,6 @@ import {
 } from 'ai';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 import { shouldStopAutomationAgent } from './agent-lifecycle';
 import { buildAutomationFinalizationTool } from './automation-finalization-tool';
@@ -23,6 +22,7 @@ import { buildGoogleSheetsTools } from './google-sheets-tools';
 import { buildAutomationPlatformContext, type IntegrationConnection } from './platform-context';
 import { buildReadRunOutputTool } from './read-run-output-tool';
 import { buildReadTaskAttachmentTool } from './read-task-attachment-tool';
+import { isTriggerServiceToken } from './service-token';
 import { buildSystemPrompt } from './system-prompt';
 import { automationTaskContextSchema } from './task-context';
 import { buildTaskStatusTool } from './task-status-tool';
@@ -34,17 +34,6 @@ type StoreToS3Data = {
   key?: string;
   error?: { message: string };
 };
-
-function isTriggerServiceToken(value: string | null): boolean {
-  const expected = process.env.SERVICE_TOKEN_TRIGGER;
-  if (!value || !expected) return false;
-  const receivedBuffer = Buffer.from(value);
-  const expectedBuffer = Buffer.from(expected);
-  return (
-    receivedBuffer.length === expectedBuffer.length &&
-    timingSafeEqual(receivedBuffer, expectedBuffer)
-  );
-}
 
 async function attachOutputToTask(
   taskId: string,
