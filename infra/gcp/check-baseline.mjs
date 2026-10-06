@@ -34,7 +34,7 @@ const requiredSnippets = [
   '_DB_JOB_SERVICE_ACCOUNT',
   'AUTH_PRIMARY_DOMAIN',
   'better-auth-api-key',
-  'auth-google-id',
+  'google-id',
   'auth-microsoft-client-secret',
   'NEXT_PUBLIC_API_URL',
   'roles/run.invoker',

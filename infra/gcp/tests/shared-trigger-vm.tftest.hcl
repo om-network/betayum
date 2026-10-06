@@ -64,6 +64,16 @@ run "production_shares_staging_trigger_vm" {
   }
 
   assert {
+    condition = (
+      contains(keys(google_secret_manager_secret.secrets), "production.google-id") &&
+      contains(keys(google_secret_manager_secret.secrets), "production.google-secret") &&
+      contains(keys(local.runtime_secret_bindings), "production.api.google-id") &&
+      contains(keys(local.runtime_secret_bindings), "production.api.google-secret")
+    )
+    error_message = "Production OAuth secrets must use the names expected by Cloud Build and be readable by the API."
+  }
+
+  assert {
     condition     = length(google_compute_backend_service.trigger) == 1
     error_message = "Production must reuse the staging Trigger backend."
   }
