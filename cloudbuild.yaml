@@ -27,6 +27,7 @@ substitutions:
   _TRIGGER_URL: https://trigger.34-8-88-115.sslip.io
   _TRIGGER_VM: betayum-staging-trigger
   _TRIGGER_ZONE: us-central1-a
+  _PUBLIC_DNS_READY: 'true'
 
 steps:
   - id: build-api
@@ -251,9 +252,14 @@ steps:
     env:
       - PROJECT_ID=$PROJECT_ID
       - COMMIT_SHA=$COMMIT_SHA
+      - TRIGGER_ENVIRONMENT=${_ENVIRONMENT}
       - TRIGGER_ZONE=${_TRIGGER_ZONE}
       - TRIGGER_VM=${_TRIGGER_VM}
       - TRIGGER_DEPLOYER_IMAGE=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REPOSITORY}/trigger-deployer:$COMMIT_SHA
+      - API_URL=${_API_URL}
+      - APP_URL=${_APP_URL}
+      - PORTAL_URL=${_PORTAL_URL}
+      - APP_DATA_BUCKET=${_APP_DATA_BUCKET}
     args:
       - scripts/deploy-trigger-tasks-gce.sh
 
@@ -333,7 +339,7 @@ steps:
       - deploy-trigger-tasks
     args:
       - -c
-      - curl --fail --retry 5 --retry-delay 10 "${_API_URL}/v1/health"
+      - if [ "${_PUBLIC_DNS_READY}" = "true" ]; then curl --fail --retry 5 --retry-delay 10 "${_API_URL}/v1/health"; else echo 'Public API smoke check deferred until DNS is configured'; fi
 
   - id: smoke-app
     name: curlimages/curl:8.16.0
@@ -345,7 +351,7 @@ steps:
       - deploy-trigger-tasks
     args:
       - -c
-      - curl --fail --retry 5 --retry-delay 10 "${_APP_URL}/api/health"
+      - if [ "${_PUBLIC_DNS_READY}" = "true" ]; then curl --fail --retry 5 --retry-delay 10 "${_APP_URL}/api/health"; else echo 'Public app smoke check deferred until DNS is configured'; fi
 
   - id: smoke-portal
     name: curlimages/curl:8.16.0
@@ -357,4 +363,4 @@ steps:
       - deploy-trigger-tasks
     args:
       - -c
-      - curl --fail --retry 5 --retry-delay 10 "${_PORTAL_URL}/"
+      - if [ "${_PUBLIC_DNS_READY}" = "true" ]; then curl --fail --retry 5 --retry-delay 10 "${_PORTAL_URL}/"; else echo 'Public portal smoke check deferred until DNS is configured'; fi

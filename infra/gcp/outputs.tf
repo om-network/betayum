@@ -68,14 +68,15 @@ output "object_storage_buckets" {
 }
 
 output "trigger_hosts" {
-  description = "Self-hosted Trigger.dev VM and managed domain by environment."
+  description = "Self-hosted Trigger.dev VM by environment, including shared hosts."
   value = {
-    for env_name, instance in google_compute_instance.trigger : env_name => {
-      project     = instance.project
-      zone        = instance.zone
-      name        = instance.name
-      internal_ip = instance.network_interface[0].network_ip
-      url         = "https://${local.trigger_hosts[env_name].domain}"
+    for env_name, owner in local.trigger_host_owner : env_name => {
+      project     = google_compute_instance.trigger[owner].project
+      zone        = google_compute_instance.trigger[owner].zone
+      name        = google_compute_instance.trigger[owner].name
+      internal_ip = google_compute_instance.trigger[owner].network_interface[0].network_ip
+      url         = "https://${local.trigger_hosts[owner].domain}"
+      owner       = owner
     }
   }
 }

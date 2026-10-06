@@ -14,8 +14,13 @@ confirmed by an operator before any plan is applied.
 | staging     | `develop` | automatic | `staging.betayum.com` |
 | production  | `release` | required  | `betayum.com`         |
 
-Staging and production should use separate GCP projects. Secret values are not
-managed in Terraform; this baseline creates Secret Manager shells only. The
+Staging and production can share a GCP project and Cloud SQL instance when they
+use separate databases, Secret Manager resources, buckets, and Cloud Run
+services. Set `trigger_host_environment = "staging"` for production to reuse the
+staging Trigger.dev VM and control plane instead of provisioning a second VM.
+The environments remain separate Trigger.dev projects, but share a failure
+domain: stopping the VM stops both. Secret values are not managed in Terraform;
+this baseline creates Secret Manager shells only. The
 first apply keeps `mount_runtime_secrets = false` so Cloud Run services and the
 migration job can be created before Secret Manager versions exist. The seed job
 is created or updated by Cloud Build using the migration job runtime identity.
@@ -29,7 +34,8 @@ is created or updated by Cloud Build using the migration job runtime identity.
 - Private Google Cloud Storage buckets for app data and device-agent artifacts.
 - Secret Manager secret shells with environment-scoped names.
 - Cloud Run services for API, app, and portal.
-- A private Compute Engine host for the pinned Trigger.dev Docker stack.
+- A private Compute Engine host for the pinned Trigger.dev Docker stack (one
+  host when production sets `trigger_host_environment = "staging"`).
 - A dedicated Trigger.dev VPC, subnet, Cloud NAT, IAP SSH rule, and load-balancer
   backend.
 - A Cloud Run migration job plus Cloud Build substitutions for the seed job that
@@ -98,7 +104,8 @@ cp terraform.tfvars.example terraform.tfvars
 
 Required decisions before `plan`:
 
-- Staging and production project IDs.
+- The GCP project ID shared by staging and production, or separate project IDs
+  if sharing is not desired. A shared Trigger host must be in the same project.
 - Billing and project ownership.
 - OpenTofu/Terraform state backend.
 - DNS zone owner for `betayum.com`.
@@ -114,10 +121,24 @@ Required decisions before `plan`:
   [`../../docs/deploy/trigger-self-hosting-gcp.md`](../../docs/deploy/trigger-self-hosting-gcp.md)
   for the two-stage secret and project bootstrap.
 
+When production DNS is not ready, set `public_dns_ready = false` on the
+production environment. Cloud Build still deploys the services and Trigger.dev
+tasks, but explicitly defers the three public URL smoke checks. After you point
+`api.betayum.com`, `app.betayum.com`, and `portal.betayum.com` at the production
+load-balancer IP and the managed certificate becomes active, set it to `true`
+and rerun the release build. The shared Trigger.dev URL remains the staging
+host; it does not require a second DNS record.
+
 ## Safe Workflow
 
 Use OpenTofu or Terraform consistently for a workspace. Do not commit
 `terraform.tfvars` or state files.
+The existing GCP project already has live staging resources and a manually
+bootstrapped production foundation, but this checkout has no Terraform state
+backend. Do not apply this combined baseline to that project until the live
+resources have been imported into a reviewed state; otherwise Terraform will
+try to create resources that already exist. Cloud Build owns application image
+rollouts after the foundation is reconciled.
 
 ```bash
 tofu init

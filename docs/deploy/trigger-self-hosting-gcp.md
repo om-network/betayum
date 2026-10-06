@@ -10,10 +10,19 @@ the public network, but it is not highly available. Snapshot the VM boot disk
 before platform upgrades and use GKE if task availability requires multiple
 worker nodes.
 
+Production can share this VM and control plane with staging. Give production a
+separate Trigger.dev project, environment secret key, task database, and
+Secret Manager values; the deploy script selects the environment passed by
+Cloud Build instead of reading the VM's staging metadata for task configuration.
+The shared Docker registry still uses the staging host's registry password;
+production does not need a second platform registry password.
+Do not create a second VM or copy staging task credentials into production.
+Both projects stop when this VM is stopped.
+
 ## Topology
 
 ```text
-trigger.<environment-domain> -> existing HTTPS load balancer -> VM:8030
+shared Trigger URL -> existing HTTPS load balancer -> VM:8030
 Cloud Build -> IAP SSH -> VM deploy script -> private registry -> supervisor
 Cloud Run API/app -> trigger URL + environment secret key
 ```
@@ -79,9 +88,11 @@ registry on port 5000 is reachable only from the host and its task containers.
    postgresql://USER:PERCENT_ENCODED_PASSWORD@cloud-sql-proxy:5432/DATABASE
    ```
 
-9. Seed any optional task secrets used in that environment, including OpenAI,
-   Anthropic, Groq, Firecrawl, Novu, Resend, Upstash, and GCS interoperability
-   credentials. Cloud Build skips optional secrets that have no version.
+9. Seed task secrets used in that environment, including OpenAI, Anthropic,
+   Groq, Firecrawl, Novu, Resend, Upstash, and GCS interoperability
+   credentials. The task builder skips optional secrets that have no version;
+   Cloud Run secrets referenced in `cloudbuild.yaml` still need versions before
+   a service can deploy.
 10. Run the environment Cloud Build trigger. It builds the compact
     `deployer.Dockerfile`, transfers source over IAP, deploys tasks to the local
     Trigger registry, and then rolls out Cloud Run with `TRIGGER_API_URL` and

@@ -27,6 +27,17 @@ locals {
     }
   }
 
+  trigger_host_owner = {
+    for env_name, env in var.environments : env_name => coalesce(try(env.trigger_host_environment, null), env_name)
+  }
+
+  project_owner = {
+    for project_id in toset([for env in values(var.environments) : env.project_id]) : project_id =>
+    contains([for env_name, env in var.environments : env_name if env.project_id == project_id], "staging")
+    ? "staging"
+    : sort([for env_name, env in var.environments : env_name if env.project_id == project_id])[0]
+  }
+
   trigger_hosts = {
     for env_name, env in var.environments : env_name => {
       project_id = env.project_id
@@ -39,7 +50,7 @@ locals {
       machine_type = try(env.trigger_machine_type, "e2-standard-4")
       disk_size_gb = try(env.trigger_disk_size_gb, 100)
       subnet_cidr  = try(env.trigger_subnet_cidr, "10.30.0.0/24")
-    }
+    } if local.trigger_host_owner[env_name] == env_name
   }
 
   env_services = {
@@ -153,13 +164,33 @@ locals {
 
   trigger_secret_bindings = {
     for item in flatten([
-      for env_name, host in local.trigger_hosts : [
+      for env_name, env in var.environments : [
         for secret_name in var.trigger_runtime_secret_names : {
-          key        = "${env_name}.${secret_name}"
-          env_name   = env_name
-          project_id = host.project_id
-          secret_key = "${env_name}.${secret_name}"
-        }
+          key              = "${env_name}.${secret_name}"
+          env_name         = env_name
+          host_environment = local.trigger_host_owner[env_name]
+          project_id       = env.project_id
+          secret_key       = "${env_name}.${secret_name}"
+          } if local.trigger_host_owner[env_name] == env_name || contains([
+            "trigger-access-token",
+            "trigger-project-id",
+            "trigger-task-database-url",
+            "service-token-trigger",
+            "secret-key",
+            "auth-secret",
+            "encryption-key",
+            "resend-api-key",
+            "openai-api-key",
+            "anthropic-api-key",
+            "groq-api-key",
+            "firecrawl-api-key",
+            "novu-api-key",
+            "revalidation-secret",
+            "upstash-redis-rest-url",
+            "upstash-redis-rest-token",
+            "app-gcp-access-key-id",
+            "app-gcp-secret-access-key",
+        ], secret_name)
       ]
     ]) : item.key => item
   }

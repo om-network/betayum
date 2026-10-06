@@ -130,9 +130,12 @@ resource "google_compute_url_map" "edge" {
     path_matcher = "portal"
   }
 
-  host_rule {
-    hosts        = [local.trigger_hosts[each.key].domain]
-    path_matcher = "trigger"
+  dynamic "host_rule" {
+    for_each = contains(keys(local.trigger_hosts), each.key) ? [1] : []
+    content {
+      hosts        = [local.trigger_hosts[each.key].domain]
+      path_matcher = "trigger"
+    }
   }
 
   path_matcher {
@@ -150,9 +153,12 @@ resource "google_compute_url_map" "edge" {
     default_service = google_compute_backend_service.service_backends["${each.key}.portal"].id
   }
 
-  path_matcher {
-    name            = "trigger"
-    default_service = google_compute_backend_service.trigger[each.key].id
+  dynamic "path_matcher" {
+    for_each = contains(keys(local.trigger_hosts), each.key) ? [1] : []
+    content {
+      name            = "trigger"
+      default_service = google_compute_backend_service.trigger[each.key].id
+    }
   }
 }
 
@@ -162,10 +168,10 @@ resource "google_compute_target_https_proxy" "edge" {
   project = each.value.project_id
   name    = "betayum-${each.key}-https"
   url_map = google_compute_url_map.edge[each.key].id
-  ssl_certificates = [
-    google_compute_managed_ssl_certificate.edge[each.key].id,
-    google_compute_managed_ssl_certificate.trigger[each.key].id,
-  ]
+  ssl_certificates = concat(
+    [google_compute_managed_ssl_certificate.edge[each.key].id],
+    contains(keys(local.trigger_hosts), each.key) ? [google_compute_managed_ssl_certificate.trigger[each.key].id] : [],
+  )
 }
 
 resource "google_compute_url_map" "http_redirect" {

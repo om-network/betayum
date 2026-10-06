@@ -108,23 +108,23 @@ resource "google_secret_manager_secret_iam_member" "trigger_secret_access" {
   project   = each.value.project_id
   secret_id = google_secret_manager_secret.secrets[each.value.secret_key].secret_id
   role      = "roles/secretmanager.secretAccessor"
-  member    = google_service_account.trigger[each.value.env_name].member
+  member    = google_service_account.trigger[each.value.host_environment].member
 }
 
 resource "google_artifact_registry_repository_iam_member" "trigger_artifact_reader" {
-  for_each = local.trigger_hosts
+  for_each = var.environments
 
   project    = each.value.project_id
   location   = google_artifact_registry_repository.services[each.key].location
   repository = google_artifact_registry_repository.services[each.key].name
   role       = "roles/artifactregistry.reader"
-  member     = google_service_account.trigger[each.key].member
+  member     = google_service_account.trigger[local.trigger_host_owner[each.key]].member
 }
 
 resource "google_service_account_iam_member" "deployer_can_use_trigger_runtime" {
-  for_each = local.trigger_hosts
+  for_each = var.environments
 
-  service_account_id = google_service_account.trigger[each.key].name
+  service_account_id = google_service_account.trigger[local.trigger_host_owner[each.key]].name
   role               = "roles/iam.serviceAccountUser"
   member             = google_service_account.deployer[each.key].member
 }
@@ -196,11 +196,11 @@ resource "google_storage_bucket_iam_member" "api_app_data_object_admin" {
 }
 
 resource "google_storage_bucket_iam_member" "trigger_app_data_object_admin" {
-  for_each = local.trigger_hosts
+  for_each = var.environments
 
   bucket = google_storage_bucket.app_data[each.key].name
   role   = "roles/storage.objectAdmin"
-  member = google_service_account.trigger[each.key].member
+  member = google_service_account.trigger[local.trigger_host_owner[each.key]].member
 }
 
 resource "google_storage_bucket_iam_member" "api_device_agent_object_viewer" {

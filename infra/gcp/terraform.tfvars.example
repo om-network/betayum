@@ -5,11 +5,11 @@ repository = {
 
 environments = {
   staging = {
-    project_id        = "betayum-staging-project-id"
+    project_id        = "centered-kiln-498405-h8"
     region            = "us-central1"
     branch_name       = "develop"
     approval_required = false
-    cloud_sql_instance_connection_name = "staging-project-id:us-central1:betayum-db"
+    cloud_sql_instance_connection_name = "centered-kiln-498405-h8:us-central1:betayum-db"
     app_data_bucket_name               = "betayum-staging-app-data"
     device_agent_artifacts_bucket_name = "betayum-staging-device-agent-artifacts"
     trigger_domain                     = "trigger.34-8-88-115.sslip.io"
@@ -23,15 +23,15 @@ environments = {
   }
 
   production = {
-    project_id        = "betayum-prod-project-id"
+    project_id        = "centered-kiln-498405-h8"
     region            = "us-central1"
     branch_name       = "release"
     approval_required = true
-    cloud_sql_instance_connection_name = "prod-project-id:us-central1:betayum-db"
-    app_data_bucket_name               = "betayum-production-app-data"
+    cloud_sql_instance_connection_name = "centered-kiln-498405-h8:us-central1:betayum-db"
+    app_data_bucket_name               = "centered-kiln-498405-h8-betayum-production-app-data"
     device_agent_artifacts_bucket_name = "betayum-production-device-agent-artifacts"
-    trigger_domain                     = "trigger.betayum.com"
-    trigger_machine_type               = "e2-standard-4"
+    trigger_host_environment           = "staging"
+    public_dns_ready                   = false
 
     domains = {
       api    = "api.betayum.com"
