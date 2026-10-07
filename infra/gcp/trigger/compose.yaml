@@ -35,6 +35,10 @@ services:
       DIRECT_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/main?schema=public&sslmode=disable
       SESSION_SECRET: ${SESSION_SECRET}
       MAGIC_LINK_SECRET: ${MAGIC_LINK_SECRET}
+      EMAIL_TRANSPORT: resend
+      FROM_EMAIL: hello@betayum.com
+      REPLY_TO_EMAIL: hello@betayum.com
+      RESEND_API_KEY: ${RESEND_API_KEY}
       ENCRYPTION_KEY: ${TRIGGER_ENCRYPTION_KEY}
       PROVIDER_SECRET: ${PROVIDER_SECRET}
       COORDINATOR_SECRET: ${COORDINATOR_SECRET}

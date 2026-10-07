@@ -34,7 +34,7 @@ resource "google_cloudbuild_trigger" "deploy" {
     _API_URL                       = "https://${each.value.domains.api}"
     _APP_URL                       = "https://${each.value.domains.app}"
     _PORTAL_URL                    = "https://${each.value.domains.portal}"
-    _STRIPE_PUBLISHABLE_KEY        = coalesce(try(each.value.stripe_publishable_key, null), "")
+    _STRIPE_PUBLISHABLE_KEY        = each.value.stripe_publishable_key
     _AUTH_PRIMARY_DOMAIN           = var.auth_primary_domain
     _AUTH_STAGING_DOMAIN           = var.auth_staging_domain
     _APP_DATA_BUCKET               = google_storage_bucket.app_data[each.key].name
@@ -44,8 +44,9 @@ resource "google_cloudbuild_trigger" "deploy" {
     _BROWSER_VM_NETWORK            = "betayum-${each.key}-browser"
     _BROWSER_VM_SUBNET             = "betayum-${each.key}-browser"
     _BROWSER_VM_ZONE               = "${each.value.region}-a"
-    _TRIGGER_URL                   = "https://${local.trigger_hosts[each.key].domain}"
-    _TRIGGER_VM                    = google_compute_instance.trigger[each.key].name
-    _TRIGGER_ZONE                  = local.trigger_hosts[each.key].zone
+    _TRIGGER_URL                   = "https://${local.trigger_hosts[local.trigger_host_owner[each.key]].domain}"
+    _TRIGGER_VM                    = google_compute_instance.trigger[local.trigger_host_owner[each.key]].name
+    _TRIGGER_ZONE                  = local.trigger_hosts[local.trigger_host_owner[each.key]].zone
+    _PUBLIC_DNS_READY              = tostring(try(each.value.public_dns_ready, true))
   }
 }

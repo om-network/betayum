@@ -27,6 +27,7 @@ variable "environments" {
     cloud_sql_instance_connection_name = optional(string)
     stripe_publishable_key             = optional(string, "")
     trigger_domain                     = optional(string)
+    trigger_host_environment           = optional(string)
     trigger_zone                       = optional(string)
     trigger_machine_type               = optional(string, "e2-standard-4")
     trigger_disk_size_gb               = optional(number, 100)
@@ -46,12 +47,25 @@ variable "environments" {
       "tsconfig.json",
       "turbo.json",
     ])
+    public_dns_ready = optional(bool, true)
     domains = object({
       api    = string
       app    = string
       portal = string
     })
   }))
+
+  validation {
+    condition = alltrue([
+      for env_name, env in var.environments :
+      try(env.trigger_host_environment, null) == null || (
+        contains(keys(var.environments), env.trigger_host_environment) &&
+        env.project_id == try(var.environments[env.trigger_host_environment].project_id, "") &&
+        env.region == try(var.environments[env.trigger_host_environment].region, "")
+      )
+    ])
+    error_message = "A shared Trigger host must name an environment in the same GCP project and region."
+  }
 }
 
 variable "object_storage_force_destroy" {
@@ -105,8 +119,8 @@ variable "secret_names" {
     "auth-secret",
     "better-auth-secret",
     "better-auth-api-key",
-    "auth-google-id",
-    "auth-google-secret",
+    "google-id",
+    "google-secret",
     "auth-microsoft-client-id",
     "auth-microsoft-client-secret",
     "resend-api-key",
@@ -189,8 +203,8 @@ variable "runtime_secret_names" {
       "better-auth-api-key",
       "service-token-trigger",
       "encryption-key",
-      "auth-google-id",
-      "auth-google-secret",
+      "google-id",
+      "google-secret",
       "auth-microsoft-client-id",
       "auth-microsoft-client-secret",
       "resend-api-key",

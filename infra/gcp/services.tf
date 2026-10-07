@@ -7,7 +7,7 @@ resource "google_project_service" "required" {
           project_id = env.project_id
           api        = api
         }
-      ]
+      ] if env_name == local.project_owner[env.project_id]
     ]) : item.key => item
   }
 
@@ -42,7 +42,10 @@ resource "google_secret_manager_secret" "secrets" {
 }
 
 resource "google_logging_project_bucket_config" "default" {
-  for_each = var.environments
+  for_each = {
+    for env_name, env in var.environments : env_name => env
+    if env_name == local.project_owner[env.project_id]
+  }
 
   project        = each.value.project_id
   location       = "global"

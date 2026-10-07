@@ -106,7 +106,7 @@ describe(CodexTerminal.name, () => {
 
     render(<CodexTerminal connectionId="icn_auditor" />);
 
-    expect(await screen.findByText('Connected')).toBeInTheDocument();
+    expect(await screen.findByText('Connected')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Open terminal' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Disconnect' })).toBeNull();
   });

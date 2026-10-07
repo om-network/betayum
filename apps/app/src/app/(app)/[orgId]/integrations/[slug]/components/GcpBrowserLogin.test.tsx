@@ -111,8 +111,8 @@ describe(BrowserLogin.name, () => {
 
     render(<BrowserLogin connectionId="icn_auditor" providerName="Google Cloud" />);
 
-    expect(await screen.findByText('Session saved')).toBeInTheDocument();
-    expect(screen.getByText(/Last saved/)).toBeInTheDocument();
+    expect(await screen.findByText('Session saved')).toBeTruthy();
+    expect(screen.getByText(/Last saved/)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Open desktop' })).toBeNull();
   });
 });

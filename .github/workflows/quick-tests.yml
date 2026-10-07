@@ -15,7 +15,7 @@ env:
 jobs:
   quick-test:
     name: Quick Checks
-    runs-on: warp-ubuntu-latest-arm64-4x
+    runs-on: ubuntu-latest
 
     services:
       postgres:
@@ -41,12 +41,14 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --ignore-scripts
 
       - name: Generate Prisma client
         run: |
           cd packages/db
           bunx prisma generate
+          cd ../../apps/app
+          bunx prisma generate --schema=./prisma/schema
 
       - name: Run database migrations
         run: |
