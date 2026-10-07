@@ -70,4 +70,12 @@ if (terraformSource.includes('roles/secretmanager.secretAccessor",\n  ])')) {
   throw new Error('Cloud Build deployer must not have project-wide secret access');
 }
 
+const triggerCompose = readFileSync(join(root, 'trigger/compose.yaml'), 'utf8');
+const triggerStartup = readFileSync(join(root, 'trigger/startup.sh'), 'utf8');
+if (!triggerCompose.includes('EMAIL_TRANSPORT: resend') ||
+    !triggerCompose.includes('RESEND_API_KEY: ${RESEND_API_KEY}') ||
+    !triggerStartup.includes('append_compose_secret RESEND_API_KEY resend-api-key true')) {
+  throw new Error('Trigger magic-link email delivery must use the Resend secret');
+}
+
 console.log('GCP IaC baseline files are present and cover required resources.');

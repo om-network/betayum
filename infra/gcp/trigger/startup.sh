@@ -50,6 +50,7 @@ append_compose_secret POSTGRES_PASSWORD trigger-postgres-password true
 append_compose_secret CLICKHOUSE_PASSWORD trigger-clickhouse-password true
 append_compose_secret SESSION_SECRET trigger-session-secret true
 append_compose_secret MAGIC_LINK_SECRET trigger-magic-link-secret true
+append_compose_secret RESEND_API_KEY resend-api-key true
 append_compose_secret TRIGGER_ENCRYPTION_KEY trigger-encryption-key true
 append_compose_secret PROVIDER_SECRET trigger-provider-secret true
 append_compose_secret COORDINATOR_SECRET trigger-coordinator-secret true
