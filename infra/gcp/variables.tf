@@ -203,6 +203,7 @@ variable "runtime_secret_names" {
       "better-auth-api-key",
       "service-token-trigger",
       "encryption-key",
+      "trigger-secret-key",
       "google-id",
       "google-secret",
       "auth-microsoft-client-id",
