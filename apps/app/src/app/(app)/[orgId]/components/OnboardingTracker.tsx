@@ -1,7 +1,7 @@
 'use client';
 
 import type { Onboarding } from '@db';
-import { useRun } from '@trigger.dev/react-hooks';
+import { useRun, useTriggerAuthContext } from '@trigger.dev/react-hooks';
 import { Button } from '@trycompai/ui/button';
 import { Card, CardContent } from '@trycompai/ui/card';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -52,6 +52,12 @@ const getFriendlyStatusName = (status: string): string => {
 };
 
 export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) => {
+  const { accessToken } = useTriggerAuthContext();
+  if (!accessToken) return null;
+  return <ConnectedOnboardingTracker onboarding={onboarding} />;
+};
+
+function ConnectedOnboardingTracker({ onboarding }: { onboarding: Onboarding }) {
   const triggerJobId = onboarding.triggerJobId;
   const organizationId = onboarding.organizationId;
   const pathname = usePathname();
@@ -973,4 +979,4 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     </motion.div>,
     document.body,
   );
-};
+}

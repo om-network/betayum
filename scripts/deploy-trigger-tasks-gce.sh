@@ -14,6 +14,17 @@ if [[ ! "${COMMIT_SHA}" =~ ^[a-f0-9]{7,40}$ ]]; then
 fi
 
 ARCHIVE="/workspace/betayum-trigger-${COMMIT_SHA}.tar.gz"
+
+VM_STATUS="$(gcloud compute instances describe "${TRIGGER_VM}" \
+  --project="${PROJECT_ID}" --zone="${TRIGGER_ZONE}" --format='value(status)')"
+if [[ "${VM_STATUS}" == "TERMINATED" ]]; then
+  printf 'Trigger VM is stopped; task deployment deferred. Cloud Run rollout can continue.\n'
+  exit 0
+fi
+if [[ "${VM_STATUS}" != "RUNNING" ]]; then
+  printf 'Trigger VM is not ready for deployment: %s\n' "${VM_STATUS}" >&2
+  exit 1
+fi
 REMOTE_ARCHIVE="/tmp/betayum-trigger-${COMMIT_SHA}.tar.gz"
 REMOTE_DEPLOY_SCRIPT="/usr/local/bin/deploy-betayum-trigger"
 METADATA_DEPLOY_SCRIPT_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes/trigger-deploy-script"

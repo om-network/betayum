@@ -1,6 +1,6 @@
 'use client';
 
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { useRealtimeRun, useTriggerAuthContext } from '@trigger.dev/react-hooks';
 import { useMemo } from 'react';
 
 export type OnboardingItemStatus = 'pending' | 'processing' | 'created' | 'assessing' | 'completed';
@@ -14,7 +14,8 @@ export function useOnboardingStatus(
   onboardingRunId: string | null | undefined,
   itemType: 'risks' | 'vendors',
 ) {
-  const shouldSubscribe = Boolean(onboardingRunId);
+  const { accessToken } = useTriggerAuthContext();
+  const shouldSubscribe = Boolean(onboardingRunId && accessToken);
   const { run } = useRealtimeRun(shouldSubscribe ? onboardingRunId! : '', {
     enabled: shouldSubscribe,
   });
