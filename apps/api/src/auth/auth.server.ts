@@ -1,7 +1,9 @@
 import '../config/load-env';
-import { MagicLinkEmail, OTPVerificationEmail } from '@trycompai/email';
-import { triggerEmail } from '../email/trigger-email';
-import { InviteEmail } from '../email/templates/invite-member';
+import {
+  sendAuthInvitationEmail,
+  sendAuthMagicLink,
+  sendAuthVerificationOTP,
+} from './auth-email';
 import { db } from '@db';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
@@ -391,25 +393,7 @@ export const auth = betterAuth({
   plugins: [
     organization({
       membershipLimit: 100000000000,
-      async sendInvitationEmail(data) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[Auth] Sending invitation to:', data.email);
-        }
-        const appUrl =
-          process.env.NEXT_PUBLIC_APP_URL ??
-          process.env.BETTER_AUTH_URL ??
-          'https://app.betayum.com';
-        const inviteLink = `${appUrl}/invite/${data.invitation.id}`;
-        await triggerEmail({
-          to: data.email,
-          subject: `You've been invited to join ${data.organization.name} on Betayum`,
-          react: InviteEmail({
-            organizationName: data.organization.name,
-            inviteLink,
-            email: data.email,
-          }),
-        });
-      },
+      sendInvitationEmail: sendAuthInvitationEmail,
       ac: ac,
       roles: allRoles,
       // Enable dynamic access control for custom roles
@@ -436,35 +420,12 @@ export const auth = betterAuth({
     }),
     magicLink({
       expiresIn: MAGIC_LINK_EXPIRES_IN_SECONDS,
-      sendMagicLink: async ({ email, url }) => {
-        // The `url` from better-auth points to the API's verify endpoint
-        // and includes the callbackURL from the client's sign-in request.
-        // Flow: user clicks link → API verifies token & sets session cookie
-        // → API redirects (302) to callbackURL (the app).
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[Auth] Sending magic link to:', email);
-          console.log('[Auth] Magic link URL:', url);
-        }
-        await triggerEmail({
-          to: email,
-          subject: 'Login to Betayum',
-          react: MagicLinkEmail({ email, url }),
-        });
-      },
+      sendMagicLink: sendAuthMagicLink,
     }),
     emailOTP({
       otpLength: 6,
       expiresIn: 10 * 60,
-      async sendVerificationOTP({ email, otp }) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[Auth] Sending OTP to:', email);
-        }
-        await triggerEmail({
-          to: email,
-          subject: 'One-Time Password for Betayum',
-          react: OTPVerificationEmail({ email, otp }),
-        });
-      },
+      sendVerificationOTP: sendAuthVerificationOTP,
     }),
     multiSession(),
     bearer(),

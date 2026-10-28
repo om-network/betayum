@@ -18,7 +18,6 @@ export function TriggerTokenProvider({
   children,
 }: TriggerTokenProviderProps) {
   const [token, setToken] = useState<string | null>(initialToken || null);
-  const [isLoading, setIsLoading] = useState(!initialToken && !!triggerJobId);
 
   useEffect(() => {
     async function ensureToken() {
@@ -29,8 +28,6 @@ export function TriggerTokenProvider({
           setToken(healedToken);
         } catch (error) {
           console.error('Failed to heal token:', error);
-        } finally {
-          setIsLoading(false);
         }
       }
     }
@@ -38,27 +35,7 @@ export function TriggerTokenProvider({
     ensureToken();
   }, [triggerJobId, initialToken]);
 
-  // If we need a token but don't have one yet, show loading
-  if (triggerJobId && isLoading) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-        <span className="ml-2 text-sm text-muted-foreground">Connecting...</span>
-      </div>
-    );
-  }
-
-  // If we need a token but failed to get one, show error
-  if (triggerJobId && !token && !isLoading) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <span className="text-sm text-destructive">Failed to establish connection</span>
-      </div>
-    );
-  }
-
-  // If no trigger job needed, just render children
-  // Task-specific hooks also need the self-hosted endpoint when no onboarding run exists.
+  // Realtime credentials must never gate access to the rest of the app.
   return (
     <TriggerProvider accessToken={token || ''} baseURL={baseURL}>
       {children}

@@ -71,6 +71,8 @@ locals {
       api = {
         BASE_URL                          = "https://${env.domains.api}"
         NEXT_PUBLIC_API_URL               = "https://${env.domains.api}"
+        NEXT_PUBLIC_APP_URL               = "https://${env.domains.app}"
+        RESEND_FROM_SYSTEM                = "hello@betayum.com"
         NEXT_PUBLIC_BETTER_AUTH_URL       = "https://${env.domains.api}"
         NEXT_PUBLIC_PORTAL_URL            = "https://${env.domains.portal}"
         AUTH_PRIMARY_DOMAIN               = var.auth_primary_domain

@@ -1,12 +1,18 @@
 'use client';
 
 import type { onboardOrganization } from '@/trigger/tasks/onboarding/onboard-organization';
-import { useRun } from '@trigger.dev/react-hooks';
+import { useRun, useTriggerAuthContext } from '@trigger.dev/react-hooks';
 import { CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export function OnboardingStatus({ runId }: { runId: string }) {
+  const { accessToken } = useTriggerAuthContext();
+  if (!accessToken) return <p>Automation connection unavailable. Please try again later.</p>;
+  return <ConnectedOnboardingStatus runId={runId} />;
+}
+
+function ConnectedOnboardingStatus({ runId }: { runId: string }) {
   const { run, error, isLoading } = useRun<typeof onboardOrganization>(runId, {
     refreshInterval: 1000,
   });

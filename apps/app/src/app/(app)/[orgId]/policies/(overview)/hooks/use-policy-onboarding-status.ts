@@ -1,6 +1,6 @@
 'use client';
 
-import { useRealtimeRun } from '@trigger.dev/react-hooks';
+import { useRealtimeRun, useTriggerAuthContext } from '@trigger.dev/react-hooks';
 import { useMemo } from 'react';
 import type { PolicyTailoringStatus } from '../../all/components/policy-tailoring-context';
 
@@ -17,7 +17,8 @@ export interface PolicyOnboardingItemInfo {
  * produce `policie_`).
  */
 export function usePolicyOnboardingStatus(onboardingRunId: string | null | undefined) {
-  const shouldSubscribe = Boolean(onboardingRunId);
+  const { accessToken } = useTriggerAuthContext();
+  const shouldSubscribe = Boolean(onboardingRunId && accessToken);
   const { run } = useRealtimeRun(shouldSubscribe ? onboardingRunId! : '', {
     enabled: shouldSubscribe,
   });

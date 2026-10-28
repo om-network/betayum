@@ -101,6 +101,14 @@ different task images for the same commit.
 
 ## Operations
 
+Authentication emails are sent directly by the API using `RESEND_FROM_SYSTEM`
+and `RESEND_API_KEY`. The app continues rendering while realtime tokens are
+unavailable. When Cloud Build finds the Trigger VM stopped, it explicitly
+defers task deployment and continues the Cloud Run rollout. Restarting the VM
+resumes its previously deployed tasks; run the environment build again to
+deploy any task changes made while it was stopped. New automation requests
+still require Trigger to be available.
+
 Check platform health and worker state:
 
 ```bash
