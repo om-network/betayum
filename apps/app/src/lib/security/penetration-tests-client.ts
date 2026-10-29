@@ -1,3 +1,5 @@
+import type { FindingAttackPath, FindingEvidence, ValidationStep } from './pentest-finding-types';
+
 export type PentestReportStatus =
   | 'provisioning'
   | 'cloning'
@@ -72,6 +74,9 @@ export type IssueStatus = 'open' | 'acknowledged' | 'resolved' | 'false_positive
 // Mirrors @maced/api-client's Issue type. Kept as a lightweight frontend
 // copy so we don't import server-only deps into the browser bundle.
 export interface PentestIssue {
+  validationSteps?: ValidationStep[] | null;
+  evidence?: FindingEvidence[] | null;
+  attackPath?: FindingAttackPath | null;
   id: string;
   runId?: string | null;
   findingId?: string | null;

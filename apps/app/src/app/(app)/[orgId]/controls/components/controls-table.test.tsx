@@ -18,9 +18,15 @@ vi.mock('@/hooks/use-permissions', () => ({
 
 // Mock design system components to simple HTML elements
 vi.mock('@trycompai/design-system', () => ({
-  Button: ({ children, onClick, ...props }: any) => (
+  Button: ({
+    children,
+    onClick,
+    iconRight,
+    ...props
+  }: React.ButtonHTMLAttributes<HTMLButtonElement> & { iconRight?: React.ReactNode }) => (
     <button onClick={onClick} {...props}>
       {children}
+      {iconRight}
     </button>
   ),
   DataTableFilters: ({ children }: any) => <div data-testid="filters">{children}</div>,

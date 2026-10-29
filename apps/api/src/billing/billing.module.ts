@@ -5,6 +5,7 @@ import { BillingController } from './billing.controller';
 import { BillingCreditsService } from './billing-credits.service';
 import { BillingEntitlementsService } from './billing-entitlements.service';
 import { BillingService } from './billing.service';
+import { BillingUsageService } from './billing-usage.service';
 import { BillingWebhookService } from './billing-webhook.service';
 
 @Module({
@@ -12,6 +13,7 @@ import { BillingWebhookService } from './billing-webhook.service';
   controllers: [BillingController],
   providers: [
     BillingService,
+    BillingUsageService,
     BillingCreditsService,
     BillingEntitlementsService,
     BillingWebhookService,

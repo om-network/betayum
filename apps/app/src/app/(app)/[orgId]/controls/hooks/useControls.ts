@@ -1,6 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
+import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import type { ControlWithRelations } from '../data/queries';
 
@@ -22,19 +23,21 @@ interface CreateControlPayload {
   documentTypes?: string[];
 }
 
-export const controlsKey = () => ['/v1/controls'] as const;
+export const controlsKey = (organizationId: string) => ['/v1/controls', organizationId] as const;
 
 interface UseControlsOptions {
   initialData?: ControlWithRelations[];
 }
 
 export function useControls(options?: UseControlsOptions) {
+  const { orgId } = useParams<{ orgId: string }>();
+  const router = useRouter();
   const { initialData } = options ?? {};
 
   const { data, error, isLoading, mutate } = useSWR(
-    controlsKey(),
+    controlsKey(orgId),
     async () => {
-      const response = await apiClient.get<ControlsApiResponse>('/v1/controls');
+      const response = await apiClient.get<ControlsApiResponse>('/v1/controls', orgId);
       if (response.error) throw new Error(response.error);
       if (!response.data?.data) return [];
       return response.data.data;
@@ -49,9 +52,32 @@ export function useControls(options?: UseControlsOptions) {
   const controls = Array.isArray(data) ? data : [];
 
   const createControl = async (payload: CreateControlPayload) => {
-    const response = await apiClient.post('/v1/controls', payload);
+    let requirementMappings = payload.requirementMappings;
+    if (requirementMappings?.length) {
+      const options = await apiClient.get<{
+        requirements: Array<{ id: string; frameworkInstanceId: string; isCustom: boolean }>;
+      }>('/v1/controls/options', orgId);
+      if (options.error || !options.data) throw new Error('Unable to load requirement mappings');
+      requirementMappings = requirementMappings.map((mapping) => {
+        const custom = options.data?.requirements.find(
+          (requirement) =>
+            requirement.isCustom &&
+            requirement.id === mapping.requirementId &&
+            requirement.frameworkInstanceId === mapping.frameworkInstanceId,
+        );
+        return custom
+          ? { customRequirementId: custom.id, frameworkInstanceId: mapping.frameworkInstanceId }
+          : mapping;
+      });
+    }
+    const response = await apiClient.post(
+      '/v1/controls',
+      { ...payload, requirementMappings },
+      orgId,
+    );
     if (response.error) throw new Error(response.error);
     await mutate();
+    router.refresh();
     return response.data;
   };
 
@@ -65,7 +91,7 @@ export function useControls(options?: UseControlsOptions) {
     );
 
     try {
-      const response = await apiClient.delete(`/v1/controls/${id}`);
+      const response = await apiClient.delete(`/v1/controls/${id}`, orgId);
       if (response.error) throw new Error(response.error);
       await mutate();
     } catch (err) {

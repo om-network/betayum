@@ -67,6 +67,8 @@
             "group": "Get Started",
             "pages": [
               "introduction",
+              "controls",
+              "usage",
               "ai-policy-editor",
               "automated-evidence",
               "device-agent",

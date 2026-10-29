@@ -5,6 +5,7 @@ import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@trycompai/des
 import { cn } from '@trycompai/design-system/cn';
 import { ArrowLeft, Copy } from '@trycompai/design-system/icons';
 import { toast } from 'sonner';
+import { FindingAttackPathPanel, FindingEvidencePanel } from './FindingSupportingDetails';
 import { SEVERITY_BAR_VAR, SEVERITY_FG_VAR } from './severity';
 
 interface FindingDetailProps {
@@ -30,8 +31,7 @@ export function FindingDetail({ issue, onBack }: FindingDetailProps) {
     <div className="min-h-0 overflow-y-auto">
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 md:px-8 md:py-8">
         <div>
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-3.5 w-3.5" />
+          <Button variant="ghost" size="sm" onClick={onBack} iconLeft={<ArrowLeft size={14} />}>
             Back to findings
           </Button>
         </div>
@@ -108,15 +108,15 @@ export function FindingDetail({ issue, onBack }: FindingDetailProps) {
           </TabsContent>
 
           <TabsContent value="attack">
-            <p className="mt-4 text-sm text-muted-foreground">
-              Attack-path analysis not surfaced in this view yet.
-            </p>
+            <div className="mt-4">
+              <FindingAttackPathPanel attackPath={issue.attackPath} />
+            </div>
           </TabsContent>
 
           <TabsContent value="evidence">
-            <p className="mt-4 text-sm text-muted-foreground">
-              Evidence (HTTP transcripts, screenshots, code snippets) coming soon.
-            </p>
+            <div className="mt-4">
+              <FindingEvidencePanel evidence={issue.evidence} />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
@@ -160,7 +160,7 @@ function Prose({ text }: { text: string }) {
 }
 
 function CopyableBlock({ content, empty }: { content: string; empty: boolean }) {
-  const onCopy = async () => {
+  const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(content);
       toast.success('Copied to clipboard');
@@ -174,8 +174,12 @@ function CopyableBlock({ content, empty }: { content: string; empty: boolean }) 
   return (
     <div className="relative">
       <div className="absolute right-2 top-2 z-10">
-        <Button variant="outline" size="sm" onClick={() => void onCopy()}>
-          <Copy className="h-3.5 w-3.5" />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleCopy()}
+          iconLeft={<Copy size={14} />}
+        >
           Copy
         </Button>
       </div>
@@ -187,7 +191,7 @@ function CopyableBlock({ content, empty }: { content: string; empty: boolean }) 
 }
 
 function ValidationSection({ issue }: { issue: PentestIssue }) {
-  const steps = extractValidationSteps(issue);
+  const steps = issue.validationSteps ?? [];
   if (steps.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -205,15 +209,12 @@ function ValidationSection({ issue }: { issue: PentestIssue }) {
           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-muted font-mono text-[10px]">
             {i + 1}
           </span>
-          <span className="flex-1">{step}</span>
+          <span className="flex-1">{step.description}</span>
+          <span className="text-xs text-muted-foreground">
+            {step.verified ? 'Verified' : 'Not verified'}
+          </span>
         </li>
       ))}
     </ol>
   );
-}
-
-// Validation-steps field isn't part of PentestIssue type (yet); parse if it
-// shows up on future payloads. For now returns empty.
-function extractValidationSteps(_issue: PentestIssue): string[] {
-  return [];
 }
