@@ -19,6 +19,7 @@ import { Public } from '../auth/public.decorator';
 import { RequirePermission } from '../auth/require-permission.decorator';
 import type { AuthContext as AuthContextType } from '../auth/types';
 import { BillingService } from './billing.service';
+import { BillingUsageService } from './billing-usage.service';
 import { BillingWebhookService } from './billing-webhook.service';
 import {
   BillingPortalDto,
@@ -36,6 +37,7 @@ export class BillingController {
   constructor(
     private readonly billingService: BillingService,
     private readonly webhookService: BillingWebhookService,
+    private readonly usageService: BillingUsageService,
   ) {}
 
   @Get('status')
@@ -43,6 +45,13 @@ export class BillingController {
   @ApiOperation({ summary: 'Get organization billing status' })
   async getStatus(@OrganizationId() organizationId: string) {
     return this.billingService.getStatus(organizationId);
+  }
+
+  @Get('usage')
+  @RequirePermission('organization', 'read')
+  @ApiOperation({ summary: 'Get recorded usage and subscription allowances' })
+  async getUsage(@OrganizationId() organizationId: string) {
+    return this.usageService.getUsage(organizationId);
   }
 
   @Put('preferences')

@@ -1,0 +1,24 @@
+---
+title: 'Usage'
+description: 'Review recorded service runs and monthly subscription allowances.'
+---
+
+Open **Usage** from your organization sidebar to review penetration-test and
+background-check allowances and recent run history. You need organization read
+permission. Usage visibility does not depend on the Security feature flag.
+
+## Allowances and history
+
+The page shows subscription quantities, recorded consumption, remaining monthly
+allowance, renewal dates, and recent service runs. Each history row includes
+the service, details, billing type, status, and run date.
+
+Usage reads recorded organization data through the API; it does not contact
+Stripe or Trigger. It is available without adding a payment method. Starting
+paid work still requires the appropriate entitlement and permissions.
+
+## Refresh and errors
+
+Choose **Refresh usage** to reload the records. If the API is unavailable or
+access is denied, the page shows an error rather than reporting zero usage.
+An empty run history means the API returned no recorded runs.

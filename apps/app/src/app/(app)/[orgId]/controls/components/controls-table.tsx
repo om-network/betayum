@@ -9,7 +9,6 @@ import {
   DataTableFilters,
   DataTableHeader,
   DataTableSearch,
-  HStack,
   Table,
   TableBody,
   TableCell,
@@ -21,9 +20,9 @@ import {
 import { ArrowDown, ArrowUp } from '@trycompai/design-system/icons';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ControlWithRelations } from '../data/queries';
+import { parseControlQuery } from '../lib/control-query';
 import { getControlStatus } from '../lib/utils';
 
-const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_OPTIONS = [20, 50, 100];
 
 interface ControlsTableProps {
@@ -37,48 +36,33 @@ function SortIcon({ direction }: { direction: SortDirection }) {
 }
 
 export function ControlsTable({ promises }: ControlsTableProps) {
-  const [{ data }] = React.use(promises);
+  const [{ data, pageCount }] = React.use(promises);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { hasPermission } = usePermissions();
-  const [search, setSearch] = React.useState('');
-  const [sortDirection, setSortDirection] = React.useState<SortDirection>('asc');
-  const [page, setPage] = React.useState(1);
-  const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE);
-
-  // Reset to page 1 when search changes
-  React.useEffect(() => {
-    setPage(1);
-  }, [search]);
-
-  const filteredControls = React.useMemo(() => {
-    const lowerSearch = search.toLowerCase().trim();
-    const filtered = lowerSearch
-      ? data.filter((control) => control.name.toLowerCase().includes(lowerSearch))
-      : data;
-    const sorted = [...filtered].sort((left, right) =>
-      sortDirection === 'asc'
-        ? left.name.localeCompare(right.name)
-        : right.name.localeCompare(left.name),
-    );
-    return sorted;
-  }, [data, search, sortDirection]);
-
-  const pageCount = Math.max(1, Math.ceil(filteredControls.length / pageSize));
-  const startIndex = (page - 1) * pageSize;
-  const paginatedControls = filteredControls.slice(startIndex, startIndex + pageSize);
-
-  // Keep page in bounds when pageCount changes
-  React.useEffect(() => {
-    if (page > pageCount) {
-      setPage(pageCount);
+  const {
+    name: search,
+    page,
+    perPage: pageSize,
+    sortDesc,
+  } = parseControlQuery({
+    name: searchParams.get('name'),
+    page: searchParams.get('page'),
+    perPage: searchParams.get('perPage'),
+    sortDesc: searchParams.get('sortDesc'),
+  });
+  const sortDirection: SortDirection = sortDesc === 'true' ? 'desc' : 'asc';
+  const handleQueryChange = (updates: Record<string, string>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(updates)) {
+      if (value) params.set(key, value);
+      else params.delete(key);
     }
-  }, [page, pageCount]);
-
-  const handleSortByName = React.useCallback(() => {
-    setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
-  }, []);
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+  const handleSortByName = () =>
+    handleQueryChange({ sortDesc: sortDesc === 'true' ? 'false' : 'true', page: '1' });
 
   const handleOpenCreateControl = React.useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -104,15 +88,17 @@ export function ControlsTable({ promises }: ControlsTableProps) {
     [handleViewControl],
   );
 
-  const handlePageSizeChange = React.useCallback((nextPageSize: number) => {
-    setPageSize(nextPageSize);
-    setPage(1);
-  }, []);
+  const handlePageSizeChange = (nextPageSize: number) =>
+    handleQueryChange({ perPage: String(nextPageSize), page: '1' });
 
   return (
     <div className="flex flex-col gap-4">
       <DataTableHeader>
-        <DataTableSearch placeholder="Search controls..." value={search} onChange={setSearch} />
+        <DataTableSearch
+          placeholder="Search controls..."
+          value={search}
+          onChange={(name) => handleQueryChange({ name, page: '1' })}
+        />
         <DataTableFilters>
           {hasPermission('control', 'create') && (
             <Button onClick={handleOpenCreateControl}>Create Control</Button>
@@ -123,8 +109,8 @@ export function ControlsTable({ promises }: ControlsTableProps) {
         variant="bordered"
         pagination={{
           page,
-          pageCount,
-          onPageChange: setPage,
+          pageCount: Math.max(pageCount, 1),
+          onPageChange: (nextPage) => handleQueryChange({ page: String(nextPage) }),
           pageSize,
           pageSizeOptions: PAGE_SIZE_OPTIONS,
           onPageSizeChange: handlePageSizeChange,
@@ -133,21 +119,19 @@ export function ControlsTable({ promises }: ControlsTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>
-              <HStack
-                gap="xs"
-                align="center"
-                style={{ cursor: 'pointer' }}
+              <Button
+                variant="ghost"
                 onClick={handleSortByName}
+                iconRight={<SortIcon direction={sortDirection} />}
               >
-                <span>Control Name</span>
-                <SortIcon direction={sortDirection} />
-              </HStack>
+                Control Name
+              </Button>
             </TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paginatedControls.length === 0 ? (
+          {data.length === 0 ? (
             <TableRow>
               <TableCell colSpan={2}>
                 <Text size="sm" variant="muted">
@@ -156,7 +140,7 @@ export function ControlsTable({ promises }: ControlsTableProps) {
               </TableCell>
             </TableRow>
           ) : (
-            paginatedControls.map((control) => (
+            data.map((control) => (
               <TableRow
                 key={control.id}
                 role="button"

@@ -15,6 +15,7 @@ The feature is available in **Security** as **Penetration Tests**.
 - Track queued and in-progress jobs in a single list view
 - Open run details for status and execution metadata
 - Download report artifacts when complete (Markdown and PDF)
+- Review finding validation steps, HTTP transcripts, code evidence, screenshot links, and attack paths when the assessment provider records them
 
 ## Prerequisites
 
@@ -56,6 +57,22 @@ When a run completes, open the run detail page to access:
 
 - **View markdown**: Opens the generated report content
 - **Download PDF**: Downloads a customer-shareable report artifact
+
+## Review finding details
+
+Open a finding to review its summary, proof of concept, impact, remediation,
+validation steps, attack path, and evidence. Validation steps identify which
+checks the provider verified. Evidence can include request/response transcripts,
+code snippets, and links to screenshots. These sections show an empty state if
+the provider did not record that type of supporting data.
+
+## Usage
+
+Open **Usage** in the organization sidebar to review monthly service allowances
+and recorded penetration-test and background-check runs. Viewing recorded usage
+requires organization read access; it does not require setting up a payment
+method or enabling the Security feature. Starting paid runs still follows the
+existing allowance and authorization checks.
 
 ## Best practices
 

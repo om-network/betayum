@@ -57,6 +57,7 @@ export const ROUTE_PERMISSIONS: Record<string, Array<{ resource: string; action:
   frameworks: [{ resource: 'framework', action: 'read' }],
   auditor: [{ resource: 'audit', action: 'read' }],
   controls: [{ resource: 'control', action: 'read' }],
+  usage: [{ resource: 'organization', action: 'read' }],
   policies: [{ resource: 'policy', action: 'read' }],
   tasks: [
     { resource: 'evidence', action: 'read' },
@@ -137,6 +138,7 @@ const MAIN_NAV_ROUTES: Array<{ segment: string; path: string }> = [
   { segment: 'integrations', path: '/integrations' },
   { segment: 'cloud-tests', path: '/cloud-tests' },
   { segment: 'penetration-tests', path: '/security/penetration-tests' },
+  { segment: 'usage', path: '/usage' },
   { segment: 'settings', path: '/settings' },
 ];
 

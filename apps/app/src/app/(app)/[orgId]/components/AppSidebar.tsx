@@ -14,7 +14,7 @@ interface NavItem {
 }
 
 interface AppSidebarProps {
-  organization: Organization;
+  organization: Pick<Organization, 'id' | 'advancedModeEnabled'>;
   isQuestionnaireEnabled: boolean;
   hasAuditorRole: boolean;
   isOnlyAuditor: boolean;
@@ -50,6 +50,12 @@ export function AppSidebar({
       path: `/${organization.id}/frameworks`,
       name: 'Frameworks',
       hidden: !canAccessRoute(permissions, 'frameworks'),
+    },
+    {
+      id: 'controls',
+      path: `/${organization.id}/controls`,
+      name: 'Controls',
+      hidden: !organization.advancedModeEnabled || !canAccessRoute(permissions, 'controls'),
     },
     {
       id: 'auditor',
@@ -114,6 +120,12 @@ export function AppSidebar({
       path: `/${organization.id}/cloud-tests`,
       name: 'Cloud Tests',
       hidden: !canAccessRoute(permissions, 'cloud-tests'),
+    },
+    {
+      id: 'usage',
+      path: `/${organization.id}/usage`,
+      name: 'Usage',
+      hidden: !canAccessRoute(permissions, 'usage'),
     },
   ];
 
